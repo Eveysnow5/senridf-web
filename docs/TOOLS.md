@@ -131,6 +131,7 @@
     - **已结束项**：新增 `isClosed()`（标题含「終了しました」等 / 详情页含「募集を終了しています」/ 截标已过），入库时写 `status:'open'|'closed'`；**不删，累积保留分析素材**；前端对 closed/截标已过项灰显「已结束」标签。
     - **非招标兜底**：Qwen prompt 增加判定，非招标内容返回 `NOT_A_BID` → 主流程跳过不入库。
     - **运行报告**：每次跑写 `meta/scrape_status`（完成时间 + 各源 found/inserted/closed/skipped/failed），管理后台新增「招标抓取监控」卡片展示，解决"不知抓没抓全/抓了啥"。
+  - 2026-07-26：**收掉 LLM 影子抽取（`extractBidsLLM` 影子模式）**。此前（约 07-23 起）每跑一遍除 cheerio 解析外，还额外调 Qwen 从整页正文抽招标条目，只统计条数（`llm_found`）与 cheerio 对比、不写真数据，用于验证"要不要把 LLM 翻成主源"。**观察数天真实数据后结论：LLM 不适合当主源**——① 大页面（大阪市業務委託 ~40 条）先是输出截断（把 max_tokens 1500→4000 后又变成 40s HTTP 超时），始终抽不全；② 吹田市页面在 cheerio 修好"跳过入札結果历史表"后，LLM 反而**过度抽取**（把历史开标结果也抽进来，34 条 vs cheerio 5 条），比 cheerio 更差；③ 只有小页面（≤7 条）LLM 与 cheerio 一致。既然 cheerio 更准、影子还每晚白花 Qwen 调用，实验已给出结论，遂**删掉影子接线 + 只服务它的 `scripts/bid-scraper/extract.js` 与 `tests/bid-scraper.extract.test.js`**（可从 git 历史找回）。翻译用的 `translate()`/`QWEN_API_KEY` 保留不动。`meta/scrape_status` 里不再写 `llm_found` 字段（管理后台卡片本就没展示它，无前端改动）。
 
 ---
 

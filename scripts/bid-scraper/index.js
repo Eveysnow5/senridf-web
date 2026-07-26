@@ -9,7 +9,6 @@ const {
   parseSuitaBids,
   parseToyonakaLinks,
 } = require('./parse');
-const { extractPageText, buildExtractionPrompt, parseExtractedBids } = require('./extract');
 
 // NOTE: Suita City URLs are year-specific (令和8年度 = 2026).
 // Update these each April when a new fiscal year begins.
@@ -161,31 +160,6 @@ async function translate(bid) {
   return res.data.choices?.[0]?.message?.content?.trim() || '';
 }
 
-// ── LLM 抽取（影子模式，借鉴 crawl4ai/Firecrawl 思路） ───────────────────────
-// 问 Qwen 从页面正文抽出招标条目，返回解析后的数组；异常返回 null。
-async function extractBidsLLM(html, target) {
-  const pageText = extractPageText(html);
-  if (!pageText) return null;
-  const res = await axios.post(
-    'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-    {
-      model: 'qwen-plus',
-      messages: [{ role: 'user', content: buildExtractionPrompt(pageText, target) }],
-      // 大阪市/吹田市"業務委託"页面条目多（30+条），1500 输出上限连续4天让 JSON 被截断、
-      // 解析失败（llm_found=-1）；调大到 4000 留足余量，避免误判为"抽取失败"。
-      max_tokens: 4000,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.QWEN_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      timeout: 40000,
-    },
-  );
-  return parseExtractedBids(res.data.choices?.[0]?.message?.content || '');
-}
-
 // ── Run report ──────────────────────────────────────────────────────────────
 async function writeRunReport(db, report) {
   try {
@@ -225,7 +199,6 @@ async function main() {
         city: target.city,
         category: target.categoryLabel || '混合',
         found: 0,
-        llm_found: null, // 影子模式：LLM 抽取条数，与 found（cheerio）对比
         inserted: 0,
         closed: 0,
         error: '',
@@ -268,17 +241,6 @@ async function main() {
 
       srcStat.found = bids.length;
       totals.found += bids.length;
-
-      // 影子模式：LLM 抽取只统计条数与 cheerio 对比，不写入真数据。
-      // 验证若干天后若 LLM 不比 cheerio 差，再改为主源。llm_found = -1 表示抽取异常。
-      try {
-        const llmBids = await extractBidsLLM(html, target);
-        srcStat.llm_found = llmBids === null ? -1 : llmBids.length;
-        console.log(`  [shadow] LLM extracted: ${srcStat.llm_found} (cheerio: ${bids.length})`);
-      } catch (err) {
-        srcStat.llm_found = -1;
-        console.error(`  [shadow] LLM extraction failed: ${err.message}`);
-      }
 
       for (const bid of bids) {
         const closed = isClosed(bid);
