@@ -5,10 +5,23 @@
 # - Referrer-Policy: 跨站跳转时不泄露完整 URL
 # - Permissions-Policy: 关闭定位/摄像头；麦克风仅允许本站（翻译语音需要）
 # - Strict-Transport-Security: 强制 HTTPS 一年（本站 Cloudflare 全 HTTPS）
-# 注：CSP（内容安全策略）暂不加——站点内联脚本 + 多 CDN，需单独做来源审计后再上，避免白屏。
+# - Content-Security-Policy-Report-Only: CSP 观察期版本（只报告、不拦截，漏配也不会白屏）
+#
+# 【CSP 说明】站点零构建 + 大量内联 <script>/style=，静态 _headers 无法注入 per-request nonce，
+#   所以 script-src/style-src 只能用 'unsafe-inline'（牺牲了防内联 XSS 的能力）；但对 connect-src、
+#   script-src 的“外部主机”做了严格白名单——即使被注入 XSS，也无法把数据外传到攻击者域名、无法加载
+#   攻击者脚本。这是本站 CSP 的主要价值。
+# 【当前是 Report-Only】违规只会打印到浏览器 DevTools 控制台（本站未接集中收集端点），不拦截任何请求。
+#   观察期做法：镜像修好上线后，逐个打开各工具页（翻译/分析/校对/blog/admin 等），F12 看 Console 有无
+#   CSP 违规；确认无遗漏来源后，把下面这行的 header 名从 Content-Security-Policy-Report-Only 改成
+#   Content-Security-Policy 即可转为强制拦截。
+# 【白名单来源出处】fonts.googleapis/gstatic=Google字体；www.gstatic=Firebase SDK；*.googleapis.com
+#   +securetoken.google.com=Firebase后端；api.deepgram.com(+wss)=语音；sdf-admin.*.workers.dev=管理后台
+#   Worker；cdn.jsdelivr/cdnjs.cloudflare=marked/dompurify/pdf.js/mammoth/xlsx(均带SRI)；cloudflareinsights=CF分析。
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), camera=(), microphone=(self)
   Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://securetoken.google.com https://api.deepgram.com wss://api.deepgram.com https://sdf-admin.sherlockafa.workers.dev https://static.cloudflareinsights.com https://cloudflareinsights.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'
