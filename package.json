@@ -10,8 +10,9 @@
     "format:check": "prettier --check .",
     "test": "node --test",
     "qa": "node scripts/qa/scan.js",
+    "qa:css": "node scripts/qa/check-css.js",
     "build:css": "tailwindcss -c tailwind.config.js -i css/tailwind.src.css -o css/tailwind.min.css --minify",
-    "check": "npm run lint && npm run format:check && npm run test && npm run qa"
+    "check": "npm run lint && npm run format:check && npm run test && npm run qa && npm run qa:css"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
