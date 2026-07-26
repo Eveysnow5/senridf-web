@@ -96,11 +96,12 @@
 ## 5. japanese_learner.html — 日语学习
 
 - **用途**：日语动词/形容词活用练习。
-- **架构**：纯前端，活用引擎在 `japanese_learner.js`（五段/一段/不规则/形容词等变形规则）。
+- **架构**：纯前端，活用引擎（五段/一段/不规则/形容词等变形规则）**在 `japanese_learner.html` 的内联 `<script>` 里**（函数 `cj`/`render`/`setG`/`doStartQuiz` 等，词库变量 `V`）。
 - **用谁的 API**：**无外部 API**（纯前端计算）。
 - **所需设置**：仅 Firebase 登录 + Firestore approved 门控；无后端环境变量。
 - **修改记录**：
   - （本轮鉴权改造未涉及——它不调 `/api/*`。）
+  - 2026-07-26：删除孤儿死文件 `solutions/demo/japanese_learner.js`（840 行）。它是项目首个 commit（`671d168`）引入的早期独立版本，**从未被任何页面加载**（全仓库无 `<script src>` 引用它），页面早已改用上面的内联实现（两套函数名/词库变量都不同）。之前本文档误写"活用引擎在 japanese_learner.js"已一并订正。删除只为消除 7 条 eslint `no-unused-vars` 警告 + 清死代码；如需找回，见 git 历史 `671d168`。
 
 ---
 
