@@ -209,9 +209,14 @@
     - `js/tracking.js` + 4 个工具页（translation/lifestory/analysis/japanese_learner）的内联访问统计，全部迁移到共享 `trackVisit`/`updateVisitDuration`
     - `admin.html` 的 visits 读取上限从 500 调大到 2000
     - ⚠️ 待办：需在 Firebase 控制台确认 visits 集合规则允许 update（不只 create），否则同一天第二次写入会静默失败
+  - **2026-07-25：3B 流畅——Tailwind Play CDN 转静态 CSS**：
+    - 4 个页面（bids / solutions/demo/admin / japanese_learner / proofreader）的 Tailwind Play CDN 运行时编译器 → 提交进仓库的静态 `css/tailwind.min.css`（Tailwind CLI 内容扫描生成，约20KB，第7行 `<script src=cdn.tailwindcss.com>` 换成 `<link href=/css/tailwind.min.css>`）
+    - 新增 `npm run build:css`（生成）；`npm run check` 增 `qa:css`（`scripts/qa/check-css.js`，重新生成后逐字节对比，改了 class 没重新生成会报错提醒去跑 `build:css`）
+    - 维护：改这些页面已有样式类无需动作；只有新增当前没用过的类时 check 报错提醒跑 `build:css`。`tailwindcss` 是 devDep（3.4.16），部署仍零构建
 
 ## 开发期工具链（Phase 1，不进部署产物）
 
-- `package.json` 的 `npm run check` = ESLint + Prettier(--check) + `node --test` + `scripts/qa/scan.js`（死链/缺alt，懂 `<base href>`）。
+- `package.json` 的 `npm run check` = ESLint + Prettier(--check) + `node --test` + `scripts/qa/scan.js`（死链/缺alt，懂 `<base href>`）+ `qa:css`。
 - CI：`.github/workflows/ci.yml` 每次 push 自动跑 `npm run check`。**但测不了浏览器登录**，鉴权改动仍需线上人工验证。
 - 爬虫纯解析在 `scripts/bid-scraper/parse.js`（有 `tests/` 测试）；`index.js` 只在直接运行时执行 `main()`。
+- `npm run build:css`（2026-07-25 新增）：用 Tailwind CLI 按 `tailwind.config.js` 的 `content` 扫描 4 个用 Tailwind 的页面（`bids/index.html`、`solutions/demo/admin.html`、`solutions/demo/japanese_learner.html`、`solutions/demo/proofreader.html`），生成静态 `css/tailwind.min.css`（提交进仓库，约20KB）。`npm run check` 新增 `qa:css`（`scripts/qa/check-css.js`）：用同样配置重新生成一份到临时文件，跟已提交的 `css/tailwind.min.css` 逐字节比对，不一致就非零退出——防"改了页面 class 却忘了重新生成"。`tailwindcss@3.4.16` 是 devDependency，只在开发期用，部署产物仍是纯静态文件、零构建。
