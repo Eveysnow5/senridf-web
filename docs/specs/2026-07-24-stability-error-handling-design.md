@@ -73,6 +73,14 @@ fetchWithTimeout(url, options, timeoutMs = 30000)
 2. 线上验证通过后，批量迁其余 9 页：`admin/index.html`、`admin/blog/index.html`、`solutions/demo/admin.html`、`bids/index.html`、`solutions/demo/{japanese_learner,proofreader,lifestory,analysis}.html`、`account.html`
 3. 每页迁移为独立提交，迁完跑 `npm run check`
 
+### 实施修正（2026-07-27）
+
+实施时逐页排查发现，上面第 2 条"其余 9 页同模型"的假设不成立——这些页面按登录模型分三类，`mountAuthGate`（重定向 /account.html + status 门控 + `#auth-gate` 遮罩）只适配其中一部分。实际处理：
+
+- **迁 `mountAuthGate`（4 页）**：`solutions/demo/{lifestory,analysis,proofreader,japanese_learner}.html`。其中 lifestory/analysis 原本就是重定向模型（纯抽取）；proofreader/japanese_learner 原为**页内登录框模型**，迁移时删掉内联登录框/审核遮罩 markup + 对应死 CSS/i18n 赋值，改为重定向模型（已与用户确认此 UX 变化）。
+- **加防御性 try/catch（不迁移，4 页）**：`admin/index.html`、`admin/blog/index.html`、`solutions/demo/admin.html`、`bids/index.html`。这些是**页内自带登录表单 + 仅管理员/无 status 门控**，模型与 `mountAuthGate` 不同，硬迁会顶掉登录框。改为给各自 `onAuthStateChanged` 回调包异常边界（`console.error` + 回落到可用界面），同样达成"不白屏"目标。
+- **排除**：`account.html` 本身是登录/账号中心页，不适用门控。
+
 ## 7. 测试
 
 - `auth-gate.js` 里拆出的纯函数 `resolveGateState` 用 `node --test` 直接覆盖（guest/admin/approved/pending/disabled 各分支），不需要 DOM、不需要新增测试框架；`mountAuthGate` 本身（碰 DOM、调 Firebase）不写单元测试，留给第 6 节的人工验证
