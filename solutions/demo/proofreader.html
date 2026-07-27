@@ -19,47 +19,19 @@
     .error-item.dismissed-hidden { display: none; }
     .error-item.dismissed-visible { opacity: 0.4; }
     .error-item.dismissed-visible .original { text-decoration: line-through; }
+    #auth-gate { position:fixed;inset:0;background:#faf9f7;display:flex;align-items:center;justify-content:center;z-index:9999; }
+    .ag-center { text-align:center; }
+    .ag-spinner { width:28px;height:28px;border:2px solid #e5e7eb;border-top-color:#6366f1;border-radius:50%;animation:ag-s .8s linear infinite;margin:0 auto; }
+    .ag-text { color:#9ca3af;font-size:13px;margin-top:12px;font-family:sans-serif; }
+    @keyframes ag-s { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
-  <!-- Login -->
-  <div id="login-screen" class="flex items-center justify-center min-h-screen px-4">
-    <div class="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
-      <h1 class="text-xl font-semibold text-gray-900 mb-1">千里同風 内部工具</h1>
-      <p class="text-sm text-gray-500 mb-6">文稿校对助手</p>
-      <div id="login-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"></div>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
-          <input id="email" type="email" autocomplete="email" title="邮箱" placeholder="your@email.com"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">密码</label>
-          <input id="password" type="password" autocomplete="current-password" title="密码" placeholder="••••••••"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-        </div>
-        <button type="button" id="login-btn"
-          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 rounded-lg transition-colors">
-          登录
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Approval gate (pending / disabled) -->
-  <div id="gate-msg" class="hidden flex items-center justify-center min-h-screen px-4">
-    <div class="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm text-center">
-      <div id="gate-icon" class="text-4xl mb-4">⏳</div>
-      <h2 id="gate-title" class="text-lg font-semibold text-gray-900 mb-2">审核中</h2>
-      <p id="gate-text" class="text-sm text-gray-500 leading-relaxed mb-5">账号正在审核中，审核通过后即可使用。</p>
-      <button type="button" id="gate-logout" class="text-xs text-gray-400 hover:text-gray-600">退出登录</button>
-    </div>
-  </div>
+  <div id="auth-gate"><div class="ag-center"><div class="ag-spinner"></div><p class="ag-text">验证身份中…</p></div></div>
 
   <!-- App -->
-  <div id="app" class="hidden">
+  <div id="app">
 
     <header class="bg-white border-b border-gray-200 sticky top-0 z-10">
       <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -160,11 +132,9 @@
 
   <script type="module">
     import { auth, db } from '/js/shared/firebase-init.js';
-    import { ADMINS } from '/js/shared/admins.js';
-    import { signInWithEmailAndPassword, onAuthStateChanged, signOut }
+    import { signOut }
       from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-    import { doc, getDoc }
-      from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+    import { mountAuthGate } from '/js/shared/auth-gate.js';
 
     // Authenticated fetch — attaches the current user's Firebase ID token.
     async function apiFetch(url, opts = {}) {
@@ -176,57 +146,12 @@
     }
 
     // ── Auth ────────────────────────────────────────────────────────────────
-    const loginScreen = document.getElementById('login-screen');
-    const appEl = document.getElementById('app');
-    const loginError = document.getElementById('login-error');
-
-    document.getElementById('login-btn').addEventListener('click', async () => {
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      loginError.classList.add('hidden');
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch {
-        loginError.textContent = '邮箱或密码错误，请重试';
-        loginError.classList.remove('hidden');
-      }
-    });
-    document.getElementById('password').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') document.getElementById('login-btn').click();
-    });
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
-    document.getElementById('gate-logout').addEventListener('click', () => signOut(auth));
 
-    const gateMsg = document.getElementById('gate-msg');
-
-    function showOnly(el) {
-      [loginScreen, gateMsg, appEl].forEach((e) => e.classList.add('hidden'));
-      el.classList.remove('hidden');
-    }
-
-    function showGate(status) {
-      const disabled = status === 'disabled';
-      document.getElementById('gate-icon').textContent = disabled ? '🚫' : '⏳';
-      document.getElementById('gate-title').textContent = disabled ? '账号已停用' : '审核中';
-      document.getElementById('gate-text').textContent = disabled
-        ? '您的账号已被停用，请联系管理员。'
-        : '账号正在审核中，审核通过后即可使用。';
-      showOnly(gateMsg);
-    }
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) { showOnly(loginScreen); return; }
+    function showEmail(user) {
       document.getElementById('user-email').textContent = user.email;
-      if (ADMINS.includes(user.email)) { showOnly(appEl); return; }
-      try {
-        const snap = await getDoc(doc(db, 'users', user.uid));
-        const status = snap.data()?.status || 'pending';
-        if (status === 'approved') { showOnly(appEl); return; }
-        showGate(status);
-      } catch {
-        showGate('pending');
-      }
-    });
+    }
+    mountAuthGate({ auth, db, onApproved: showEmail, onAdmin: showEmail });
 
     // ── Tab switching ───────────────────────────────────────────────────────
     let activeTab = 'paste';
