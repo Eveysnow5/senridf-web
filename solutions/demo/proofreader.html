@@ -132,9 +132,12 @@
 
   <script type="module">
     import { auth, db } from '/js/shared/firebase-init.js';
+    import { initErrorReporting } from '/js/shared/report-error.js';
     import { signOut }
       from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
     import { mountAuthGate } from '/js/shared/auth-gate.js';
+
+    initErrorReporting({ db });
 
     // Authenticated fetch — attaches the current user's Firebase ID token.
     async function apiFetch(url, opts = {}) {

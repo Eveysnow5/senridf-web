@@ -1852,8 +1852,10 @@
   </script>
 <script type="module">
 import { auth, db } from '/js/shared/firebase-init.js';
+import { initErrorReporting } from '/js/shared/report-error.js';
 import { mountAuthGate } from '/js/shared/auth-gate.js';
 import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js';
+initErrorReporting({ db });
 const _start=Date.now();let _docId=null,_logged=false;
 function _anonId(){let i=localStorage.getItem('sdf_anon_id');if(!i){i='anon_'+Math.random().toString(36).slice(2,9);localStorage.setItem('sdf_anon_id',i);}return i;}
 function _track(e){if(_logged)return;_logged=true;_docId=trackVisit({db,email:e,anonId:_anonId(),page:'translation',device:/Mobi|Android/i.test(navigator.userAgent)?'mobile':'desktop'});}
