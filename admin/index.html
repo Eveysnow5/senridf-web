@@ -387,10 +387,13 @@ function finishEdit(commit) {
 </script>
 
 <script type="module">
-import { auth } from '/js/shared/firebase-init.js';
+import { auth, db } from '/js/shared/firebase-init.js';
+import { initErrorReporting } from '/js/shared/report-error.js';
 import { isAdmin } from '/js/shared/admins.js';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+
+initErrorReporting({ db });
 
 // 保存通道：站长自己 CF 账号下的 sdf-admin Worker（服务端持有 GitHub 令牌）
 const WORKER_URL = 'https://sdf-admin.sherlockafa.workers.dev';

@@ -179,9 +179,12 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
 
 <script type="module">
 import { auth, db } from '/js/shared/firebase-init.js';
+import { initErrorReporting } from '/js/shared/report-error.js';
 import { ADMINS } from '/js/shared/admins.js';
 import {onAuthStateChanged,signInWithEmailAndPassword,signOut} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import {collection,getDocs,query,orderBy,limit,doc,getDoc,updateDoc} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+initErrorReporting({ db });
 
 const PAGE_NAMES = {
   japanese_learner: '日本語動詞活用',

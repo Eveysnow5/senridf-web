@@ -117,10 +117,13 @@
 
   <script type="module">
     import { auth, db } from '/js/shared/firebase-init.js';
+    import { initErrorReporting } from '/js/shared/report-error.js';
     import { signInWithEmailAndPassword, onAuthStateChanged, signOut }
       from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
     import { collection, query, orderBy, limit, getDocs }
       from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+    initErrorReporting({ db });
 
     // ── Auth ──────────────────────────────────────────────────────────────
     const loginScreen = document.getElementById('login-screen');
