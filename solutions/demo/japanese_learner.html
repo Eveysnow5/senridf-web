@@ -64,23 +64,12 @@ td,th{border:1px solid #e5e7eb}
 #qMsg{font-size:14px;color:#6b7280;margin-bottom:18px}
 #quizAgainBtn{padding:10px 22px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;margin-right:8px;font-family:inherit}
 #quizCloseBtn{padding:10px 22px;background:#f3f4f6;color:#374151;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit}
-/* Status/Auth Gate overlays */
-.gs-overlay{position:fixed;inset:0;z-index:200;align-items:center;justify-content:center;background:rgba(28,25,20,.75);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
-#gate-status{display:none}
-#gate{display:flex}
-.gs-box{background:#fff;border-radius:16px;padding:44px 36px;max-width:360px;width:calc(100% - 40px);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2)}
-#gs-icon{font-size:38px;margin-bottom:14px}
-#gs-title{font-size:17px;font-weight:600;margin-bottom:8px;font-family:'Noto Sans SC',sans-serif}
-#gs-desc{font-size:13px;color:#78716c;line-height:1.8;margin-bottom:22px}
-.gs-back{font-size:12px;color:#9ca3af;text-decoration:none}
-.gs-icon-key{font-size:38px;margin-bottom:14px}
-#authTitle{font-size:17px;font-weight:600;margin-bottom:8px;font-family:'Noto Sans SC',sans-serif}
-#authDesc{font-size:13px;color:#78716c;line-height:1.8;margin-bottom:22px}
-.gs-input{display:block;width:100%;padding:10px 12px;margin-bottom:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;outline:none}
-#gm{font-size:12px;min-height:16px;margin-bottom:8px;color:#ef4444}
-#glogin{display:block;width:100%;padding:12px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-size:14px;font-family:inherit;cursor:pointer;margin-bottom:8px}
-#gforgot{display:block;background:none;border:none;font-size:12px;color:#9ca3af;cursor:pointer;font-family:inherit;margin-bottom:10px}
-#authBack{font-size:12px;color:#9ca3af;text-decoration:none}
+/* Auth gate overlay */
+#auth-gate{position:fixed;inset:0;background:#faf9f7;display:flex;align-items:center;justify-content:center;z-index:9999}
+.ag-center{text-align:center}
+.ag-spinner{width:28px;height:28px;border:2px solid #e5e7eb;border-top-color:#a87c4f;border-radius:50%;animation:ag-s .8s linear infinite;margin:0 auto}
+.ag-text{color:#9ca3af;font-size:13px;margin-top:12px;font-family:sans-serif}
+@keyframes ag-s{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -162,30 +151,8 @@ td,th{border:1px solid #e5e7eb}
   </div>
 </div>
 
-<!-- Status overlay for pending/disabled users -->
-<div id="gate-status" class="gs-overlay">
-  <div class="gs-box">
-    <div id="gs-icon"></div>
-    <h2 id="gs-title"></h2>
-    <p id="gs-desc"></p>
-    <a href="/account.html" class="gs-back">← 返回账号页面</a>
-  </div>
-</div>
-
 <!-- Auth Gate -->
-<div id="gate" class="gs-overlay">
-  <div class="gs-box">
-    <div class="gs-icon-key">🔑</div>
-    <h2 id="authTitle"></h2>
-    <p id="authDesc"></p>
-    <input id="ge" type="email" class="gs-input" title="邮箱地址" placeholder="邮箱地址">
-    <input id="gp" type="password" class="gs-input" title="密码" placeholder="密码">
-    <div id="gm"></div>
-    <button type="button" id="glogin" title="登录"></button>
-    <button type="button" id="gforgot" title="忘记密码"></button>
-    <a href="../demo.html" id="authBack" title="返回"></a>
-  </div>
-</div>
+<div id="auth-gate"><div class="ag-center"><div class="ag-spinner"></div><p class="ag-text">验证身份中…</p></div></div>
 
 <script>
 // ── i18n ─────────────────────────────────────────────────────────────────────
@@ -292,13 +259,6 @@ function applyLang() {
   document.getElementById('quizCancelBtn').textContent = t.quizCancel;
   document.getElementById('quizAgainBtn').textContent = t.quizAgain;
   document.getElementById('quizCloseBtn').textContent = t.quizClose;
-  document.getElementById('authTitle').textContent = t.authTitle;
-  document.getElementById('authDesc').textContent = t.authDesc;
-  document.getElementById('ge').placeholder = t.authEmail;
-  document.getElementById('gp').placeholder = t.authPass;
-  document.getElementById('glogin').textContent = t.authLogin;
-  document.getElementById('gforgot').textContent = t.authForgot;
-  document.getElementById('authBack').textContent = t.authBack;
   ['ja','zh','en'].forEach(l => document.getElementById('lb'+l).classList.toggle('lang-on', l === lang));
   buildColPanel();
   buildThead();
@@ -640,20 +600,15 @@ window.addEventListener('resize', updateTableHeight);
 
 <script type="module">
 import { auth, db } from '/js/shared/firebase-init.js';
-import { ADMINS } from '/js/shared/admins.js';
-import {onAuthStateChanged,signInWithEmailAndPassword,signOut,sendPasswordResetEmail} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import {doc,getDoc} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import { mountAuthGate } from '/js/shared/auth-gate.js';
 import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js';
-const gate = document.getElementById('gate');
-const gateStatus = document.getElementById('gate-status');
 let _logged = false;
 const _start = Date.now(); let _docId = null;
 function _anonId(){let i=localStorage.getItem('sdf_anon_id');if(!i){i='anon_'+Math.random().toString(36).slice(2,9);localStorage.setItem('sdf_anon_id',i);}return i;}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&_docId){updateVisitDuration({db,docId:_docId,duration:Math.round((Date.now()-_start)/1000)});_docId=null;}});
 
 function showTool(u) {
-  gate.style.display = 'none';
-  gateStatus.style.display = 'none';
   document.getElementById('uarea').style.display = 'flex';
   document.getElementById('uemail').textContent = u.email;
   if (!_logged) {
@@ -668,55 +623,7 @@ function showTool(u) {
   }
 }
 
-onAuthStateChanged(auth, async u => {
-  if (u) {
-    localStorage.setItem('sdf_user_email', u.email);
-    if (ADMINS.includes(u.email)) { showTool(u); return; }
-    try {
-      const snap = await getDoc(doc(db, 'users', u.uid));
-      const status = snap.data()?.status || 'pending';
-      if (status === 'approved') { showTool(u); return; }
-      gate.style.display = 'none';
-      document.getElementById('gs-icon').textContent = status === 'disabled' ? '🚫' : '⏳';
-      document.getElementById('gs-title').textContent = status === 'disabled' ? '账号已停用' : '审核中';
-      document.getElementById('gs-desc').textContent = status === 'disabled'
-        ? '您的账号已被停用，请联系管理员。'
-        : '账号正在审核中，审核通过后即可使用。';
-      gateStatus.style.display = 'flex';
-    } catch {
-      gate.style.display = 'none';
-      document.getElementById('gs-icon').textContent = '⏳';
-      document.getElementById('gs-title').textContent = '审核中';
-      document.getElementById('gs-desc').textContent = '账号正在审核中，审核通过后即可使用。';
-      gateStatus.style.display = 'flex';
-    }
-  } else {
-    gate.style.display = 'flex';
-    gateStatus.style.display = 'none';
-  }
-});
-function gm(txt, ok) {
-  const e = document.getElementById('gm');
-  e.textContent = txt;
-  e.style.color = ok ? '#10b981' : '#ef4444';
-}
-document.getElementById('glogin').onclick = async () => {
-  try {
-    await signInWithEmailAndPassword(auth, document.getElementById('ge').value.trim(), document.getElementById('gp').value);
-  } catch {
-    gm(T[lang].authBadCred);
-  }
-};
-document.getElementById('gforgot').onclick = async () => {
-  const e = document.getElementById('ge').value.trim();
-  if (!e) { gm(T[lang].authFillEmail); return; }
-  try {
-    await sendPasswordResetEmail(auth, e);
-    gm(T[lang].authResetSent, true);
-  } catch {
-    gm(T[lang].authResetFail);
-  }
-};
+mountAuthGate({ auth, db, onApproved: showTool, onAdmin: showTool });
 document.getElementById('logoutBtn').onclick = () => signOut(auth);
 </script>
 </body>
