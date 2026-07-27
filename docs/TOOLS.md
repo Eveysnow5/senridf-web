@@ -201,6 +201,8 @@
 - `functions/api/_lib/fetchWithTimeout.js`（2026-07-24 新增）— 给对外部服务（Qwen/Deepgram）的请求包一层 30 秒超时，只对"发出请求到收到首个响应"计时，一旦拿到 Response 对象（含流式响应刚建立连接的那一刻）就清除计时器，不影响后续读取正文/流的耗时（长文档翻译/文书分析不受影响）。已接入 `translate.js`/`deepgram-token.js`/`analyze-stream.js`/`proofread.js`/`summary.js`/`translate-stream.js` 六个端点，超时或异常统一返回 JSON 错误兜底。
 - `track-visit-id.js`（2026-07-24 新增）— 纯逻辑 `visitDocId(identity, page, now)`：访问统计去重用的确定性文档ID，同一身份（登录邮箱或匿名访客ID）同一天同一工具页只对应一个ID，零依赖、可直接 `node --test`。
 - `track-visit.js`（2026-07-24 新增）— 装配层 `trackVisit({db, email, anonId, page, device})` / `updateVisitDuration({db, docId, duration})`：调用 `visitDocId` 算出确定性ID，`setDoc`+`merge` 写入 `visits` 集合，同一身份同一天同一工具页最多一条记录；每条记录带 `expireAt`（写入时间 + 6 个月）配合 Firestore TTL 策略自动清理。替代过去 5 处重复写入点（`js/tracking.js` + 4 个工具页内联逻辑）。
+- `error-report-id.js`（2026-07-27 新增）— 纯函数，判定前端错误指纹（有单测）。
+- `report-error.js`（2026-07-27 新增）— 装配层 `initErrorReporting({db})`：监听 `error`（捕获阶段，能收资源加载失败）/`unhandledrejection`/`securitypolicyviolation`，去重后写 Firestore `errors` 集合（指纹+日期做 docId，`count` 累加，`expireAt` 6 个月 TTL）。判定逻辑见上方 `error-report-id.js`。
 - **修改记录**：
   - **2026-07-24：3D 稳定性——前端错误边界 + API 超时兜底**：
     - 新建 `js/shared/auth-gate.js`（+ `auth-gate-state.js` 纯逻辑）：统一登录门控，异常兜底渲染"出错了请刷新"，不再因单点报错卡在空白/转圈；试点迁移 `solutions/demo/translation.html`，其余 9 页待批量迁移
@@ -215,6 +217,13 @@
     - 4 个页面（bids / solutions/demo/admin / japanese_learner / proofreader）的 Tailwind Play CDN 运行时编译器 → 提交进仓库的静态 `css/tailwind.min.css`（Tailwind CLI 内容扫描生成，约20KB，第7行 `<script src=cdn.tailwindcss.com>` 换成 `<link href=/css/tailwind.min.css>`）
     - 新增 `npm run build:css`（生成）；`npm run check` 增 `qa:css`（`scripts/qa/check-css.js`，重新生成后逐字节对比，改了 class 没重新生成会报错提醒去跑 `build:css`）
     - 维护：改这些页面已有样式类无需动作；只有新增当前没用过的类时 check 报错提醒跑 `build:css`。`tailwindcss` 是 devDep（3.4.16），部署仍零构建
+  - **2026-07-27：3E 观测**：
+    - 前端错误收集：`js/shared/report-error.js` 的 `initErrorReporting({db})` 监听 `error`（捕获阶段，能收资源加载失败）/`unhandledrejection`/`securitypolicyviolation`，去重后写 Firestore `errors` 集合（指纹+日期做 docId，`count` 累加，`expireAt` 6 个月 TTL）。判定逻辑在 `js/shared/error-report-id.js`（纯函数、有单测）。已挂载：5 个 demo 工具页 + admin/index + admin/blog + solutions/demo/admin + bids。
+    - CSP 违规也走这条链路收集（`securitypolicyviolation` 事件，`disposition` 区分 report/enforce），Report-Only CSP 的违规可在后台「错误日志」面板看，不用逐页开 F12。
+    - 查看：`solutions/demo/admin.html`「错误日志」面板。
+    - **需在 Firebase 控制台加规则**（未加则前端写入被拒、面板为空）：
+      `match /errors/{doc} { allow create, update: if isSignedIn(); allow read: if isAdmin(); }`
+    - TTL 策略（集合 `errors`、字段 `expireAt`）同 visits 一样暂受 GCP 权限限制搁置。
 
 ## 开发期工具链（Phase 1，不进部署产物）
 
