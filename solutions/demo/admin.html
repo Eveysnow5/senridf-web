@@ -195,20 +195,25 @@ const PAGE_NAMES = {
 
 // ── Auth State ────────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async u => {
-  if (!u) {
-    showGate();
-    return;
-  }
-  if (!ADMINS.includes(u.email)) {
+  try {
+    if (!u) {
+      showGate();
+      return;
+    }
+    if (!ADMINS.includes(u.email)) {
+      document.getElementById('gate').style.display = 'none';
+      document.getElementById('noPerm').style.display = 'flex';
+      return;
+    }
     document.getElementById('gate').style.display = 'none';
-    document.getElementById('noPerm').style.display = 'flex';
-    return;
+    document.getElementById('adminEmail').textContent = u.email;
+    loadUsers();
+    loadScrapeStatus();
+    await loadData();
+  } catch (e) {
+    console.error('[auth]', e);
+    showGate();
   }
-  document.getElementById('gate').style.display = 'none';
-  document.getElementById('adminEmail').textContent = u.email;
-  loadUsers();
-  loadScrapeStatus();
-  await loadData();
 });
 
 // ── Load Data ─────────────────────────────────────────────────────────────────

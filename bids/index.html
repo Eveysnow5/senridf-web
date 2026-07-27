@@ -146,12 +146,18 @@
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
     onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        loginScreen.classList.add('hidden');
-        appEl.classList.remove('hidden');
-        document.getElementById('user-email').textContent = user.email;
-        await loadBids();
-      } else {
+      try {
+        if (user) {
+          loginScreen.classList.add('hidden');
+          appEl.classList.remove('hidden');
+          document.getElementById('user-email').textContent = user.email;
+          await loadBids();
+        } else {
+          loginScreen.classList.remove('hidden');
+          appEl.classList.add('hidden');
+        }
+      } catch (e) {
+        console.error('[auth]', e);
         loginScreen.classList.remove('hidden');
         appEl.classList.add('hidden');
       }

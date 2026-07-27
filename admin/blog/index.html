@@ -592,18 +592,24 @@ window.unpublishPost = async function (slug) {
 window.fbLogout = () => signOut(auth).then(() => location.reload());
 
 onAuthStateChanged(auth, user => {
-  if (isAdmin(user)) {
-    document.getElementById('fb-login').style.display = 'none';
-    document.getElementById('editor').style.display = 'block';
-    loadBlogPosts().catch(e => {
+  try {
+    if (isAdmin(user)) {
+      document.getElementById('fb-login').style.display = 'none';
+      document.getElementById('editor').style.display = 'block';
+      loadBlogPosts().catch(e => {
+        document.getElementById('fb-login').style.display = 'flex';
+        document.getElementById('fb-err').textContent = '文章列表加载失败：' + e.message;
+      });
+      checkDraft();
+    } else if (user) {
+      document.getElementById('fb-err').textContent = '该账号无管理员权限。';
+    } else {
       document.getElementById('fb-login').style.display = 'flex';
-      document.getElementById('fb-err').textContent = '文章列表加载失败：' + e.message;
-    });
-    checkDraft();
-  } else if (user) {
-    document.getElementById('fb-err').textContent = '该账号无管理员权限。';
-  } else {
+    }
+  } catch (e) {
+    console.error('[auth]', e);
     document.getElementById('fb-login').style.display = 'flex';
+    document.getElementById('fb-err').textContent = '加载出错，请刷新页面重试。';
   }
 });
 
