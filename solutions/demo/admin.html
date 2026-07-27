@@ -113,6 +113,34 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
     </div>
   </div>
 
+  <!-- Error Log -->
+  <div class="card mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <div class="text-sm font-medium text-gray-700">错误日志</div>
+      <div class="flex items-center gap-2">
+        <span id="errCount" class="text-xs text-gray-400"></span>
+        <button onclick="loadErrors()" type="button" class="text-xs px-3 py-1.5 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">↻ 刷新</button>
+      </div>
+    </div>
+    <div class="tbl-scroll">
+      <table class="w-full text-xs">
+        <thead class="text-gray-400 border-b border-gray-100">
+          <tr>
+            <th class="text-left py-2 pr-4 font-normal">最近</th>
+            <th class="text-left py-2 pr-4 font-normal">次数</th>
+            <th class="text-left py-2 pr-4 font-normal">类型</th>
+            <th class="text-left py-2 pr-4 font-normal">消息</th>
+            <th class="text-left py-2 pr-4 font-normal">页面</th>
+            <th class="text-left py-2 font-normal">用户</th>
+          </tr>
+        </thead>
+        <tbody id="errTable">
+          <tr><td colspan="6" class="py-4 text-center text-gray-400">加载中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Stat Cards -->
   <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
     <div class="card">
@@ -212,6 +240,7 @@ onAuthStateChanged(auth, async u => {
     document.getElementById('adminEmail').textContent = u.email;
     loadUsers();
     loadScrapeStatus();
+    loadErrors();
     await loadData();
   } catch (e) {
     console.error('[auth]', e);
@@ -313,6 +342,59 @@ function renderDashboard(docs) {
       <td class="py-2">${deviceTag}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="4" class="py-4 text-center text-gray-400">暂无记录</td></tr>';
+}
+
+// ── Error Log ─────────────────────────────────────────────────────────────────
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+  );
+}
+
+window.loadErrors = async function () {
+  const body = document.getElementById('errTable');
+  try {
+    const q = query(collection(db, 'errors'), orderBy('lastSeen', 'desc'), limit(200));
+    const snap = await getDocs(q);
+    const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    renderErrors(docs);
+  } catch (e) {
+    console.error(e);
+    body.innerHTML =
+      '<tr><td colspan="6" class="py-4 text-center text-red-400">加载失败，请检查 Firestore 规则</td></tr>';
+  }
+};
+
+function renderErrors(docs) {
+  document.getElementById('errCount').textContent = `共 ${docs.length} 类`;
+  document.getElementById('errTable').innerHTML =
+    docs
+      .map((d) => {
+        const ts = d.lastSeen?.toDate();
+        const timeStr = ts
+          ? ts.toLocaleString('zh-CN', {
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : '—';
+        const msg =
+          d.type === 'csp'
+            ? `${escapeHtml(d.message)} → ${escapeHtml(d.blockedURI || '')}`
+            : escapeHtml(d.message);
+        return `<tr class="hover:bg-gray-50 align-top">
+      <td class="py-2 pr-4 text-gray-400 whitespace-nowrap">${timeStr}</td>
+      <td class="py-2 pr-4 text-gray-600">${d.count || 1}</td>
+      <td class="py-2 pr-4 text-gray-500 whitespace-nowrap">${escapeHtml(d.type || '')}</td>
+      <td class="py-2 pr-4 text-gray-700 max-w-[280px] break-words">${msg}</td>
+      <td class="py-2 pr-4 text-gray-400 whitespace-nowrap">${escapeHtml(d.lastPage || '')}</td>
+      <td class="py-2 text-gray-400 max-w-[160px] truncate" title="${escapeHtml(d.lastEmail || '')}">${escapeHtml(d.lastEmail || '')}</td>
+    </tr>`;
+      })
+      .join('') ||
+    '<tr><td colspan="6" class="py-4 text-center text-gray-400">暂无错误记录</td></tr>';
 }
 
 // ── Auth Gate ─────────────────────────────────────────────────────────────────
