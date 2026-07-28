@@ -40,7 +40,7 @@
 - **用途**：中/日/英互译；语音口译（连续口译，发言人标记"我说/对方说"）；会议纪要生成（结构化 + 导出 DOCX）。
 - **架构**：主逻辑在普通 `<script>`；Firebase auth 在独立 `<script type="module">`。两者作用域不同，靠 `window.sdfGetToken` 桥接传 ID token。
 - **用谁的 API**：
-  - **通义千问 Qwen**（qwen-plus）：文本翻译 `/api/translate`、流式翻译 `/api/translate-stream`、会议纪要 `/api/summary`。
+  - **通义千问 Qwen**：文本翻译 `/api/translate`（qwen-plus）、流式翻译 `/api/translate-stream`（qwen-turbo，口译短句降本）、会议纪要 `/api/summary`（qwen-plus）。
   - **Deepgram**：语音转文字。前端先调 `/api/deepgram-token` 拿**临时 token**，再用 `['bearer', token]` 子协议直连 `wss://api.deepgram.com/v1/listen`（模型 nova-2）。
 - **前端库**：docx@8（jsdelivr CDN，生成 Word 纪要）；浏览器原生 `SpeechSynthesis`（TTS 朗读）。
 - **所需设置**：`QWEN_API_KEY`、`DEEPGRAM_API_KEY`（Member+）。
@@ -64,7 +64,7 @@
 
 - **用途**：粘贴或上传 Word/txt，检查错别字、重复句、编辑指令残留、前后逻辑冲突、标题一致性，输出分类报告；历史记录存 localStorage。
 - **架构**：全部逻辑在单个 `<script type="module">`（auth 与 fetch 同作用域，无需桥接）。
-- **用谁的 API**：**通义千问 Qwen**（qwen-plus）`/api/proofread`。
+- **用谁的 API**：**通义千问 Qwen**（qwen-max，语义校对需要）`/api/proofread`。
 - **前端库**：mammoth.js@1.6.0（jsdelivr CDN，解析 .docx）。
 - **所需设置**：`QWEN_API_KEY`。
 - **修改记录**：
@@ -152,9 +152,9 @@
 | `_middleware.js` | **拦截所有 `/api/*`**：校验 Firebase ID token（匿名 401）+ 每用户 120 次/分钟限流（超限 429） | — |
 | `_lib/verifyFirebaseToken.js` | 纯 Web Crypto 验证 Firebase ID token（RS256 + aud/iss/exp） | Google 公钥端点 |
 | `_lib/rateLimiter.js` | 限流：Firestore 原子自增按 `rate_limits/{uid}_{分钟}` 计数，故障放行 | Firestore REST |
-| `translate.js` / `translate-stream.js` | 翻译（普通 / 流式） | Qwen qwen-plus |
+| `translate.js` / `translate-stream.js` | 翻译（普通 / 流式） | Qwen qwen-plus / qwen-turbo |
 | `summary.js` | 会议纪要（结构化 JSON） | Qwen qwen-plus |
-| `proofread.js` | 中文校对 | Qwen qwen-plus |
+| `proofread.js` | 中文校对 | Qwen qwen-max |
 | `lifestory.js` | 人生故事（analyze/bridge/story） | Qwen qwen-plus |
 | `analyze-stream.js` | 文书分析（流式） | Qwen qwen-plus |
 | `deepgram-token.js` | 签发 Deepgram 临时 token（`/v1/auth/grant`，TTL 300s） | Deepgram |
