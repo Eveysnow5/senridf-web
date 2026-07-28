@@ -141,6 +141,38 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
     </div>
   </div>
 
+  <!-- Glossary -->
+  <div class="card mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <div class="text-sm font-medium text-gray-700">术语表</div>
+      <button onclick="loadGlossary()" type="button" class="text-xs px-3 py-1.5 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">↻ 刷新</button>
+    </div>
+    <div class="flex flex-wrap gap-2 mb-3">
+      <input id="gl-zh" type="text" title="中文" placeholder="中文" class="border border-gray-200 rounded px-2 py-1 text-xs" />
+      <input id="gl-ja" type="text" title="日本語" placeholder="日本語" class="border border-gray-200 rounded px-2 py-1 text-xs" />
+      <input id="gl-en" type="text" title="English" placeholder="English（可空）" class="border border-gray-200 rounded px-2 py-1 text-xs" />
+      <input id="gl-note" type="text" title="备注" placeholder="备注（可空）" class="border border-gray-200 rounded px-2 py-1 text-xs flex-1 min-w-[120px]" />
+      <button onclick="addTerm()" type="button" class="text-xs px-3 py-1.5 rounded bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">添加</button>
+    </div>
+    <div id="gl-error" class="hidden text-xs text-red-400 mb-2"></div>
+    <div class="tbl-scroll">
+      <table class="w-full text-xs">
+        <thead class="text-gray-400 border-b border-gray-100">
+          <tr>
+            <th class="text-left py-2 pr-4 font-normal">中文</th>
+            <th class="text-left py-2 pr-4 font-normal">日本語</th>
+            <th class="text-left py-2 pr-4 font-normal">English</th>
+            <th class="text-left py-2 pr-4 font-normal">备注</th>
+            <th class="text-left py-2 font-normal"></th>
+          </tr>
+        </thead>
+        <tbody id="glTable">
+          <tr><td colspan="5" class="py-4 text-center text-gray-400">加载中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Stat Cards -->
   <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
     <div class="card">
@@ -210,7 +242,7 @@ import { auth, db } from '/js/shared/firebase-init.js';
 import { initErrorReporting } from '/js/shared/report-error.js';
 import { ADMINS } from '/js/shared/admins.js';
 import {onAuthStateChanged,signInWithEmailAndPassword,signOut} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import {collection,getDocs,query,orderBy,limit,doc,getDoc,updateDoc} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import {collection,getDocs,query,orderBy,limit,doc,getDoc,updateDoc,addDoc,deleteDoc,serverTimestamp} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
 initErrorReporting({ db });
 
@@ -241,6 +273,7 @@ onAuthStateChanged(auth, async u => {
     loadUsers();
     loadScrapeStatus();
     loadErrors();
+    loadGlossary();
     await loadData();
   } catch (e) {
     console.error('[auth]', e);
@@ -397,6 +430,67 @@ function renderErrors(docs) {
       .join('') ||
     '<tr><td colspan="6" class="py-4 text-center text-gray-400">暂无错误记录</td></tr>';
 }
+
+// ── Glossary (术语表) ─────────────────────────────────────────────────────────
+window.loadGlossary = async function () {
+  const body = document.getElementById('glTable');
+  try {
+    const snap = await getDocs(query(collection(db, 'glossary'), orderBy('createdAt', 'desc')));
+    renderGlossary(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  } catch (e) {
+    console.error(e);
+    body.innerHTML =
+      '<tr><td colspan="5" class="py-4 text-center text-red-400">加载失败，请检查 Firestore 规则</td></tr>';
+  }
+};
+
+function renderGlossary(terms) {
+  document.getElementById('glTable').innerHTML =
+    terms
+      .map(
+        (t) => `<tr class="hover:bg-gray-50">
+      <td class="py-2 pr-4 text-gray-700">${escapeHtml(t.zh || '')}</td>
+      <td class="py-2 pr-4 text-gray-700">${escapeHtml(t.ja || '')}</td>
+      <td class="py-2 pr-4 text-gray-500">${escapeHtml(t.en || '')}</td>
+      <td class="py-2 pr-4 text-gray-400">${escapeHtml(t.note || '')}</td>
+      <td class="py-2"><button type="button" onclick="deleteTerm('${escapeHtml(t.id)}')" class="text-red-400 hover:text-red-600">删除</button></td>
+    </tr>`,
+      )
+      .join('') ||
+    '<tr><td colspan="5" class="py-4 text-center text-gray-400">暂无术语</td></tr>';
+}
+
+window.addTerm = async function () {
+  const zh = document.getElementById('gl-zh').value.trim();
+  const ja = document.getElementById('gl-ja').value.trim();
+  const en = document.getElementById('gl-en').value.trim();
+  const note = document.getElementById('gl-note').value.trim();
+  const errEl = document.getElementById('gl-error');
+  errEl.classList.add('hidden');
+  if (!zh || !ja) {
+    errEl.textContent = '中文和日本語为必填';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  try {
+    await addDoc(collection(db, 'glossary'), { zh, ja, en, note, createdAt: serverTimestamp() });
+    ['gl-zh', 'gl-ja', 'gl-en', 'gl-note'].forEach((id) => (document.getElementById(id).value = ''));
+    loadGlossary();
+  } catch (e) {
+    errEl.textContent = '添加失败：' + e.message;
+    errEl.classList.remove('hidden');
+  }
+};
+
+window.deleteTerm = async function (id) {
+  if (!confirm('确认删除该术语？')) return;
+  try {
+    await deleteDoc(doc(db, 'glossary', id));
+    loadGlossary();
+  } catch (e) {
+    console.error(e);
+  }
+};
 
 // ── Auth Gate ─────────────────────────────────────────────────────────────────
 function showGate() {
