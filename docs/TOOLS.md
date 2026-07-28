@@ -72,6 +72,10 @@
   - 2026-06-19：修 .docx 上传——`mammoth.extractRawValue`（不存在）改为正确的 `extractRawText`，此前上传 Word 一律报"解析失败"。commit 8cfd5bb。
   - 2026-06-21：加 Firestore `approved` 审核门控（管理员直通，pending/disabled 显示门控页），与 translation/lifestory 对齐——此前只查 `if(user)`，任何注册用户都能用。(#6)
   - 2026-06-21：mammoth CDN 统一到 cdnjs（与 analysis 一致），原 jsdelivr。(#10)
+  - **2026-07-28：语义深化**：校对工具从"格式+浅语义"升级为深语义校对。`/api/proofread` 换 qwen-max、提示词由纯函数 `functions/api/_lib/buildProofreadPrompt.js`（有单测）生成，检查项改为七类——保留 错别字/重复/编辑残留/标题一致，深化 事实与逻辑一致，新增 表述清晰/论证完整，删掉中文排版（原本 UI 也没显示、纯省 token）。
+    - 支持上传「参考资料（访谈记录）」对照核查稿件是否忠实于来源（`reference` 字段，上限 2 万字截断）。
+    - 结果区新增「原文（已标注）」面板，用 `js/shared/proofread-highlight.js`（有单测）把问题片段在原文里高亮（indexOf 定位、找不到跳过、无卡片联动）。
+    - 成本：qwen-max 比 qwen-plus 贵数倍，校对低频可接受；不满意可把 `functions/api/proofread.js` 的 model 改回。
 
 ---
 
