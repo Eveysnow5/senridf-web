@@ -1,5 +1,6 @@
 // Cloudflare Pages Function — streaming translation proxy (SSE)
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
+import { buildGlossaryPrompt } from './_lib/buildGlossaryPrompt.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -28,7 +29,7 @@ export async function onRequest(context) {
     });
   }
 
-  const { messages, direction = 'ja-zh' } = body;
+  const { messages, direction = 'ja-zh', glossary, context: translationContext } = body;
   if (!Array.isArray(messages) || messages.length === 0) {
     return new Response(JSON.stringify({ error: 'messages array is required' }), { status: 400 });
   }
@@ -58,8 +59,14 @@ export async function onRequest(context) {
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'qwen-plus',
-          messages: [{ role: 'system', content: systemPrompt }, ...messages],
+          model: 'qwen-turbo',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt + buildGlossaryPrompt(glossary, translationContext),
+            },
+            ...messages,
+          ],
           max_tokens: 400,
           temperature: 0.1,
           stream: true,

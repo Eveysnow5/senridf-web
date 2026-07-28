@@ -1,5 +1,6 @@
 // Cloudflare Pages Function — non-streaming translation proxy
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
+import { buildGlossaryPrompt } from './_lib/buildGlossaryPrompt.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -28,7 +29,7 @@ export async function onRequest(context) {
     });
   }
 
-  const { messages } = body;
+  const { messages, glossary, context: translationContext } = body;
   if (!Array.isArray(messages) || messages.length === 0) {
     return new Response(JSON.stringify({ error: 'messages array is required' }), { status: 400 });
   }
@@ -72,7 +73,13 @@ Use formal, precise language. Never skip the 【回訳】 step for Chinese or Ja
         },
         body: JSON.stringify({
           model: 'qwen-plus',
-          messages: [{ role: 'system', content: systemPrompt }, ...messages],
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt + buildGlossaryPrompt(glossary, translationContext),
+            },
+            ...messages,
+          ],
           max_tokens: 2000,
           temperature: 0.2,
         }),
