@@ -51,6 +51,12 @@
   - 2026-06-21：语音区两个摘要按钮去重——删掉旧的"摘要"（`voiceSummary`，内联文本）及其处理代码，只保留"生成纪要"（`voiceGenSummary`，结构化 + DOCX 下载）。(#5)
   - 2026-06-21：修语音纪要语言标签颠倒——voiceHistory 改存 `srcLang/tgtLang/src/tgt`（实际语言），`summary.js` 按真实语言贴标签（兼容旧 `zh/ja` 字段），prompt 兼容英文。此前默认 A=日语时把日语标成"中文"。(#4)
   - 2026-06-23：修语音默认语言配反——"我说"默认日语导致中文使用者点"我说"无法翻译。改为 我说(甲/A)=中文、对方说(乙/B)=日本語（`speakerLang={A:'zh',B:'ja'}` + 下拉默认值），仍可手动切换。
+  - **2026-07-28：翻译工具第一梯队优化（术语表 + TTS + 模型分层）**：
+    - 术语表：Firestore `glossary` 集合（`{zh, ja, en, note, createdAt}`），translation.html 登录确认后（onApproved/onAdmin 回调里）加载存 `window.sdfGlossary`，随翻译请求经 `requestTranslate` wrapper 送给 `/api/translate` 和 `/api/translate-stream`，由纯函数 `functions/api/_lib/buildGlossaryPrompt.js`（有单测）注入 system prompt（软注入、按语境套用）。后台 `solutions/demo/admin.html`「术语表」面板增删，改完立即生效。
+    - **需在 Firebase 控制台加规则**：`match /glossary/{doc} { allow read: if isSignedIn(); allow write: if isAdmin(); }`
+    - TTS：`js/shared/speak.js` 的 `speak(text,lang)`/`ttsSupported()`；语音口译本有自动朗读（ttsOn 开关），文本模式译文加了 🔊 点击朗读。
+    - 模型分层：`/api/translate-stream`（语音口译短句）用 qwen-turbo 降本提速；`/api/translate`（文本精译带回訳）和 `/api/summary`（纪要）保留 qwen-plus。
+    - 第二梯队钩子：`buildGlossaryPrompt(glossary, context)` 的 context 形参（会前上下文入口，现传空）；translation.html 的 `requestTranslate()` 薄 wrapper（高频缓存入口）。
 
 ---
 
