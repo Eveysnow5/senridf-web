@@ -469,6 +469,8 @@
     }
     .tl-block--trans .tl-block__label { color: var(--c-accent-mid); }
     .tl-block--back .tl-block__label  { color: #8a9a8a; }
+    .tl-speak-btn { border:none;background:none;cursor:pointer;font-size:13px;margin-left:6px;opacity:.55;transition:opacity .15s; }
+    .tl-speak-btn:hover { opacity:1; }
     .tl-block__text {
       font-family: var(--f-sans);
       font-size: 0.9375rem;
@@ -795,7 +797,7 @@
 
           <div class="tl-status">
             <div class="tl-status__dot" id="voiceStatusDot"></div>
-            <span id="voiceStatusText">Qwen-Plus · 準備完了</span>
+            <span id="voiceStatusText">Qwen-Turbo · 準備完了</span>
             <span class="tl-status__count" id="voiceCount">0 件</span>
           </div>
 
@@ -969,6 +971,17 @@
       });
     }
 
+    // 所有翻译请求经此：注入术语表 + 会前上下文（context 为第二梯队钩子，暂空）。
+    // 将来高频缓存层可在此按 bodyObj 命中缓存，调用方不变。
+    async function requestTranslate(endpoint, bodyObj, extraOpts = {}) {
+      return apiFetch(endpoint, {
+        method: 'POST',
+        ...extraOpts,
+        headers: { 'Content-Type': 'application/json', ...(extraOpts.headers || {}) },
+        body: JSON.stringify({ glossary: window.sdfGlossary || [], context: '', ...bodyObj }),
+      });
+    }
+
     /* ── Tab switching ── */
     document.querySelectorAll('.tl-tab').forEach(tab => {
       tab.addEventListener('click', () => {
@@ -1058,7 +1071,6 @@
     const LANG_IDLE   = { ja: '発言する', zh: '发言', en: 'Speak' };
     const LANG_DG     = { ja: 'ja', zh: 'zh-CN', en: 'en-US' };
     const LANG_ENDPT  = { ja: '600', zh: '800', en: '500' };
-    const LANG_TTS    = { ja: 'ja-JP', zh: 'zh-CN', en: 'en-US' };
     const DIR_LABEL   = {
       'ja-zh':'日本語 → 中文','zh-ja':'中文 → 日本語',
       'ja-en':'日本語 → English','en-ja':'English → 日本語',
@@ -1109,12 +1121,8 @@
     }
 
     function speakText(text, lang) {
-      if (!window.speechSynthesis || !ttsOn) return;
-      window.speechSynthesis.cancel();
-      const utt = new SpeechSynthesisUtterance(text);
-      utt.lang = LANG_TTS[lang] || 'zh-CN';
-      utt.rate = 0.95;
-      window.speechSynthesis.speak(utt);
+      if (!ttsOn) return; // 语音模式的 🔊/🔇 开关
+      window.sdfSpeak?.(text, lang);
     }
 
     document.getElementById('voiceTts').addEventListener('click', () => {
@@ -1318,15 +1326,11 @@
       const item = appendStreamItem(text, spk, dir);
       setVoiceStatusBusy(true);
       try {
-        const res = await apiFetch('/api/translate-stream', {
-          method: 'POST',
-          signal: activeFetchCtrl.signal,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: [{ role: 'user', content: text }],
-            direction: dir
-          })
-        });
+        const res = await requestTranslate(
+          '/api/translate-stream',
+          { messages: [{ role: 'user', content: text }], direction: dir },
+          { signal: activeFetchCtrl.signal },
+        );
         if (!res.ok) {
           let errMsg = `HTTP ${res.status}`;
           try { const d = await res.json(); errMsg = d.error || errMsg; } catch { /* HTML error page */ }
@@ -1382,7 +1386,7 @@
 
     function setVoiceStatusBusy(busy) {
       elVoiceStatusDot.classList.toggle('tl-status__dot--offline', busy);
-      elVoiceStatusText.textContent = busy ? '翻訳中 / 翻译中…' : 'Deepgram · Qwen-Plus · 準備完了';
+      elVoiceStatusText.textContent = busy ? '翻訳中 / 翻译中…' : 'Deepgram · Qwen-Turbo · 準備完了';
     }
 
     function appendStreamItem(src, spk, dir) {
@@ -1500,11 +1504,7 @@
       elLoading.classList.add('is-visible');
 
       try {
-        const res = await apiFetch(API_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: conversationHistory })
-        });
+        const res = await requestTranslate(API_ENDPOINT, { messages: conversationHistory });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'API error');
 
@@ -1539,9 +1539,19 @@
         }
         const w = document.createElement('div');
         w.className = `tl-block tl-block--${block.type}`;
+        const ttsBtn =
+          block.type === 'trans' && window.sdfTtsSupported?.()
+            ? `<button type="button" class="tl-speak-btn" title="朗读 / 読み上げ">🔊</button>`
+            : '';
         w.innerHTML = `
-          <div class="tl-block__label">${escapeHtml(block.label)}</div>
+          <div class="tl-block__label">${escapeHtml(block.label)}${ttsBtn}</div>
           <div class="tl-block__text">${escapeHtml(block.text)}</div>`;
+        if (ttsBtn) {
+          const lang = block.label === '日本語訳' ? 'ja' : block.label === '中文翻译' ? 'zh' : 'en';
+          w.querySelector('.tl-speak-btn').addEventListener('click', () =>
+            window.sdfSpeak?.(block.text, lang),
+          );
+        }
         elOutputContent.appendChild(w);
       });
       elOutputContent.classList.add('is-visible');
@@ -1596,15 +1606,11 @@
       elError.classList.remove('is-visible');
 
       try {
-        const res = await apiFetch(API_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: [
-              ...conversationHistory,
-              { role: 'user', content: '会議まとめを生成してください / 请生成会议摘要' }
-            ]
-          })
+        const res = await requestTranslate(API_ENDPOINT, {
+          messages: [
+            ...conversationHistory,
+            { role: 'user', content: '会議まとめを生成してください / 请生成会议摘要' }
+          ]
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'API error');
@@ -1855,17 +1861,37 @@ import { auth, db } from '/js/shared/firebase-init.js';
 import { initErrorReporting } from '/js/shared/report-error.js';
 import { mountAuthGate } from '/js/shared/auth-gate.js';
 import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js';
+import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { speak, ttsSupported } from '/js/shared/speak.js';
 initErrorReporting({ db });
 const _start=Date.now();let _docId=null,_logged=false;
 function _anonId(){let i=localStorage.getItem('sdf_anon_id');if(!i){i='anon_'+Math.random().toString(36).slice(2,9);localStorage.setItem('sdf_anon_id',i);}return i;}
 function _track(e){if(_logged)return;_logged=true;_docId=trackVisit({db,email:e,anonId:_anonId(),page:'translation',device:/Mobi|Android/i.test(navigator.userAgent)?'mobile':'desktop'});}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&_docId){updateVisitDuration({db,docId:_docId,duration:Math.round((Date.now()-_start)/1000)});_docId=null;}});
 window.sdfGetToken=()=>auth.currentUser?.getIdToken();
+window.sdfSpeak = speak;
+window.sdfTtsSupported = ttsSupported;
+window.sdfGlossary = [];
+// 术语表放在登录确认后（onApproved/onAdmin）再读——Firestore 规则 allow read: if isSignedIn()，
+// 若在 auth 恢复前读会被拒、静默失败导致术语表整页拿不到。
+function loadGlossary() {
+  getDocs(collection(db, 'glossary'))
+    .then((snap) => {
+      window.sdfGlossary = snap.docs.map((d) => d.data());
+    })
+    .catch(() => {});
+}
 mountAuthGate({
   auth,
   db,
-  onApproved: (user) => _track(user.email),
-  onAdmin: (user) => _track(user.email),
+  onApproved: (user) => {
+    _track(user.email);
+    loadGlossary();
+  },
+  onAdmin: (user) => {
+    _track(user.email);
+    loadGlossary();
+  },
 });
 </script>
 </body>
