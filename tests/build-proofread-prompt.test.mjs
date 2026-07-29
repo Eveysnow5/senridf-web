@@ -38,3 +38,17 @@ test('非字符串 reference 当作空、不抛错', () => {
 test('要求原文摘录原始连续片段（便于高亮定位）', () => {
   assert.match(buildProofreadPrompt('正文', ''), /连续片段|原始/);
 });
+
+test('第四类含子类型 + 先梳理再比对 + 引用冲突证据 + 置信校准', () => {
+  const p = buildProofreadPrompt('正文', '');
+  assert.match(p, /事实矛盾/);
+  assert.match(p, /先在心里梳理|逐项交叉比对/);
+  assert.match(p, /冲突的其中一处片段/);
+  assert.match(p, /需人工核实/);
+});
+
+test('第六类含逻辑跳跃/逻辑错误等子类型', () => {
+  const p = buildProofreadPrompt('正文', '');
+  assert.match(p, /逻辑跳跃/);
+  assert.match(p, /循环论证|以偏概全|因果倒置/);
+});
