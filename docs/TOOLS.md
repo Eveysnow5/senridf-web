@@ -88,6 +88,7 @@
 - **所需设置**：`QWEN_API_KEY`。
 - **修改记录**：
   - 2026-06-19：fetch 改 `apiFetch` 注入 ID token；firebase module 加 `window.sdfGetToken` 桥接。commit 6e8c9e2。
+  - 2026-07-29：精修（保留 qwen-plus + 防幻觉纪律 + 智能章节选取）——`max_tokens` 2000→6000（避免多文件对比分析被截断）；提示词要求分析开头先出「关键指标概览」Markdown 表格、每个数字硬性标注来源（文件·章节/页）；Excel 提取从 CSV 改 Markdown 表格（纯函数 `js/shared/sheet-to-markdown.js`，有单测，经 `window.sdfSheetToMarkdown` 桥接、缺失回退 CSV）。
 
 ---
 
