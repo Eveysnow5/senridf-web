@@ -291,60 +291,6 @@ const ANCHORS = [
   { id:'a15', cat:'传承',     text:'如果你的故事能传下去，你最想让人知道的一件事是什么？' },
 ];
 
-// 衍生题 — 根据用户标签动态匹配的深化追问
-const BRANCHES = [
-  // 创业 / 职业变动
-  { id:'b01', triggerTags:['entrepreneur','startup','quit_job'],
-    cat:'创业',   text:'创业那一步，是什么让你觉得"现在必须做"？有没有一个具体的临界点？' },
-  { id:'b02', triggerTags:['startup','risk','entrepreneur'],
-    cat:'坚持',   text:'那段最难的时期——你怎么知道要继续，而不是放弃？' },
-  { id:'b03', triggerTags:['career_change','quit_job','pivot'],
-    cat:'转身',   text:'做那个转变之前，你身边的人是怎么反应的？你在乎他们的看法吗？' },
-  { id:'b04', triggerTags:['fired','achievement','success'],
-    cat:'代价',   text:'那个结果的背后，最不被人看到的那部分代价是什么？' },
-  // 家庭 / 压力
-  { id:'b05', triggerTags:['parent_conflict','family_pressure'],
-    cat:'家庭',   text:'和家里的那些分歧，你们后来有没有和解的时刻？或者一直就这样搁在那里？' },
-  { id:'b06', triggerTags:['expectation','family_pressure'],
-    cat:'期待',   text:'家人对你的期望，你是怎么处理那种压力的？有没有某个时刻，你决定按自己的方式来？' },
-  // 感情 / 关系
-  { id:'b07', triggerTags:['marriage','divorce','partner','love'],
-    cat:'感情',   text:'那段关系，让你明白了什么关于自己的事？' },
-  { id:'b08', triggerTags:['loneliness','isolation'],
-    cat:'孤独',   text:'独处的时候，你最常想的是什么？那种感觉，现在还有吗？' },
-  { id:'b09', triggerTags:['betrayal','friendship'],
-    cat:'信任',   text:'那件事之后，你对人的信任有没有什么变化？' },
-  // 迁移 / 异乡
-  { id:'b10', triggerTags:['migration','moved'],
-    cat:'离开',   text:'离开那个地方之后，你有没有过后悔的时刻？或者某个瞬间很想回去？' },
-  { id:'b11', triggerTags:['abroad','cultural_shock','belonging'],
-    cat:'归属',   text:'在那个新的地方，你什么时候才第一次觉得"这里也是我的"？' },
-  // 失去 / 健康
-  { id:'b12', triggerTags:['death','loss','grief'],
-    cat:'失去',   text:'失去他/她之后，你的生活里有没有什么东西悄然变了，自己都没意识到的那种？' },
-  { id:'b13', triggerTags:['illness','health'],
-    cat:'身体',   text:'那段时候，你对时间的感受有没有变化？' },
-  // 创作 / 热忱
-  { id:'b14', triggerTags:['art','music','writing','creative','design'],
-    cat:'创作',   text:'你第一次感觉到"这就是我需要的东西"是什么时候？' },
-  { id:'b15', triggerTags:['art','music','writing','creative'],
-    cat:'放弃',   text:'如果有一天你必须放弃它，你会失去什么？' },
-  // 教育
-  { id:'b16', triggerTags:['study','university','teacher'],
-    cat:'求学',   text:'学那些东西的时候，你心里真正想要的是什么？和表面上的目标一样吗？' },
-  // 信仰 / 价值
-  { id:'b17', triggerTags:['faith','religion','belief','spiritual'],
-    cat:'信仰',   text:'这种信仰或信念，有没有在你最难的时候真正撑住你？' },
-  { id:'b18', triggerTags:['fairness','justice','courage','sacrifice'],
-    cat:'选择',   text:'有没有一次，你明知道应该做什么，但还是选了另一条路？' },
-  // 金钱
-  { id:'b19', triggerTags:['finance','debt','poor','investment'],
-    cat:'困境',   text:'那段财务上最艰难的时期，对你来说最难熬的不是钱的事，而是什么？' },
-  // 身份
-  { id:'b20', triggerTags:['identity','culture','heritage','belonging'],
-    cat:'身份',   text:'你觉得自己"属于"哪里？这个答案现在和年轻时一样吗？' },
-];
-
 // 历史时空触发 — 年份 + 地点匹配后作为"故事催化剂"出现（全程最多 2 次）
 const HISTORICAL = [
   {
@@ -397,6 +343,7 @@ function defState() {
     anchorsDone:   [],  // 已答完的锚点 ID
     tags:          [],  // 累积的用户标签
     historicalUsed: 0,  // 历史时空题使用次数（上限 2）
+    followupCount: 0,   // 当前锚点已追问次数（上限见 decideProbe）
     lastAnalysis:  null,
     lastStory:     null,
     draft:         { qId: null, text: '', privacy: false },
@@ -421,7 +368,7 @@ function saveState()  { localStorage.setItem(SK, JSON.stringify(state)); }
 // ══════════════════════════════════════════════════════════════════════════════
 
 function pickNext(analysis) {
-  const { usedIds, tags, historicalUsed, themeFilter } = state;
+  const { usedIds, historicalUsed, themeFilter } = state;
 
   // 主题筛选函数
   const matchesTheme = (q) => {
@@ -447,23 +394,11 @@ function pickNext(analysis) {
     }
   }
 
-  // 优先级 2：衍生追问（标签匹配，且对话已有足够信息 ≥ 3 轮）
-  if (analysis && !analysis.isEvasion && state.answers.length >= 3 && tags.length > 0) {
-    const best = BRANCHES
-      .filter(b => !usedIds.includes(b.id) && matchesTheme(b))
-      .map(b => ({ b, score: b.triggerTags.filter(t => tags.includes(t)).length }))
-      .filter(x => x.score > 0)
-      .sort((a, b) => b.score - a.score)[0];
-    if (best) return { ...best.b, type: 'branch' };
-  }
-
   // 优先级 3：下一道锚点题
   const anchor = ANCHORS.find(q => !usedIds.includes(q.id) && matchesTheme(q));
   if (anchor) return { ...anchor, type: 'anchor' };
 
-  // 优先级 4：剩余衍生题（锚点全部答完后）
-  const anyBranch = BRANCHES.find(q => !usedIds.includes(q.id) && matchesTheme(q));
-  return anyBranch ? { ...anyBranch, type: 'branch' } : null;
+  return null;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -494,6 +429,22 @@ async function callAnalyze(question, answer) {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data.analysis;
+}
+
+async function callProbe(question, answer) {
+  const res = await apiFetch('/api/lifestory', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'probe',
+      question, answer,
+      recentHistory: state.answers.slice(-4),
+      knownTags: state.tags,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data; // { analysis, followup }
 }
 
 async function callBridge(lastAnswer, nextQuestion) {
@@ -603,6 +554,9 @@ async function nextTurn(analysis, lastAnswer) {
 }
 
 function showQ(q, transition) {
+  // 展示非追问题（锚点/历史题）即进入新锚点，重置本锚点追问计数；
+  // 覆盖所有换题路径（含回避软着陆、每8题提示后继续），避免追问额度跨锚点泄漏。
+  if (q.type !== 'followup') state.followupCount = 0;
   document.getElementById('q-cat').textContent = q.cat;
   document.getElementById('q-num').textContent = `第 ${state.answers.length + 1} 题`;
   document.getElementById('q-transition').textContent = transition || '';
@@ -642,14 +596,15 @@ async function submitAnswer() {
   show('sec-loading');
   document.getElementById('loading-msg').textContent = '正在理解你的回答…';
 
-  let analysis;
+  let analysis, probeResult;
   try {
     // 如果标记为隐私，只保存不分析
     if (privacy) {
-      analysis = { tags:[], year:null, location:null, isEvasion:false, softLanding:null };
+      probeResult = { analysis: { tags:[], year:null, location:null, isEvasion:false, evasionType:null, softLanding:null }, followup: { ask:false, question:'' } };
     } else {
-      analysis = await callAnalyze(currentQ.text, answer);
+      probeResult = await callProbe(currentQ.text, answer);
     }
+    analysis = probeResult.analysis;
   } catch (err) {
     // 网络失败：显示重试对话框
     show('sec-q');
@@ -697,7 +652,20 @@ async function submitAnswer() {
     return;
   }
 
-  await nextTurn(analysis, answer);
+  const step = window.sdfDecideProbe(probeResult, state.followupCount || 0, 2);
+  if (step === 'ask') {
+    state.followupCount = (state.followupCount || 0) + 1;
+    const fq = { id: 'fu-' + Date.now(), type: 'followup', cat: currentQ.cat, text: probeResult.followup.question };
+    saveState();
+    let bridge = '';
+    try { bridge = await callBridge(answer, fq.text); } catch { bridge = ''; }
+    currentQ = fq;
+    showQ(fq, bridge);
+  } else {
+    state.followupCount = 0;
+    saveState();
+    await nextTurn(analysis, answer);
+  }
 }
 
 function skipCurrent() {
@@ -757,7 +725,7 @@ function restForNow() {
 
   // 收集已答过的主题，建议用户选择不同的主题继续
   const answeredCats = new Set(state.answers.map(a => a.cat));
-  const availableCats = [...new Set([...ANCHORS, ...BRANCHES].map(q => q.cat))]
+  const availableCats = [...new Set([...ANCHORS].map(q => q.cat))]
     .filter(cat => !answeredCats.has(cat));
 
   let descHtml = `你已经分享了 ${n} 个故事片段。<br>随时回来继续，你的答案都保存好了。`;
@@ -988,11 +956,11 @@ function updateHdr() {
 
   // 计算剩余题目数
   if (state.themeFilter) {
-    remaining = [...ANCHORS, ...BRANCHES, ...HISTORICAL]
+    remaining = [...ANCHORS, ...HISTORICAL]
       .filter(q => !state.usedIds.includes(q.id) && q.cat === state.themeFilter)
       .length;
   } else {
-    remaining = [...ANCHORS, ...BRANCHES, ...HISTORICAL]
+    remaining = [...ANCHORS, ...HISTORICAL]
       .filter(q => !state.usedIds.includes(q.id))
       .length;
   }
@@ -1031,8 +999,10 @@ import { auth, db } from '/js/shared/firebase-init.js';
 import { initErrorReporting } from '/js/shared/report-error.js';
 import { mountAuthGate } from '/js/shared/auth-gate.js';
 import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js';
+import { decideProbe } from '/js/shared/lifestory-flow.js';
 initErrorReporting({ db });
 window.sdfGetToken=()=>auth.currentUser?.getIdToken();
+window.sdfDecideProbe = decideProbe;
 const _start=Date.now();let _docId=null,_logged=false;
 function _anonId(){let i=localStorage.getItem('sdf_anon_id');if(!i){i='anon_'+Math.random().toString(36).slice(2,9);localStorage.setItem('sdf_anon_id',i);}return i;}
 function _track(e){if(_logged)return;_logged=true;_docId=trackVisit({db,email:e,anonId:_anonId(),page:'lifestory',device:/Mobi|Android/i.test(navigator.userAgent)?'mobile':'desktop'});}
