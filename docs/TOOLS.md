@@ -101,6 +101,7 @@
 - **所需设置**：`QWEN_API_KEY`。生成故事有 90s 超时 + AbortController。
 - **修改记录**：
   - 2026-06-19：3 处 fetch 改 `apiFetch` 注入 ID token；firebase module 加 `window.sdfGetToken` 桥接。commit 6e8c9e2。
+  - 2026-07-29：AI 自适应追问——退役预写的 BRANCHES（标签→预写追问表），改由端点 `probe` action（`functions/api/_lib/lifestory-probe.js` 的 `buildProbePrompt`/`parseProbeJson`，有单测）一次调用完成「分析+生成追问或换题」，返回 `{analysis, followup}`。追问顺着受访者刚说的具体内容逼细节/顺带澄清/尊重回避/老人友好/克制taste。每锚点最多 2 句追问（`js/shared/lifestory-flow.js` 的 `decideProbe` + 前端 `followupCount`，`showQ` 里换非追问题时重置，有单测），AI 判够了/回避就换题；追问失败或坏 JSON 优雅回落下一锚点。15 锚点、历史题、bridge、story 不变，保留 qwen-plus。
 
 ---
 
