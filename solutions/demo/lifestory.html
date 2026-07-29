@@ -415,22 +415,6 @@ async function apiFetch(url, opts = {}) {
   });
 }
 
-async function callAnalyze(question, answer) {
-  const res = await apiFetch('/api/lifestory', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      action: 'analyze',
-      question, answer,
-      recentHistory: state.answers.slice(-4),
-      knownTags: state.tags,
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-  return data.analysis;
-}
-
 async function callProbe(question, answer) {
   const res = await apiFetch('/api/lifestory', {
     method: 'POST',

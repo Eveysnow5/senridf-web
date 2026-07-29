@@ -94,9 +94,9 @@
 
 ## 4. lifestory.html — 人生故事
 
-- **用途**：问答式引导（锚点题 + 衍生题），AI 分析回答打标签，最终生成人生故事；状态存 localStorage。
+- **用途**：问答式引导（15 锚点题骨架 + AI 自适应追问），AI 分析回答并顺着内容追问深挖，最终生成人生故事；状态存 localStorage。
 - **架构**：主逻辑普通 `<script>` + Firebase auth module，靠 `window.sdfGetToken` 桥接。
-- **用谁的 API**：**通义千问 Qwen**（qwen-plus）`/api/lifestory`，单端点按 `action` 分流：`analyze`（分析回答）/ `bridge`（过渡句）/ `story`（成文）。
+- **用谁的 API**：**通义千问 Qwen**（qwen-plus）`/api/lifestory`，单端点按 `action` 分流：`probe`（分析回答+生成自适应追问，主流程用）/ `analyze`（旧版仅分析，端点保留、客户端已不用）/ `bridge`（过渡句）/ `story`（成文）。
 - **前端库**：marked.js（Markdown 渲染）。
 - **所需设置**：`QWEN_API_KEY`。生成故事有 90s 超时 + AbortController。
 - **修改记录**：
@@ -157,7 +157,7 @@
 | `translate.js` / `translate-stream.js` | 翻译（普通 / 流式） | Qwen qwen-plus / qwen-turbo |
 | `summary.js` | 会议纪要（结构化 JSON） | Qwen qwen-plus |
 | `proofread.js` | 中文校对 | Qwen qwen-max |
-| `lifestory.js` | 人生故事（analyze/bridge/story） | Qwen qwen-plus |
+| `lifestory.js` | 人生故事（probe/bridge/story；analyze 保留未用） | Qwen qwen-plus |
 | `analyze-stream.js` | 文书分析（流式） | Qwen qwen-plus |
 | `deepgram-token.js` | 签发 Deepgram 临时 token（`/v1/auth/grant`，TTL 300s） | Deepgram |
 
