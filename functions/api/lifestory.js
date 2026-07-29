@@ -1,4 +1,6 @@
 // Cloudflare Pages Function — lifestory interview actions
+import { buildProbePrompt, parseProbeJson } from './_lib/lifestory-probe.js';
+
 const QWEN_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
 
 async function qwen(apiKey, system, user, maxTokens = 800, temp = 0.7) {
@@ -136,6 +138,25 @@ export async function onRequest(context) {
         };
       }
       return new Response(JSON.stringify({ analysis }), { headers: h });
+    }
+
+    if (action === 'probe') {
+      const { question, answer, recentHistory = [], knownTags = [] } = body;
+      if (!question || !answer) {
+        return new Response(JSON.stringify({ error: '缺少 question/answer' }), {
+          status: 400,
+          headers: h,
+        });
+      }
+      const raw = await qwen(
+        apiKey,
+        '你是访谈分析与追问系统，严格按用户消息的要求只输出 JSON。',
+        buildProbePrompt(question, answer, recentHistory, knownTags),
+        500,
+        0.5,
+      );
+      const result = parseProbeJson(raw);
+      return new Response(JSON.stringify(result), { headers: h });
     }
 
     if (action === 'bridge') {
