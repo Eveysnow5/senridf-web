@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel>
+  <title>Sample Feed</title>
+  <item>
+    <title>介護ロボット新製品を発表</title>
+    <link>https://example.com/news/1</link>
+    <pubDate>Mon, 27 Jul 2026 09:00:00 +0900</pubDate>
+  </item>
+  <item>
+    <title>AIチップの量産開始</title>
+    <link>https://example.com/news/2</link>
+    <pubDate>Tue, 28 Jul 2026 10:00:00 +0900</pubDate>
+  </item>
+</channel></rss>

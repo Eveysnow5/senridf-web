@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Sample Atom</title>
+  <entry>
+    <title>AI規制ガイドライン改訂</title>
+    <link rel="alternate" href="https://example.org/a/10"/>
+    <updated>2026-07-29T08:00:00Z</updated>
+  </entry>
+</feed>
