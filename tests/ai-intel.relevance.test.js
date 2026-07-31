@@ -67,3 +67,25 @@ test('parseJudgment：key_facts 只保留字符串项', () => {
   );
   assert.deepEqual(r.key_facts, ['a', 'b']);
 });
+
+test('parseJudgment：闭合代码块后有多余文字也能解析', () => {
+  const r = parseJudgment(
+    '```json\n{"keep":true,"theme":"companion","summary_zh":"发布陪伴机器人。"}\n```\n（以上）',
+  );
+  assert.equal(r.keep, true);
+  assert.equal(r.theme, 'companion');
+});
+
+test('parseJudgment：JSON 前有说明性文字（无代码块）也能解析', () => {
+  const r = parseJudgment(
+    '好的，结果如下：\n{"keep":true,"theme":"hardware","summary_zh":"量产 AI 芯片。"}',
+  );
+  assert.equal(r.keep, true);
+  assert.equal(r.theme, 'hardware');
+});
+
+test('parseJudgment：真的没有 JSON 对象 → bad_json', () => {
+  const r = parseJudgment('这里完全没有对象');
+  assert.equal(r.keep, false);
+  assert.equal(r.reason, 'bad_json');
+});

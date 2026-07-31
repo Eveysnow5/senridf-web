@@ -28,11 +28,17 @@ function parseJudgment(raw) {
   const fail = (reason) => ({ keep: false, theme: null, summary_zh: '', key_facts: [], reason });
   if (!raw || typeof raw !== 'string') return fail('bad_json');
 
-  const text = raw
-    .trim()
-    .replace(/^```(?:json)?/i, '')
-    .replace(/```$/, '')
-    .trim();
+  // 抽取 JSON：优先取 ```json 代码块体，否则从首个 { 到末个 } 切片。容忍前后多余文字。
+  let text = raw.trim();
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced) {
+    text = fenced[1].trim();
+  } else {
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start === -1 || end === -1 || end < start) return fail('bad_json');
+    text = text.slice(start, end + 1);
+  }
 
   let obj;
   try {
