@@ -310,6 +310,7 @@ onAuthStateChanged(auth, async u => {
     loadScrapeStatus();
     loadErrors();
     loadGlossary();
+    loadAiIntelStatus();
     loadAiIntelDigest();
     loadAiIntelItems('all');
     loadAiIntelRejected();
@@ -838,8 +839,40 @@ window.toggleAiIntelRejected = function () {
   if (el) el.classList.toggle('hidden');
 };
 
+// 运行报告（meta/ai_intel_status）——紧凑显示在标题旁：完成时间 + 成功/失败 + 关键计数
+window.loadAiIntelStatus = async function () {
+  const whenEl = document.getElementById('aiIntelWhen');
+  if (!whenEl) return;
+  try {
+    const snap = await getDoc(doc(db, 'meta', 'ai_intel_status'));
+    if (!snap.exists()) {
+      whenEl.textContent = '暂无运行记录';
+      return;
+    }
+    const r = snap.data();
+    const t = r.finished_at?.toDate?.();
+    const tt = r.totals || {};
+    const okBadge = r.ok
+      ? '<span class="tag" style="background:#dcfce7;color:#15803d">成功</span>'
+      : '<span class="tag" style="background:#fee2e2;color:#b91c1c">失败</span>';
+    const bits = [
+      `新增 ${tt.inserted ?? 0}`,
+      `过滤 ${tt.filtered_out ?? 0}`,
+    ];
+    if (tt.bad_json) bits.push(`<span style="color:#ea580c">坏JSON ${tt.bad_json}</span>`);
+    if (tt.llm_error) bits.push(`<span style="color:#dc2626">LLM错 ${tt.llm_error}</span>`);
+    if (tt.failed_fetch) bits.push(`<span style="color:#dc2626">抓取失败 ${tt.failed_fetch}</span>`);
+    whenEl.innerHTML =
+      (t ? '完成于 ' + t.toLocaleString('zh-CN') : '') + ' ' + okBadge + ' · ' + bits.join(' ');
+  } catch (err) {
+    whenEl.textContent = '运行状态读取失败';
+    console.error('loadAiIntelStatus:', err.message);
+  }
+};
+
 window.reloadAiIntel = function () {
   aiIntelItemsCache = null; // 强制刷新时清缓存，重新查库
+  loadAiIntelStatus();
   loadAiIntelDigest();
   loadAiIntelItems(aiIntelTheme);
   loadAiIntelRejected();
