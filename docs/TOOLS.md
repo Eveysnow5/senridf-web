@@ -147,6 +147,28 @@
 
 ---
 
+## 6.5 ai-intel-scraper/ — 日本 AI 情报监控（内部工具）
+
+- **用途**：每周自动抓日本 AI 相关一手信源（陪伴/介护机器人、AI 硬件/半导体、政府政策与监管三主题），Qwen 判定主题 + 中文摘要入库，生成每周简报，后台展示。主用途：给半年度《日本生成式人工智能市场调研报告》攒研究素材（见记忆 `project_japan_ai_report`）；辅：Blog 选题。低频（周更）、重可追溯、宁缺毋滥。
+- **架构**：
+  - 爬虫：`scripts/ai-intel-scraper/`（`index.js` 编排；纯逻辑 `week.js`(ISO周次)/`parse.js`(RSS·Atom·官方列表页解析)/`relevance.js`(判定提示词+JSON解析兜底)/`digest.js`(简报提示词+防编造校验) 均有 `node --test`；`sources.js` 信源配置）
+  - 调度：GitHub Actions `.github/workflows/scrape-ai-intel.yml`，cron `0 20 * * 0`（周一 05:00 JST），仓库护栏 `if: github.repository == 'sherlockafa007/senridoufuu-web'` 只在源仓库跑
+  - 存储：Firestore `ai_intel`（主库，url_hash 去重、只增不删）/ `ai_intel_rejected`（失败·过滤旁路，带 `expireAt` 6 个月 TTL）/ `ai_intel_digest/{周}`（每周简报）；运行报告写 **`meta/ai_intel_status`**（独立于招标的 `meta/scrape_status`，别混）
+  - 前端：`solutions/demo/admin.html`「AI 情报」卡片（最新简报 + 条目流按主题客户端筛选 + 待核实子区）
+- **用谁的 API**：**通义千问 Qwen**（qwen-plus，判定/摘要/简报）。数据源：ロボスタ/PR TIMES/ITmedia AI+/Preferred Networks/経産省 等（RSS 优先 + 官方列表页，见 `scripts/ai-intel-scraper/sources.js`）。
+- **所需设置**：复用 GitHub Secrets `QWEN_API_KEY` + `FIREBASE_SERVICE_ACCOUNT`（与招标爬虫同）。**Firebase 规则**需允许管理员读 `ai_intel`/`ai_intel_digest`/`ai_intel_rejected`（写由 Admin SDK 绕过规则）。`ai_intel_rejected` 按 `expireAt` 配 TTL（同 errors/visits，受 GCP 权限限制可暂缓，不影响功能）。
+- **关键设计**：
+  - **防编造纪律**（对齐半年报"榜单数字多被编造"教训）：简报只准归纳已入库条目，`digest.js` 的 `validateDigestCitations` 校验正文出现的 URL 是否都在库内，`citation_ok=false` 时后台提示人工核对；空简报响应抛错不落库。
+  - **判定缺正文会误判**：`parse.js` 从 RSS `<description>`/Atom `<summary>` 抽 `raw` 正文（去标签·截断500字）喂给判定，只靠标题+URL 判主题对短链接误判率高。
+  - **成本护栏**：每源单轮最多判定 `MAX_ITEMS_PER_SOURCE=40` 条（PR TIMES/ITmedia 是全行业消防栓 feed，防首轮/大窗口白烧 qwen-plus）。
+  - **简报按周全量构建**：`weekItems` 只作"本轮有无新增"触发信号，简报按 `where('week','==',本周)` 全量入库条目构建，同周重试不会用更少条目覆盖更全的简报。
+  - **失败不静默**：判定/解析失败或被过滤的条目不进主库，改写旁路 `ai_intel_rejected`（带 `reason`+`raw_snippet`）供人工核实与诊断，不直接丢弃。
+- **维护注意**：`sources.js` 里 feed URL 可能失效/改版——某源连续 `failed` 或 `found:0` 时 curl 复核、必要时替换；政策列表页 `linkSelector` 站点改版可能失配。政府站（meti.go.jp）需完整桌面浏览器 UA 才不被 403（已内置 `USER_AGENT` 常量）。
+- **修改记录**：
+  - 2026-08-01：上线（爬虫 + 周更 workflow + admin 卡片）。设计见 `docs/specs/2026-07-31-ai-intel-monitor-design.md`，计划见 `docs/plans/2026-07-31-ai-intel-monitor-plan.md`。子代理驱动开发 + 双轮审查，整体审查抓出并修了 5 处集成/成本问题（判定缺正文、无每源上限、简报按周全量、空简报兜底、bad_json 计数）。**上线前人工挂账**：Firebase 加三集合读规则；本地实跑 `node index.js` 一次看三主题抓取质量与简报 `citation_ok`；`sources.js` 各源冒烟。镜像恢复后才随 push 上线。
+
+---
+
 ## 后端 Functions 一览（`functions/api/`）
 
 | 文件 | 作用 | 用谁的 API |
