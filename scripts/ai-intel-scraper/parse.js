@@ -8,20 +8,32 @@ function toIso(str) {
   return isNaN(d.getTime()) ? null : d.toISOString();
 }
 
-// 解析 RSS 2.0 或 Atom feed → [{ title, url, published_at }]。
+// feed 正文（description/summary）清洗：去 HTML 标签、折叠空白、截断 500 字。空则 ''。
+// 供判定用——只靠标题+URL 判主题对 METI 短链接/PR TIMES 泛标题误判率高，正文能显著提精度。
+function cleanRaw(s) {
+  if (!s) return '';
+  return s
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 500);
+}
+
+// 解析 RSS 2.0 或 Atom feed → [{ title, url, published_at, raw }]。
 function parseFeed(xml) {
   const $ = cheerio.load(xml, { xmlMode: true });
   const items = [];
 
-  // RSS 2.0: <item><title/><link/><pubDate/>
+  // RSS 2.0: <item><title/><link/><pubDate/><description/>
   $('item').each((_, el) => {
     const title = $(el).find('title').first().text().trim();
     const url = $(el).find('link').first().text().trim();
     const pub = $(el).find('pubDate').first().text().trim();
-    if (title && url) items.push({ title, url, published_at: toIso(pub) });
+    const desc = $(el).find('description').first().text();
+    if (title && url) items.push({ title, url, published_at: toIso(pub), raw: cleanRaw(desc) });
   });
 
-  // Atom: <entry><title/><link href=.../><updated|published/>
+  // Atom: <entry><title/><link href=.../><updated|published/><summary|content/>
   $('entry').each((_, el) => {
     const title = $(el).find('title').first().text().trim();
     const href =
@@ -30,7 +42,10 @@ function parseFeed(xml) {
       '';
     const pub =
       $(el).find('updated').first().text().trim() || $(el).find('published').first().text().trim();
-    if (title && href) items.push({ title, url: href.trim(), published_at: toIso(pub) });
+    const summary = $(el).find('summary').first().text() || $(el).find('content').first().text();
+    if (title && href) {
+      items.push({ title, url: href.trim(), published_at: toIso(pub), raw: cleanRaw(summary) });
+    }
   });
 
   return items;
