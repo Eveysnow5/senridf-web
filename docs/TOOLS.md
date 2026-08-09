@@ -129,6 +129,7 @@
 - **用谁的 API**：**通义千问 Qwen**（qwen-plus，生成中文摘要 + 判断是否为招标）。数据源：各市政府网站。
 - **所需设置**：GitHub Secrets（Qwen key、Firebase Admin 凭证）；Firestore 规则（**管理后台读 `meta/scrape_status` 需允许管理员读 `meta` 集合**）。
 - **维护注意**：
+  - ⚠️ **2026-08-09 修**：页面内联 `<style>` 里曾有 `.hidden{display:none}`，而该 `<style>` 排在 `tailwind.min.css` 的 `<link>` 之后，同特异性下后者胜出 → `class="hidden md:block"` 的桌面表格在所有宽度被摁死；≥768px 时手机卡片又被 `md:hidden` 藏起来，结果整片空白（筛选和「共 N 条」正常，只有列表不见）。**这是 `5d6a5a0` Play CDN 换静态 CSS 埋的**：CDN 时代样式由脚本运行时注入、排在内联 `<style>` 之后，`md:block` 本来是赢的。教训：**别在页面内联 `<style>` 里重复定义 Tailwind 已有的工具类**。
   - 吹田市 URL（`1042102`/`1042103`）是令和8年度专属，每年 4 月新年度需更新。
   - 爬虫**只新增、从不删除**——过期标的会一直留在 Firestore。**决定保留不清理**（数据量小，作为后续分析素材；删除也有误删风险，2026-06-21 决定）。
   - GitHub Secrets（`FIREBASE_SERVICE_ACCOUNT`/`QWEN_API_KEY`）**不跨仓库同步**：定时任务靠 workflow 里的 `if: github.repository == 'sherlockafa007/senridoufuu-web'` 护栏，只在源仓库跑。

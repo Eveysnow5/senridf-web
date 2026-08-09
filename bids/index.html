@@ -10,7 +10,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
-    .hidden { display: none; }
+    /* 不要在这里定义 .hidden —— 本 <style> 排在 tailwind.min.css 的 <link> 之后，
+       同特异性下后者失效：`class="hidden md:block"` 的元素会在所有宽度被摁成
+       display:none（表格永远不显示，≥768px 时手机卡片又被 md:hidden 藏起来 = 整片空白）。
+       Tailwind 已提供 .hidden，无需重复定义。2026-07-26 Play CDN 换静态 CSS 时踩过。 */
     .filter-btn.active { border-color: #6366f1; background: #eef2ff; color: #4338ca; }
   </style>
 </head>
