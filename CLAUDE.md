@@ -62,4 +62,4 @@ The legacy `netlify/` directory and `netlify.toml` are dead leftovers from befor
 
 ## Deployment
 
-Static site auto-deployed via Cloudflare Pages. Push to GitHub `main` → a synced fork builds on the connected Cloudflare account → `senridf.com`. Pushes do not go live instantly; the sync + build must run. The bid-scraper workflow is guarded with `if: github.repository == '...'` so only the source repo runs it (synced copies skip it). See `docs/TOOLS.md` for per-tool details.
+Static site auto-deployed via Cloudflare Pages. Push to GitHub `main` → a synced fork builds on the connected Cloudflare account → `senridf.com`. Pushes do not go live instantly; the sync + build must run. The bid-scraper workflow is guarded with `if: github.repository == '...'` so only the source repo runs it (synced copies skip it). Per-tool details live in `docs/TOOLS.md`, which is **not in this repository** — `docs/` was split out into the private repo `sherlockafa007/senridoufuu-docs` on 2026-08-09 and is gitignored here. It sits at the same path on disk; commit it with `./docs-sync.sh`.

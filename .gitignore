@@ -23,9 +23,11 @@ Thumbs.db
 # Local tool config (contains API keys)
 tools/document-analyzer/config.json
 
-# 本地工作交接文档（不同步到部署仓库）
-docs/WORKLOG.md
+# 内部文档整体分离到私有仓库 sherlockafa007/senridoufuu-docs（2026-08-09）
+# 原因：plans/specs 里逐条写着哪些弱点还没修，TOOLS.md 里有管理员邮箱和 Worker
+# 地址，这些不该公开。本目录在磁盘上仍是 docs/，只是归属另一个（私有）仓库，
+# 读写路径不变。提交文档用项目根目录的 docs-sync.sh。
+docs/
 
 # 历史游离文档（勿再提交）
 FINAL_VERIFICATION.md
-docs/TASK_*.md
