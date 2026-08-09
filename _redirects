@@ -4,7 +4,17 @@
 # 本站的 publish 目录就是仓库根目录，所以仓库里提交了什么，默认就能通过
 # https://www.senridf.com/<仓库内路径> 直接访问到。实测 /docs/TOOLS.md、
 # /workers/sdf-admin/src/index.js、/.github/workflows/sync-upstream.yml 等
-# 全部返回 200。这些是开发期文件，不属于网站内容，下面统一挡成 404。
+# 全部返回 200。这些是开发期文件，不属于网站内容，下面统一打到 404 页面。
+#
+# 【为什么是 302 而不是 404 —— 别再改回去】
+# Cloudflare Pages 的 _redirects **不支持 404 状态码**（官方文档把
+# `/blog/* /blog/404.html 404` 明确列为不支持），而且**格式不合法的行会被静默忽略**，
+# 不报错、不构建失败——写错了唯一的症状就是"规则像不存在一样"。只支持
+# 301/302/303/307/308 和 200(proxy)。所以这里用 302 打到 404 页面：
+# 内容一样访问不到，只是响应状态是 302 而非 404。
+#
+# 【目标为什么写 /404 而不是 /404.html】
+# Pages 会把 /404.html 308 跳到无扩展名的 /404，直接写 /404 少一跳。
 #
 # 【这个文件挡不住什么 —— 重要】
 # 它只关掉 senridf.com 这一个入口。源仓库 sherlockafa007/senridoufuu-web 和
@@ -14,23 +24,23 @@
 # 【维护提醒】新增了不属于网站的顶层目录时，记得来这里补一条。
 
 # --- 内部文档（架构说明、实施方案、工具档案） ---
-/docs/*             /404.html   404
+/docs/*             /404   302
 
 # --- 非本站运行时的源码（Worker 单独 wrangler 部署；爬虫在 GitHub Actions 里跑） ---
-/workers/*          /404.html   404
-/scripts/*          /404.html   404
-/tests/*            /404.html   404
+/workers/*          /404   302
+/scripts/*          /404   302
+/tests/*            /404   302
 
 # --- CI 配置与仓库元信息 ---
-/.github/*          /404.html   404
-/.gitignore         /404.html   404
+/.github/*          /404   302
+/.gitignore         /404   302
 
 # --- 开发期工具链配置（不进部署产物，但会被一起提交） ---
-/package.json       /404.html   404
-/package-lock.json  /404.html   404
-/eslint.config.js   /404.html   404
-/tailwind.config.js /404.html   404
-/.prettierrc.json   /404.html   404
-/.prettierignore    /404.html   404
-/CLAUDE.md          /404.html   404
-/README.md          /404.html   404
+/package.json       /404   302
+/package-lock.json  /404   302
+/eslint.config.js   /404   302
+/tailwind.config.js /404   302
+/.prettierrc.json   /404   302
+/.prettierignore    /404   302
+/CLAUDE.md          /404   302
+/README.md          /404   302
