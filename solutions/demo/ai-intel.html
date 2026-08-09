@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 情报 · 千里同風</title>
+<link rel="stylesheet" href="/css/tailwind.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Noto+Sans+SC:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
+.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px 24px; }
+/* AI_THEME 用内联 bg/color 覆盖具体配色，这里只定形状 */
+.tag { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 500; }
+/* Auth overlays —— 与运行监控页同款 */
+.ag-overlay { position:fixed;inset:0;z-index:200;align-items:center;justify-content:center;background:rgba(28,25,20,.8); }
+#gate { display:flex;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px); }
+#noPerm { display:none; }
+.ag-box { background:#fff;border-radius:16px;padding:44px 36px;text-align:center; }
+.ag-box--login { max-width:360px;width:calc(100% - 40px);box-shadow:0 20px 60px rgba(0,0,0,.25); }
+.ag-box--noperm { max-width:340px;width:calc(100% - 40px); }
+.ag-icon { font-size:36px;margin-bottom:14px; }
+.ag-title { font-weight:600; }
+.ag-title--login { font-size:17px;margin-bottom:6px; }
+.ag-title--noperm { font-size:16px;margin-bottom:8px; }
+.ag-desc { font-size:13px;color:#9ca3af; }
+.ag-desc--login { margin-bottom:22px; }
+.ag-desc--noperm { margin-bottom:20px; }
+.ag-input { display:block;width:100%;padding:10px 12px;margin-bottom:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;font-family:inherit; }
+.ag-error { font-size:12px;min-height:16px;margin-bottom:8px;color:#ef4444; }
+.ag-btn-login { display:block;width:100%;padding:12px;background:#1e293b;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit; }
+.ag-btn-noperm { padding:10px 24px;background:#f3f4f6;color:#374151;border:none;border-radius:8px;font-size:14px;cursor:pointer; }
+#dashboard { display:none; }
+</style>
+</head>
+<body class="bg-gray-50">
+
+<!-- Header -->
+<header class="bg-white border-b border-gray-200 h-14 flex items-center px-6 sticky top-0 z-10">
+  <div class="flex items-center gap-3 flex-1">
+    <a href="/" class="text-gray-300 font-light text-lg hover:text-gray-600 transition-colors" title="返回主页">千里同風</a>
+    <span class="text-gray-200">·</span>
+    <span class="text-gray-700 font-medium text-sm">管理后台 · AI 情报</span>
+  </div>
+  <div class="flex items-center gap-3">
+    <a href="/solutions/demo/admin.html" class="text-xs px-3 py-1.5 rounded border border-blue-200 text-blue-500 hover:bg-blue-50 transition-colors">📊 运行监控</a>
+    <a href="/admin/" class="text-xs px-3 py-1.5 rounded border border-blue-200 text-blue-500 hover:bg-blue-50 transition-colors">✎ 内容编辑</a>
+    <a href="/admin/blog/" class="text-xs px-3 py-1.5 rounded border border-blue-200 text-blue-500 hover:bg-blue-50 transition-colors">✍ Blog</a>
+    <span id="adminEmail" class="text-xs text-gray-400 hidden sm:block"></span>
+    <button id="logoutBtn" type="button" class="text-xs px-3 py-1.5 rounded border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors">退出</button>
+  </div>
+</header>
+
+<!-- Auth Gate -->
+<div id="gate" class="ag-overlay">
+  <div class="ag-box ag-box--login">
+    <div class="ag-icon">🔐</div>
+    <h2 class="ag-title ag-title--login">管理员登录</h2>
+    <p class="ag-desc ag-desc--login">仅限授权管理员访问</p>
+    <input id="ge" type="email" placeholder="邮箱地址" class="ag-input">
+    <input id="gp" type="password" placeholder="密码" class="ag-input">
+    <div id="gm" class="ag-error"></div>
+    <button id="glogin" type="button" class="ag-btn-login">登录</button>
+  </div>
+</div>
+
+<!-- No Permission -->
+<div id="noPerm" class="ag-overlay">
+  <div class="ag-box ag-box--noperm">
+    <div class="ag-icon">🚫</div>
+    <h2 class="ag-title ag-title--noperm">无访问权限</h2>
+    <p class="ag-desc ag-desc--noperm">此页面仅限管理员查看。</p>
+    <button id="noPermLogout" type="button" class="ag-btn-noperm">退出登录</button>
+  </div>
+</div>
+
+<!-- Loading -->
+<div id="loading" class="flex items-center justify-center h-64">
+  <div class="text-gray-400 text-sm">加载中...</div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard" class="max-w-5xl mx-auto px-4 py-6">
+
+  <!-- AI Intel -->
+  <div class="card mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <div class="text-sm font-medium text-gray-700">AI 情报</div>
+      <div class="flex items-center gap-2">
+        <span id="aiIntelWhen" class="text-xs text-gray-400"></span>
+        <button onclick="reloadAiIntel()" type="button" class="text-xs px-3 py-1.5 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">↻ 刷新</button>
+      </div>
+    </div>
+
+    <!-- Digest -->
+    <div class="text-xs font-medium text-gray-500 mb-2">本周简报</div>
+    <div id="aiIntelDigest" class="mb-4">
+      <div class="text-gray-400 text-xs py-2">加载中…</div>
+    </div>
+
+    <!-- Item stream -->
+    <div class="flex items-center gap-2 mb-3 flex-wrap">
+      <button data-theme="all" onclick="loadAiIntelItems('all')" type="button" class="text-xs px-3 py-1.5 rounded bg-indigo-600 text-white transition-colors">全部</button>
+      <button data-theme="companion" onclick="loadAiIntelItems('companion')" type="button" class="text-xs px-3 py-1.5 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">陪伴</button>
+      <button data-theme="hardware" onclick="loadAiIntelItems('hardware')" type="button" class="text-xs px-3 py-1.5 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">硬件</button>
+      <button data-theme="policy" onclick="loadAiIntelItems('policy')" type="button" class="text-xs px-3 py-1.5 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">政策</button>
+    </div>
+    <div id="aiIntelList" class="mb-4">
+      <div class="text-gray-400 text-xs py-2">加载中…</div>
+    </div>
+
+    <!-- To-verify (待核实) -->
+    <div class="flex items-center justify-between mb-2">
+      <button onclick="toggleAiIntelRejected()" type="button" class="text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors">待核实 <span id="aiIntelRejectedCount" class="text-gray-400"></span></button>
+    </div>
+    <div id="aiIntelRejectedList" class="hidden">
+      <div class="text-gray-400 text-xs py-2">加载中…</div>
+    </div>
+  </div>
+
+
+</div>
+
+<script type="module">
+import { auth, db } from '/js/shared/firebase-init.js';
+import { initErrorReporting } from '/js/shared/report-error.js';
+import { ADMINS } from '/js/shared/admins.js';
+import {onAuthStateChanged,signInWithEmailAndPassword,signOut} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import {collection,getDocs,query,orderBy,limit,doc,getDoc} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+initErrorReporting({ db });
+
+const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// ── Auth State ────────────────────────────────────────────────────────────────
+onAuthStateChanged(auth, async u => {
+  try {
+    if (!u) {
+      showGate();
+      return;
+    }
+    if (!ADMINS.includes(u.email)) {
+      document.getElementById('gate').style.display = 'none';
+      document.getElementById('noPerm').style.display = 'flex';
+      return;
+    }
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('adminEmail').textContent = u.email;
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadAiIntelStatus();
+    loadAiIntelDigest();
+    loadAiIntelItems('all');
+    loadAiIntelRejected();
+  } catch (e) {
+    console.error('[auth]', e);
+    showGate();
+  }
+});
+
+function showGate() {
+  document.getElementById('gate').style.display = 'flex';
+  document.getElementById('loading').style.display = 'none';
+}
+
+function gm(txt, ok) {
+  const e = document.getElementById('gm');
+  e.textContent = txt;
+  e.style.color = ok ? '#10b981' : '#ef4444';
+}
+
+document.getElementById('glogin').onclick = async () => {
+  try {
+    await signInWithEmailAndPassword(auth, document.getElementById('ge').value.trim(), document.getElementById('gp').value);
+  } catch {
+    gm('邮箱或密码错误，请重试。');
+  }
+};
+
+document.getElementById('logoutBtn').onclick = () => signOut(auth);
+document.getElementById('noPermLogout').onclick = () => signOut(auth);
+
+// ── AI 情报 ─────────────────────────────────────────────────────────────────────
+const AI_THEME = {
+  companion: { label: '陪伴', bg: '#fce7f3', color: '#9d174d' },
+  hardware: { label: '硬件', bg: '#ede9fe', color: '#5b21b6' },
+  policy: { label: '政策', bg: '#dbeafe', color: '#1e40af' },
+};
+let aiIntelTheme = 'all';
+
+// 简报（最新一周）——若无 marked 渲染器则以纯文本 pre 呈现，绝不引新 CDN
+window.loadAiIntelDigest = async function () {
+  const el = document.getElementById('aiIntelDigest');
+  if (!el) return;
+  el.innerHTML = '<div class="text-gray-400 text-xs py-2">加载中…</div>';
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'ai_intel_digest'), orderBy('week', 'desc'), limit(1)),
+    );
+    if (snap.empty) {
+      el.innerHTML = '<div class="text-gray-400 text-xs py-2">本周暂无简报</div>';
+      return;
+    }
+    const d = snap.docs[0].data();
+    el.innerHTML = '';
+    const head = document.createElement('div');
+    head.className = 'text-sm font-medium text-gray-700 mb-2';
+    head.textContent = '【' + (d.week || '') + '】';
+    el.appendChild(head);
+    const pre = document.createElement('pre');
+    pre.className = 'text-xs text-gray-600 mb-2';
+    pre.style.whiteSpace = 'pre-wrap';
+    pre.style.fontFamily = 'inherit';
+    pre.textContent = d.body_md || '';
+    el.appendChild(pre);
+    if (d.citation_ok === false) {
+      const warn = document.createElement('div');
+      warn.className = 'text-xs text-red-500';
+      warn.textContent = '⚠ 简报含未匹配链接，请人工核对';
+      el.appendChild(warn);
+    }
+  } catch (err) {
+    console.error(err);
+    el.innerHTML = `<div class="text-red-400 text-xs py-2">加载失败：${esc(err.message)}</div>`;
+  }
+};
+
+// XSS 安全：Firestore 字段（含被抓取的标题）一律走 textContent / createElement，不 innerHTML 注入
+function renderAiIntelItem(d) {
+  const wrap = document.createElement('div');
+  wrap.className = 'py-2.5 border-b border-gray-50 last:border-0';
+  const top = document.createElement('div');
+  top.className = 'flex items-center gap-2 mb-1';
+  const tm = AI_THEME[d.theme];
+  const tag = document.createElement('span');
+  tag.className = 'tag';
+  tag.style.background = tm ? tm.bg : '#f3f4f6';
+  tag.style.color = tm ? tm.color : '#374151';
+  tag.textContent = tm ? tm.label : d.theme || '其他';
+  top.appendChild(tag);
+  const safeUrl = /^https?:\/\//i.test(d.url || '') ? d.url : '';
+  const title = document.createElement(safeUrl ? 'a' : 'span');
+  title.className = safeUrl ? 'text-xs font-medium text-blue-500' : 'text-xs font-medium text-gray-700';
+  if (safeUrl) {
+    title.href = safeUrl;
+    title.target = '_blank';
+    title.rel = 'noopener';
+  }
+  title.textContent = d.title || '(无标题)';
+  top.appendChild(title);
+  wrap.appendChild(top);
+  if (d.summary_zh) {
+    const sum = document.createElement('div');
+    sum.className = 'text-xs text-gray-600 mb-1';
+    sum.textContent = d.summary_zh;
+    wrap.appendChild(sum);
+  }
+  const meta = document.createElement('div');
+  meta.className = 'text-xs text-gray-400';
+  meta.textContent = [d.source, d.week].filter(Boolean).join(' · ');
+  wrap.appendChild(meta);
+  return wrap;
+}
+
+// 条目流（可按 theme 过滤）
+// 采用客户端过滤：只发一条不带 where 的 orderBy('fetched_at') 查询取回前 200 条并缓存，
+// theme 过滤在内存中做。这样避免 where('theme')+orderBy('fetched_at') 所需的 Firestore 复合索引。
+let aiIntelItemsCache = null;
+function renderAiIntelList(el) {
+  const rows =
+    aiIntelTheme && aiIntelTheme !== 'all'
+      ? aiIntelItemsCache.filter((d) => d.theme === aiIntelTheme)
+      : aiIntelItemsCache;
+  if (!rows.length) {
+    el.innerHTML = '<div class="text-gray-400 text-xs py-2">暂无情报条目</div>';
+    return;
+  }
+  el.innerHTML = '';
+  rows.forEach((d) => el.appendChild(renderAiIntelItem(d)));
+}
+window.loadAiIntelItems = async function (theme) {
+  const el = document.getElementById('aiIntelList');
+  if (!el) return;
+  aiIntelTheme = theme || 'all';
+  document.querySelectorAll('[data-theme]').forEach((b) => {
+    const active = b.getAttribute('data-theme') === aiIntelTheme;
+    b.className = active
+      ? 'text-xs px-3 py-1.5 rounded bg-indigo-600 text-white transition-colors'
+      : 'text-xs px-3 py-1.5 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors';
+  });
+  // 已有缓存时切换 theme 无需再查库，直接客户端过滤重渲染
+  if (aiIntelItemsCache) {
+    renderAiIntelList(el);
+    return;
+  }
+  el.innerHTML = '<div class="text-gray-400 text-xs py-2">加载中…</div>';
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'ai_intel'), orderBy('fetched_at', 'desc'), limit(200)),
+    );
+    aiIntelItemsCache = snap.docs.map((s) => s.data());
+    renderAiIntelList(el);
+  } catch (err) {
+    console.error(err);
+    el.innerHTML = `<div class="text-red-400 text-xs py-2">加载失败：${esc(err.message)}</div>`;
+  }
+};
+
+function renderAiIntelRejected(d) {
+  const wrap = document.createElement('div');
+  wrap.className = 'py-2.5 border-b border-gray-50 last:border-0';
+  const top = document.createElement('div');
+  top.className = 'flex items-center gap-2 mb-1';
+  const reason = document.createElement('span');
+  reason.className = 'tag';
+  reason.style.background = '#fee2e2';
+  reason.style.color = '#b91c1c';
+  reason.textContent = d.reason || '未知';
+  top.appendChild(reason);
+  const title = document.createElement('span');
+  title.className = 'text-xs font-medium text-gray-700';
+  title.textContent = d.title || '(无标题)';
+  top.appendChild(title);
+  wrap.appendChild(top);
+  const meta = document.createElement('div');
+  meta.className = 'text-xs text-gray-400';
+  meta.textContent = d.source || '';
+  wrap.appendChild(meta);
+  if (/^https?:\/\//i.test(d.url || '')) {
+    const a = document.createElement('a');
+    a.className = 'text-xs text-blue-500';
+    a.href = d.url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.textContent = d.url;
+    wrap.appendChild(a);
+  }
+  return wrap;
+}
+
+// 待核实（quarantine）
+window.loadAiIntelRejected = async function () {
+  const el = document.getElementById('aiIntelRejectedList');
+  const cntEl = document.getElementById('aiIntelRejectedCount');
+  if (!el) return;
+  el.innerHTML = '<div class="text-gray-400 text-xs py-2">加载中…</div>';
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'ai_intel_rejected'), orderBy('fetched_at', 'desc'), limit(100)),
+    );
+    if (cntEl) cntEl.textContent = '(' + snap.size + ')';
+    if (snap.empty) {
+      el.innerHTML = '<div class="text-gray-400 text-xs py-2">暂无待核实条目</div>';
+      return;
+    }
+    el.innerHTML = '';
+    snap.docs.forEach((s) => el.appendChild(renderAiIntelRejected(s.data())));
+  } catch (err) {
+    console.error(err);
+    if (cntEl) cntEl.textContent = '';
+    el.innerHTML = `<div class="text-red-400 text-xs py-2">加载失败：${esc(err.message)}</div>`;
+  }
+};
+
+window.toggleAiIntelRejected = function () {
+  const el = document.getElementById('aiIntelRejectedList');
+  if (el) el.classList.toggle('hidden');
+};
+
+// 运行报告（meta/ai_intel_status）——紧凑显示在标题旁：完成时间 + 成功/失败 + 关键计数
+window.loadAiIntelStatus = async function () {
+  const whenEl = document.getElementById('aiIntelWhen');
+  if (!whenEl) return;
+  try {
+    const snap = await getDoc(doc(db, 'meta', 'ai_intel_status'));
+    if (!snap.exists()) {
+      whenEl.textContent = '暂无运行记录';
+      return;
+    }
+    const r = snap.data();
+    const t = r.finished_at?.toDate?.();
+    const tt = r.totals || {};
+    const okBadge = r.ok
+      ? '<span class="tag" style="background:#dcfce7;color:#15803d">成功</span>'
+      : '<span class="tag" style="background:#fee2e2;color:#b91c1c">失败</span>';
+    const bits = [
+      `新增 ${tt.inserted ?? 0}`,
+      `过滤 ${tt.filtered_out ?? 0}`,
+    ];
+    if (tt.bad_json) bits.push(`<span style="color:#ea580c">坏JSON ${tt.bad_json}</span>`);
+    if (tt.llm_error) bits.push(`<span style="color:#dc2626">LLM错 ${tt.llm_error}</span>`);
+    if (tt.failed_fetch) bits.push(`<span style="color:#dc2626">抓取失败 ${tt.failed_fetch}</span>`);
+    whenEl.innerHTML =
+      (t ? '完成于 ' + t.toLocaleString('zh-CN') : '') + ' ' + okBadge + ' · ' + bits.join(' ');
+  } catch (err) {
+    whenEl.textContent = '运行状态读取失败';
+    console.error('loadAiIntelStatus:', err.message);
+  }
+};
+
+window.reloadAiIntel = function () {
+  aiIntelItemsCache = null; // 强制刷新时清缓存，重新查库
+  loadAiIntelStatus();
+  loadAiIntelDigest();
+  loadAiIntelItems(aiIntelTheme);
+  loadAiIntelRejected();
+};
+</script>
+</body>
+</html>

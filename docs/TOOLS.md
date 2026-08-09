@@ -154,7 +154,8 @@
   - 爬虫：`scripts/ai-intel-scraper/`（`index.js` 编排；纯逻辑 `week.js`(ISO周次)/`parse.js`(RSS·Atom·官方列表页解析)/`relevance.js`(判定提示词+JSON解析兜底)/`digest.js`(简报提示词+防编造校验) 均有 `node --test`；`sources.js` 信源配置）
   - 调度：GitHub Actions `.github/workflows/scrape-ai-intel.yml`，cron `0 20 * * 0`（周一 05:00 JST），仓库护栏 `if: github.repository == 'sherlockafa007/senridoufuu-web'` 只在源仓库跑
   - 存储：Firestore `ai_intel`（主库，url_hash 去重、只增不删）/ `ai_intel_rejected`（失败·过滤旁路，带 `expireAt` 6 个月 TTL）/ `ai_intel_digest/{周}`（每周简报）；运行报告写 **`meta/ai_intel_status`**（独立于招标的 `meta/scrape_status`，别混）
-  - 前端：`solutions/demo/admin.html`「AI 情报」卡片（最新简报 + 条目流按主题客户端筛选 + 待核实子区）
+  - 前端：**独立页面 `solutions/demo/ai-intel.html`**（最新简报 + 条目流按主题客户端筛选 + 待核实子区）。2026-08-09 从 `solutions/demo/admin.html` 的一张卡片拆出来独立成页，与「运行监控」并列；两页 header 互相有入口，`/admin/` 导航也加了一项。拆分原因：情报内容与用户管理/访问统计混在一页，阅读时互相干扰。
+  - ⚠️ 该页用 Tailwind，**新增 Tailwind 页面必须加进 `tailwind.config.js` 的 `content` 数组**并重跑 `npm run build:css` 提交 `css/tailwind.min.css`，否则 class 被 purge 掉、页面裸奔，且 `npm run qa:css` 在 CI 报错。
 - **用谁的 API**：**通义千问 Qwen**（qwen-plus，判定/摘要/简报）。数据源：ロボスタ/PR TIMES/ITmedia AI+/Preferred Networks/経産省 等（RSS 优先 + 官方列表页，见 `scripts/ai-intel-scraper/sources.js`）。
 - **所需设置**：复用 GitHub Secrets `QWEN_API_KEY` + `FIREBASE_SERVICE_ACCOUNT`（与招标爬虫同）。**Firebase 规则**需允许管理员读 `ai_intel`/`ai_intel_digest`/`ai_intel_rejected`（写由 Admin SDK 绕过规则）。`ai_intel_rejected` 按 `expireAt` 配 TTL（同 errors/visits，受 GCP 权限限制可暂缓，不影响功能）。
 - **关键设计**：
