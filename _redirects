@@ -1,0 +1,36 @@
+# Cloudflare Pages 重定向规则（格式：来源路径  目标路径  状态码；从上往下第一条匹配的生效）
+#
+# 【为什么需要这个文件】
+# 本站的 publish 目录就是仓库根目录，所以仓库里提交了什么，默认就能通过
+# https://www.senridf.com/<仓库内路径> 直接访问到。实测 /docs/TOOLS.md、
+# /workers/sdf-admin/src/index.js、/.github/workflows/sync-upstream.yml 等
+# 全部返回 200。这些是开发期文件，不属于网站内容，下面统一挡成 404。
+#
+# 【这个文件挡不住什么 —— 重要】
+# 它只关掉 senridf.com 这一个入口。源仓库 sherlockafa007/senridoufuu-web 和
+# 部署仓库 Eveysnow5/senridf-web 目前都是 public，同样的内容在 GitHub 上任何人
+# 都能看到。真正不该外泄的东西不要靠这里兜底——要么别提交，要么把仓库转私有。
+#
+# 【维护提醒】新增了不属于网站的顶层目录时，记得来这里补一条。
+
+# --- 内部文档（架构说明、实施方案、工具档案） ---
+/docs/*             /404.html   404
+
+# --- 非本站运行时的源码（Worker 单独 wrangler 部署；爬虫在 GitHub Actions 里跑） ---
+/workers/*          /404.html   404
+/scripts/*          /404.html   404
+/tests/*            /404.html   404
+
+# --- CI 配置与仓库元信息 ---
+/.github/*          /404.html   404
+/.gitignore         /404.html   404
+
+# --- 开发期工具链配置（不进部署产物，但会被一起提交） ---
+/package.json       /404.html   404
+/package-lock.json  /404.html   404
+/eslint.config.js   /404.html   404
+/tailwind.config.js /404.html   404
+/.prettierrc.json   /404.html   404
+/.prettierignore    /404.html   404
+/CLAUDE.md          /404.html   404
+/README.md          /404.html   404
