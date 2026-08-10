@@ -84,6 +84,14 @@ export async function onRequest(context) {
         max_tokens: 6000,
         temperature: 0.2,
         stream: true,
+        // Same reason as translate-stream: Qwen3 models default to hybrid
+        // thinking on DashScope and stream the reasoning as
+        // `delta.reasoning_content` first. The client only renders
+        // `delta.content` (analysis.html), so the report appears to hang and
+        // then land all at once instead of streaming in — which defeats the
+        // point of a streaming endpoint. Reasoning tokens also count against
+        // the model's free quota while being discarded.
+        enable_thinking: false,
       }),
     });
 
