@@ -1,6 +1,7 @@
 // Cloudflare Pages Function — streaming translation proxy (SSE)
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
 import { buildGlossaryPrompt } from './_lib/buildGlossaryPrompt.js';
+import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -50,29 +51,26 @@ export async function onRequest(context) {
       ' Detect the input language and translate to the most appropriate target language among Japanese, Simplified Chinese, and English.');
 
   try {
-    const upstream = await fetchWithTimeout(
-      'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'qwen-turbo',
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt + buildGlossaryPrompt(glossary, translationContext),
-            },
-            ...messages,
-          ],
-          max_tokens: 400,
-          temperature: 0.1,
-          stream: true,
-        }),
+    const upstream = await fetchWithTimeout(CHAT_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
       },
-    );
+      body: JSON.stringify({
+        model: modelFor('translateStream', env),
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt + buildGlossaryPrompt(glossary, translationContext),
+          },
+          ...messages,
+        ],
+        max_tokens: 400,
+        temperature: 0.1,
+        stream: true,
+      }),
+    });
 
     if (!upstream.ok) {
       const err = await upstream.json().catch(() => ({}));

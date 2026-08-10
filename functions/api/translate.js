@@ -1,6 +1,7 @@
 // Cloudflare Pages Function — non-streaming translation proxy
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
 import { buildGlossaryPrompt } from './_lib/buildGlossaryPrompt.js';
+import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -63,28 +64,25 @@ Sole exception: if the user's message is explicitly a meeting-summary request (i
 Use formal, precise language. Never skip the 【回訳】 step for Chinese or Japanese input. Output nothing outside the specified format.`;
 
   try {
-    const upstream = await fetchWithTimeout(
-      'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'qwen-plus',
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt + buildGlossaryPrompt(glossary, translationContext),
-            },
-            ...messages,
-          ],
-          max_tokens: 2000,
-          temperature: 0.2,
-        }),
+    const upstream = await fetchWithTimeout(CHAT_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
       },
-    );
+      body: JSON.stringify({
+        model: modelFor('translate', env),
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt + buildGlossaryPrompt(glossary, translationContext),
+          },
+          ...messages,
+        ],
+        max_tokens: 2000,
+        temperature: 0.2,
+      }),
+    });
 
     const data = await upstream.json();
     if (!upstream.ok) {

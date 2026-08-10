@@ -1,5 +1,6 @@
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
 import { buildProofreadPrompt } from './_lib/buildProofreadPrompt.js';
+import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
 
 const MAX_CHARS = 20000;
 
@@ -32,21 +33,18 @@ export async function onRequest(context) {
   const reference = refTruncated ? refRaw.slice(0, MAX_CHARS) : refRaw;
 
   try {
-    const qwenRes = await fetchWithTimeout(
-      'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${context.env.QWEN_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'qwen-max',
-          messages: [{ role: 'user', content: buildProofreadPrompt(input, reference) }],
-          max_tokens: 6000,
-        }),
+    const qwenRes = await fetchWithTimeout(CHAT_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${context.env.QWEN_API_KEY}`,
+        'Content-Type': 'application/json',
       },
-    );
+      body: JSON.stringify({
+        model: modelFor('proofread', context.env),
+        messages: [{ role: 'user', content: buildProofreadPrompt(input, reference) }],
+        max_tokens: 6000,
+      }),
+    });
 
     if (!qwenRes.ok) {
       const err = await qwenRes.text();

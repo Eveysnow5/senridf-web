@@ -1,5 +1,6 @@
 // Cloudflare Pages Function — streaming proxy for DashScope analysis
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
+import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -68,26 +69,23 @@ export async function onRequest(context) {
   const userMessage = `以下是需要分析的财务文件内容（包含财务报表和MD&A）：\n\n${docContext}\n\n---\n\n分析要求：${(prompt || '').trim() || '请对以上财务报告进行深度对比分析，重点关注财务指标、增长趋势、盈利能力和管理层对经营的分析。'}`;
 
   try {
-    const upstream = await fetchWithTimeout(
-      'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'qwen-plus',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userMessage },
-          ],
-          max_tokens: 6000,
-          temperature: 0.2,
-          stream: true,
-        }),
+    const upstream = await fetchWithTimeout(CHAT_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
       },
-    );
+      body: JSON.stringify({
+        model: modelFor('analyze', env),
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage },
+        ],
+        max_tokens: 6000,
+        temperature: 0.2,
+        stream: true,
+      }),
+    });
 
     if (!upstream.ok) {
       const err = await upstream.json().catch(() => ({}));

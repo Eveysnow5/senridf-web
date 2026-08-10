@@ -1,17 +1,17 @@
 // Cloudflare Pages Function — lifestory interview actions
 import { buildProbePrompt, parseProbeJson } from './_lib/lifestory-probe.js';
-
-const QWEN_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
+import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
 
 async function qwen(apiKey, system, user, maxTokens = 800, temp = 0.7) {
-  const res = await fetch(QWEN_URL, {
+  const res = await fetch(CHAT_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'qwen-plus',
+      // No env override here: this helper is module-level and never receives env.
+      model: modelFor('lifestory'),
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: user },

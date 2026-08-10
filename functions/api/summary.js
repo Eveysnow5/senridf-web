@@ -1,5 +1,6 @@
 // Cloudflare Pages Function — meeting summary (JSON only; DOCX generated client-side)
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
+import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
 
 const SYS_SUMMARY =
   '你是会议纪要专家，擅长从多语对话（中文、日文或英文）中提取关键信息。\n\n' +
@@ -67,25 +68,22 @@ export async function onRequest(context) {
     .join('\n\n');
 
   try {
-    const upstream = await fetchWithTimeout(
-      'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'qwen-plus',
-          messages: [
-            { role: 'system', content: SYS_SUMMARY },
-            { role: 'user', content: `以下是会议对话：\n\n${dialogueText}` },
-          ],
-          max_tokens: 1500,
-          temperature: 0.5,
-        }),
+    const upstream = await fetchWithTimeout(CHAT_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
       },
-    );
+      body: JSON.stringify({
+        model: modelFor('summary', env),
+        messages: [
+          { role: 'system', content: SYS_SUMMARY },
+          { role: 'user', content: `以下是会议对话：\n\n${dialogueText}` },
+        ],
+        max_tokens: 1500,
+        temperature: 0.5,
+      }),
+    });
 
     const data = await upstream.json();
     if (!upstream.ok) {
