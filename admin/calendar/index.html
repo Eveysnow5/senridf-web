@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>AI Calendar | Senridf Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+JP:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/admin-calendar.css">
+</head>
+<body>
+  <main class="calendar-shell">
+    <header class="calendar-header">
+      <div class="calendar-brand">
+        <p class="calendar-brand__eyebrow">Private workspace</p>
+        <h1>AI Calendar</h1>
+      </div>
+      <div class="calendar-account">
+        <span id="signed-in-email"></span>
+        <button class="button button--quiet" id="logout" type="button">退出登录</button>
+      </div>
+    </header>
+
+    <section class="calendar-gate" id="calendar-gate" data-state="checking" aria-live="polite">
+      <div class="calendar-gate__card">
+        <div class="calendar-gate__mark" aria-hidden="true"></div>
+        <p id="gate-message">正在确认登录状态…</p>
+      </div>
+    </section>
+
+    <div id="calendar-app" hidden>
+      <div class="calendar-layout">
+        <section class="calendar-panel" aria-labelledby="month-title">
+          <header class="calendar-toolbar">
+            <h2 id="month-title"></h2>
+            <div class="calendar-toolbar__actions">
+              <button class="button" id="previous-month" type="button" aria-label="上个月">←</button>
+              <button class="button" id="today" type="button">今天</button>
+              <button class="button" id="next-month" type="button" aria-label="下个月">→</button>
+            </div>
+          </header>
+          <div class="calendar-weekdays" aria-hidden="true">
+            <span>日</span><span>月</span><span>火</span><span>水</span>
+            <span>木</span><span>金</span><span>土</span>
+          </div>
+          <div class="calendar-grid" id="calendar-grid" role="grid" aria-label="月历"></div>
+        </section>
+
+        <aside class="assistant-panel">
+          <p class="assistant-panel__label">AI assistant</p>
+          <h2>对我说日程</h2>
+          <p>先用语音告诉我。也可以用文字补充或修改，确认前不会保存。</p>
+
+          <form class="assistant-form" id="assistant-form">
+            <div class="assistant-form__voice assistant-form__voice--primary">
+              <select id="voice-language" aria-label="语音语言">
+                <option value="zh-CN">中文</option>
+                <option value="ja">日本語</option>
+                <option value="en-US">English</option>
+              </select>
+              <button class="button button--mic" id="voice-button" type="button" disabled>
+                <span aria-hidden="true">●</span> 按这里开始说话
+              </button>
+            </div>
+            <label for="event-input">识别出的文字（可以修改）</label>
+            <textarea id="event-input" maxlength="1000" rows="5" placeholder="例如：8月17日起，每周一到周五上午10点到12点在YWCA上课"></textarea>
+            <button class="button button--primary" id="parse-button" type="submit" disabled>让 AI 理解</button>
+          </form>
+
+          <p class="assistant-status" id="assistant-status" aria-live="polite"></p>
+
+          <section class="event-preview" id="event-preview" hidden aria-labelledby="preview-title">
+            <div class="event-preview__heading">
+              <p id="preview-type">日程预览</p>
+              <span id="preview-confidence"></span>
+            </div>
+            <h3 id="preview-title"></h3>
+            <dl>
+              <div><dt>日期</dt><dd id="preview-date"></dd></div>
+              <div><dt>时间</dt><dd id="preview-time"></dd></div>
+              <div><dt>地点</dt><dd id="preview-location"></dd></div>
+              <div><dt>分类</dt><dd id="preview-category"></dd></div>
+              <div><dt>子分类</dt><dd id="preview-subcategory"></dd></div>
+              <div><dt>备注</dt><dd id="preview-notes"></dd></div>
+              <div id="preview-repeat-row" hidden><dt>重复</dt><dd id="preview-repeat"></dd></div>
+              <div id="preview-range-row" hidden><dt>生效范围</dt><dd id="preview-range"></dd></div>
+            </dl>
+            <div class="event-preview__questions" id="preview-questions" hidden>
+              <strong>需要你确认</strong>
+              <ul id="preview-question-list"></ul>
+            </div>
+            <button class="button button--confirm" id="confirm-button" type="button" hidden>
+              确认并保存
+            </button>
+            <p class="event-preview__notice" id="preview-notice">确认前不会保存到 Calendar。</p>
+          </section>
+
+          <div class="assistant-panel__meta">
+            当前 Calendar 账号
+            <span id="calendar-account"></span>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="/js/admin/calendar/app.js"></script>
+</body>
+</html>
