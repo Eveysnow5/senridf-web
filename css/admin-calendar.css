@@ -21,6 +21,7 @@ body {
   color: var(--calendar-ink);
   background: var(--calendar-bg);
   font-family: Inter, "Noto Sans JP", "Noto Sans SC", sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
 
 button,
@@ -381,6 +382,19 @@ a {
   color: var(--calendar-danger);
 }
 
+.install-tip {
+  display: grid;
+  gap: 4px;
+  margin: 14px 0;
+  padding: 12px 14px;
+  border: 1px solid #cad9cf;
+  border-radius: 12px;
+  color: var(--calendar-accent);
+  background: var(--calendar-accent-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .voice-review {
   display: flex;
   align-items: center;
@@ -545,8 +559,9 @@ a {
 
 @media (max-width: 640px) {
   .calendar-shell {
-    width: min(100% - 20px, 1440px);
-    padding-top: 18px;
+    width: 100%;
+    padding: max(14px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+      max(28px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   }
 
   .calendar-header,
@@ -571,5 +586,10 @@ a {
 
   .calendar-cell {
     min-height: 92px;
+  }
+
+  .button--mic {
+    min-height: 58px;
+    font-size: 16px;
   }
 }

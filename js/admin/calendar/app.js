@@ -149,17 +149,19 @@ function renderSavedRules() {
 }
 
 async function exportRuleToAppleCalendar(rule) {
-  const { buildCalendarIcs, calendarIcsFilename } = await import('./ics.mjs');
-  const ics = buildCalendarIcs(rule, state.exceptions);
-  const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = calendarIcsFilename(rule);
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-  setAssistantStatus(`已生成“${rule.title}”的 Apple Calendar 文件。`);
+  const { openAppleCalendar } = await import('./platform/apple-calendar.mjs');
+  const result = openAppleCalendar(rule, state.exceptions);
+  setAssistantStatus(
+    result.opened
+      ? `正在打开 Apple 日历，请确认添加“${rule.title}”。`
+      : '请在 iPhone 的 AI Calendar 中点击这个按钮。电脑端不会下载文件。',
+    !result.opened,
+  );
+}
+
+async function showInstallTip() {
+  const { isAppleMobileDevice, isStandaloneWebApp } = await import('./platform/apple-calendar.mjs');
+  document.getElementById('install-tip').hidden = !isAppleMobileDevice() || isStandaloneWebApp();
 }
 
 async function deleteSavedRule(rule, button) {
@@ -542,6 +544,7 @@ async function initializeProductionSession() {
 
 bindCalendarControls();
 bindAssistantControls();
+showInstallTip();
 
 if (isLocalPreview()) {
   // Static local servers cannot run Cloudflare Pages Functions. This branch only

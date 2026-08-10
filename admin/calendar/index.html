@@ -4,11 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#1d3d2d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="AI Calendar">
   <title>AI Calendar | Senridf Admin</title>
+  <link rel="manifest" href="/admin/calendar/manifest.webmanifest">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/calendar/app-icon-180.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+JP:wght@500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/admin-calendar.css?v=20260810-2">
+  <link rel="stylesheet" href="/css/admin-calendar.css?v=20260810-3">
 </head>
 <body>
   <main class="calendar-shell">
@@ -52,6 +58,11 @@
           <p class="assistant-panel__label">AI assistant</p>
           <h2>对我说日程</h2>
           <p>先用语音告诉我。也可以用文字补充或修改，确认前不会保存。</p>
+
+          <div class="install-tip" id="install-tip" hidden>
+            <strong>放到 iPhone 桌面</strong>
+            <span>在 Safari 点“分享” →“添加到主屏幕”→ 打开为 Web App。</span>
+          </div>
 
           <form class="assistant-form" id="assistant-form">
             <div class="assistant-form__voice assistant-form__voice--primary">
@@ -116,6 +127,6 @@
     </div>
   </main>
 
-  <script type="module" src="/js/admin/calendar/app.js?v=20260810-2"></script>
+  <script type="module" src="/js/admin/calendar/app.js?v=20260810-3"></script>
 </body>
 </html>

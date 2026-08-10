@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { buildCalendarIcs, calendarIcsFilename } from '../js/admin/calendar/ics.mjs';
+import {
+  isAppleMobileDevice,
+  isStandaloneWebApp,
+} from '../js/admin/calendar/platform/apple-calendar.mjs';
 
 const rule = {
   id: 'rule-1',
@@ -48,4 +52,30 @@ test('Apple Calendar 文件把放假期间的上课日写为例外', () => {
 
 test('Apple Calendar 下载文件名过滤 Windows 非法字符', () => {
   assert.equal(calendarIcsFilename({ title: '日语/课程:测试' }), '日语-课程-测试.ics');
+});
+
+test('Apple Calendar 入口只在 iPhone 或 iPad 上直接打开', () => {
+  assert.equal(
+    isAppleMobileDevice({
+      userAgent: 'Mozilla/5.0 (iPhone)',
+      platform: 'iPhone',
+      maxTouchPoints: 5,
+    }),
+    true,
+  );
+  assert.equal(
+    isAppleMobileDevice({ userAgent: 'Mozilla/5.0 (Windows NT 10.0)', platform: 'Win32' }),
+    false,
+  );
+});
+
+test('可以识别从主屏幕启动的 Web App', () => {
+  assert.equal(
+    isStandaloneWebApp({ standalone: true }, () => ({ matches: false })),
+    true,
+  );
+  assert.equal(
+    isStandaloneWebApp({ standalone: false }, () => ({ matches: true })),
+    true,
+  );
 });

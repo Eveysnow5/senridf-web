@@ -1,0 +1,25 @@
+{
+  "name": "Senridf AI Calendar",
+  "short_name": "AI Calendar",
+  "description": "Voice-first AI calendar for personal schedules.",
+  "start_url": "/admin/calendar/",
+  "scope": "/admin/calendar/",
+  "display": "standalone",
+  "background_color": "#f4f6f2",
+  "theme_color": "#1d3d2d",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/assets/calendar/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/calendar/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
