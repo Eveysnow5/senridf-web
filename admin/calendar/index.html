@@ -69,6 +69,11 @@
             <button class="button button--primary" id="parse-button" type="submit" disabled>让 AI 理解</button>
           </form>
 
+          <div class="voice-review" id="voice-review" hidden>
+            <span>检查刚才的录音：</span>
+            <audio id="voice-playback" controls preload="metadata"></audio>
+          </div>
+
           <p class="assistant-status" id="assistant-status" aria-live="polite"></p>
 
           <section class="event-preview" id="event-preview" hidden aria-labelledby="preview-title">

@@ -9,6 +9,7 @@ let auth;
 let voiceRecorder;
 let voiceStream;
 let voiceChunks = [];
+let voicePlaybackUrl;
 
 function isLocalPreview() {
   return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -261,6 +262,10 @@ async function transcribeVoiceRecording(mimeType) {
     setAssistantStatus('麦克风没有录到声音，请检查权限。', true);
     return;
   }
+  if (voicePlaybackUrl) URL.revokeObjectURL(voicePlaybackUrl);
+  voicePlaybackUrl = URL.createObjectURL(audio);
+  document.getElementById('voice-playback').src = voicePlaybackUrl;
+  document.getElementById('voice-review').hidden = false;
   setAssistantStatus('正在把语音转换成文字…');
   const button = document.getElementById('voice-button');
   button.disabled = true;

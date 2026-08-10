@@ -381,6 +381,20 @@ a {
   color: var(--calendar-danger);
 }
 
+.voice-review {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  color: var(--calendar-muted);
+  font-size: 13px;
+}
+
+.voice-review audio {
+  width: min(100%, 320px);
+  height: 36px;
+}
+
 .event-preview {
   margin-top: 16px;
   padding: 18px;
