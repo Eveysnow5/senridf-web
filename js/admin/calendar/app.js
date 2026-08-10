@@ -177,6 +177,9 @@ function renderEventPreview(event) {
   document.getElementById('preview-notes').textContent = event.notes || '无';
   document.getElementById('preview-confidence').textContent =
     `AI 置信度 ${Math.round(event.confidence * 100)}%`;
+  const isException = event.intent === 'add_exception';
+  document.getElementById('preview-date-row').hidden = isException;
+  document.getElementById('preview-time-row').hidden = isException;
 
   const questions = document.getElementById('preview-questions');
   const list = document.getElementById('preview-question-list');
@@ -238,12 +241,18 @@ async function savePendingProposal() {
     renderMonth();
     button.hidden = true;
     document.getElementById('preview-notice').textContent = data.duplicate
-      ? '已有相同的重复日程，本次没有重复保存。'
+      ? data.saved.type === 'exception'
+        ? '已有相同的放假安排，本次没有重复保存。'
+        : '已有相同的重复日程，本次没有重复保存。'
       : data.saved.type === 'exception'
         ? '放假安排已保存，原来的重复课程规则仍然保留。'
         : '重复日程已经保存。';
     setAssistantStatus(
-      data.duplicate ? '发现相同日程，已阻止重复保存。' : '保存完成。你可以继续说下一条安排。',
+      data.duplicate
+        ? data.saved.type === 'exception'
+          ? '发现相同放假安排，已阻止重复保存。'
+          : '发现相同日程，已阻止重复保存。'
+        : '保存完成。你可以继续说下一条安排。',
     );
   } catch (error) {
     setAssistantStatus(error.message || '保存失败，请稍后重试。', true);

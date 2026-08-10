@@ -26,6 +26,15 @@ export function recurringRuleFingerprint(rule) {
   });
 }
 
+export function calendarExceptionFingerprint(exception) {
+  return JSON.stringify({
+    ruleId: exception.ruleId || null,
+    startDate: exception.startDate || null,
+    endDate: exception.endDate || null,
+    resumeDate: exception.resumeDate || null,
+  });
+}
+
 function json(status, body) {
   return new Response(JSON.stringify(body), {
     status,
@@ -127,6 +136,22 @@ export async function onRequest(context) {
         id: proposal.exception.ruleId,
       });
       if (!rule) return json(404, { error: '没有找到要暂停的重复日程' });
+
+      const existingExceptions = await listCalendarDocuments({
+        ...common,
+        collection: 'calendarExceptions',
+      });
+      const duplicate = existingExceptions.find(
+        (exception) =>
+          calendarExceptionFingerprint(exception) ===
+          calendarExceptionFingerprint(proposal.exception),
+      );
+      if (duplicate) {
+        return json(200, {
+          duplicate: true,
+          saved: { type: 'exception', value: duplicate },
+        });
+      }
 
       const saved = await saveCalendarDocument({
         ...common,
