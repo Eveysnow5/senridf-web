@@ -37,7 +37,10 @@ export async function onRequest(context) {
       method: 'POST',
       headers: {
         Authorization: `Token ${apiKey}`,
-        'Content-Type': contentType,
+        // Deepgram detects the Opus codec from the WebM container. Sending the
+        // base media type is more broadly compatible than forwarding codec
+        // parameters produced by individual browsers.
+        'Content-Type': contentType.split(';')[0],
       },
       body: audio,
     });
