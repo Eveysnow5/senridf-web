@@ -366,18 +366,29 @@
       border-top: 1px solid var(--c-border-light);
       padding: 14px 0 24px;
     }
+    /* Live partial transcript: single line, clipped, so a long utterance cannot
+       reflow the bar while the user is speaking. */
     .voice-interim-line {
       font-family: var(--f-sans);
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
       font-weight: 300;
       color: var(--c-text-3);
-      min-height: 22px;
+      min-height: 24px;
       margin-bottom: 14px;
       letter-spacing: 0.03em;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    /* Status / error messages are NOT live transcript: they must wrap, because
+       clipping them to one line hid the whole reason a session failed. */
+    .voice-interim-line--msg {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      line-height: 1.6;
+    }
+    .voice-interim-line--error { color: #b04040; }
     /* Cap the control row: the markers are `flex:1`, so on the full tool width
        they would stretch to ~800px each and squeeze the side buttons into an
        unreadable sliver. Buttons stay left-aligned with the feed. */
@@ -1126,6 +1137,18 @@
       }
     };
 
+    /* Single writer for the interim line. `kind` decides whether the text is
+       treated as live transcript (clipped to one line) or as a status/error
+       message (allowed to wrap, so long API errors stay readable).
+       Runtime voice messages in this file are bilingual ja/zh literals rather
+       than i18n keys — that is the existing convention here, kept for
+       consistency; the i18n'd strings are the static ones with data-i18n. */
+    function setInterim(text, kind = 'live') {
+      elInterim.textContent = text;
+      elInterim.classList.toggle('voice-interim-line--msg', kind !== 'live');
+      elInterim.classList.toggle('voice-interim-line--error', kind === 'error');
+    }
+
     async function prewarmToken() {
       if (isLocal || cachedToken) return;
       if (!(await window.sdfGetToken?.())) return;   // not signed in yet
@@ -1222,7 +1245,7 @@
     function toggleSpeaker(spk) {
       if (!hasGetUserMedia) return;
       if (isLocal) {
-        elInterim.textContent = '本地环境不支持语音功能 / ローカル環境では音声機能を使用できません';
+        setInterim('本地环境不支持语音功能 / ローカル環境では音声機能を使用できません', 'status');
         return;
       }
       if (activeSpeaker === spk) {
@@ -1256,7 +1279,7 @@
       currentMarker = (spk === 'A') ? "我说" : "对方说";
       setMicState(spk, true);
       isStopping = false;
-      elInterim.textContent = '接続中… / 连接中…';
+      setInterim('接続中… / 连接中…', 'status');
       try {
         const tokenPromise = cachedToken
           ? Promise.resolve({ access_token: cachedToken })
@@ -1292,7 +1315,7 @@
         );
 
         dgSocket.onopen = () => {
-          elInterim.textContent = { ja:'聴いています…', zh:'正在听…', en:'Listening…' }[speakerLang[spk]] || '聴いています…';
+          setInterim({ ja:'聴いています…', zh:'正在听…', en:'Listening…' }[speakerLang[spk]] || '聴いています…', 'status');
           const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
             ? 'audio/webm;codecs=opus' : 'audio/webm';
           mediaRecorder = new MediaRecorder(audioStream, { mimeType: mime });
@@ -1314,11 +1337,11 @@
           if (data.is_final) {
             pendingBuffer += transcript + ' ';
           }
-          elInterim.textContent = (pendingBuffer + (data.is_final ? '' : transcript)).trim();
+          setInterim((pendingBuffer + (data.is_final ? '' : transcript)).trim(), 'live');
         };
 
         dgSocket.onerror = () => {
-          elInterim.textContent = 'WebSocket エラー / WebSocket错误';
+          setInterim('WebSocket エラー / WebSocket错误', 'error');
         };
 
         dgSocket.onclose = () => {
@@ -1344,7 +1367,7 @@
         const msg = err.name === 'NotAllowedError'
           ? 'マイクへのアクセスが拒否されました。ブラウザの設定で許可してください。/ 麦克风权限被拒绝，请在浏览器设置中允许访问。'
           : `エラー: ${err.message}`;
-        elInterim.textContent = msg;
+        setInterim(msg, 'error');
       }
     }
 
@@ -1367,7 +1390,17 @@
       const text = pendingBuffer.trim();
       const spk  = activeSpeaker;
       pendingBuffer = '';
-      if (text) sendToTranslate(text, spk);
+      if (text) {
+        sendToTranslate(text, spk);
+      } else {
+        // Deepgram returned no final transcript. Previously this branch did not
+        // exist, so the session ended in complete silence: no entry, no error,
+        // no hint — indistinguishable from the tool being broken.
+        setInterim(
+          '音声を認識できませんでした。マイクの入力と権限をご確認ください。 / 没有识别到语音，请检查麦克风输入和权限。',
+          'error',
+        );
+      }
       finishStop();
     }
 
@@ -1395,7 +1428,7 @@
         elMarkerMeStatus.textContent = currentMarker === "我说" ? '选中' : '未选中';
         elMarkerThemStatus.textContent = currentMarker === "对方说" ? '选中' : '未选中';
       }
-      if (!recording) elInterim.textContent = '';
+      if (!recording) setInterim('', 'live');
     }
 
     async function sendToTranslate(text, spk) {
@@ -1502,7 +1535,7 @@
       voiceHistory = [];
       pendingBuffer = '';
       elVoiceStream.innerHTML = '';
-      elInterim.textContent = '';
+      setInterim('', 'live');
       elVoiceCount.textContent = '0 件';
     });
 
