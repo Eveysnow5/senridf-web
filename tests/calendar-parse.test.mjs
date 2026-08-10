@@ -181,10 +181,32 @@ test('用户明确说出唯一已有日程名称时自动关联放假规则', ()
     [{ id: 'rule-1', title: '日语课', location: 'YWCA' }],
   );
   assert.equal(event.exception.ruleId, 'rule-1');
-  assert.equal(event.title, '日语课放假');
+  assert.equal(event.title, '日语课');
   assert.equal(event.location, 'YWCA');
   assert.equal(event.needsConfirmation, false);
   assert.deepEqual(event.confirmationQuestions, []);
+});
+
+test('AI 已返回日程编号时仍使用已保存日程的真实名称', () => {
+  const event = resolveCalendarExceptionRule(
+    {
+      ...completeEvent,
+      intent: 'add_exception',
+      title: '未识别日程',
+      needsConfirmation: false,
+      confirmationQuestions: [],
+      exception: {
+        ruleId: 'rule-swim',
+        startDate: '2026-09-20',
+        endDate: '2026-10-05',
+        resumeDate: '2026-10-06',
+      },
+    },
+    '游泳课9月20日到10月5日暂停',
+    [{ id: 'rule-swim', title: '游泳课', location: '扇町' }],
+  );
+  assert.equal(event.title, '游泳课');
+  assert.equal(event.location, '扇町');
 });
 
 test('没有明确说出日程名称时不擅自关联', () => {

@@ -89,21 +89,28 @@ export function buildCalendarParsePrompt(text, now = tokyoNow(), knownRules = []
 }
 
 export function resolveCalendarExceptionRule(event, text, knownRules = []) {
-  if (event.intent !== 'add_exception' || !event.exception || event.exception.ruleId) return event;
-  const normalizedInput = String(text || '').toLocaleLowerCase();
-  const matches = knownRules.filter((rule) => {
-    const title = String(rule.title || '')
-      .trim()
-      .toLocaleLowerCase();
-    return title && normalizedInput.includes(title);
-  });
-  if (matches.length !== 1) return event;
+  if (event.intent !== 'add_exception' || !event.exception) return event;
+
+  let matchedRule = event.exception.ruleId
+    ? knownRules.find((rule) => rule.id === event.exception.ruleId)
+    : null;
+  if (!matchedRule) {
+    const normalizedInput = String(text || '').toLocaleLowerCase();
+    const matches = knownRules.filter((rule) => {
+      const title = String(rule.title || '')
+        .trim()
+        .toLocaleLowerCase();
+      return title && normalizedInput.includes(title);
+    });
+    if (matches.length !== 1) return event;
+    [matchedRule] = matches;
+  }
 
   const resolved = {
     ...event,
-    title: `${matches[0].title}放假`,
-    location: matches[0].location || event.location,
-    exception: { ...event.exception, ruleId: matches[0].id },
+    title: matchedRule.title,
+    location: matchedRule.location || event.location,
+    exception: { ...event.exception, ruleId: matchedRule.id },
   };
   if (resolved.exception.startDate && resolved.exception.endDate) {
     resolved.needsConfirmation = false;
