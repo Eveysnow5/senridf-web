@@ -55,10 +55,17 @@ export const CHAT_ENDPOINT = 'https://dashscope.aliyuncs.com/compatible-mode/v1/
 // Excluded regardless of quota: *-ocr and qwen-vl-* (OCR/vision),
 // qwen-math-turbo (maths), kimi-k2-thinking and qwen3-vl-*-thinking (reasoning
 // models — latency is unacceptable for live interpretation), kimi-k2.7-code.
+// `batch` is for the unattended nightly scrapers. It gets its own model on
+// purpose: they run in bulk every night and would otherwise drain the same
+// bucket the interactive tools depend on during the day. It stays inside the
+// Qwen family rather than moving to deepseek/glm because the bid summaries must
+// keep hitting a strict 【内容】【发注元】【截标】 format unattended, and a
+// silent format drift there lands straight in the user-facing bids table.
 export const TIERS = {
   strong: 'qwen3.8-max',
   balanced: 'qwen3.7-plus-2026-05-26',
   fast: 'qwen3.7-flash',
+  batch: 'qwen3.7-max-2026-06-08',
 };
 
 // Which tier each task needs, and why. This is the durable record of intent:
@@ -71,9 +78,14 @@ export const TASK_TIER = {
   analyze: 'balanced', // cross-document report, long output
   proofread: 'strong', // deep semantic proofreading
   lifestory: 'balanced', // interview → narrative
+  // Nightly GitHub Actions scrapers (scripts/*), not Pages Functions.
+  bidSummary: 'batch', // per-bid Japanese → Chinese summary, strict format
+  aiIntel: 'batch', // relevance judgment + weekly digest
 };
 
 // Per-task env override, e.g. QWEN_MODEL_TRANSLATE_STREAM=qwen-turbo.
+// The scrapers pass process.env, so their two keys can be set from the workflow
+// file or repository secrets — which, unlike the Pages env, we control.
 const ENV_KEY = {
   translate: 'QWEN_MODEL_TRANSLATE',
   translateStream: 'QWEN_MODEL_TRANSLATE_STREAM',
@@ -81,6 +93,8 @@ const ENV_KEY = {
   analyze: 'QWEN_MODEL_ANALYZE',
   proofread: 'QWEN_MODEL_PROOFREAD',
   lifestory: 'QWEN_MODEL_LIFESTORY',
+  bidSummary: 'QWEN_MODEL_BID_SUMMARY',
+  aiIntel: 'QWEN_MODEL_AI_INTEL',
 };
 
 /**

@@ -2,6 +2,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const { createHash } = require('crypto');
 const admin = require('firebase-admin');
+const { loadModelConfig } = require('../_lib/model-config');
 const {
   isClosed,
   detectToyonakaCategory,
@@ -141,10 +142,11 @@ async function translate(bid) {
 【发注元】发注单位的中文译名
 【截标】截止日期（用中文表达，如"2026年3月12日（星期三）下午2时"；若信息中确无截止日期则写"信息未提供"）`;
 
+  const { CHAT_ENDPOINT, modelFor } = await loadModelConfig();
   const res = await axios.post(
-    'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+    CHAT_ENDPOINT,
     {
-      model: 'qwen-plus',
+      model: modelFor('bidSummary', process.env),
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 300,
     },

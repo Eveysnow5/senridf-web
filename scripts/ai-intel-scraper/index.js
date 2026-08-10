@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { createHash } = require('crypto');
 const admin = require('firebase-admin');
+const { loadModelConfig } = require('../_lib/model-config');
 const SOURCES = require('./sources');
 const { parseFeed, parseListLinks } = require('./parse');
 const { isoWeek } = require('./week');
@@ -46,10 +47,11 @@ async function fetchSource(src) {
 
 // ── Qwen 调用 ────────────────────────────────────────────────────────────────
 async function qwen(prompt, maxTokens, timeout) {
+  const { CHAT_ENDPOINT, modelFor } = await loadModelConfig();
   const res = await axios.post(
-    'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+    CHAT_ENDPOINT,
     {
-      model: 'qwen-plus',
+      model: modelFor('aiIntel', process.env),
       messages: [{ role: 'user', content: prompt }],
       max_tokens: maxTokens,
     },

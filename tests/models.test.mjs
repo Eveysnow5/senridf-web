@@ -3,9 +3,40 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { modelFor, TIERS, TASK_TIER } from '../functions/api/_lib/models.js';
+import { CHAT_ENDPOINT, modelFor, TIERS, TASK_TIER } from '../functions/api/_lib/models.js';
 
-const TASKS = ['translate', 'translateStream', 'summary', 'analyze', 'proofread', 'lifestory'];
+const TASKS = [
+  'translate',
+  'translateStream',
+  'summary',
+  'analyze',
+  'proofread',
+  'lifestory',
+  'bidSummary',
+  'aiIntel',
+];
+
+// 被护栏扫描的目录：所有会调用大模型的生产代码。
+// 刻意不含 tools/document-analyzer（纯本地独立工具，设计成免安装运行、
+// 不参与部署）和 workers/sdf-admin（独立 Worker，需 wrangler deploy，
+// 尚未接入共享配置——见 docs/TOOLS.md）。
+const SCANNED_DIRS = [
+  '../functions/api/',
+  '../scripts/bid-scraper/',
+  '../scripts/ai-intel-scraper/',
+];
+
+function sourcesUnderScan() {
+  const out = [];
+  for (const rel of SCANNED_DIRS) {
+    const dir = new URL(rel, import.meta.url);
+    for (const name of readdirSync(dir)) {
+      if (!name.endsWith('.js')) continue;
+      out.push({ label: rel + name, src: readFileSync(new URL(name, dir), 'utf8') });
+    }
+  }
+  return out;
+}
 
 test('每个任务都解析出非空模型 id', () => {
   for (const task of TASKS) {
@@ -50,52 +81,58 @@ test('未知任务直接抛错，不静默返回 undefined', () => {
   assert.throws(() => modelFor('nope'), /Unknown model task/);
 });
 
-// 回归护栏：模型 id 曾经硬编码在 6 个端点里，配额耗尽时要逐个文件改、
-// 容易漏。这条测试保证没人把它重新写回去。
-test('functions/api 下没有任何硬编码的 qwen 模型 id', () => {
-  const dir = new URL('../functions/api/', import.meta.url);
-  const offenders = [];
-  for (const name of readdirSync(dir)) {
-    if (!name.endsWith('.js')) continue;
-    const src = readFileSync(new URL(name, dir), 'utf8');
+// 回归护栏：模型 id 和端点 URL 曾经硬编码在 8 个地方（6 个 Pages Function
+// + 2 个爬虫），配额耗尽时要逐个文件改、极容易漏。以下三条保证没人写回去。
+test('生产代码里没有任何硬编码的 qwen 模型 id', () => {
+  const offenders = sourcesUnderScan()
     // 只查“把模型名直接写在请求体里”，注释里列候选模型是允许的
-    if (/model:\s*['"`]/.test(src)) offenders.push(name);
-  }
+    .filter(({ src }) => /model:\s*['"`]/.test(src))
+    .map(({ label }) => label);
   assert.deepEqual(offenders, [], `这些文件仍在硬编码 model：${offenders.join(', ')}`);
 });
 
-// 集中化之后端点里已经不再出现供应商域名，所以不能再拿域名当筛选条件——
+// 集中化之后调用方里已经不再出现供应商域名，所以不能拿域名当筛选条件——
 // 那样条件永远不成立，测试会空转通过。改成以 CHAT_ENDPOINT 的使用者为准，
-// 并断言这个集合非空，避免"没有文件匹配 => 通过"。
-test('每个调用大模型的端点都同时用了 CHAT_ENDPOINT 和 modelFor', () => {
-  const dir = new URL('../functions/api/', import.meta.url);
-  const callers = [];
-  const missing = [];
-  for (const name of readdirSync(dir)) {
-    if (!name.endsWith('.js')) continue;
-    const src = readFileSync(new URL(name, dir), 'utf8');
-    if (!src.includes('CHAT_ENDPOINT')) continue;
-    callers.push(name);
-    if (!src.includes('modelFor(')) missing.push(name);
-  }
-  assert.ok(callers.length >= 6, `只找到 ${callers.length} 个调用方，断言可能已失效`);
+// 并断言这个集合非空，避免“没有文件匹配 => 通过”。
+test('每个调用大模型的地方都同时用了 CHAT_ENDPOINT 和 modelFor', () => {
+  const callers = sourcesUnderScan().filter(({ src }) => src.includes('CHAT_ENDPOINT'));
+  const missing = callers.filter(({ src }) => !src.includes('modelFor(')).map(({ label }) => label);
+  assert.ok(callers.length >= 8, `只找到 ${callers.length} 个调用方，断言可能已失效`);
   assert.deepEqual(
     missing,
     [],
-    `这些端点用了 CHAT_ENDPOINT 但没用 modelFor：${missing.join(', ')}`,
+    `这些地方用了 CHAT_ENDPOINT 但没用 modelFor：${missing.join(', ')}`,
   );
 });
 
 // 供应商迁移（百炼 → 硅基流动）时，URL 必须只有一处需要改。
 test('供应商 URL 只出现在 models.js 里', () => {
-  const dir = new URL('../functions/api/', import.meta.url);
-  const offenders = [];
-  for (const name of readdirSync(dir)) {
-    if (!name.endsWith('.js')) continue;
-    const src = readFileSync(new URL(name, dir), 'utf8');
-    if (/https:\/\/[^\s'"`]*\/(v1|compatible-mode\/v1)\/chat\/completions/.test(src)) {
-      offenders.push(name);
-    }
-  }
+  const offenders = sourcesUnderScan()
+    .filter(({ src }) =>
+      /https:\/\/[^\s'"`]*\/(v1|compatible-mode\/v1)\/chat\/completions/.test(src),
+    )
+    .map(({ label }) => label);
   assert.deepEqual(offenders, [], `这些文件硬编码了 chat/completions URL：${offenders.join(', ')}`);
+});
+
+// 爬虫是 CommonJS，共享配置是 ESM，中间靠 scripts/_lib/model-config.js 的
+// 动态 import 桥接。这个桥是新机制，而且只在夜间定时任务里跑——坏了不会有人
+// 立刻发现，所以这里直接把它加载一遍。
+test('CJS → ESM 桥能真的加载到共享配置', async () => {
+  const { createRequire } = await import('node:module');
+  const require = createRequire(import.meta.url);
+  const { loadModelConfig } = require('../scripts/_lib/model-config.js');
+
+  const cfg = await loadModelConfig();
+  assert.equal(cfg.CHAT_ENDPOINT, CHAT_ENDPOINT, '桥拿到的端点应与直接 import 的一致');
+  assert.equal(cfg.modelFor('bidSummary'), TIERS.batch);
+  assert.equal(cfg.modelFor('aiIntel'), TIERS.batch);
+  // 爬虫传的是 process.env，覆盖必须走得通
+  assert.equal(cfg.modelFor('aiIntel', { QWEN_MODEL_AI_INTEL: 'x' }), 'x');
+  assert.equal(await loadModelConfig(), cfg, '应缓存同一个模块实例');
+});
+
+test('两个爬虫任务都在 batch 档（不与交互工具抢同一个额度桶）', () => {
+  assert.equal(TASK_TIER.bidSummary, 'batch');
+  assert.equal(TASK_TIER.aiIntel, 'batch');
 });
