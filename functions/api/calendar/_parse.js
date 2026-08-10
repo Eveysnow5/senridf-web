@@ -101,6 +101,8 @@ export function resolveCalendarExceptionRule(event, text, knownRules = []) {
 
   const resolved = {
     ...event,
+    title: `${matches[0].title}放假`,
+    location: matches[0].location || event.location,
     exception: { ...event.exception, ruleId: matches[0].id },
   };
   if (resolved.exception.startDate && resolved.exception.endDate) {

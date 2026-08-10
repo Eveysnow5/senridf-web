@@ -178,9 +178,11 @@ test('用户明确说出唯一已有日程名称时自动关联放假规则', ()
       },
     },
     '日语课9月20日开始放假，10月6日开学',
-    [{ id: 'rule-1', title: '日语课' }],
+    [{ id: 'rule-1', title: '日语课', location: 'YWCA' }],
   );
   assert.equal(event.exception.ruleId, 'rule-1');
+  assert.equal(event.title, '日语课放假');
+  assert.equal(event.location, 'YWCA');
   assert.equal(event.needsConfirmation, false);
   assert.deepEqual(event.confirmationQuestions, []);
 });
