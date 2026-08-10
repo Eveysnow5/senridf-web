@@ -12,11 +12,22 @@
   <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.4.12/dist/purify.min.js" integrity="sha384-piCcpDdJ7qVeK4Tv8Z6Hpcr3ZBIgP16TxQTPVfsLFdZ5uDgwc3Y8Ho7oUnqf12qu" crossorigin="anonymous"></script>
   <style>
-    /* ── Layout ── */
+    /* ── Layout ──
+       This tool is a single column whose main output is long-form markdown, so
+       it deliberately runs narrower than translation.html: at the full 1824px a
+       line of CJK prose is ~78 characters, far past a comfortable measure.
+       Overriding the tokens on `main` keeps the page header aligned with the
+       work area (the shared .page-header--tool / .section--tool read them).
+       Keep inner = max - 2 * --page-px. */
+    main {
+      --tool-max-w: 1176px;
+      --tool-inner-w: 1080px;
+    }
+    /* Width and bottom padding come from .section--tool. */
     .an-wrap {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 0 var(--page-px) 96px;
+      max-width: none;
+      margin: 0;
+      padding: 0;
     }
 
     /* ── Notice ── */
@@ -39,9 +50,9 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
       font-family: var(--f-mono);
-      font-size: 0.625rem;
+      font-size: 0.6875rem;
       letter-spacing: 0.24em;
       color: var(--c-text-3);
       text-transform: uppercase;
@@ -141,7 +152,7 @@
     }
     .an-file-chars {
       font-family: var(--f-mono);
-      font-size: 0.5625rem;
+      font-size: 0.625rem;
       letter-spacing: 0.15em;
       color: var(--c-text-3);
       flex-shrink: 0;
@@ -166,27 +177,27 @@
     }
     .an-prompt-label {
       font-family: var(--f-mono);
-      font-size: 0.5625rem;
+      font-size: 0.6875rem;
       letter-spacing: 0.24em;
       text-transform: uppercase;
       color: var(--c-text-3);
       margin-bottom: 12px;
     }
     .an-prompt-label span {
-      font-size: 0.5rem;
+      font-size: 0.625rem;
       opacity: 0.7;
     }
     .an-prompt-input {
       width: 100%;
-      min-height: 88px;
-      padding: 16px;
+      min-height: 160px;
+      padding: 18px 20px;
       border: 1px solid var(--c-border);
       background: var(--c-surface);
       font-family: var(--f-sans);
-      font-size: 0.9375rem;
+      font-size: 1.0625rem;
       font-weight: 300;
       color: var(--c-text-1);
-      line-height: 1.7;
+      line-height: 1.8;
       resize: vertical;
       box-sizing: border-box;
       transition: border-color 0.2s;
@@ -206,7 +217,7 @@
     }
     .an-action-btn {
       font-family: var(--f-mono);
-      font-size: 0.5625rem;
+      font-size: 0.6875rem;
       letter-spacing: 0.2em;
       text-transform: uppercase;
       padding: 12px 28px;
@@ -235,7 +246,7 @@
     }
     .an-result-header {
       font-family: var(--f-mono);
-      font-size: 0.5625rem;
+      font-size: 0.6875rem;
       letter-spacing: 0.24em;
       text-transform: uppercase;
       color: var(--c-text-3);
@@ -246,7 +257,7 @@
       align-items: center;
       gap: 10px;
       font-family: var(--f-mono);
-      font-size: 0.5625rem;
+      font-size: 0.75rem;
       letter-spacing: 0.2em;
       color: var(--c-text-3);
       text-transform: uppercase;
@@ -274,14 +285,14 @@
     /* ── Report typography ── */
     .an-report {
       font-family: var(--f-sans);
-      font-size: 0.9375rem;
+      font-size: 1.0625rem;
       font-weight: 300;
       color: var(--c-text-1);
       line-height: 1.85;
     }
     .an-report h3 {
       font-family: var(--f-serif);
-      font-size: 1.125rem;
+      font-size: 1.3125rem;
       font-weight: 400;
       color: var(--c-text-1);
       margin: 2em 0 0.75em;
@@ -291,7 +302,7 @@
     .an-report h3:first-child { margin-top: 0; }
     .an-report h4 {
       font-family: var(--f-sans);
-      font-size: 0.9375rem;
+      font-size: 1.0625rem;
       font-weight: 500;
       color: var(--c-text-1);
       margin: 1.5em 0 0.5em;
@@ -308,7 +319,7 @@
       width: 100%;
       border-collapse: collapse;
       margin: 1.25em 0;
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
       display: block;
       overflow-x: auto;
     }
@@ -430,20 +441,20 @@
   <div id="nav-placeholder"></div>
 
   <main>
-    <div class="page-header">
+    <div class="page-header page-header--tool">
       <div class="page-header__container">
         <div data-animate>
           <span class="section__eyebrow">分析ツール / 分析工具</span>
           <h1 class="section__title">文書分析 · 比較レポート</h1>
           <p class="section__lead">
-            複数の PDF・Word・Excel を読み込み、AI が内容を横断分析してレポートを生成します。<br>
+            複数の PDF・Word・Excel を読み込み、AI が内容を横断分析してレポートを生成します。
             <span class="an-hint">上传多份文件，AI 跨文件交叉分析，生成对比报告。</span>
           </p>
         </div>
       </div>
     </div>
 
-    <section class="section">
+    <section class="section section--tool">
       <div class="an-wrap">
 
         <!-- Local preview notice -->

@@ -28,6 +28,11 @@
   --nav-h:       72px;
   --max-w:       1280px;
   --page-px:     48px;
+  /* Tool pages (demo tools) use a wider work area than marketing pages.
+     --tool-inner-w must equal --tool-max-w minus 2x --page-px so the page
+     header title aligns with the tool's left edge. */
+  --tool-max-w:   1920px;
+  --tool-inner-w: 1824px;
 
   /* Easing */
   --ease:        cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -555,6 +560,23 @@ main { padding-top: var(--nav-h); }
 .page-header__container {
   max-width: var(--max-w);
   margin: 0 auto;
+}
+
+/* Tool-page variants: marketing pages want generous brand whitespace, tool
+   pages want the work area. Same components, tighter vertical rhythm. */
+.page-header--tool {
+  padding: 40px var(--page-px) 28px;
+}
+.page-header--tool .page-header__container { max-width: var(--tool-inner-w); }
+.page-header--tool .section__title { margin-bottom: 14px; }
+.page-header--tool .section__lead { margin-bottom: 0; max-width: 760px; }
+.section--tool {
+  padding: 32px var(--page-px) 96px;
+  max-width: var(--tool-max-w);
+}
+@media (max-width: 768px) {
+  .page-header--tool { padding: 28px var(--page-px) 20px; }
+  .section--tool { padding: 24px var(--page-px) 64px; }
 }
 
 /* === TEAM === */
