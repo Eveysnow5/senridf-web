@@ -311,9 +311,7 @@ async function startVoiceCapture() {
     voiceRecorder.onstop = () => {
       transcribeVoiceRecording(mimeType);
     };
-    // Flush short chunks while recording so Chrome produces a complete WebM
-    // file even when the user stops after only a few seconds.
-    voiceRecorder.start(250);
+    voiceRecorder.start();
     button.disabled = false;
     button.classList.add('is-recording');
     button.innerHTML = '<span aria-hidden="true">●</span> 停止录音';
