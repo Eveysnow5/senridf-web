@@ -473,6 +473,43 @@ a {
   font-size: 11px;
 }
 
+.saved-rules {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--calendar-line);
+}
+
+.saved-rules h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.saved-rule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--calendar-line);
+}
+
+.saved-rule__details {
+  display: grid;
+  gap: 3px;
+}
+
+.saved-rule__details span {
+  color: var(--calendar-muted);
+  font-size: 11px;
+}
+
+.saved-rule__delete {
+  flex: none;
+  border-color: #e3b7b4;
+  color: var(--calendar-danger);
+  background: #fff;
+}
+
 @media (max-width: 920px) {
   .calendar-layout {
     grid-template-columns: 1fr;

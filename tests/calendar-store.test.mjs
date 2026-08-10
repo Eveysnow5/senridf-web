@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  deleteCalendarDocument,
   getCalendarDocument,
   listCalendarDocuments,
   saveCalendarDocument,
@@ -110,4 +111,22 @@ test('Firestore 拒绝写入时明确失败', async () => {
       }),
     /write failed \(403\)/,
   );
+});
+
+test('删除路径只使用已验证用户的 uid', async () => {
+  let requestedUrl;
+  let requestedMethod;
+  await deleteCalendarDocument({
+    request,
+    user,
+    collection: 'calendarRules',
+    id: 'rule-1',
+    fetchImpl: async (url, options) => {
+      requestedUrl = url;
+      requestedMethod = options.method;
+      return new Response(null, { status: 200 });
+    },
+  });
+  assert.match(requestedUrl, /\/users\/user-a\/calendarRules\/rule-1$/);
+  assert.equal(requestedMethod, 'DELETE');
 });

@@ -112,6 +112,49 @@ async function loadSavedSchedule() {
   const schedule = await calendarApi('/schedule');
   state.rules = schedule.rules;
   state.exceptions = schedule.exceptions;
+  renderSavedRules();
+}
+
+function renderSavedRules() {
+  const section = document.getElementById('saved-rules');
+  const list = document.getElementById('saved-rules-list');
+  list.replaceChildren();
+  section.hidden = state.rules.length === 0;
+  state.rules.forEach((rule) => {
+    const row = document.createElement('div');
+    row.className = 'saved-rule';
+    const details = document.createElement('div');
+    details.className = 'saved-rule__details';
+    const title = document.createElement('strong');
+    title.textContent = rule.title;
+    const time = document.createElement('span');
+    time.textContent = `${rule.recurrence.startTime}–${rule.recurrence.endTime} · ${recurrenceDescription(rule.recurrence)}`;
+    details.append(title, time);
+    const button = document.createElement('button');
+    button.className = 'button saved-rule__delete';
+    button.type = 'button';
+    button.textContent = '删除';
+    button.addEventListener('click', () => deleteSavedRule(rule, button));
+    row.append(details, button);
+    list.appendChild(row);
+  });
+}
+
+async function deleteSavedRule(rule, button) {
+  if (!window.confirm(`确定删除“${rule.title}”吗？`)) return;
+  button.disabled = true;
+  setAssistantStatus(`正在删除“${rule.title}”…`);
+  try {
+    await calendarApi(`/schedule?id=${encodeURIComponent(rule.id)}`, { method: 'DELETE' });
+    state.rules = state.rules.filter((item) => item.id !== rule.id);
+    state.exceptions = state.exceptions.filter((item) => item.ruleId !== rule.id);
+    renderSavedRules();
+    renderMonth();
+    setAssistantStatus(`“${rule.title}”已经删除。`);
+  } catch (error) {
+    button.disabled = false;
+    setAssistantStatus(error.message || '删除失败，请重试。', true);
+  }
 }
 
 function renderEventPreview(event) {
@@ -191,6 +234,7 @@ async function savePendingProposal() {
       if (data.saved.type === 'exception') state.exceptions.push(data.saved.value);
       else state.rules.push(data.saved.value);
     }
+    renderSavedRules();
     renderMonth();
     button.hidden = true;
     document.getElementById('preview-notice').textContent = data.duplicate

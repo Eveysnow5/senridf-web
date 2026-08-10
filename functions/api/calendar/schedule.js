@@ -1,4 +1,9 @@
-import { getCalendarDocument, listCalendarDocuments, saveCalendarDocument } from './_store.js';
+import {
+  deleteCalendarDocument,
+  getCalendarDocument,
+  listCalendarDocuments,
+  saveCalendarDocument,
+} from './_store.js';
 import { validateCalendarProposal } from './_parse.js';
 
 function normalizedText(value) {
@@ -41,6 +46,35 @@ export async function onRequest(context) {
         listCalendarDocuments({ ...common, collection: 'calendarExceptions' }),
       ]);
       return json(200, { rules, exceptions });
+    }
+
+    if (context.request.method === 'DELETE') {
+      const id = new URL(context.request.url).searchParams.get('id');
+      if (!id) return json(400, { error: '缺少要删除的日程' });
+      const rule = await getCalendarDocument({
+        ...common,
+        collection: 'calendarRules',
+        id,
+      });
+      if (!rule) return json(404, { error: '没有找到这条日程' });
+
+      const exceptions = await listCalendarDocuments({
+        ...common,
+        collection: 'calendarExceptions',
+      });
+      await Promise.all(
+        exceptions
+          .filter((exception) => exception.ruleId === id)
+          .map((exception) =>
+            deleteCalendarDocument({
+              ...common,
+              collection: 'calendarExceptions',
+              id: exception.id,
+            }),
+          ),
+      );
+      await deleteCalendarDocument({ ...common, collection: 'calendarRules', id });
+      return json(200, { deleted: { id, title: rule.title } });
     }
 
     if (context.request.method !== 'POST') {

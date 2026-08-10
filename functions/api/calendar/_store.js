@@ -114,3 +114,17 @@ export async function saveCalendarDocument({
   await firestoreJson(response, 'write');
   return { id, ...value };
 }
+
+export async function deleteCalendarDocument({ request, user, collection, id, fetchImpl = fetch }) {
+  const { token, uid } = credentials(request, user);
+  const response = await fetchImpl(
+    `${calendarCollection(uid, collection)}/${encodeURIComponent(id)}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  if (!response.ok && response.status !== 404) {
+    throw new Error(`Calendar Firestore delete failed (${response.status})`);
+  }
+}
