@@ -258,18 +258,36 @@ function finishVoiceCapture() {
   const button = document.getElementById('voice-button');
   button.classList.remove('is-recording');
   button.innerHTML = '<span aria-hidden="true">●</span> 按这里开始说话';
+  const transcript = document.getElementById('event-input').value.trim();
+  setAssistantStatus(
+    transcript ? '语音已经转成文字，可以修改或让 AI 理解。' : '没有识别到文字，请重试。',
+    !transcript,
+  );
+}
+
+function closeVoiceSocketAfterAudio() {
+  if (voiceSocket?.readyState !== WebSocket.OPEN) {
+    finishVoiceCapture();
+    return;
+  }
+  voiceSocket.send(JSON.stringify({ type: 'Finalize' }));
+  setTimeout(() => {
+    if (voiceSocket?.readyState === WebSocket.OPEN) {
+      voiceSocket.send(JSON.stringify({ type: 'CloseStream' }));
+    }
+  }, 300);
+  setTimeout(finishVoiceCapture, 1800);
 }
 
 function stopVoiceCapture() {
   if (!voiceSocket || voiceStopping) return;
   voiceStopping = true;
   setAssistantStatus('正在整理语音文字…');
-  if (voiceRecorder && voiceRecorder.state !== 'inactive') voiceRecorder.stop();
-  if (voiceSocket.readyState === WebSocket.OPEN) {
-    voiceSocket.send(JSON.stringify({ type: 'CloseStream' }));
-    setTimeout(finishVoiceCapture, 1200);
+  if (voiceRecorder && voiceRecorder.state !== 'inactive') {
+    voiceRecorder.addEventListener('stop', closeVoiceSocketAfterAudio, { once: true });
+    voiceRecorder.stop();
   } else {
-    finishVoiceCapture();
+    closeVoiceSocketAfterAudio();
   }
 }
 
@@ -315,10 +333,18 @@ async function startVoiceCapture() {
       setAssistantStatus('正在听，请说出日程…');
     };
     voiceSocket.onmessage = (message) => {
-      const data = JSON.parse(message.data);
+      let data;
+      try {
+        data = JSON.parse(message.data);
+      } catch {
+        return;
+      }
       if (data.type !== 'Results' || !data.is_final) return;
       const transcript = data.channel?.alternatives?.[0]?.transcript;
-      if (transcript) appendVoiceText(transcript);
+      if (transcript) {
+        appendVoiceText(transcript);
+        setAssistantStatus('已识别语音，正在等待结束…');
+      }
     };
     voiceSocket.onerror = () => {
       setAssistantStatus('语音连接失败，请重试或直接打字。', true);
