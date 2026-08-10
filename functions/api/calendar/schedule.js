@@ -1,6 +1,26 @@
 import { getCalendarDocument, listCalendarDocuments, saveCalendarDocument } from './_store.js';
 import { validateCalendarProposal } from './_parse.js';
 
+function normalizedText(value) {
+  return String(value || '')
+    .trim()
+    .toLocaleLowerCase();
+}
+
+export function recurringRuleFingerprint(rule) {
+  const recurrence = rule.recurrence || {};
+  return JSON.stringify({
+    title: normalizedText(rule.title),
+    location: normalizedText(rule.location),
+    timezone: rule.timezone || 'Asia/Tokyo',
+    weekdays: [...(recurrence.weekdays || [])].sort((a, b) => a - b),
+    startsOn: recurrence.startsOn || null,
+    endsOn: recurrence.endsOn || null,
+    startTime: recurrence.startTime || null,
+    endTime: recurrence.endTime || null,
+  });
+}
+
 function json(status, body) {
   return new Response(JSON.stringify(body), {
     status,
@@ -34,6 +54,20 @@ export async function onRequest(context) {
     }
 
     if (proposal.intent === 'create_recurring_event') {
+      const existingRules = await listCalendarDocuments({
+        ...common,
+        collection: 'calendarRules',
+      });
+      const duplicate = existingRules.find(
+        (rule) => recurringRuleFingerprint(rule) === recurringRuleFingerprint(proposal),
+      );
+      if (duplicate) {
+        return json(200, {
+          duplicate: true,
+          saved: { type: 'recurringRule', value: duplicate },
+        });
+      }
+
       const saved = await saveCalendarDocument({
         ...common,
         collection: 'calendarRules',

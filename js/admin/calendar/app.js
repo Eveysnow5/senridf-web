@@ -187,15 +187,20 @@ async function savePendingProposal() {
       body: JSON.stringify({ proposal: state.pendingProposal }),
     });
     state.pendingProposal = null;
-    if (data.saved.type === 'exception') state.exceptions.push(data.saved.value);
-    else state.rules.push(data.saved.value);
+    if (!data.duplicate) {
+      if (data.saved.type === 'exception') state.exceptions.push(data.saved.value);
+      else state.rules.push(data.saved.value);
+    }
     renderMonth();
     button.hidden = true;
-    document.getElementById('preview-notice').textContent =
-      data.saved.type === 'exception'
+    document.getElementById('preview-notice').textContent = data.duplicate
+      ? '已有相同的重复日程，本次没有重复保存。'
+      : data.saved.type === 'exception'
         ? '放假安排已保存，原来的重复课程规则仍然保留。'
         : '重复日程已经保存。';
-    setAssistantStatus('保存完成。你可以继续说下一条安排。');
+    setAssistantStatus(
+      data.duplicate ? '发现相同日程，已阻止重复保存。' : '保存完成。你可以继续说下一条安排。',
+    );
   } catch (error) {
     setAssistantStatus(error.message || '保存失败，请稍后重试。', true);
     button.disabled = false;
@@ -236,10 +241,9 @@ async function parseEventInput() {
   }
 }
 
-function appendVoiceText(text) {
+function replaceVoiceText(text) {
   const input = document.getElementById('event-input');
-  const separator = input.value.trim() ? ' ' : '';
-  input.value = `${input.value.trim()}${separator}${text.trim()}`;
+  input.value = text.trim();
 }
 
 function releaseVoiceCapture() {
@@ -276,7 +280,7 @@ async function transcribeVoiceRecording(mimeType) {
       headers: { 'Content-Type': mimeType },
       body: audio,
     });
-    appendVoiceText(data.transcript);
+    replaceVoiceText(data.transcript);
     setAssistantStatus('语音已经转成文字，可以修改或让 AI 理解。');
   } catch (error) {
     setAssistantStatus(error.message || '语音识别失败，请重试。', true);
