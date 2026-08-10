@@ -88,6 +88,28 @@ export function buildCalendarParsePrompt(text, now = tokyoNow(), knownRules = []
 用户输入：${JSON.stringify(text)}`;
 }
 
+export function resolveCalendarExceptionRule(event, text, knownRules = []) {
+  if (event.intent !== 'add_exception' || !event.exception || event.exception.ruleId) return event;
+  const normalizedInput = String(text || '').toLocaleLowerCase();
+  const matches = knownRules.filter((rule) => {
+    const title = String(rule.title || '')
+      .trim()
+      .toLocaleLowerCase();
+    return title && normalizedInput.includes(title);
+  });
+  if (matches.length !== 1) return event;
+
+  const resolved = {
+    ...event,
+    exception: { ...event.exception, ruleId: matches[0].id },
+  };
+  if (resolved.exception.startDate && resolved.exception.endDate) {
+    resolved.needsConfirmation = false;
+    resolved.confirmationQuestions = [];
+  }
+  return resolved;
+}
+
 function proposalError(message) {
   const error = new Error(message);
   error.name = 'CalendarProposalError';

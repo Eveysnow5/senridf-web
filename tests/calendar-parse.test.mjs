@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   buildCalendarParsePrompt,
   parseCalendarModelResponse,
+  resolveCalendarExceptionRule,
   tokyoNow,
 } from '../functions/api/calendar/_parse.js';
 
@@ -159,4 +160,47 @@ test('放假例外必须指向已有规则并包含日期范围', () => {
   );
   assert.equal(event.exception.ruleId, 'rule-1');
   assert.equal(event.exception.resumeDate, '2026-10-06');
+});
+
+test('用户明确说出唯一已有日程名称时自动关联放假规则', () => {
+  const event = resolveCalendarExceptionRule(
+    {
+      ...completeEvent,
+      intent: 'add_exception',
+      title: '未识别日程',
+      needsConfirmation: true,
+      confirmationQuestions: ['请确认要暂停哪条日程'],
+      exception: {
+        ruleId: null,
+        startDate: '2026-09-20',
+        endDate: '2026-10-05',
+        resumeDate: '2026-10-06',
+      },
+    },
+    '日语课9月20日开始放假，10月6日开学',
+    [{ id: 'rule-1', title: '日语课' }],
+  );
+  assert.equal(event.exception.ruleId, 'rule-1');
+  assert.equal(event.needsConfirmation, false);
+  assert.deepEqual(event.confirmationQuestions, []);
+});
+
+test('没有明确说出日程名称时不擅自关联', () => {
+  const event = {
+    ...completeEvent,
+    intent: 'add_exception',
+    needsConfirmation: true,
+    confirmationQuestions: ['请确认要暂停哪条日程'],
+    exception: {
+      ruleId: null,
+      startDate: '2026-09-20',
+      endDate: '2026-10-05',
+      resumeDate: '2026-10-06',
+    },
+  };
+  assert.equal(
+    resolveCalendarExceptionRule(event, '9月20日开始放假', [{ id: 'rule-1', title: '日语课' }])
+      .exception.ruleId,
+    null,
+  );
 });

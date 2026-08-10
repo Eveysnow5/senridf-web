@@ -1,5 +1,9 @@
 import { fetchWithTimeout } from '../_lib/fetchWithTimeout.js';
-import { buildCalendarParsePrompt, parseCalendarModelResponse } from './_parse.js';
+import {
+  buildCalendarParsePrompt,
+  parseCalendarModelResponse,
+  resolveCalendarExceptionRule,
+} from './_parse.js';
 import { listCalendarDocuments } from './_store.js';
 
 const QWEN_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
@@ -63,7 +67,7 @@ export async function onRequest(context) {
       return json(upstream.status, { error: data.error?.message || 'AI 服务暂时不可用' });
     }
     const raw = data.choices?.[0]?.message?.content;
-    const event = parseCalendarModelResponse(raw);
+    const event = resolveCalendarExceptionRule(parseCalendarModelResponse(raw), text, knownRules);
     return json(200, { event });
   } catch (error) {
     if (error.name === 'AbortError') return json(504, { error: 'AI 解析超时，请重试' });
