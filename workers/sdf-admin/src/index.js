@@ -4,6 +4,7 @@
 // 注意：ADMINS 名单变更后需重新 `npx wrangler deploy`（名单在部署时打包进 Worker）。
 
 import { verifyFirebaseToken } from '../../../functions/api/_lib/verifyFirebaseToken.js';
+import { CHAT_ENDPOINT, modelFor } from '../../../functions/api/_lib/models.js';
 import { isAdmin } from '../../../js/shared/admins.js';
 import { allowedOrigin, validateContentPayload } from './validate.js';
 import { createRateLimiter } from './rateLimit.js';
@@ -148,23 +149,21 @@ export default {
         const check = validateTranslateFields(body.fields);
         if (!check.ok) return json(400, { error: check.error }, cors);
 
-        const qwenRes = await fetch(
-          'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${env.QWEN_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              // 内容编辑/Blog 翻译调用频率低（非实时口译场景），换成质量更好的 qwen-max，
-              // 成本增量可忽略；实时/高频场景（如语音口译）不受影响，仍用各自的模型。
-              model: 'qwen-max',
-              messages: [{ role: 'user', content: buildTranslatePrompt(body.fields) }],
-              max_tokens: 4000,
-            }),
+        const qwenRes = await fetch(CHAT_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${env.QWEN_API_KEY}`,
+            'Content-Type': 'application/json',
           },
-        );
+          body: JSON.stringify({
+            // 内容编辑/Blog 翻译调用频率低（非实时口译场景），要的是质量，故走
+            // 最强档；模型名与端点统一由 functions/api/_lib/models.js 决定，
+            // 免费额度按模型分桶，换模型只改那一处。
+            model: modelFor('adminTranslate', env),
+            messages: [{ role: 'user', content: buildTranslatePrompt(body.fields) }],
+            max_tokens: 4000,
+          }),
+        });
         if (!qwenRes.ok) return json(502, { error: '翻译服务暂时不可用，请稍后重试' }, cors);
         const data = await qwenRes.json();
         const parsed = parseTranslateResponse(

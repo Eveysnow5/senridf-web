@@ -81,6 +81,11 @@ export const TASK_TIER = {
   // Nightly GitHub Actions scrapers (scripts/*), not Pages Functions.
   bidSummary: 'batch', // per-bid Japanese → Chinese summary, strict format
   aiIntel: 'batch', // relevance judgment + weekly digest
+  // sdf-admin Worker (workers/sdf-admin), deployed separately via wrangler.
+  // Strongest tier on purpose: it translates copy that gets published to the
+  // live site, and it is invoked rarely (an editor pressing 「一键同步日英」),
+  // so quality matters far more than latency or token spend.
+  adminTranslate: 'strong',
 };
 
 // Per-task env override, e.g. QWEN_MODEL_TRANSLATE_STREAM=qwen-turbo.
@@ -95,6 +100,7 @@ const ENV_KEY = {
   lifestory: 'QWEN_MODEL_LIFESTORY',
   bidSummary: 'QWEN_MODEL_BID_SUMMARY',
   aiIntel: 'QWEN_MODEL_AI_INTEL',
+  adminTranslate: 'QWEN_MODEL_ADMIN_TRANSLATE',
 };
 
 /**

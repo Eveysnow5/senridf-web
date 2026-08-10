@@ -14,16 +14,17 @@ const TASKS = [
   'lifestory',
   'bidSummary',
   'aiIntel',
+  'adminTranslate',
 ];
 
 // 被护栏扫描的目录：所有会调用大模型的生产代码。
-// 刻意不含 tools/document-analyzer（纯本地独立工具，设计成免安装运行、
-// 不参与部署）和 workers/sdf-admin（独立 Worker，需 wrangler deploy，
-// 尚未接入共享配置——见 docs/TOOLS.md）。
+// 刻意不含 tools/document-analyzer——纯本地独立工具，设计成免安装直接跑、
+// 不参与部署，故意不接共享配置（见 docs/TOOLS.md）。
 const SCANNED_DIRS = [
   '../functions/api/',
   '../scripts/bid-scraper/',
   '../scripts/ai-intel-scraper/',
+  '../workers/sdf-admin/src/',
 ];
 
 function sourcesUnderScan() {
@@ -97,7 +98,7 @@ test('生产代码里没有任何硬编码的 qwen 模型 id', () => {
 test('每个调用大模型的地方都同时用了 CHAT_ENDPOINT 和 modelFor', () => {
   const callers = sourcesUnderScan().filter(({ src }) => src.includes('CHAT_ENDPOINT'));
   const missing = callers.filter(({ src }) => !src.includes('modelFor(')).map(({ label }) => label);
-  assert.ok(callers.length >= 8, `只找到 ${callers.length} 个调用方，断言可能已失效`);
+  assert.ok(callers.length >= 9, `只找到 ${callers.length} 个调用方，断言可能已失效`);
   assert.deepEqual(
     missing,
     [],
@@ -135,4 +136,8 @@ test('CJS → ESM 桥能真的加载到共享配置', async () => {
 test('两个爬虫任务都在 batch 档（不与交互工具抢同一个额度桶）', () => {
   assert.equal(TASK_TIER.bidSummary, 'batch');
   assert.equal(TASK_TIER.aiIntel, 'batch');
+});
+
+test('后台批量翻译留在最强档（产出会直接发布到线上）', () => {
+  assert.equal(TASK_TIER.adminTranslate, 'strong');
 });
