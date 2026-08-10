@@ -1121,6 +1121,9 @@
     let mediaRecorder      = null;
     let audioStream        = null;
     let pendingBuffer      = '';
+    // 握手期间录到的音频块。采集从拿到麦克风流那一刻就开始，但此时
+    // WebSocket 可能还没连上，先在这里排队，onopen 后按顺序补发。
+    let preSocketChunks    = [];
     let tokenRefreshTimer  = null;
     let stopCleanupTimer   = null;
     let cachedToken        = null;
@@ -1274,6 +1277,9 @@
 
     async function startRecording(spk) {
       window.speechSynthesis?.cancel();
+      // 幂等清理：socket 异常关闭会触发重连并再次进入这里，若上一次的
+      // recorder 还在跑，就会有两个 recorder 抢同一个音频流。
+      stopCapture();
       activeSpeaker = spk;
       // 根据发言人更新 marker
       currentMarker = (spk === 'A') ? "我说" : "对方说";
@@ -1301,6 +1307,29 @@
         if (tokenData.error) throw new Error(tokenData.error);
         audioStream = stream;
 
+        // 立刻开始采集。此前 mediaRecorder.start() 在 dgSocket.onopen 里，
+        // 也就是要等 Deepgram 握手完成才开始录——按下按钮到握手完成之间
+        // （常见 300~700ms）说的话直接丢失，表现为句首掉字。
+        const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus' : 'audio/webm';
+        const rec = new MediaRecorder(audioStream, { mimeType: mime });
+        mediaRecorder = rec;
+        rec.ondataavailable = (e) => {
+          // mediaRecorder.stop() 会异步触发最后一次 ondataavailable，所以上一
+          // 句话的尾块可能在新会话开始后才回调。不加这道判据，陈旧音频会被塞
+          // 进新队列，WebM 延续簇错位接到新流上，比掉字更糟。
+          if (mediaRecorder !== rec) return;
+          if (e.data.size === 0) return;
+          if (dgSocket && dgSocket.readyState === WebSocket.OPEN) {
+            dgSocket.send(e.data);
+          } else {
+            // MediaRecorder 产出的是 WebM 容器流：首块带头部、后续是延续簇，
+            // 顺序不能乱，所以必须排队而不是丢弃，且要在任何实时块之前发完。
+            preSocketChunks.push(e.data);
+          }
+        };
+        rec.start(250);
+
         const lang = LANG_DG[speakerLang[spk]] || 'ja';
         const endpointing = LANG_ENDPT[speakerLang[spk]] || '600';
         const params = new URLSearchParams({
@@ -1316,15 +1345,8 @@
 
         dgSocket.onopen = () => {
           setInterim({ ja:'聴いています…', zh:'正在听…', en:'Listening…' }[speakerLang[spk]] || '聴いています…', 'status');
-          const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-            ? 'audio/webm;codecs=opus' : 'audio/webm';
-          mediaRecorder = new MediaRecorder(audioStream, { mimeType: mime });
-          mediaRecorder.ondataavailable = (e) => {
-            if (dgSocket && dgSocket.readyState === WebSocket.OPEN && e.data.size > 0) {
-              dgSocket.send(e.data);
-            }
-          };
-          mediaRecorder.start(250);
+          // 先按顺序补发握手期间录到的音频，再让实时块继续流。
+          while (preSocketChunks.length) dgSocket.send(preSocketChunks.shift());
           setTimeout(prewarmToken, 500);
         };
 
@@ -1362,6 +1384,9 @@
         }, 250000);
 
       } catch (err) {
+        // 采集现在可能已经启动了（早于 socket），失败路径必须停掉它，
+        // 否则麦克风会在启动失败后继续录。
+        stopCapture();
         activeSpeaker = null;
         setMicState(null, false);
         const msg = err.name === 'NotAllowedError'
@@ -1369,6 +1394,14 @@
           : `エラー: ${err.message}`;
         setInterim(msg, 'error');
       }
+    }
+
+    // 停掉音频采集并丢弃未发送的排队块。采集现在早于 WebSocket 启动，
+    // 所以「停止」有多条路径（正常停止、启动失败、异常重连），统一收在这里。
+    function stopCapture() {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+      mediaRecorder = null;
+      preSocketChunks = [];
     }
 
     function stopRecording() {
@@ -1407,6 +1440,7 @@
     function finishStop() {
       if (dgSocket) { dgSocket.onclose = null; dgSocket.close(); dgSocket = null; }
       if (audioStream) { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; }
+      stopCapture();
       activeSpeaker = null;
       isStopping = false;
       prewarmToken();
