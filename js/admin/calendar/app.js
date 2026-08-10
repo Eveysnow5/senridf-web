@@ -130,14 +130,36 @@ function renderSavedRules() {
     const time = document.createElement('span');
     time.textContent = `${rule.recurrence.startTime}–${rule.recurrence.endTime} · ${recurrenceDescription(rule.recurrence)}`;
     details.append(title, time);
-    const button = document.createElement('button');
-    button.className = 'button saved-rule__delete';
-    button.type = 'button';
-    button.textContent = '删除';
-    button.addEventListener('click', () => deleteSavedRule(rule, button));
-    row.append(details, button);
+    const actions = document.createElement('div');
+    actions.className = 'saved-rule__actions';
+    const appleButton = document.createElement('button');
+    appleButton.className = 'button saved-rule__apple';
+    appleButton.type = 'button';
+    appleButton.textContent = '添加到 Apple 日历';
+    appleButton.addEventListener('click', () => exportRuleToAppleCalendar(rule));
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'button saved-rule__delete';
+    deleteButton.type = 'button';
+    deleteButton.textContent = '删除';
+    deleteButton.addEventListener('click', () => deleteSavedRule(rule, deleteButton));
+    actions.append(appleButton, deleteButton);
+    row.append(details, actions);
     list.appendChild(row);
   });
+}
+
+async function exportRuleToAppleCalendar(rule) {
+  const { buildCalendarIcs, calendarIcsFilename } = await import('./ics.mjs');
+  const ics = buildCalendarIcs(rule, state.exceptions);
+  const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = calendarIcsFilename(rule);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  setAssistantStatus(`已生成“${rule.title}”的 Apple Calendar 文件。`);
 }
 
 async function deleteSavedRule(rule, button) {

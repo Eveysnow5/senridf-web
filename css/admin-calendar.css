@@ -510,6 +510,29 @@ a {
   background: #fff;
 }
 
+.saved-rule__actions {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+.saved-rule__apple {
+  border-color: var(--calendar-accent);
+  color: #fff;
+  background: var(--calendar-accent);
+}
+
+@media (max-width: 520px) {
+  .saved-rule {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .saved-rule__actions .button {
+    flex: 1;
+  }
+}
+
 @media (max-width: 920px) {
   .calendar-layout {
     grid-template-columns: 1fr;
