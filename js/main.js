@@ -149,7 +149,7 @@ const T = {
       '214語の常用動詞を内蔵。五段・一段・不規則動詞の活用を自動生成し、中英双解付き。一覧・フラッシュカード・小テストの3モード対応。',
     japanese_cta: '学習を始める',
 
-    proofreader_label: 'Live · Qwen-Plus · 会員限定',
+    proofreader_label: 'Live · 会員限定',
     proofreader_title: '中国語原稿 校正アシスタント',
     proofreader_desc:
       'Wordをアップロードまたはテキストを貼り付けると、誤字・重複文・編集指示の残留・前後の論理矛盾を自動チェックし、分類された校正レポートを出力します。',
@@ -324,7 +324,7 @@ const T = {
       '内置 214 个常用动词词库，自动生成五段・一段・不规则动词变形，含中英双语释义。支持查表、翻牌练习、随机小测试三种模式。',
     japanese_cta: '开始学习',
 
-    proofreader_label: 'Live · Qwen-Plus · 会员限定',
+    proofreader_label: 'Live · 会员限定',
     proofreader_title: '中文文稿校对助手',
     proofreader_desc:
       '上传 Word 或粘贴文本，自动检查错别字、重复句、编辑指令残留及前后逻辑冲突，输出分类校对报告。',
@@ -516,7 +516,7 @@ const T = {
       'Built-in library of 214 common verbs. Auto-generates conjugations for godan, ichidan, and irregular verbs with bilingual (Chinese/English) definitions. Three modes: reference table, flashcards, and quiz.',
     japanese_cta: 'Start Learning',
 
-    proofreader_label: 'Live · Qwen-Plus · Members',
+    proofreader_label: 'Live · Members',
     proofreader_title: 'Chinese Manuscript Proofreader',
     proofreader_desc:
       'Upload a Word file or paste text. Automatically detects typos, duplicate sentences, leftover editing marks, and front-to-back logical inconsistencies, then outputs a categorized proofreading report.',

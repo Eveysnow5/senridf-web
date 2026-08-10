@@ -69,6 +69,13 @@ export async function onRequest(context) {
         max_tokens: 400,
         temperature: 0.1,
         stream: true,
+        // Qwen3 models default to hybrid thinking mode on DashScope. With it on,
+        // the model streams a long reasoning chain as `delta.reasoning_content`
+        // before any `delta.content`; the client only renders `content`, so a
+        // one-sentence interpretation appeared to hang for 20+ seconds and then
+        // land all at once. Live interpretation cannot afford that, and the
+        // reasoning is worthless for a single-utterance translation.
+        enable_thinking: false,
       }),
     });
 

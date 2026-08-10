@@ -878,7 +878,7 @@
 
           <div class="tl-status">
             <div class="tl-status__dot" id="voiceStatusDot"></div>
-            <span id="voiceStatusText">Qwen-Turbo · 準備完了</span>
+            <span id="voiceStatusText">準備完了</span>
             <span class="tl-status__count" id="voiceCount">0 件</span>
           </div>
 
@@ -948,7 +948,7 @@
 
           <div class="tl-status">
             <div class="tl-status__dot" id="tlStatusDot"></div>
-            <span id="tlStatusText">Qwen-Plus · 準備完了</span>
+            <span id="tlStatusText">準備完了</span>
             <span class="tl-status__count" id="tlExchangeCount">0 件の翻訳</span>
           </div>
 
@@ -1499,7 +1499,7 @@
 
     function setVoiceStatusBusy(busy) {
       elVoiceStatusDot.classList.toggle('tl-status__dot--offline', busy);
-      elVoiceStatusText.textContent = busy ? '翻訳中 / 翻译中…' : 'Deepgram · Qwen-Turbo · 準備完了';
+      elVoiceStatusText.textContent = busy ? '翻訳中 / 翻译中…' : 'Deepgram · 準備完了';
     }
 
     function appendStreamItem(src, spk, dir) {
