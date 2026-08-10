@@ -6,14 +6,9 @@ const state = {
 };
 
 let auth;
-let voiceSocket;
 let voiceRecorder;
 let voiceStream;
-let voiceStopping = false;
-let voiceInterimText = '';
-let voiceAudioBytes = 0;
-let voiceTranscriptBefore = '';
-let voiceFinishTimer;
+let voiceChunks = [];
 
 function isLocalPreview() {
   return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -66,7 +61,7 @@ function setAssistantEnabled(enabled) {
   document.getElementById('voice-language').disabled = !enabled;
   document.getElementById('parse-button').disabled = !enabled;
   document.getElementById('voice-button').disabled =
-    !enabled || !(navigator.mediaDevices && window.MediaRecorder && window.WebSocket);
+    !enabled || !(navigator.mediaDevices && window.MediaRecorder);
   if (!enabled) document.getElementById('confirm-button').disabled = true;
 }
 
@@ -246,144 +241,83 @@ function appendVoiceText(text) {
   input.value = `${input.value.trim()}${separator}${text.trim()}`;
 }
 
-function finishVoiceCapture() {
-  clearTimeout(voiceFinishTimer);
-  voiceFinishTimer = undefined;
-  if (voiceInterimText) {
-    appendVoiceText(voiceInterimText);
-    voiceInterimText = '';
-  }
-  if (voiceRecorder && voiceRecorder.state !== 'inactive') voiceRecorder.stop();
-  voiceRecorder = undefined;
-  if (voiceSocket) {
-    voiceSocket.onclose = null;
-    voiceSocket.close();
-    voiceSocket = undefined;
-  }
+function releaseVoiceCapture() {
   if (voiceStream) {
     voiceStream.getTracks().forEach((track) => track.stop());
     voiceStream = undefined;
   }
-  voiceStopping = false;
+  voiceRecorder = undefined;
   const button = document.getElementById('voice-button');
   button.classList.remove('is-recording');
   button.innerHTML = '<span aria-hidden="true">●</span> 按这里开始说话';
-  const transcript = document.getElementById('event-input').value.trim();
-  const recognized = transcript !== voiceTranscriptBefore;
-  const message = recognized
-    ? '语音已经转成文字，可以修改或让 AI 理解。'
-    : voiceAudioBytes > 0
-      ? '声音已经发送，但语音服务没有识别出文字。'
-      : '麦克风没有录到声音，请检查权限。';
-  setAssistantStatus(message, !recognized);
+  button.disabled = false;
 }
 
-function closeVoiceSocketAfterAudio() {
-  if (voiceSocket?.readyState !== WebSocket.OPEN) {
-    finishVoiceCapture();
+async function transcribeVoiceRecording(mimeType) {
+  const audio = new Blob(voiceChunks, { type: mimeType });
+  voiceChunks = [];
+  releaseVoiceCapture();
+  if (!audio.size) {
+    setAssistantStatus('麦克风没有录到声音，请检查权限。', true);
     return;
   }
-  voiceSocket.send(JSON.stringify({ type: 'Finalize' }));
-  voiceFinishTimer = setTimeout(finishVoiceCapture, 5000);
+  setAssistantStatus('正在把语音转换成文字…');
+  const button = document.getElementById('voice-button');
+  button.disabled = true;
+  try {
+    const language = encodeURIComponent(document.getElementById('voice-language').value);
+    const data = await authenticatedApi(`/api/calendar/transcribe?language=${language}`, {
+      method: 'POST',
+      headers: { 'Content-Type': mimeType },
+      body: audio,
+    });
+    appendVoiceText(data.transcript);
+    setAssistantStatus('语音已经转成文字，可以修改或让 AI 理解。');
+  } catch (error) {
+    setAssistantStatus(error.message || '语音识别失败，请重试。', true);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function stopVoiceCapture() {
-  if (!voiceSocket || voiceStopping) return;
-  voiceStopping = true;
-  setAssistantStatus('正在整理语音文字…');
-  if (voiceRecorder && voiceRecorder.state !== 'inactive') {
-    voiceRecorder.addEventListener('stop', closeVoiceSocketAfterAudio, { once: true });
-    voiceRecorder.stop();
-  } else {
-    closeVoiceSocketAfterAudio();
-  }
+  if (!voiceRecorder || voiceRecorder.state === 'inactive') return;
+  setAssistantStatus('录音结束，准备识别…');
+  voiceRecorder.stop();
 }
 
 async function startVoiceCapture() {
   const button = document.getElementById('voice-button');
   button.disabled = true;
-  voiceInterimText = '';
-  voiceAudioBytes = 0;
-  voiceTranscriptBefore = document.getElementById('event-input').value.trim();
-  setAssistantStatus('正在连接语音服务…');
+  voiceChunks = [];
+  setAssistantStatus('正在打开麦克风…');
   try {
-    const [tokenData, stream] = await Promise.all([
-      authenticatedApi('/api/deepgram-token'),
-      navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        video: false,
-      }),
-    ]);
-    voiceStream = stream;
-    const params = new URLSearchParams({
-      model: 'nova-2',
-      language: document.getElementById('voice-language').value,
-      punctuate: 'true',
-      smart_format: 'true',
-      interim_results: 'true',
-      endpointing: '600',
+    voiceStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      video: false,
     });
-    voiceSocket = new WebSocket(`wss://api.deepgram.com/v1/listen?${params}`, [
-      'bearer',
-      tokenData.access_token,
-    ]);
-    voiceSocket.onopen = () => {
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : 'audio/webm';
-      voiceRecorder = new MediaRecorder(voiceStream, { mimeType });
-      voiceRecorder.ondataavailable = (event) => {
-        if (voiceSocket?.readyState === WebSocket.OPEN && event.data.size > 0) {
-          voiceAudioBytes += event.data.size;
-          voiceSocket.send(event.data);
-        }
-      };
-      voiceRecorder.start(250);
-      button.disabled = false;
-      button.classList.add('is-recording');
-      button.innerHTML = '<span aria-hidden="true">●</span> 停止录音';
-      setAssistantStatus('正在听，请说出日程…');
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : 'audio/webm';
+    voiceRecorder = new MediaRecorder(voiceStream, { mimeType });
+    voiceRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) voiceChunks.push(event.data);
     };
-    voiceSocket.onmessage = (message) => {
-      let data;
-      try {
-        data = JSON.parse(message.data);
-      } catch {
-        return;
-      }
-      if (data.type !== 'Results') return;
-      const transcript = data.channel?.alternatives?.[0]?.transcript;
-      if (data.is_final && transcript) {
-        appendVoiceText(transcript);
-        voiceInterimText = '';
-        setAssistantStatus('已识别语音，正在等待结束…');
-      } else if (transcript) {
-        voiceInterimText = transcript;
-        setAssistantStatus(`正在听：${transcript}`);
-      }
-      if (voiceStopping && data.from_finalize) {
-        if (voiceSocket?.readyState === WebSocket.OPEN) {
-          voiceSocket.send(JSON.stringify({ type: 'CloseStream' }));
-        }
-        voiceFinishTimer = setTimeout(finishVoiceCapture, 200);
-      }
+    voiceRecorder.onstop = () => {
+      transcribeVoiceRecording(mimeType);
     };
-    voiceSocket.onerror = () => {
-      setAssistantStatus('语音连接失败，请重试或直接打字。', true);
-      finishVoiceCapture();
-    };
-    voiceSocket.onclose = () => {
-      if (!voiceStopping) finishVoiceCapture();
-    };
+    voiceRecorder.start();
+    button.disabled = false;
+    button.classList.add('is-recording');
+    button.innerHTML = '<span aria-hidden="true">●</span> 停止录音';
+    setAssistantStatus('正在录音，请说出日程…');
   } catch (error) {
-    finishVoiceCapture();
+    releaseVoiceCapture();
     const message =
       error.name === 'NotAllowedError'
         ? '麦克风权限被拒绝，请在浏览器设置中允许。'
         : error.message || '语音服务暂时不可用。';
     setAssistantStatus(message, true);
-  } finally {
-    if (!voiceSocket) button.disabled = false;
   }
 }
 
@@ -393,7 +327,7 @@ function bindAssistantControls() {
     parseEventInput();
   });
   document.getElementById('voice-button').addEventListener('click', () => {
-    if (voiceSocket) stopVoiceCapture();
+    if (voiceRecorder?.state === 'recording') stopVoiceCapture();
     else startVoiceCapture();
   });
   document.getElementById('confirm-button').addEventListener('click', savePendingProposal);
