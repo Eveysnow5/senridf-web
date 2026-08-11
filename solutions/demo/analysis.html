@@ -739,12 +739,28 @@
       return file.sections.filter(s => s.selected).reduce((n, s) => n + s.chars, 0);
     }
 
-    function buildFileContent(file) {
-      if (!file.sections || file.sections.length === 0) {
-        return (file.content || '').slice(0, 30000);
-      }
+    // 有提问时送全文，把筛选完全交给服务端（它按提问打分选片段，见
+    // functions/api/_lib/selectRelevantPassages.js）。
+    //
+    // 为什么不再在前端预筛：这里的 scoreSection 只按"财务关键词密度 + 数字密度"
+    // 打分，**完全不看用户问了什么**。两层筛选打架、而第一层是问题盲的，结果是
+    // 精筛还没上场，答案所在的段落已经被粗筛扔掉了。
+    // 2026-08-11 实证：用户问"处置荣耀的影响"，答案在 2024 年报「其他净收支」的
+    // 附注里（"以前年度出售荣耀业务形成的金融工具的公允价值变动"），但那段既没被
+    // 当成章节切出来（`9 其他净收支` 不带点、`(ii)` 是罗马数字，两者都不匹配
+    // isSectionHeader 的正则），也没进 SMART_MAX=25000 的预算，于是服务端压根
+    // 没见到"荣耀"两个字。
+    //
+    // 送全文只是多几百 KB 的 JSON；真正花钱的 token 预算由服务端控制。
+    function buildFileContent(file, hasQuestion) {
+      const full = file.content || '';
+      if (hasQuestion) return full;
+
+      // 无提问（综合分析）时保留原有的章节预筛：那种场景没有问题可依据，按财务
+      // 关键词挑章节是合理的启发式，而且用户可在「章节」面板里手动勾选。
+      if (!file.sections || file.sections.length === 0) return full.slice(0, 30000);
       const chosen = file.sections.filter(s => s.selected);
-      if (chosen.length === 0) return (file.content || '').slice(0, 5000);
+      if (chosen.length === 0) return full.slice(0, 5000);
       const perSec = Math.min(12000, Math.floor(28000 / chosen.length));
       return chosen.map(s => `【${s.title}】\n${s.content.slice(0, perSec)}`).join('\n\n');
     }
@@ -907,7 +923,10 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            files: ready.map(f => ({ name: f.name, content: buildFileContent(f) })),
+            files: ready.map(f => ({
+              name: f.name,
+              content: buildFileContent(f, Boolean(elPrompt.value.trim())),
+            })),
             prompt: elPrompt.value.trim()
           })
         });

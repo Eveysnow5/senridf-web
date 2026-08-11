@@ -58,6 +58,31 @@ test('明确禁止使用外部知识，并保留那个真实反面例子', () =>
   assert.ok(p.includes('2020年出售荣耀'), '应保留这个真实反面例子——具体案例比抽象禁令更能约束模型');
 });
 
+// 复刻作者的人工分析方法（行项目 → 附注 → 同一行项目跨年对比）。
+// 关键点：同一附注编号在不同年度可能解释不同事项——2024 年报的
+// 「处置子公司及业务形成的金融工具的公允价值变动」归因于出售荣耀业务，
+// 2025 年报同一行归因于出售服务器业务，是两件事。
+test('针对性模式教会"追查附注 + 跨年对比"的方法', () => {
+  const p = buildAnalysisSystemPrompt(Q);
+  assert.ok(p.includes('金额在附注里，不在正文'), '必须提示答案通常在附注而非正文');
+  assert.ok(p.includes('必须去读对应附注'), '必须要求跟进附注引用');
+  assert.ok(
+    p.includes('可能解释的是不同事项'),
+    '必须警告同一附注编号跨年含义会变——这是本案例的关键',
+  );
+  assert.ok(p.includes('服务器业务'), '应保留真实对照案例（荣耀 vs 服务器业务）');
+  assert.ok(
+    p.includes('不等于那一年没有相关影响'),
+    '必须堵住"该年附注没提到关键词就答未披露"这个错法',
+  );
+  assert.ok(p.includes('以行项目名称对齐'), '应说明跨年对齐要按行项目名而非附注编号');
+});
+
+test('综合模式不夹带针对性模式的追查方法（避免两态混淆）', () => {
+  const noQ = buildAnalysisSystemPrompt('');
+  assert.ok(!noQ.includes('金额在附注里，不在正文'), '综合模式不该带这套追查指令');
+});
+
 test('保留"文件没有"与"我没看到"的区分', () => {
   for (const p of [buildAnalysisSystemPrompt(Q), buildAnalysisSystemPrompt('')]) {
     assert.ok(p.includes('绝不要把"我没看到"写成"文件未披露"'), '这条区分必须保留');
