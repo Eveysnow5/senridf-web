@@ -16,13 +16,35 @@
 // "model not found" error that the endpoints already surface to the UI.
 //
 // HOW TO SWITCH PROVIDER (e.g. 硅基流动 / SiliconFlow — planned)
-// Both DashScope and SiliconFlow expose an OpenAI-compatible
-// /v1/chat/completions, so a move is: (1) point CHAT_ENDPOINT at the new base,
-// (2) replace the three TIERS ids with that provider's names, (3) update the
-// API-key env var (still read as env.QWEN_API_KEY in each endpoint — rename it
-// there and in the Cloudflare project settings together, or keep the name and
-// just swap the value). Request/response shape needs no changes.
-//   SiliconFlow: https://api.siliconflow.cn/v1/chat/completions
+// Both expose an OpenAI-compatible /v1/chat/completions, so the request and
+// response *shapes* need no changes. But this is not a two-string edit — three
+// things below were verified on 2026-08-11 and each needs work:
+//
+//   1. Endpoint: https://api.siliconflow.cn/v1/chat/completions
+//   2. Model ids use a VENDOR-PREFIXED namespace, not DashScope's bare names:
+//      `Qwen/Qwen2.5-72B-Instruct`, `Pro/deepseek-ai/DeepSeek-R1`. Every TIERS
+//      value has to be re-chosen, not just renamed.
+//   3. SiliconFlow also streams `delta.reasoning_content`, and its docs
+//      document no `enable_thinking` switch. Our two streaming endpoints render
+//      `delta.content` only, so a reasoning model there reproduces the 20s
+//      "hangs then dumps" bug with no parameter to turn it off — the fix would
+//      be to pick a non-reasoning model for `fast` and `balanced`.
+//
+// KEY OWNERSHIP — the real constraint. The three surfaces read the same var
+// name from three different places, and we control only two:
+//   · Pages Functions (functions/api/*)  → the COLLEAGUE's Cloudflare Pages
+//     project env. We cannot change it; she has to.
+//   · workers/sdf-admin                  → our own Worker secret (wrangler)
+//   · scripts/*-scraper                  → our repo's GitHub secret (gh)
+// Keep the var name `QWEN_API_KEY` even after moving off Qwen: renaming means
+// the code change and the secret change must land together, and we do not
+// control when the colleague acts — any gap is downtime. An inaccurate name is
+// the cheaper problem.
+//
+// Because CHAT_ENDPOINT is shared, a phased migration is NOT possible as
+// written: pointing it at SiliconFlow while the colleague still holds a
+// DashScope key would 401 every web tool. Phasing would require per-surface
+// endpoint config first.
 //
 // TIERS, not raw ids: each task declares the *kind* of model it needs, so the
 // intent survives both a quota shuffle and a provider swap. TASK_TIER is the
