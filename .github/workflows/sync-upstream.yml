@@ -14,6 +14,23 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# 一次后台操作（如发布一篇 blog）会连着产生多个提交，每个提交各触发一个 run。
+# 没有并发组时它们会抢 refs/heads/main 的锁，后到的那个被拒：
+#   ! [remote rejected] HEAD -> main (cannot lock ref 'refs/heads/main':
+#     is at 27ca041 but expected ad48ce3)
+# 2026-08-11 实际发生过（run #87，两次 push 相隔 1 秒）。
+#
+# 那次内容其实是对的——先跑的那个已经推上去了，失败的是冗余重复。但这种
+# "无害的失败"恰恰危险：它会训练人忽略镜像失败邮件，而换一种交错顺序，
+# 落后的就可能是真的镜像状态，站点静默变旧、唯一的信号正是那封被忽略的邮件。
+#
+# cancel-in-progress: true 而不是排队——镜像是幂等的、只有最终状态有意义，
+# 被取代的 run 跑完也只是白推一次并多触发一次 Cloudflare 构建。顺带也消除了
+# 下面 `ref: main` 注释里说的那个残余窗口（旧 run 在被取代前就被取消了）。
+concurrency:
+  group: mirror-to-deploy-repo
+  cancel-in-progress: true
+
 jobs:
   mirror:
     if: github.repository == 'sherlockafa007/senridoufuu-web'
