@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import {
   selectRelevantPassages,
   extractTerms,
+  normalizeCjkSpacing,
 } from '../functions/api/_lib/selectRelevantPassages.js';
 
 const FILLER =
@@ -83,7 +84,8 @@ test('无提问时退回取开头（综合分析模式）', () => {
   const doc = buildReport();
   const r = selectRelevantPassages(doc, '', { budget: 5000 });
   assert.equal(r.mode, 'head');
-  assert.equal(r.text, doc.slice(0, 5000));
+  // 送出的文本是归一化后的（汉字间空格已去掉），比对时用同一口径
+  assert.equal(r.text, normalizeCjkSpacing(doc).slice(0, 5000));
   assert.deepEqual(r.hitTerms, []);
 });
 
@@ -134,6 +136,52 @@ test('高频词不会淹没稀有词（IDF 加权本身生效）', () => {
     r.text.includes('4,213'),
     '稀有词段落被高频词段落挤掉了——IDF 加权没生效。' + `实际选中内容开头：${r.text.slice(0, 120)}`,
   );
+});
+
+// 真实翻车形状：PDF 两端对齐会让抽取结果变成「公 允 价 值 变 动」，
+// 关键词匹配于是静默失效。实测华为 2024 年报有 4,297 处这种空格，
+// 归一化后「公允价值变动」的命中从 14 次涨到 18 次。
+test('汉字间被插入空格时仍能匹配（PDF 字距归一化）', () => {
+  const spaced = '本集团处置子公司及业务形成的金融工具的公 允 价 值 变 动主要为出售荣 耀业务。';
+  const doc = '经营讨论与业务进展。\n\n'.repeat(3000) + spaced;
+  const r = selectRelevantPassages(doc, '公允价值变动', { budget: 20000 });
+  assert.ok(
+    r.text.includes('公允价值变动'),
+    '被空格拆开的关键词没匹配上——归一化没生效。这类失效是静默的，最危险',
+  );
+});
+
+test('不动汉字与数字/字母之间的空格（那些分隔有意义）', () => {
+  const doc = '交易对价合计人民币 2,500 百万元。\n\n' + '填充内容。\n\n'.repeat(3000);
+  const r = selectRelevantPassages(doc, '交易对价', { budget: 20000 });
+  assert.ok(r.text.includes('2,500 百万元'), '数字与单位之间的空格不该被吃掉');
+});
+
+// 真实 PDF 抽取（pdftotext / pdf.js）常常整篇没有一个空行，每行只用单个换行分隔。
+// 原 splitBlocks 只按空行切，实测华为 2024 年报被切成 **1 块**（17 万字），再硬切成
+// 18 个 1 万字粗块——粗块里"荣耀出现 1 次"竞争不过"常见词出现几十次"的块。
+//
+// 这里断言的是**切分机制**（块数），不是端到端结果。原因：端到端能否命中取决于文档
+// 词汇的竞争密度，真实年报抽出 61 个检索词、大量块有部分命中才会失败；合成夹具做不到
+// 那种密度——试了三个版本，粗块下目标依然被选中，测试等于空转。所以改测"块够不够细"，
+// 那才是 bug 本身。端到端由真实 PDF 人工验证（见 docs/TOOLS.md）。
+test('整篇没有空行时仍切成细粒度块（真实 PDF 抽取形状）', () => {
+  const lines = [];
+  for (let i = 0; i < 3000; i++) {
+    lines.push(`本集团各业务分部的经营情况如下，收入均计入合并报表第${i}节。`);
+  }
+  const doc = lines.join('\n'); // 单换行，全文一个空行都没有
+  assert.ok(!doc.includes('\n\n'), '夹具失真：必须完全没有空行才复现真实形状');
+  assert.ok(doc.length > 80000, '夹具失真：文档要足够长');
+
+  const r = selectRelevantPassages(doc, '业务分部收入', { budget: 20000 });
+  assert.ok(
+    r.blockCount >= 100,
+    `整篇无空行时只切出 ${r.blockCount} 块——退化成粗块了。` +
+      '细块是稀有词段落能在打分里胜出的前提',
+  );
+  const avg = doc.length / r.blockCount;
+  assert.ok(avg <= 2000, `平均块大小 ${Math.round(avg)} 字，太粗`);
 });
 
 test('保留开头的身份信息（主体、期间、货币单位）', () => {

@@ -78,6 +78,16 @@ test('针对性模式教会"追查附注 + 跨年对比"的方法', () => {
   assert.ok(p.includes('以行项目名称对齐'), '应说明跨年对齐要按行项目名而非附注编号');
 });
 
+// PDF 表格抽取后行名与数字被拆成两段，这是本案例里最容易读错数的地方
+test('针对性模式提醒表格抽取后行名与数字会错位', () => {
+  const p = buildAnalysisSystemPrompt(Q);
+  assert.ok(p.includes('行名和数字常常被拆成两段'), '必须提醒这个抽取特性');
+  assert.ok(p.includes('按顺序位置对齐'), '必须给出对齐方法');
+  assert.ok(p.includes('用附注文字交叉验证'), '必须要求交叉验证读数');
+  assert.ok(p.includes('表示该年为零/无'), '必须说明「–」的含义，否则会被当成缺失数据');
+  assert.ok(p.includes('不要猜数字'), '无法对齐时必须禁止猜数字');
+});
+
 test('综合模式不夹带针对性模式的追查方法（避免两态混淆）', () => {
   const noQ = buildAnalysisSystemPrompt('');
   assert.ok(!noQ.includes('金额在附注里，不在正文'), '综合模式不该带这套追查指令');

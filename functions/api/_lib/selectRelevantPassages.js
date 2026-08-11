@@ -104,30 +104,50 @@ export function extractTerms(question) {
 }
 
 /**
- * 按空行把长文切块：过短的合并、过长的再切。
+ * 把长文切成可打分的块。
  *
- * 两端都必须封口，这是单测抓出来的：
- *  · 只做"合并短块"时，如果全文的段落都短于 minLen，就会**全部并成一个巨块**，
- *    装不进预算被整体跳过，最后什么都选不出来。所以合并要有上限 maxLen。
- *  · 只做"合并"不做"切分"时，真实年报里「合并财务报表附注」常是一大段，
- *    单块超过预算同样会被整体跳过——恰好丢掉最该看的部分。所以要能切开。
+ * ⚠️ 不能只按空行切。真实 PDF 抽取（pdftotext / pdf.js）常常**整篇没有一个空行**，
+ * 每行只用单个 \n 分隔。2026-08-11 实测华为 2024 年报：按 `\n{2,}` 切出来
+ * **只有 1 块**（17 万字），再被硬切成 18 个 1 万字的粗块——粗块里"荣耀出现 1 次"
+ * 竞争不过"常见词出现几十次"的块，于是命中被挤掉。
+ * （更糟的是那之前有一次"碰巧找到了"，纯粹因为归一化让块边界移了位置。
+ *   靠运气通过的验证比失败更危险。）
+ *
+ * 所以：先按空行切；若切出来的块明显偏大，再按单换行细分。目标块大小取
+ * 几百到一两千字——足够保留上下文，又细到能让稀有词的段落在打分里胜出。
  */
 function splitBlocks(text, minLen, maxLen) {
   const out = [];
-  for (const raw of String(text).split(/\n{2,}/)) {
-    const t = raw.trim();
-    if (!t) continue;
-    if (t.length > maxLen) {
-      for (let i = 0; i < t.length; i += maxLen) out.push(t.slice(i, i + maxLen));
-      continue;
-    }
+
+  const pushLine = (line) => {
+    const t = line.trim();
+    if (!t) return;
     const last = out[out.length - 1];
-    if (last !== undefined && last.length < minLen && last.length + t.length + 2 <= maxLen) {
-      out[out.length - 1] = last + '\n\n' + t;
+    if (last !== undefined && last.length < minLen && last.length + t.length + 1 <= maxLen) {
+      out[out.length - 1] = last + '\n' + t;
+    } else if (t.length > maxLen) {
+      for (let i = 0; i < t.length; i += maxLen) out.push(t.slice(i, i + maxLen));
     } else {
       out.push(t);
     }
+  };
+
+  for (const raw of String(text).split(/\n{2,}/)) {
+    const part = raw.trim();
+    if (!part) continue;
+    if (part.length <= maxLen) {
+      const last = out[out.length - 1];
+      if (last !== undefined && last.length < minLen && last.length + part.length + 2 <= maxLen) {
+        out[out.length - 1] = last + '\n\n' + part;
+      } else {
+        out.push(part);
+      }
+      continue;
+    }
+    // 这一段太大（很可能整篇没有空行）→ 按单换行细分
+    for (const line of part.split('\n')) pushLine(line);
   }
+
   return out;
 }
 
@@ -144,17 +164,36 @@ function splitBlocks(text, minLen, maxLen) {
  * @param {{budget?:number, headChars?:number, minBlockLen?:number}} [opts]
  * @returns {{text:string, mode:'head'|'selected', usedChars:number, totalChars:number, hitTerms:string[]}}
  */
+/**
+ * 去掉汉字之间被插入的空格。PDF 两端对齐/字距会让抽取结果变成「已转 移 至 客 户」，
+ * 这些空格不携带语义，却会让关键词匹配静默失效。
+ *
+ * 实测（华为 2024 年报，pdftotext 抽取 169,960 字）：汉字间插空格 4,297 处；
+ * 归一化后「公允价值变动」从 14 次涨到 18 次 —— 有 4 处匹配本来被空格藏住了。
+ * 顺带省下约 4,600 字的 token。
+ *
+ * 只处理"汉字 空格 汉字"，不动汉字与数字/字母之间的空格（那些是有意义的分隔，
+ * 例如「2,500 百万元」）。
+ */
+export function normalizeCjkSpacing(text) {
+  return text.replace(/([一-鿿])[ \t]+(?=[一-鿿])/g, '$1');
+}
+
 export function selectRelevantPassages(text, question, opts = {}) {
-  const full = String(text || '');
+  const raw = String(text || '');
+  // 匹配与送出都用归一化后的文本；但 totalChars 报原文字数——那个数字会写进给
+  // 模型看的说明（"本文件共 N 字"），应与用户在文件列表里看到的字数一致。
+  const full = normalizeCjkSpacing(raw);
   const budget = opts.budget ?? 80000;
   const headChars = opts.headChars ?? 4000;
-  const minBlockLen = opts.minBlockLen ?? 200;
-  // 单块上限：既防"短段全并成一个巨块"，也防"附注一大段超预算被整体跳过"
-  const maxBlockLen = opts.maxBlockLen ?? Math.max(1200, Math.floor(budget / 8));
-  const totalChars = full.length;
+  // 块大小固定在细粒度，**不随预算放大**。此前是 max(1200, budget/8)，预算 80K 时
+  // 变成 1 万字/块——那么粗的块里，稀有词出现 1 次会输给常见词出现几十次的块。
+  const minBlockLen = opts.minBlockLen ?? 300;
+  const maxBlockLen = opts.maxBlockLen ?? 1500;
+  const totalChars = raw.length;
 
-  // 短到装得下就整篇送，不必挑
-  if (totalChars <= budget) {
+  // 短到装得下就整篇送，不必挑（按归一化后的实际送出量判断）
+  if (full.length <= budget) {
     return { text: full, mode: 'head', usedChars: totalChars, totalChars, hitTerms: [] };
   }
 
@@ -231,6 +270,7 @@ export function selectRelevantPassages(text, question, opts = {}) {
     mode: 'selected',
     usedChars: used,
     totalChars,
+    blockCount: blocks.length,
     hitTerms: [...hitTerms],
   };
 }
