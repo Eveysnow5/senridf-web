@@ -83,11 +83,26 @@ export const CHAT_ENDPOINT = 'https://dashscope.aliyuncs.com/compatible-mode/v1/
 // Qwen family rather than moving to deepseek/glm because the bid summaries must
 // keep hitting a strict 【内容】【发注元】【截标】 format unattended, and a
 // silent format drift there lands straight in the user-facing bids table.
+// 2026-08-11 重新分配：balanced 与 batch 原本各占一个桶，但那两个桶分别
+// 09-01 / 09-08 到期，而切换供应商要等同事改 Pages 环境变量、不由我们控制，
+// 赶在那之前完成的把握不够。于是把悬崖推到 10-23 之后，争取从容期。
+//
+// 为什么合并而不是换到别的满额度桶：Qwen 家族里到期晚于 09-08 的只剩
+// qwen3.8-max(11-01) 和 qwen3.7-flash(10-23)，两个都已在用。其余晚期桶
+// （deepseek-v4-flash-0731 10-31、glm-5.2 09-15）都是**跨家族**——作者明确
+// 否决了，因为会议纪要要稳定输出【议题】【客户反馈】【行动项】、分析要出
+// markdown 报告，跨家族有格式漂移风险，而这类漂移是无人值守时才发作的。
+// 爬虫作者判断"量不大，可以凑合"，故一并并入。
+//
+// ⚠️ 代价：strong/balanced/batch 现在共用一个 1M 桶。粗估每月 300~400K
+// （爬虫约 200K/月 + 交互工具几十 K），到 11-01 约 2.7 个月——**贴着边**。
+// 观测点是百炼控制台的「模型用量」；若消耗快于预期，先关掉四个非流式端点
+// 的 thinking（推理 token 同样计费却被直接丢弃），那是最便宜的止血。
 export const TIERS = {
   strong: 'qwen3.8-max',
-  balanced: 'qwen3.7-plus-2026-05-26',
+  balanced: 'qwen3.8-max',
   fast: 'qwen3.7-flash',
-  batch: 'qwen3.7-max-2026-06-08',
+  batch: 'qwen3.8-max',
 };
 
 // Which tier each task needs, and why. This is the durable record of intent:

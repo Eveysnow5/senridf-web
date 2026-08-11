@@ -133,7 +133,11 @@ test('CJS → ESM 桥能真的加载到共享配置', async () => {
   assert.equal(await loadModelConfig(), cfg, '应缓存同一个模块实例');
 });
 
-test('两个爬虫任务都在 batch 档（不与交互工具抢同一个额度桶）', () => {
+// 注意：括号里原本写「不与交互工具抢同一个额度桶」，2026-08-11 起已不成立——
+// batch 现在和 strong 落在同一个模型上（原因见 models.js 的 TIERS 注释：不跨
+// 家族的前提下没有别的晚期桶了）。断言本身仍有意义：把爬虫单独归一档，是为了
+// 额度宽裕时能一键把它们挪回独立桶，而不必回去翻哪些任务算"夜间批量"。
+test('两个爬虫任务都归在 batch 档（保留独立分配的能力）', () => {
   assert.equal(TASK_TIER.bidSummary, 'batch');
   assert.equal(TASK_TIER.aiIntel, 'batch');
 });
