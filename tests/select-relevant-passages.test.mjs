@@ -1,0 +1,174 @@
+// 按提问挑片段的纯函数测试。
+//
+// 夹具刻意复现真实年报的形状，而不是"短一号、干净一号"的合成数据：
+//   · 总长超过预算，逼函数真的走筛选分支（不然测的是"整篇装得下"那条）
+//   · 高频词「华为」几乎每块都有 —— 这是陷阱，按命中次数排序会让它霸榜
+//   · 目标词「荣耀」只出现在一个块里，且**位置很深**（远超 headChars）
+// 这三条正是 2026-08-11 真实翻车的形状：187,405 字的年报截前 30,000 字，
+// 附注里的荣耀处置数据整段丢失，模型于是回答"文件未披露"。
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  selectRelevantPassages,
+  extractTerms,
+} from '../functions/api/_lib/selectRelevantPassages.js';
+
+const FILLER =
+  '华为坚持以客户为中心，持续投入研发，推动产业健康发展。本节讨论经营环境与业务进展，' +
+  '涵盖运营商业务、企业业务与消费者业务的整体表现，以及区域市场的经营情况。';
+
+/** 造一份"像年报"的长文：大量含高频词的填充块，目标块埋在很深的位置。 */
+function buildReport({ blocks = 400, targetAt = 250 } = {}) {
+  const out = [];
+  for (let i = 0; i < blocks; i++) {
+    if (i === targetAt) {
+      out.push(
+        '合并财务报表附注 十三、处置子公司\n' +
+          '本集团于报告期内确认处置荣耀终端有限公司相关递延收益人民币 4,213 百万元，' +
+          '计入其他业务收入。该处置对当期净利润的影响为增加人民币 3,180 百万元。',
+      );
+    } else {
+      out.push(`第 ${i + 1} 节 经营讨论\n${FILLER}${FILLER}`);
+    }
+  }
+  return out.join('\n\n');
+}
+
+const QUESTION = '华为处置子公司荣耀产生的利润，对财务报表有多大影响';
+
+test('extractTerms 能抽出关键检索词，并滤掉纯虚词', () => {
+  const terms = extractTerms(QUESTION);
+  assert.ok(
+    terms.some((t) => t.includes('荣耀')),
+    `应抽到「荣耀」相关词，实际：${terms.slice(0, 15).join('/')}`,
+  );
+  assert.ok(
+    terms.some((t) => t.includes('处置')),
+    '应抽到「处置」',
+  );
+  // 这些单独出现时不该成为检索词
+  for (const junk of ['的', '对', '多大']) {
+    assert.ok(!terms.includes(junk), `不该把「${junk}」当检索词`);
+  }
+});
+
+// 回归：曾经加过"含单字虚词的 n-gram 一律剔掉"的过滤，把**公司名「华为」**
+// （含「为」）连根杀掉，检索词只剩「荣耀」。这类词在财报里到处都是：
+// 会计政策(会)、数字能源(能)、有限公司(有)、在建工程(在)、对外投资(对)。
+test('含常见虚词字的正当词汇不被误杀（华为 / 会计政策 / 数字能源）', () => {
+  for (const [q, must] of [
+    ['华为的营收', '华为'],
+    ['会计政策变更', '会计政策'],
+    ['数字能源业务', '数字能源'],
+    ['有限公司股权', '有限公司'],
+  ]) {
+    const terms = extractTerms(q);
+    assert.ok(terms.includes(must), `「${must}」被误杀了，实际抽到：${terms.join('/')}`);
+  }
+});
+
+test('extractTerms 对空提问返回空数组', () => {
+  assert.deepEqual(extractTerms(''), []);
+  assert.deepEqual(extractTerms('   '), []);
+  assert.deepEqual(extractTerms(undefined), []);
+});
+
+test('短文档整篇返回，不做筛选', () => {
+  const r = selectRelevantPassages('很短的内容', QUESTION, { budget: 1000 });
+  assert.equal(r.mode, 'head');
+  assert.equal(r.text, '很短的内容');
+});
+
+test('无提问时退回取开头（综合分析模式）', () => {
+  const doc = buildReport();
+  const r = selectRelevantPassages(doc, '', { budget: 5000 });
+  assert.equal(r.mode, 'head');
+  assert.equal(r.text, doc.slice(0, 5000));
+  assert.deepEqual(r.hitTerms, []);
+});
+
+// 这是本函数存在的唯一理由：目标段落深埋在文档后段，硬截开头必然丢掉它。
+test('目标段落深埋时仍被选中，而硬截开头会丢掉它', () => {
+  const doc = buildReport({ blocks: 400, targetAt: 250 });
+  const budget = 20000;
+
+  // 先证明夹具确实复现了翻车形状：硬截开头拿不到目标内容
+  assert.ok(!doc.slice(0, budget).includes('荣耀'), '夹具失真：硬截开头竟然也包含目标段落');
+  assert.ok(doc.length > budget * 3, '夹具失真：文档不够长，筛选分支可能没被触发');
+
+  const r = selectRelevantPassages(doc, QUESTION, { budget });
+  assert.equal(r.mode, 'selected');
+  assert.ok(r.text.includes('荣耀'), '选出的内容里必须包含目标段落');
+  assert.ok(r.text.includes('4,213'), '必须带上具体金额，否则等于没答');
+  assert.ok(r.usedChars <= budget, `超预算：${r.usedChars} > ${budget}`);
+});
+
+test('预算紧张时目标段落仍能排进来', () => {
+  const doc = buildReport({ blocks: 400, targetAt: 250 });
+  const r = selectRelevantPassages(doc, QUESTION, { budget: 6000, headChars: 1000 });
+  assert.ok(r.text.includes('荣耀'), '预算紧张时目标段落被挤掉了');
+});
+
+// IDF 专项。上面那条测不出 IDF：目标块同时命中「荣耀+处置+子公司+利润」四个词、
+// 填充块只命中「华为」一个，所以不加权也是 4 > 1，目标照样赢——**去掉 IDF 后
+// 那条测试依然全过，等于空转**（2026-08-11 跑突变验证时抓到）。
+//
+// 这个夹具专门把 IDF 隔离出来：填充块把高频词重复 12 次、目标块只含一个稀有词。
+//   不加权：填充块 1+ln(12)≈3.5  >  目标块 1+ln(1)=1        → 目标被挤掉
+//   加 IDF：填充块 ln(1+N/N)≈0.69×3.5  <  目标块 ln(1+N)×1  → 目标胜出
+test('高频词不会淹没稀有词（IDF 加权本身生效）', () => {
+  const noisy = '华为'.repeat(12) + '经营讨论与业务进展说明，涵盖各区域市场表现。';
+  const target = '本集团确认处置荣耀相关递延收益人民币 4,213 百万元。';
+  const blocks = [];
+  for (let i = 0; i < 200; i++) blocks.push(i === 150 ? target : `第${i}节 ${noisy}`);
+  const doc = blocks.join('\n\n');
+
+  // 只问高频词 + 稀有词，让两者直接竞争
+  const r = selectRelevantPassages(doc, '华为荣耀', {
+    budget: 2000,
+    headChars: 200,
+    minBlockLen: 10,
+  });
+
+  assert.ok(
+    r.text.includes('4,213'),
+    '稀有词段落被高频词段落挤掉了——IDF 加权没生效。' + `实际选中内容开头：${r.text.slice(0, 120)}`,
+  );
+});
+
+test('保留开头的身份信息（主体、期间、货币单位）', () => {
+  const doc = '华为投资控股有限公司 2025 年度报告 货币单位：人民币百万元\n\n' + buildReport();
+  const r = selectRelevantPassages(doc, QUESTION, { budget: 20000, headChars: 2000 });
+  assert.ok(r.text.includes('2025 年度报告'), '开头的期间信息必须保留，否则后面的数字无法解读');
+  assert.ok(r.text.includes('货币单位'), '货币单位必须保留');
+});
+
+test('选出的片段保持原文顺序', () => {
+  const doc = [
+    '第一块 关于荣耀处置的早期说明',
+    '中间填充 ' + FILLER + FILLER + FILLER,
+    '第三块 荣耀处置的最终确认金额 4,213 百万元',
+  ].join('\n\n');
+  const r = selectRelevantPassages(doc, QUESTION, { budget: 400, headChars: 50 });
+  const iEarly = r.text.indexOf('早期说明');
+  const iLate = r.text.indexOf('最终确认');
+  if (iEarly !== -1 && iLate !== -1) {
+    assert.ok(iEarly < iLate, '顺序被打乱了——财务文档的先后关系是语义的一部分');
+  }
+});
+
+test('返回值带上可观测信息（用了多少字、命中哪些词）', () => {
+  const doc = buildReport();
+  const r = selectRelevantPassages(doc, QUESTION, { budget: 20000 });
+  assert.equal(r.totalChars, doc.length);
+  assert.ok(r.usedChars > 0 && r.usedChars <= 20000);
+  assert.ok(r.hitTerms.length > 0, '应报告命中了哪些检索词，便于排查"为什么没选中"');
+});
+
+test('明确告知模型这是筛选后的片段而非全文', () => {
+  const r = selectRelevantPassages(buildReport(), QUESTION, { budget: 20000 });
+  assert.ok(
+    r.text.includes('非全文'),
+    '必须声明是片段——否则模型会把"没看到"当成"文件未披露"，这正是原来的 bug',
+  );
+});
