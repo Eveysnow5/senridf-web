@@ -431,7 +431,14 @@
     .ag-spinner { width:28px;height:28px;border:2px solid #e5e7eb;border-top-color:#a87c4f;border-radius:50%;animation:ag-s .8s linear infinite;margin:0 auto; }
     .ag-text { color:#9ca3af;font-size:13px;margin-top:12px;font-family:sans-serif; }
     .an-hint { font-size:0.875em;opacity:0.7; }
-    #anPromptSection,#anActions,#anResult,#anLoading,#anError { display:none; }
+    /* 隐藏用工具类。此前这里是 `#anPromptSection,#anActions,... { display:none }`，
+       而 JS 用 `style.display = ''` 来显示——`''` 是移除内联样式，于是回落到这条
+       ID 规则（优先级 100）继续隐藏，文档分析工具从 2026-06-15 起完全不可用。
+       同一个 bug 2026-06-19 在 translation.html 的 #tabText 上修过，当时没横扫。
+       改用类 + classList 切换，就不必知道每个元素的原生 display 是什么
+       （.an-actions 是 flex，若粗暴填 'block' 按钮会竖排）。!important 是为了
+       不依赖样式表里的先后顺序。 */
+    .is-hidden { display: none !important; }
   </style>
 </head>
 <body>
@@ -484,7 +491,7 @@
         <div class="an-file-list" id="anFileList"></div>
 
         <!-- Prompt -->
-        <div class="an-prompt-section" id="anPromptSection">
+        <div class="an-prompt-section is-hidden" id="anPromptSection">
           <div class="an-prompt-label">
             分析方向 / 分析问题
             <span>（省略可・省略时 AI 自动综合分析 / 可留空）</span>
@@ -494,7 +501,7 @@
         </div>
 
         <!-- Actions -->
-        <div class="an-actions" id="anActions">
+        <div class="an-actions is-hidden" id="anActions">
           <button type="button" class="an-action-btn an-action-btn--primary" id="anSubmit">
             分析する / 开始分析
           </button>
@@ -504,13 +511,13 @@
         </div>
 
         <!-- Result -->
-        <div class="an-result" id="anResult">
+        <div class="an-result is-hidden" id="anResult">
           <div class="an-result-header">分析レポート / 分析报告</div>
-          <div class="an-loading" id="anLoading">
+          <div class="an-loading is-hidden" id="anLoading">
             <div class="an-spinner"></div>
             <span>分析中 / 分析中…</span>
           </div>
-          <div class="an-error" id="anError"></div>
+          <div class="an-error is-hidden" id="anError"></div>
           <div class="an-report" id="anReport"></div>
         </div>
 
@@ -870,8 +877,8 @@
 
     function updateUI() {
       const hasFiles = uploadedFiles.length > 0 && uploadedFiles.every(f => !f.loading);
-      elPromptSec.style.display = hasFiles ? '' : 'none';
-      elActions.style.display   = hasFiles ? '' : 'none';
+      elPromptSec.classList.toggle('is-hidden', !hasFiles);
+      elActions.classList.toggle('is-hidden', !hasFiles);
     }
 
     /* ── Analysis ── */
@@ -887,10 +894,10 @@
       if (ready.length === 0) return;
 
       elSubmit.disabled = true;
-      elLoading.style.display = 'flex';
+      elLoading.classList.remove('is-hidden');
       clearError();
       elReport.innerHTML = '';
-      elResult.style.display = '';
+      elResult.classList.remove('is-hidden');
 
       let accumulated = '';
       let firstToken = false;
@@ -945,7 +952,7 @@
               if (delta) {
                 if (!firstToken) {
                   firstToken = true;
-                  elLoading.style.display = 'none';
+                  elLoading.classList.add('is-hidden');
                 }
                 accumulated += delta;
                 elReport.innerHTML = renderMarkdown(accumulated);
@@ -961,7 +968,7 @@
       } catch (err) {
         showError(err.message);
       } finally {
-        elLoading.style.display = 'none';
+        elLoading.classList.add('is-hidden');
         elSubmit.disabled = false;
       }
     }
@@ -971,7 +978,7 @@
       uploadedFiles.length = 0;
       renderFileList();
       updateUI();
-      elResult.style.display = 'none';
+      elResult.classList.add('is-hidden');
       elReport.innerHTML = '';
       clearError();
       elPrompt.value = '';
@@ -979,15 +986,15 @@
 
     /* ── UI helpers ── */
     function setLoading(on) {
-      elLoading.style.display = on ? 'flex' : 'none';
+      elLoading.classList.toggle('is-hidden', !on);
       elSubmit.disabled = on;
     }
     function showError(msg) {
       elError.textContent = msg;
-      elError.style.display = '';
+      elError.classList.remove('is-hidden');
     }
     function clearError() {
-      elError.style.display = 'none';
+      elError.classList.add('is-hidden');
       elError.textContent = '';
     }
     function escHtml(s) {

@@ -139,6 +139,11 @@
       color: var(--c-text-2);
       margin-bottom: 32px;
     }
+    /* 与 .tl-notice / .tl-loading / .tl-error 同一惯例。此前 JS 用
+       `style.display = ''` 来显示这条警告，而 `''` 是移除内联样式、回落到上面
+       `.voice-browser-warn { display: none }`——所以浏览器不支持时用户看不到
+       任何说明，只看到两个按钮是灰的。 */
+    .voice-browser-warn.is-visible { display: block; }
 
     /* Speaker setup */
     .voice-setup-row {
@@ -1164,7 +1169,7 @@
 
     const hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
     if (!hasGetUserMedia) {
-      document.getElementById('voiceBrowserWarn').style.display = '';
+      document.getElementById('voiceBrowserWarn').classList.add('is-visible');
     } else {
       elBtnMarkerMe.disabled = false;
       elBtnMarkerThem.disabled = false;
