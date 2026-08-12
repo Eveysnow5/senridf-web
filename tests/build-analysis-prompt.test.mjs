@@ -165,3 +165,91 @@ test('文本路径的 user 消息末尾就是文本模式问题块（同一份�
   const msg = buildAnalysisUserMessage('文档', Q);
   assert.ok(msg.endsWith(buildQuestionTail(Q, 'text')), '两处应共用同一份问题块定义');
 });
+
+/* ── 多轮取页态（Task 4）───────────────────────────────────────────────────
+ * 多轮把请求次数乘以 5，任何被悄悄删掉的硬规则都会被放大 5 倍。所以这一组的第一条
+ * 就是"不传 round 时与今天逐字节相同"——单轮路径是已知可用的，不许有任何回归。
+ */
+
+test('不传 round 时与今天逐字节相同——单轮路径不许有回归', () => {
+  assert.equal(buildAnalysisSystemPrompt(Q), buildAnalysisSystemPrompt(Q, {}));
+  assert.equal(buildAnalysisSystemPrompt(''), buildAnalysisSystemPrompt('', {}));
+  const single = buildAnalysisSystemPrompt(Q);
+  assert.ok(!single.includes('NEED_PAGES'), '单轮态不该出现取页指令');
+  assert.ok(!single.includes('页面索引'), '单轮态不该提页面索引');
+});
+
+test('多轮态保留全部四条硬规则（多轮不是删规则的借口）', () => {
+  const p = buildAnalysisSystemPrompt(Q, { round: 1, maxRounds: 5 });
+  assert.ok(p.includes('禁止使用你自己知道的任何外部事实'), '缺：禁用外部知识');
+  assert.ok(p.includes('每一条关键信息都要标注来源'), '缺：必须给来源');
+  assert.ok(p.includes('禁止用推测填补数据缺口'), '缺：不许猜');
+  assert.ok(p.includes('绝不要把"我没看到"写成"文件未披露"'), '缺：区分没有与没看到');
+  for (const banned of ['可能是', '极有可能', '按惯例']) {
+    assert.ok(p.includes(banned), `被禁说法清单里缺：${banned}`);
+  }
+});
+
+test('多轮态说清索引不是全文，并给出索要页面的格式', () => {
+  const p = buildAnalysisSystemPrompt(Q, { round: 1, maxRounds: 5 });
+  assert.ok(p.includes('不是全文'), '必须说清索引只是每页开头');
+  assert.ok(p.includes('NEED_PAGES'), '必须给出索要指令');
+  assert.ok(
+    /第\s*1\s*\/\s*5\s*轮|第 1 轮（共 5 轮）/.test(p),
+    `必须告诉模型当前轮次，实际：${p.slice(-400)}`,
+  );
+});
+
+// 最有价值的一条：把 prompt 里给模型看的**那个示例**真的喂给解析器。
+// 两边的契约靠这条锁死，不靠人记得同步——示例改了而解析器没改（或反过来），
+// 循环会安静地永远解析不出页码，然后每次都空转到轮数上限。
+test('prompt 里的示例能被 parsePageRequest 真正解析出来（跨模块契约）', async () => {
+  const { parsePageRequest } = await import('../js/shared/parse-page-request.js');
+  const p = buildAnalysisSystemPrompt(Q, { round: 1, maxRounds: 5 });
+  const lines = p.split('\n').filter((l) => l.includes('NEED_PAGES') && /\d/.test(l));
+  assert.ok(lines.length > 0, 'prompt 里应有带页码的 NEED_PAGES 示例');
+  for (const line of lines) {
+    const r = parsePageRequest(line, 3, [148, 148, 148]);
+    assert.equal(r.done, false, `解析器认不出 prompt 里的示例：${line}`);
+    assert.ok(r.requests.length > 0, `示例解析出空请求：${line}`);
+  }
+});
+
+test('多轮态要求只用 p 后面那个数索要页面（印刷页码是陷阱）', () => {
+  // 索引给的是 `p86 (印刷84)`，两个数都是合法页码，取错页事后无从发现。
+  const p = buildAnalysisSystemPrompt(Q, { round: 2, maxRounds: 5 });
+  assert.ok(p.includes('印刷'), '必须提到印刷页码的存在');
+  assert.ok(/只.*p\b|p 后面|不要用印刷/.test(p), `必须讲清索要时用哪个数，实际：${p}`);
+});
+
+test('多轮态要求引文标页码，且结转的是引文不是结论', () => {
+  const p = buildAnalysisSystemPrompt(Q, { round: 2, maxRounds: 5 });
+  assert.ok(p.includes('p86') || p.includes('·p'), '来源格式里应含页码形态');
+  // 这里曾经写成 /原文|引文|原句/ —— 太松：删掉「摘原文，不要只写结论」那句后，
+  // 段落别处还有「摘录原文」，正则照样匹配，突变验证当场露馅。断言要贴**对比本身**。
+  assert.ok(p.includes('摘录原文'), '必须要求摘录原文');
+  assert.ok(p.includes('不要只写结论'), '必须点明不是写结论 —— 这是结转规则的全部意义');
+});
+
+test('最后一轮必须作答，且不再邀请索要页码', () => {
+  const last = buildAnalysisSystemPrompt(Q, { round: 5, maxRounds: 5 });
+  assert.ok(last.includes('ANSWER'), '最后一轮必须要求 ANSWER 作答');
+  assert.ok(last.includes('不能再索要页面'), '最后一轮必须明说不能再索要');
+  // 断言整份 prompt 里没有 NEED_PAGES —— 比没有邀请的措辞强得多：
+  // 只要示例还在，模型就可能照着用。
+  assert.ok(!last.includes('NEED_PAGES'), '最后一轮不该出现任何 NEED_PAGES');
+});
+
+test('超出上限的轮次也按最后一轮处理（别靠调用方保证 round<=maxRounds）', () => {
+  const over = buildAnalysisSystemPrompt(Q, { round: 9, maxRounds: 5 });
+  // ⚠️ 不能只断言 includes('ANSWER') —— **普通轮次的选项②里也有 ANSWER:**，
+  // 那样的断言对是不是最后一轮毫无分辨力（突变把 >= 改成 === 时它照样绿）。
+  assert.ok(over.includes('不能再索要页面'), '越界轮次也要按最后一轮处理');
+  assert.ok(!over.includes('NEED_PAGES'), '越界轮次不该还给索要格式');
+});
+
+test('无提问时不进入多轮——综合分析没有可追查的问题', () => {
+  const p = buildAnalysisSystemPrompt('', { round: 1, maxRounds: 5 });
+  assert.ok(p.includes('关键指标概览'), '应仍是综合分析形态');
+  assert.ok(!p.includes('NEED_PAGES'), '综合分析不该出现取页指令');
+});
