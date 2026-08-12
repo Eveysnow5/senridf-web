@@ -6,6 +6,7 @@ import {
   buildAnalysisSystemPrompt,
   buildAnalysisUserMessage,
   buildQuestionTail,
+  buildRoundTail,
 } from './_lib/buildAnalysisPrompt.js';
 
 export async function onRequest(context) {
@@ -66,10 +67,15 @@ export async function onRequest(context) {
   //
   // roundState / pageIndex 各自设长度上限：多轮把请求次数乘 5，任何无上限的字段
   // 都会被放大 5 倍，而卡人的是 10ms CPU 和 3MB 闸门（见上面的体积闸门注释）。
+  // 索引和结转分开设限。索引曾与结转共用 20000，而地铁样本 6 份文件的索引合计 28,215
+  // 字符 → **被静默砍掉 29%**：文件5 只进去一半、文件6 完全没进去，于是模型对香港
+  // 2025 年报一无所知，作者问「两期」只拿到一期。客户端现在按文件数摊分索引预算
+  // （见 analysis.html 的 INDEX_TOTAL_CHARS），这里的上限只作最后兜底、留足余量。
+  const INDEX_LIMIT = 48000;
   const CARRY_LIMIT = 20000;
   const round = Number.isFinite(body.round) && body.round >= 1 ? body.round : null;
   const maxRounds = Number.isFinite(body.maxRounds) ? body.maxRounds : 5;
-  const pageIndex = round ? String(body.pageIndex || '').slice(0, CARRY_LIMIT) : '';
+  const pageIndex = round ? String(body.pageIndex || '').slice(0, INDEX_LIMIT) : '';
   const roundState = round ? String(body.roundState || '').slice(0, CARRY_LIMIT) : '';
 
   // 多轮的第 1 轮在文件多时**只发页面索引、一份文件都不发**（预算摊到每份 1 页时，
@@ -143,8 +149,11 @@ export async function onRequest(context) {
     .filter(Boolean)
     .join('\n\n');
 
+  // ⚠️ 多轮时 system prompt **不带轮次号**，逐轮逐字节相同——隐式缓存按前缀匹配，
+  // system 在最前面，它一变整个前缀就失配（页面索引那 1.4 万 token 会每轮全价重付）。
+  // 逐轮变化的部分走 buildRoundTail，摆在用户消息最末尾。
   const systemPrompt = round
-    ? buildAnalysisSystemPrompt(question, { round, maxRounds })
+    ? buildAnalysisSystemPrompt(question, { multiRound: true })
     : buildAnalysisSystemPrompt(question);
   const userMessage = buildAnalysisUserMessage(docContext, question, highlightBlock);
 
@@ -191,6 +200,7 @@ export async function onRequest(context) {
       });
     }
     parts.push({ type: 'text', text: buildQuestionTail(question, 'image') });
+    if (round) parts.push({ type: 'text', text: buildRoundTail(round, maxRounds) });
     userContent = parts;
   } else if (round && (pageIndex || roundState)) {
     // 多轮但本轮一页图都没渲染出来（渲染失败或模型只索要了越界页码）。仍要把索引和
@@ -203,7 +213,9 @@ export async function onRequest(context) {
     const carried = roundState
       ? `【前几轮你已经摘录的内容（图像不会重发，这是你唯一还能看到的证据）】\n${roundState}\n\n`
       : '';
-    userContent = `${head}${carried}${userMessage}`;
+    userContent = `${head}${carried}${userMessage}
+
+${buildRoundTail(round, maxRounds)}`;
   }
 
   try {

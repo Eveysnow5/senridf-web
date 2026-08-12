@@ -1147,8 +1147,16 @@
       if (!buildIndex || !parseReq) throw new Error('多轮：共享模块未加载');
 
       // 页面索引一次算好，每轮原样重发——它是稳定前缀，能落进隐式缓存。
+      //
+      // ⚠️ 预算必须按**文件数**摊分。默认每份 16000 字，6 份文件合计 28,215 字，
+      // 而服务端上限当时是 20000 → **被静默砍掉 29%**：地铁样本里文件5 只进去一半、
+      // 文件6 完全没进去，于是模型对香港 2025 年报一无所知，作者问"两期"只拿到一期。
+      // 总量固定后，文件越多每份越薄（摘要变短），但**每一份都在**——少一份文件，
+      // 模型就永远不会索要它的页，那份文件等于不存在。
+      const INDEX_TOTAL_CHARS = 40000;
+      const perFileIndex = Math.max(1200, Math.floor(INDEX_TOTAL_CHARS / cands.length));
       const pageIndex = cands
-        .map((f, i) => `【文件${i + 1}：${f.name}】共 ${f.pageTexts.length} 页\n${buildIndex(f.pageTexts)}`)
+        .map((f, i) => `【文件${i + 1}：${f.name}】共 ${f.pageTexts.length} 页\n${buildIndex(f.pageTexts, { budget: perFileIndex })}`)
         .join('\n\n');
       const totals = cands.map(f => f.pageTexts.length);
       const sent = cands.map(() => new Set());

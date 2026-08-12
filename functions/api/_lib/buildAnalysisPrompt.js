@@ -37,29 +37,24 @@ const RULES_COMMON = `【核心规则 — 必须严格遵守，违反即为失�
  * 多轮取页态的附加说明。见 docs/plans/2026-08-12-analysis-multiround-plan.md。
  *
  * 只在**有提问**时生效：综合分析没有可追查的问题，多轮无从收敛。
- * 不传 round 时返回空串，此时整份 prompt 与单轮态**逐字节相同**——单轮是已知可用的
- * 路径，多轮不许给它带来任何回归（tests/build-analysis-prompt.test.mjs 钉住了这条）。
+ * 不传 multiRound 时返回空串，此时整份 prompt 与单轮态**逐字节相同**——单轮是已知
+ * 可用的路径，多轮不许给它带来任何回归（tests/build-analysis-prompt.test.mjs 钉住了这条）。
+ *
+ * ⚠️ **这一段里绝不能出现轮次号。** 隐式缓存按请求**前缀**匹配，而 system 排在最前面：
+ * 早先这里写了「第 N/5 轮」，导致 system prompt 从第 993 个字符起每轮都不同，整个前缀
+ * 失配——页面索引那 1.4 万 token **每轮都按全价重付**，缓存一次都没命中（命中价是
+ * 原价的 1/8）。逐轮变化的部分全部挪到 buildRoundTail，摆在用户消息最末尾：那里在
+ * 图像之后，本来就不进缓存前缀，而且是模型注意力最高的位置。
  *
  * ⚠️ 这里的 `NEED_PAGES:` 示例与 js/shared/parse-page-request.js 是同一份契约。
  * 测试会把这段文字里的示例真的喂给解析器——改了这边而没改那边，循环会安静地
  * 永远解析不出页码，然后每次都空转到轮数上限。
  */
 function buildRoundBlock(question, opts) {
-  const round = opts.round;
-  if (!question || !Number.isFinite(round) || round < 1) return '';
-  const maxRounds = Number.isFinite(opts.maxRounds) ? opts.maxRounds : 5;
-
-  if (round >= maxRounds) {
-    return `
-【本次为多轮取页分析 — 第 ${maxRounds}/${maxRounds} 轮（最后一轮）】
-本轮**不能再索要页面**，请用现有信息作答，以 \`ANSWER:\` 开头。
-仍然缺失的部分照第三节规则处理：说明缺什么、通常在年报哪个章节能找到，**不要猜**。
-前几轮你自己摘录的引文列在下方，那是你唯一还能看到的证据——引用时照旧标明页码。
-`;
-  }
+  if (!question || !opts.multiRound) return '';
 
   return `
-【本次为多轮取页分析 — 第 ${round}/${maxRounds} 轮】
+【本次为多轮取页分析】
 你看到的**不是全文**。你手上有两样东西：一份**页面索引**（每页一行：页码 + 该页开头
 约 80 字），以及本轮渲染出来的那几页**页面图像**。索引只是目录级线索、**不是全文**——
 索引某一行里没出现某个词，不代表那一页上没有它。
@@ -89,9 +84,41 @@ function buildRoundBlock(question, opts) {
 }
 
 /**
+ * 逐轮变化的那一小段，摆在用户消息**最末尾**。
+ *
+ * 为什么不放 system：见 buildRoundBlock 的注释——system 在请求最前面，逐轮变化会让
+ * 隐式缓存的整个前缀失配。这里在图像之后，本来就不进缓存前缀，而且是注意力最高的位置，
+ * 「最后一轮必须作答」放这儿反而更容易被遵守。
+ *
+ * @param {number} round 当前轮次（1 起）
+ * @param {number} maxRounds 轮数上限
+ * @returns {string}
+ */
+export function buildRoundTail(round, maxRounds) {
+  const n = Number.isFinite(round) ? round : 1;
+  const m = Number.isFinite(maxRounds) ? maxRounds : 5;
+  if (n >= m) {
+    return [
+      '='.repeat(40),
+      '',
+      `【第 ${m}/${m} 轮 — 最后一轮】`,
+      '本轮**不能再索要页面**。请用现有信息作答，以 `ANSWER:` 开头。',
+      '仍然缺失的部分照核心规则第三节处理：说明缺什么、通常在年报哪个章节能找到，**不要猜**。',
+    ].join('\n');
+  }
+  return [
+    '='.repeat(40),
+    '',
+    `【第 ${n}/${m} 轮】还可以再索要 ${m - n} 轮。`,
+    '还需要看别的页 → 用**单独成行**的 `NEED_PAGES:` 指令索要；已经够了 → 以 `ANSWER:` 开头作答。',
+    '⚠️ 别为了多看几页而拖延：能答就答。每多一轮，你都要多等一次，而且已读过的图不会再出现。',
+  ].join('\n');
+}
+
+/**
  * 构造 system 提示词。有提问走针对性回答，无提问走综合报告。
  * @param {string} question 用户提问（已 trim），空串表示未提问
- * @param {{round?:number, maxRounds?:number}} [opts] 传 round 才进入多轮取页态
+ * @param {{multiRound?:boolean}} [opts] multiRound 为真才插入多轮说明（**不含轮次号**）
  * @returns {string}
  */
 export function buildAnalysisSystemPrompt(question, opts = {}) {
