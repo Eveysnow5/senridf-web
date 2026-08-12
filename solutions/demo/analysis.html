@@ -847,13 +847,25 @@
      * allowImages=false 的重试（见 runAnalysis 里的 5xx 兜底）。
      */
     async function buildPayload(ready, question, allowImages) {
-      const canImage = f =>
+      const eligible = f =>
         allowImages && question && f.ext === 'pdf' &&
         Array.isArray(f.pageTexts) && f.pdfBuf &&
         typeof window.sdfSelectRelevantPages === 'function';
 
       // 字节预算在候选文件间均分：否则第一份年报吃掉全部额度，跨年对比只剩一年。
-      const nCands = ready.filter(canImage).length;
+      const nEligible = ready.filter(eligible).length;
+
+      // ⚠️ 但均分到文件多的时候会把图像路径压成"每份 1 页"，那时它**比文本路径更差**：
+      // 走图像路径的文件不发 content，选错那一页这份文件就归零；而文本路径能在全文里
+      // 按提问 IDF 检索。2026-08-12 地铁样本实测（6 份年报）：每份分到 133KB → 各 1 页，
+      // 北京地铁 75 页只看到第 31 页（债券条款），6 份里 4 份哑掉。
+      // 详见 js/shared/image-path-viable.js。
+      const viable = window.sdfImagePathViable
+        ? window.sdfImagePathViable(nEligible, IMG_TOTAL_BUDGET)
+        : nEligible > 0;
+      const canImage = f => eligible(f) && viable;
+
+      const nCands = viable ? nEligible : 0;
       const perFileBudget = nCands ? Math.floor(IMG_TOTAL_BUDGET / nCands) : 0;
 
       // 文本路径同样要有线上预算，理由见 js/shared/text-wire-budget.js。
@@ -1204,11 +1216,13 @@ import { sheetRowsToMarkdown } from '/js/shared/sheet-to-markdown.js';
 import { selectRelevantPages } from '/js/shared/select-relevant-pages.js';
 import { selectRelevantPassages } from '/js/shared/select-relevant-passages.js';
 import { textCharBudget } from '/js/shared/text-wire-budget.js';
+import { imagePathViable } from '/js/shared/image-path-viable.js';
 initErrorReporting({ db });
 window.sdfSheetToMarkdown = sheetRowsToMarkdown;
 window.sdfSelectRelevantPages = selectRelevantPages;
 window.sdfSelectRelevantPassages = selectRelevantPassages;
 window.sdfTextCharBudget = textCharBudget;
+window.sdfImagePathViable = imagePathViable;
 window.sdfGetToken=()=>auth.currentUser?.getIdToken();
 const _start=Date.now();let _docId=null,_logged=false;
 function _anonId(){let i=localStorage.getItem('sdf_anon_id');if(!i){i='anon_'+Math.random().toString(36).slice(2,9);localStorage.setItem('sdf_anon_id',i);}return i;}
