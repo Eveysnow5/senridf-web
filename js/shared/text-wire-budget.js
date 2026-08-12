@@ -42,11 +42,22 @@ const SEPARATOR_OVERHEAD = 0.15;
 export const SERVER_CHAR_BUDGET = 80000;
 
 /**
+ * 单份文件低于这个字数就没什么检索价值了，不再往下摊。
+ *
+ * ⚠️ 这里**曾经**是 SERVER_CHAR_BUDGET（80000），理由是"送得比服务端会用的还少纯属
+ * 自伤"。那个理由只管单份质量、不管总量，而当天晚些时候 image-path-viable.js 让
+ * 「6 份文件全走文本」从假想变成常态：6 × 80000 字 × 3 字节 ≈ **1.44MB**，而已知能
+ * 跑通的量级是 1.1MB。等于为了单份不吃亏，把整次请求推向 10ms CPU 墙。
+ * 总量约束优先于单份质量：15 份以内总字节都还压在 WIRE_BUDGET_BYTES 之内。
+ */
+export const MIN_USEFUL_CHARS = 20000;
+
+/**
  * 每份走文本路径的文件，在线上允许占用的字符预算。
  *
- * 下限刻意设成 SERVER_CHAR_BUDGET：送得比服务端会用的还少，等于自己把答案扔了。
- * 所以文件很多时总量会超过 WIRE_BUDGET_BYTES（10 份 × 8 万字 ≈ 2.4MB）——仍在 3MB
- * 闸门内；真到十几份文件，413 那句"请减少文件数量"本来就是正确的答案。
+ * 文件多到连 MIN_USEFUL_CHARS 都摊不出来时（>15 份），总量会超出 WIRE_BUDGET_BYTES。
+ * 那时不再往下压：真到十几份年报，413 那句"请减少文件数量"本来就是正确的答案，
+ * 把每份压到几千字只会让所有文件都答不出来。
  *
  * @param {number} nTextFiles 走文本路径的文件数（走图像路径的不算）
  * @returns {number} 每份文件的字符预算，直接传给 selectRelevantPassages 的 budget
@@ -55,5 +66,5 @@ export function textCharBudget(nTextFiles) {
   if (!Number.isFinite(nTextFiles) || nTextFiles <= 0) return SERVER_CHAR_BUDGET;
   const perFileBytes = Math.floor(WIRE_BUDGET_BYTES / nTextFiles);
   const chars = Math.floor(perFileBytes / (CJK_BYTES_PER_CHAR * (1 + SEPARATOR_OVERHEAD)));
-  return Math.max(SERVER_CHAR_BUDGET, chars);
+  return Math.max(MIN_USEFUL_CHARS, chars);
 }

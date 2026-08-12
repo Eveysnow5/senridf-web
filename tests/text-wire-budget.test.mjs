@@ -22,6 +22,7 @@ import {
   textCharBudget,
   SERVER_CHAR_BUDGET,
   WIRE_BUDGET_BYTES,
+  MIN_USEFUL_CHARS,
 } from '../js/shared/text-wire-budget.js';
 import { selectRelevantPassages } from '../js/shared/select-relevant-passages.js';
 
@@ -78,10 +79,24 @@ test('预算按文件数均分，按 CJK 每字 3 字节换算，并扣掉分离
   assert.equal(textCharBudget(2), 151967);
 });
 
-test('预算不低于服务端 CHAR_BUDGET —— 送得比服务端会用的还少纯属自伤', () => {
-  assert.equal(SERVER_CHAR_BUDGET, 80000);
-  assert.equal(textCharBudget(20), SERVER_CHAR_BUDGET);
-  assert.equal(textCharBudget(100), SERVER_CHAR_BUDGET);
+// 回归：这里曾把下限设成 SERVER_CHAR_BUDGET(80000)，理由是"送得比服务端会用的还少
+// 纯属自伤"。那个理由只管单份质量、不管总量。当 image-path-viable 让「6 份文件全走
+// 文本」成为常态后，6 × 80000 × 3 字节 ≈ 1.44MB > 已知能跑通的 1.1MB —— 为了单份不
+// 吃亏，把整次请求推向 10ms CPU 墙。**总量约束优先于单份质量。**
+test('多文件时总字节仍压在线上预算内（下限不许把总量顶穿）', () => {
+  for (const n of [2, 3, 6, 10, 15]) {
+    const totalBytes = textCharBudget(n) * n * 3;
+    assert.ok(
+      totalBytes <= WIRE_BUDGET_BYTES * 1.02,
+      `${n} 份文件时总量 ${(totalBytes / 1048576).toFixed(2)}MB 超出预算`,
+    );
+  }
+});
+
+test('单份不再往下摊到没有检索价值的量', () => {
+  assert.equal(MIN_USEFUL_CHARS, 20000);
+  assert.equal(textCharBudget(100), MIN_USEFUL_CHARS);
+  assert.ok(textCharBudget(6) > MIN_USEFUL_CHARS, '6 份还远没到下限');
 });
 
 test('文件数为 0/负数/非数不炸，回落到服务端预算', () => {
