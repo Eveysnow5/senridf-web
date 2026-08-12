@@ -95,9 +95,13 @@ export async function onRequest(context) {
     .map((f, i) => {
       const pk = picked[i];
       const body = pk.text.trim() || '（内容为空，可能为扫描版 PDF，无法提取文字层）';
+      // 字数优先用客户端送来的 totalChars（原文字数）。2026-08-12 起前端会先按提问
+      // 粗筛一遍再上传（线上载荷曾无上限，撞过 6.8MB 的 413），所以 pk.totalChars 是
+      // **粗筛后**的长度，不是原文长度。system prompt 第 9 条要模型据这个数字区分
+      // "文件没有"与"我没看到"，报小了就是在削弱那条规则。老客户端不带此字段，回落。
       const note =
         pk.mode === 'selected'
-          ? `（本文件共 ${pk.totalChars} 字，以下为按本次提问筛选出的 ${pk.usedChars} 字相关片段）`
+          ? `（本文件共 ${f.totalChars || pk.totalChars} 字，以下为按本次提问筛选出的 ${pk.usedChars} 字相关片段）`
           : '';
       return `【文件${i + 1}：${f.name}】${note}\n${body}`;
     })
