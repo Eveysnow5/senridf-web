@@ -13,7 +13,7 @@ import {
   selectRelevantPassages,
   extractTerms,
   normalizeCjkSpacing,
-} from '../functions/api/_lib/selectRelevantPassages.js';
+} from '../js/shared/select-relevant-passages.js';
 
 const FILLER =
   '华为坚持以客户为中心，持续投入研发，推动产业健康发展。本节讨论经营环境与业务进展，' +

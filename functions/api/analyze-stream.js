@@ -1,7 +1,7 @@
 // Cloudflare Pages Function — streaming proxy for DashScope analysis
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
 import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
-import { selectRelevantPassages } from './_lib/selectRelevantPassages.js';
+import { selectRelevantPassages } from '../../js/shared/select-relevant-passages.js';
 import { buildAnalysisSystemPrompt, buildAnalysisUserMessage } from './_lib/buildAnalysisPrompt.js';
 
 export async function onRequest(context) {
@@ -53,11 +53,19 @@ export async function onRequest(context) {
   const CHAR_BUDGET = 80000;
   const question = (prompt || '').trim();
 
-  const picked = files.map((f) =>
+  // 图像路径：前端在有提问时，会用文本层选出相关页码、把那几页渲染成 PNG 送来。
+  // 财报的答案几乎都在表格里，而文本抽取会把表格压平成一维字符串——2026-08-11
+  // 实测同一张「其他净收支」表，抽成文本模型读不出来，渲染成图片一眼可读。
+  // 所以分工是：文本层定位页码，视觉读内容。文本路径保留给 docx/xlsx/csv、
+  // 无提问的综合分析，以及图像路径不可用时的兜底。
+  const imageFiles = files.filter((f) => Array.isArray(f.pages) && f.pages.length > 0);
+  const textFiles = files.filter((f) => !(Array.isArray(f.pages) && f.pages.length > 0));
+
+  const picked = textFiles.map((f) =>
     selectRelevantPassages(f.content || '', question, { budget: CHAR_BUDGET }),
   );
 
-  const docContext = files
+  const docContext = textFiles
     .map((f, i) => {
       const pk = picked[i];
       const body = pk.text.trim() || '（内容为空，可能为扫描版 PDF，无法提取文字层）';
@@ -89,6 +97,30 @@ export async function onRequest(context) {
   const systemPrompt = buildAnalysisSystemPrompt(question);
   const userMessage = buildAnalysisUserMessage(docContext, question, highlightBlock);
 
+  // 有页面图像时把 user content 换成多模态数组：图像在前、问题在最后
+  // （既保持缓存前缀稳定，又让问题处在注意力最高的位置）。
+  let userContent = userMessage;
+  if (imageFiles.length > 0) {
+    const parts = [];
+    for (const f of imageFiles) {
+      const nums = f.pages.map((p) => p.page).join('、');
+      parts.push({
+        type: 'text',
+        text: `【文件：${f.name}】以下是按本次提问筛选出的相关页面图像（原文第 ${nums} 页${
+          f.totalPages ? `，共 ${f.totalPages} 页` : ''
+        }）。请直接看图读数，表格里的行名与数字以图为准。`,
+      });
+      for (const pg of f.pages) {
+        parts.push({ type: 'image_url', image_url: { url: pg.dataUrl } });
+      }
+    }
+    if (docContext) {
+      parts.push({ type: 'text', text: `另有以下文本类文件内容供参考：\n\n${docContext}` });
+    }
+    parts.push({ type: 'text', text: userMessage.slice(userMessage.indexOf('='.repeat(40))) });
+    userContent = parts;
+  }
+
   try {
     const upstream = await fetchWithTimeout(CHAT_ENDPOINT, {
       method: 'POST',
@@ -100,7 +132,7 @@ export async function onRequest(context) {
         model: modelFor('analyze', env),
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessage },
+          { role: 'user', content: userContent },
         ],
         max_tokens: 6000,
         temperature: 0.2,

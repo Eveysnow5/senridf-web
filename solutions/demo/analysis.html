@@ -610,7 +610,7 @@
         renderFileList();
 
         try {
-          const content = await extractText(file, ext);
+          const content = await extractText(file, ext, placeholder);
           placeholder.content = content;
           placeholder.chars   = content.length;
           placeholder.loading = false;
@@ -632,23 +632,50 @@
       updateUI();
     }
 
-    async function extractText(file, ext) {
+    async function extractText(file, ext, store) {
       const buf = await file.arrayBuffer();
-      if (ext === 'pdf')  return extractPDF(buf);
+      if (ext === 'pdf')  return extractPDF(buf, store);
       if (ext === 'docx') return extractWord(buf);
       return extractExcel(buf);
     }
 
-    async function extractPDF(buf) {
+    // 抽文本时**同时留下每页的文本**。有提问时用它来选出相关页码，然后只把那几页
+    // 渲染成图片交给模型看——文本抽取会把表格的二维结构压平（行名和数字被拼成
+    // 一维字符串），而财报的答案几乎都在表格里。2026-08-11 实测：同一张
+    // 「其他净收支」表，抽成文本后模型读不出来，渲染成图片则一眼可读。
+    async function extractPDF(buf, store) {
       if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js not loaded');
-      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-      let text = '';
+      // pdf.js 会消费掉传入的 buffer，后面渲染要用，先留一份副本
+      const pdf = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+      const pageTexts = [];
       for (let i = 1; i <= pdf.numPages; i++) {
         const page    = await pdf.getPage(i);
         const content = await page.getTextContent();
-        text += content.items.map(item => item.str).join(' ') + '\n';
+        pageTexts.push(content.items.map(item => item.str).join(' '));
       }
-      return text.trim();
+      if (store) {
+        store.pageTexts = pageTexts;
+        store.pdfBuf = buf; // 渲染时复用，避免再读一次文件
+      }
+      return pageTexts.join('\n').trim();
+    }
+
+    /** 把指定页码（1 起）渲染成 PNG dataURL，交给多模态模型看。 */
+    async function renderPagesToImages(buf, pageNums, scale = 2) {
+      const pdf = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+      const out = [];
+      for (const n of pageNums) {
+        if (n < 1 || n > pdf.numPages) continue;
+        const page = await pdf.getPage(n);
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        out.push({ page: n, dataUrl: canvas.toDataURL('image/png') });
+        canvas.width = canvas.height = 0; // 及早释放，年报页面不小
+      }
+      return out;
     }
 
     async function extractWord(buf) {
@@ -919,16 +946,40 @@
       let firstToken = false;
 
       try {
+        const question = elPrompt.value.trim();
+
+        // PDF + 有提问 -> 用文本层选出相关页码，把那几页渲染成图片交给模型看。
+        // 财报答案几乎都在表格里，而文本抽取会把表格压平成一维字符串（行名与数字
+        // 无法对齐）。2026-08-11 实测同一张「其他净收支」表：抽成文本模型读不出来，
+        // 渲染成图片一眼可读。文本路径保留给 docx/xlsx/csv、无提问的综合分析，
+        // 以及选页失败时的兜底。
+        const payload = [];
+        for (const f of ready) {
+          const canImage =
+            question && f.ext === 'pdf' && Array.isArray(f.pageTexts) && f.pdfBuf &&
+            typeof window.sdfSelectRelevantPages === 'function';
+          if (canImage) {
+            try {
+              const sel = window.sdfSelectRelevantPages(f.pageTexts, question, { maxPages: 8 });
+              if (sel.pages.length) {
+                const pages = await renderPagesToImages(f.pdfBuf, sel.pages);
+                if (pages.length) {
+                  payload.push({ name: f.name, pages, totalPages: f.pageTexts.length });
+                  continue;
+                }
+              }
+            } catch (e) {
+              // 渲染失败不能让整次分析失败——退回文本路径
+              console.warn('页面渲染失败，回退文本路径:', e);
+            }
+          }
+          payload.push({ name: f.name, content: buildFileContent(f, Boolean(question)) });
+        }
+
         const res = await apiFetch(API_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            files: ready.map(f => ({
-              name: f.name,
-              content: buildFileContent(f, Boolean(elPrompt.value.trim())),
-            })),
-            prompt: elPrompt.value.trim()
-          })
+          body: JSON.stringify({ files: payload, prompt: question })
         });
 
         // Check Content-Type before deciding how to parse the error
@@ -1039,8 +1090,10 @@ import { initErrorReporting } from '/js/shared/report-error.js';
 import { mountAuthGate } from '/js/shared/auth-gate.js';
 import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js';
 import { sheetRowsToMarkdown } from '/js/shared/sheet-to-markdown.js';
+import { selectRelevantPages } from '/js/shared/select-relevant-pages.js';
 initErrorReporting({ db });
 window.sdfSheetToMarkdown = sheetRowsToMarkdown;
+window.sdfSelectRelevantPages = selectRelevantPages;
 window.sdfGetToken=()=>auth.currentUser?.getIdToken();
 const _start=Date.now();let _docId=null,_logged=false;
 function _anonId(){let i=localStorage.getItem('sdf_anon_id');if(!i){i='anon_'+Math.random().toString(36).slice(2,9);localStorage.setItem('sdf_anon_id',i);}return i;}
