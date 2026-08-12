@@ -8,6 +8,7 @@
 // 附注里的荣耀处置数据整段丢失，模型于是回答"文件未披露"。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   selectRelevantPassages,
   extractTerms,
@@ -203,6 +204,33 @@ test('选出的片段保持原文顺序', () => {
   if (iEarly !== -1 && iLate !== -1) {
     assert.ok(iEarly < iLate, '顺序被打乱了——财务文档的先后关系是语义的一部分');
   }
+});
+
+// highlights 的目标是覆盖稀有词，不是取高分块（见实现里的注释）。
+//
+// ⚠️ 这条测试**不能**守住"稀有词覆盖"这个逻辑，我试过六个版本都做不到。
+// 原因：该失败模式依赖真实全文的竞争密度——146 页、61 个检索词、173 个块时，
+// 含「荣耀」（df=1）的块因为不含其它提问词而排不进 top6；但在 32 页节选里块少、
+// 竞争弱，纯按分数取也能命中，去掉覆盖逻辑测试照样过（每次都是跑突变验证才发现
+// 在空转）。要复现必须把整份 189K 字抽取塞进仓库，那既臃肿也不适合再分发。
+//
+// 所以：**覆盖逻辑的正确性由真实文档人工验证**（步骤与实测数字见 docs/TOOLS.md）。
+// 这条测试只守三件较弱但真实的事：highlights 非空、结构字段齐全、在真实节选上
+// 能命中目标句。夹具是 pdf.js 对华为 2024 年报的真实抽取（与线上同一条抽取路径）。
+test('highlights 在真实年报节选上非空且命中目标句', () => {
+  const doc = readFileSync(
+    new URL('./fixtures/huawei-2024-notes-excerpt.txt', import.meta.url),
+    'utf8',
+  );
+  assert.ok(doc.length > 30000, `夹具失真：仅 ${doc.length} 字，会短路到整篇返回`);
+  assert.ok(doc.includes('出售荣耀业务'), '夹具失真：节选里没有目标句');
+
+  const Q = '请问从华为的年报看，处置荣耀手机业务的影响，在2024年和2025年分别是多少';
+  const r = selectRelevantPassages(doc, Q, { budget: 20000 });
+
+  assert.ok(r.highlights.length > 0, 'highlights 不该为空');
+  assert.ok(r.distinctiveTerms.length > 0, '应有稀有词参与覆盖');
+  assert.ok(r.highlights.join('\n').includes('出售荣耀业务'), 'highlights 里应包含目标句');
 });
 
 test('返回值带上可观测信息（用了多少字、命中哪些词）', () => {

@@ -73,8 +73,21 @@ export async function onRequest(context) {
   // 硬规则（关键信息必须带来源、找不到就说找不到不许猜、禁用外部知识、区分
   // "文件没有"与"我没看到"）。这段提示词已改写三次，内联写在这里的话，下一次
   // 改动很容易把上一次加的规则悄悄删掉。
+  // 命中最强的片段单独汇总一份，放在紧贴问题之前。
+  // 2026-08-11 实测：「荣耀」在送入的 8 万字里只出现 1 次、位于 77% 处、毫无标记，
+  // 模型直接没看见，于是照着"找不到就说找不到"答了"未包含"——检索是对的，是注意力
+  // 不够。所以把 top 命中块复制一份到显眼处；完整片段仍作背景保留。
+  const highlightBlock = picked
+    .map((pk, i) =>
+      pk.highlights?.length
+        ? `【文件${i + 1}：${files[i].name}】命中片段\n${pk.highlights.join('\n---\n')}`
+        : '',
+    )
+    .filter(Boolean)
+    .join('\n\n');
+
   const systemPrompt = buildAnalysisSystemPrompt(question);
-  const userMessage = buildAnalysisUserMessage(docContext, question);
+  const userMessage = buildAnalysisUserMessage(docContext, question, highlightBlock);
 
   try {
     const upstream = await fetchWithTimeout(CHAT_ENDPOINT, {

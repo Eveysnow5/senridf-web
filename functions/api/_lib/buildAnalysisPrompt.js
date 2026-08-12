@@ -101,13 +101,22 @@ ${RULES_COMMON}
  * @param {string} question 用户提问（已 trim），空串表示未提问
  * @returns {string}
  */
-export function buildAnalysisUserMessage(docContext, question) {
+export function buildAnalysisUserMessage(docContext, question, highlightBlock = '') {
   if (question) {
-    return [
-      '以下是供你参考的财务文件内容：',
-      '',
-      docContext,
-      '',
+    // highlightBlock 放在文档之后、问题之前：既不破坏"文档在前"的缓存前缀，
+    // 又贴着问题、处在模型注意力最高的位置。它是上面片段的子集（重复一份），
+    // 刻意冗余——2026-08-11 实测证明，只靠"内容在里面"不足以让模型看见。
+    const parts = ['以下是供你参考的财务文件内容：', '', docContext, ''];
+    if (highlightBlock) {
+      parts.push(
+        '='.repeat(40),
+        '',
+        '【与本次提问关键词命中最强的片段（已从上文摘出，重点看这里）】',
+        highlightBlock,
+        '',
+      );
+    }
+    parts.push(
       '='.repeat(40),
       '',
       '【本次必须回答的问题】',
@@ -115,7 +124,9 @@ export function buildAnalysisUserMessage(docContext, question) {
       '',
       '上面的文件内容仅是参考资料。请直接回答这个问题，不要写成通用分析报告。',
       '回答里每条关键信息都要带来源；查不到的就明确说查不到，不要猜。',
-    ].join('\n');
+      '⚠️ 判定"查不到"之前，必须先逐条读完上面的【命中最强片段】——那里通常就是答案所在。',
+    );
+    return parts.join('\n');
   }
 
   return [

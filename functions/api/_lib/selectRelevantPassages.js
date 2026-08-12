@@ -194,7 +194,14 @@ export function selectRelevantPassages(text, question, opts = {}) {
 
   // 短到装得下就整篇送，不必挑（按归一化后的实际送出量判断）
   if (full.length <= budget) {
-    return { text: full, mode: 'head', usedChars: totalChars, totalChars, hitTerms: [] };
+    return {
+      text: full,
+      mode: 'head',
+      usedChars: totalChars,
+      totalChars,
+      hitTerms: [],
+      highlights: [],
+    };
   }
 
   const terms = extractTerms(question);
@@ -205,6 +212,7 @@ export function selectRelevantPassages(text, question, opts = {}) {
       usedChars: Math.min(budget, totalChars),
       totalChars,
       hitTerms: [],
+      highlights: [],
     };
   }
 
@@ -258,8 +266,51 @@ export function selectRelevantPassages(text, question, opts = {}) {
       usedChars: Math.min(budget, totalChars),
       totalChars,
       hitTerms: [],
+      highlights: [],
     };
   }
+
+  // 命中最强的少数几块单独标出来。
+  //
+  // 为什么必须这么做：2026-08-11 实测，「荣耀」在送入的 8 万字里**只出现 1 次**、
+  // 位于 77% 处、毫无标记，模型直接没看见，于是照着"找不到就说找不到"的规则答了
+  // "未包含"。**检索是对的，是注意力不够。** 一根针埋进八万字干草堆，再正确的召回
+  // 也没用。所以把 top 命中块复制一份到显眼位置（调用方会放在紧贴问题之前，
+  // 模型对结尾注意力最高），原文顺序的完整片段仍保留作背景。
+  // 挑 highlights 的目标不是"分数最高"，而是**覆盖稀有词**。
+  //
+  // 2026-08-11 实测：问题「请问从华为的年报看，处置荣耀手机业务的影响…」被切出 61 个
+  // 检索词，大部分是噪音 n-gram（从华 / 为的 / 从华为的 / 年分别…）。一个块靠"很多
+  // 中频词"累加的分数会**超过**"一个极稀有词"——「荣耀」df=1、IDF 最高，但它所在的
+  // 块没命中其它词，于是排不进 top6，命中区里根本没有它。
+  //
+  // 所以先按"每个稀有词至少摆出一个包含它的块"来保证覆盖，再用分数补满。
+  // 这就是人会做的 Ctrl-F：你问了「荣耀」，含「荣耀」的段落必须出现在眼前。
+  const HIGHLIGHT_N = 8;
+  const byScore = [...chosen].sort((a, b) => b.score - a.score);
+  const picked = new Set();
+
+  // 稀有优先：df 越小越有辨识度。df===0 的词全文都没有，跳过。
+  const distinctive = terms
+    .filter((t) => df.get(t) > 0)
+    .sort((x, y) => df.get(x) - df.get(y))
+    .slice(0, HIGHLIGHT_N);
+
+  for (const t of distinctive) {
+    if (picked.size >= HIGHLIGHT_N) break;
+    const best = byScore.find((c) => !picked.has(c.i) && c.b.includes(t));
+    if (best) picked.add(best.i);
+  }
+  // 还有空位就按分数补
+  for (const c of byScore) {
+    if (picked.size >= HIGHLIGHT_N) break;
+    picked.add(c.i);
+  }
+
+  const highlights = chosen
+    .filter((c) => picked.has(c.i))
+    .sort((a, b) => a.i - b.i)
+    .map((c) => c.b);
 
   chosen.sort((a, b) => a.i - b.i); // 还原原文顺序
 
@@ -271,6 +322,9 @@ export function selectRelevantPassages(text, question, opts = {}) {
     usedChars: used,
     totalChars,
     blockCount: blocks.length,
+    highlights,
+    // 用于覆盖的稀有词，暴露出来便于断言"每个稀有词都被摆出来了"
+    distinctiveTerms: distinctive,
     hitTerms: [...hitTerms],
   };
 }
