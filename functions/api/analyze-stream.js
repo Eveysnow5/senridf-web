@@ -66,6 +66,18 @@ export async function onRequest(context) {
     });
   }
 
+  // 多轮取页（docs/plans/2026-08-12-analysis-multiround-plan.md）。
+  // ⚠️ **不传 round 就是今天的单轮路径，一个字节都不变**——单轮是已知可用的，
+  // 客户端任一轮出问题都靠"不传这几个字段重跑一次"退回它。
+  //
+  // roundState / pageIndex 各自设长度上限：多轮把请求次数乘 5，任何无上限的字段
+  // 都会被放大 5 倍，而卡人的是 10ms CPU 和 3MB 闸门（见上面的体积闸门注释）。
+  const CARRY_LIMIT = 20000;
+  const round = Number.isFinite(body.round) && body.round >= 1 ? body.round : null;
+  const maxRounds = Number.isFinite(body.maxRounds) ? body.maxRounds : 5;
+  const pageIndex = round ? String(body.pageIndex || '').slice(0, CARRY_LIMIT) : '';
+  const roundState = round ? String(body.roundState || '').slice(0, CARRY_LIMIT) : '';
+
   // 每份文件送入的字数预算。此前是 CHAR_LIMIT=30000 且**从开头硬截**——用户上传
   // 187,405 字的年报、问"处置荣耀产生的利润对财报有多大影响"，答案在「合并财务
   // 报表附注」（文档后段）早被截掉，于是模型答"文件未披露"，而那句话是假的：
@@ -127,14 +139,26 @@ export async function onRequest(context) {
     .filter(Boolean)
     .join('\n\n');
 
-  const systemPrompt = buildAnalysisSystemPrompt(question);
+  const systemPrompt = round
+    ? buildAnalysisSystemPrompt(question, { round, maxRounds })
+    : buildAnalysisSystemPrompt(question);
   const userMessage = buildAnalysisUserMessage(docContext, question, highlightBlock);
 
   // 有页面图像时把 user content 换成多模态数组：图像在前、问题在最后
   // （既保持缓存前缀稳定，又让问题处在注意力最高的位置）。
+  //
+  // 多轮时的顺序：[页面索引] → [本轮页面图像] → [已结转 findings] → [问题]。
+  // 索引摆最前是为了让它落进隐式缓存的稳定前缀（每轮都一样）；findings 贴着问题，
+  // 因为那是模型这一轮唯一还能看到的、关于前几轮的证据。
   let userContent = userMessage;
   if (imageFiles.length > 0) {
     const parts = [];
+    if (pageIndex) {
+      parts.push({
+        type: 'text',
+        text: `【页面索引】以下是各文件每一页的开头摘要，**不是全文**，只用来定位该看哪几页：\n\n${pageIndex}`,
+      });
+    }
     for (const f of imageFiles) {
       const nums = f.pages.map((p) => p.page).join('、');
       parts.push({
@@ -156,8 +180,26 @@ export async function onRequest(context) {
         });
       }
     }
+    if (roundState) {
+      parts.push({
+        type: 'text',
+        text: `【前几轮你已经摘录的内容（图像不会重发，这是你唯一还能看到的证据）】\n${roundState}`,
+      });
+    }
     parts.push({ type: 'text', text: buildQuestionTail(question, 'image') });
     userContent = parts;
+  } else if (round && (pageIndex || roundState)) {
+    // 多轮但本轮一页图都没渲染出来（渲染失败或模型只索要了越界页码）。仍要把索引和
+    // 结转内容带上，否则这一轮的模型既没有图、也不知道前几轮发生过什么，只能瞎答。
+    // ⚠️ 两块都放在 userMessage **之前**：userMessage 末尾就是问题块，追加在它后面
+    // 会把问题挤到中间，而"问题在最后"是刻意的（模型对结尾注意力最高）。
+    const head = pageIndex
+      ? `【页面索引】以下是各文件每一页的开头摘要，**不是全文**：\n\n${pageIndex}\n\n`
+      : '';
+    const carried = roundState
+      ? `【前几轮你已经摘录的内容（图像不会重发，这是你唯一还能看到的证据）】\n${roundState}\n\n`
+      : '';
+    userContent = `${head}${carried}${userMessage}`;
   }
 
   try {

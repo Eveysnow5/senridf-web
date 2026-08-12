@@ -1035,6 +1035,176 @@
       elActions.classList.toggle('is-hidden', !hasFiles);
     }
 
+    /* ── 多轮取页 ──────────────────────────────────────────────────────────
+     * 让模型自己决定下一步看哪几页，而不是由 IDF 启发式提前猜。
+     * 设计与实测依据见 docs/plans/2026-08-12-analysis-multiround-plan.md。
+     *
+     * 支点是 **findings 以文字结转、图像不重发**：若把历史 messages 整个回传，
+     * 第 3 轮的载荷就回到 5MB 量级、撞回 Workers 10ms CPU 那面墙。每轮请求恒定在
+     * 几百 KB：索引 + findings 文本 + 本轮新渲染的 2–4 页图。
+     */
+    const MAX_ROUNDS = 5;
+
+    /** 从模型输出里剥掉指令行，只留可结转的内容（指令对下一轮没有意义，还占预算）。 */
+    function stripDirectives(text) {
+      return String(text || '')
+        .split('\n')
+        .filter(l => !/^\s*NEED_PAGES\s*[:：]/i.test(l))
+        .join('\n')
+        .replace(/^\s*ANSWER\s*[:：]\s*/i, '')
+        .trim();
+    }
+
+    function roundProgress(round, note) {
+      return [
+        `**第 ${round}/${MAX_ROUNDS} ラウンド** · ${note}`,
+        `**第 ${round}/${MAX_ROUNDS} 轮** · ${note}`,
+      ].join('\n\n');
+    }
+
+    /** 一轮请求：发出去、读流、把文本累积起来。渲染进度交给调用方。 */
+    async function runOneRound(body, onDelta) {
+      const res = await apiFetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const raw = await res.clone().text().catch(() => '');
+        throw new Error(`多轮第 ${body.round} 轮失败（HTTP ${res.status}）：${raw.slice(0, 300)}`);
+      }
+      if (!res.headers.get('content-type')?.includes('event-stream')) {
+        throw new Error('多轮：意外的响应格式');
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let text = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const p = line.slice(6).trim();
+          if (p === '[DONE]') continue;
+          try {
+            const delta = JSON.parse(p).choices?.[0]?.delta?.content;
+            if (delta) { text += delta; onDelta(text); }
+          } catch { /* ignore malformed SSE lines */ }
+        }
+      }
+      return text;
+    }
+
+    /**
+     * 多轮主循环。抛异常即由调用方退回单轮路径——多轮不许把一个已经能用的功能弄坏。
+     * @returns {Promise<string>} 最终回答的 markdown
+     */
+    async function runMultiRound(cands, textFiles, question) {
+      const buildIndex = window.sdfBuildPageIndex;
+      const parseReq = window.sdfParsePageRequest;
+      if (!buildIndex || !parseReq) throw new Error('多轮：共享模块未加载');
+
+      // 页面索引一次算好，每轮原样重发——它是稳定前缀，能落进隐式缓存。
+      const pageIndex = cands
+        .map((f, i) => `【文件${i + 1}：${f.name}】共 ${f.pageTexts.length} 页\n${buildIndex(f.pageTexts)}`)
+        .join('\n\n');
+      const totals = cands.map(f => f.pageTexts.length);
+      const sent = cands.map(() => new Set());
+
+      // 文本类文件（docx/xlsx…）每轮都带上：它们没有页码可索要，只能一次给全。
+      const textPayload = textFiles.map(f => ({
+        name: f.name,
+        content: buildFileContent(f, true, question, window.sdfTextCharBudget ? window.sdfTextCharBudget(textFiles.length) : 80000),
+        totalChars: (f.content || '').length,
+      }));
+
+      let findings = '';       // 结转给模型的（引文，进下一轮的请求）
+      let trail = '';          // 给用户看的（追查过程，只进 DOM）
+      let pendingRequests = []; // 上一轮解析出的、还没取过的页
+
+      for (let round = 1; round <= MAX_ROUNDS; round++) {
+        // ── 决定本轮取哪几页 ──
+        let want; // [{fileIndex, pages[]}]
+        if (round === 1) {
+          // 第 1 轮就给启发式选出的页，省掉一轮纯索引的往返。
+          want = cands.map((f, i) => {
+            const sel = window.sdfSelectRelevantPages(f.pageTexts, question, { maxPages: IMG_MAX_PAGES });
+            const order = sel.ranked && sel.ranked.length ? sel.ranked : sel.pages;
+            return { fileIndex: i + 1, pages: order.slice(0, 3) };
+          }).filter(r => r.pages.length);
+        } else {
+          want = pendingRequests;
+        }
+
+        // ── 渲染：整轮共用一份字节预算，**不再按文件均分** ──
+        // 均分是"必须提前猜"的产物（6 份文件时每份只剩 1 页，实测把 4 份文件搞哑）。
+        // 第 2 轮起模型已经点名要哪几页了，预算就该全花在那几页上。
+        const imagePayload = [];
+        let usedBytes = 0;
+        for (const req of want) {
+          const f = cands[req.fileIndex - 1];
+          if (!f) continue;
+          const fresh = req.pages.filter(p => !sent[req.fileIndex - 1].has(p));
+          if (!fresh.length) continue;
+          const remaining = IMG_TOTAL_BUDGET - usedBytes;
+          if (remaining <= 0) break;
+          const pages = await renderPagesToImages(f.pdfBuf, fresh, remaining);
+          if (!pages.length) continue;
+          for (const pg of pages) { sent[req.fileIndex - 1].add(pg.page); usedBytes += pg.dataUrl.length; }
+          imagePayload.push({ name: f.name, pages, totalPages: f.pageTexts.length });
+        }
+
+        const reading = imagePayload
+          .map(p => `${p.name} p${p.pages.map(x => x.page).join(', p')}`)
+          .join(' / ') || '（本轮无新页面）';
+        elReport.innerHTML = renderMarkdown(
+          `${roundProgress(round, `読み込み中 / 正在读 ${reading}`)}\n\n${trail}`
+        );
+
+        // ── 发一轮 ──
+        const text = await runOneRound({
+          files: imagePayload.concat(textPayload),
+          prompt: question,
+          round,
+          maxRounds: MAX_ROUNDS,
+          pageIndex,
+          roundState: findings,
+        }, partial => {
+          elReport.innerHTML = renderMarkdown(
+            `${roundProgress(round, `読み込み中 / 正在读 ${reading}`)}\n\n${trail}\n\n${partial}`
+          );
+        });
+
+        // ── 它是想继续，还是给出答案了？ ──
+        // 三条终止路径（模型说够了 / 索要的页全看过 / 轮数到顶）都在 decideNextRound 里，
+        // 它是纯函数、有单测——内联脚本是 `npm run check` 的盲区，循环最危险的判断
+        // 不能留在这里。
+        const decision = window.sdfDecideNextRound(
+          parseReq(text, cands.length, totals), sent, round, MAX_ROUNDS
+        );
+
+        if (decision.done) {
+          const answer = stripDirectives(text);
+          // 追查过程用纯 markdown 小节，不用 <details>：renderMarkdown 在 marked/DOMPurify
+          // 没加载时会把一切转义，那时原始 HTML 会以字面量暴露给用户。
+          return trail
+            ? `${answer}\n\n---\n\n### 追跡プロセス / 追查过程\n${trail}`
+            : answer;
+        }
+
+        // findings 结转的是**引文**，不是结论。尾部截断而非头部：越近的轮次越可能
+        // 含着上一轮刚读到的关键数字。
+        findings = `${findings}\n\n【第 ${round} 轮】\n${stripDirectives(text)}`.trim().slice(-18000);
+        trail += `\n\n**第 ${round} 轮**\n\n${stripDirectives(text)}`;
+        pendingRequests = decision.requests;
+      }
+      throw new Error('多轮：循环异常退出'); // 到不了这里；防止将来改动漏掉 return
+    }
+
     /* ── Analysis ── */
     elSubmit.addEventListener('click', runAnalysis);
 
@@ -1058,6 +1228,33 @@
 
       try {
         const question = elPrompt.value.trim();
+
+        // ── 先试多轮取页 ──
+        // 条件：有提问 + 有可取页的 PDF + 图像路径在当前文件数下值得走。
+        // **任何一步失败都退回下面那条单轮路径**——单轮是已知可用的，多轮不许把它弄坏。
+        const mrCands = ready.filter(f =>
+          f.ext === 'pdf' && Array.isArray(f.pageTexts) && f.pageTexts.length && f.pdfBuf
+        );
+        const mrViable = question && mrCands.length > 0 &&
+          typeof window.sdfBuildPageIndex === 'function' &&
+          typeof window.sdfParsePageRequest === 'function' &&
+          typeof window.sdfDecideNextRound === 'function' &&
+          typeof window.sdfSelectRelevantPages === 'function' &&
+          (window.sdfImagePathViable ? window.sdfImagePathViable(mrCands.length, IMG_TOTAL_BUDGET) : true);
+
+        if (mrViable) {
+          try {
+            const answer = await runMultiRound(mrCands, ready.filter(f => !mrCands.includes(f)), question);
+            elLoading.classList.add('is-hidden');
+            elReport.innerHTML = renderMarkdown(answer);
+            if (!answer.trim()) showError('分析結果が空です。/ 分析结果为空。');
+            return;
+          } catch (e) {
+            // 留在 console：别为了"能用"把唯一的诊断线索也吞掉
+            console.warn('多轮取页失败，退回单轮路径：', e);
+            elReport.innerHTML = '';
+          }
+        }
 
         // 载荷组装（图像路径 vs 文本路径的分工）见 buildPayload 的注释
         let payload = await buildPayload(ready, question, true);
@@ -1217,12 +1414,18 @@ import { selectRelevantPages } from '/js/shared/select-relevant-pages.js';
 import { selectRelevantPassages } from '/js/shared/select-relevant-passages.js';
 import { textCharBudget } from '/js/shared/text-wire-budget.js';
 import { imagePathViable } from '/js/shared/image-path-viable.js';
+import { buildPageIndex } from '/js/shared/build-page-index.js';
+import { parsePageRequest } from '/js/shared/parse-page-request.js';
+import { decideNextRound } from '/js/shared/multiround-flow.js';
 initErrorReporting({ db });
 window.sdfSheetToMarkdown = sheetRowsToMarkdown;
 window.sdfSelectRelevantPages = selectRelevantPages;
 window.sdfSelectRelevantPassages = selectRelevantPassages;
 window.sdfTextCharBudget = textCharBudget;
 window.sdfImagePathViable = imagePathViable;
+window.sdfBuildPageIndex = buildPageIndex;
+window.sdfParsePageRequest = parsePageRequest;
+window.sdfDecideNextRound = decideNextRound;
 window.sdfGetToken=()=>auth.currentUser?.getIdToken();
 const _start=Date.now();let _docId=null,_logged=false;
 function _anonId(){let i=localStorage.getItem('sdf_anon_id');if(!i){i='anon_'+Math.random().toString(36).slice(2,9);localStorage.setItem('sdf_anon_id',i);}return i;}
