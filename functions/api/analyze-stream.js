@@ -59,12 +59,6 @@ export async function onRequest(context) {
   }
 
   const { files, prompt } = body;
-  if (!Array.isArray(files) || files.length === 0) {
-    return new Response(JSON.stringify({ error: 'files array required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
 
   // 多轮取页（docs/plans/2026-08-12-analysis-multiround-plan.md）。
   // ⚠️ **不传 round 就是今天的单轮路径，一个字节都不变**——单轮是已知可用的，
@@ -77,6 +71,16 @@ export async function onRequest(context) {
   const maxRounds = Number.isFinite(body.maxRounds) ? body.maxRounds : 5;
   const pageIndex = round ? String(body.pageIndex || '').slice(0, CARRY_LIMIT) : '';
   const roundState = round ? String(body.roundState || '').slice(0, CARRY_LIMIT) : '';
+
+  // 多轮的第 1 轮在文件多时**只发页面索引、一份文件都不发**（预算摊到每份 1 页时，
+  // 启发式猜的那 1 页大概率不对，不如让模型看着索引自己挑）。所以 files 允许为空——
+  // 但仅限"有 round 且有索引"这一种情形，别把真正的空请求也放进来。
+  if (!Array.isArray(files) || (files.length === 0 && !(round && pageIndex))) {
+    return new Response(JSON.stringify({ error: 'files array required' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
   // 每份文件送入的字数预算。此前是 CHAR_LIMIT=30000 且**从开头硬截**——用户上传
   // 187,405 字的年报、问"处置荣耀产生的利润对财报有多大影响"，答案在「合并财务

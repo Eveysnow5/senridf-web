@@ -483,7 +483,7 @@
           <div class="an-drop-icon">↑</div>
           <div class="an-drop-text">
             ファイルをドロップ、またはクリックして選択 / 拖放文件或点击选择
-            <span class="an-drop-sub">PDF · Word (.docx) · Excel (.xlsx/.xls) · CSV &nbsp;|&nbsp; 最大 5 ファイル / 最多 5 个文件</span>
+            <span class="an-drop-sub">PDF · Word (.docx) · Excel (.xlsx/.xls) · CSV &nbsp;|&nbsp; 最大 10 ファイル / 最多 10 个文件</span>
           </div>
         </div>
 
@@ -538,7 +538,14 @@
   <script>
     /* ── Config ── */
     const API_ENDPOINT = '/api/analyze-stream';
-    const MAX_FILES = 5;
+    // 上限从 5 提到 10（2026-08-12）。5 的直接后果：作者传 3 家公司 × 2 期年报（6 份），
+    // 第 6 份被**静默丢弃**——分析照常出结果，只覆盖了 5 份，没有任何地方告诉他少了一份。
+    //
+    // 10 的依据是**总量**而不是拍脑袋：文本路径按 textCharBudget 摊分，10 份时每份
+    // 30,393 字、合计约 0.87MB，仍压在 WIRE_BUDGET_BYTES 之内（15 份也还是 0.87MB，
+    // 再多就靠 MIN_USEFUL_CHARS 兜底、总量才开始涨）。图像路径另有 imagePathViable
+    // 把关（分不到 2 页就整次退回文本），与这个数无关。
+    const MAX_FILES = 10;
     const isLocal = location.protocol === 'file:' ||
                     location.hostname === '127.0.0.1' ||
                     location.hostname === 'localhost';
@@ -598,11 +605,17 @@
     /* ── File handling ── */
     async function handleFiles(fileList) {
       const ALLOWED = ['pdf', 'docx', 'xlsx', 'xls', 'csv'];
+      // ⚠️ 被跳过的文件必须说出来。原来这里是 `break` / `continue` 一声不吭——
+      // 2026-08-12 作者传 6 份年报、上限是 5，第 6 份被静默丢弃，分析照常出结果、
+      // 只覆盖了 5 份，**没有任何地方告诉他少了一份**。分析类工具最危险的失败正是
+      // 这种：结果看起来完整、也确实是对的，只是基于比他以为的更少的材料。
+      const skipped = { limit: [], type: [], dup: [] };
+      clearError(); // 上一次拖放留下的提示不该看起来像是在说这一次
       for (const file of fileList) {
-        if (uploadedFiles.length >= MAX_FILES) break;
         const ext = file.name.split('.').pop().toLowerCase();
-        if (!ALLOWED.includes(ext)) continue;
-        if (uploadedFiles.find(f => f.name === file.name)) continue;
+        if (uploadedFiles.length >= MAX_FILES) { skipped.limit.push(file.name); continue; }
+        if (!ALLOWED.includes(ext)) { skipped.type.push(file.name); continue; }
+        if (uploadedFiles.find(f => f.name === file.name)) { skipped.dup.push(file.name); continue; }
 
         // Insert placeholder while processing
         const placeholder = { name: file.name, content: null, chars: null, ext, loading: true };
@@ -629,7 +642,32 @@
         }
         renderFileList();
       }
+      reportSkipped(skipped);
       updateUI();
+    }
+
+    /** 把被跳过的文件说清楚：少了哪几份、为什么。静默丢弃是分析类工具最危险的失败。 */
+    function reportSkipped(skipped) {
+      const lines = [];
+      if (skipped.limit.length) {
+        lines.push(
+          `ファイル数の上限は ${MAX_FILES} 件です。未追加：${skipped.limit.join('、')}`,
+          `文件数上限为 ${MAX_FILES} 个，以下未添加：${skipped.limit.join('、')}`,
+        );
+      }
+      if (skipped.type.length) {
+        lines.push(
+          `未対応の形式です：${skipped.type.join('、')}`,
+          `以下格式不支持：${skipped.type.join('、')}`,
+        );
+      }
+      if (skipped.dup.length) {
+        lines.push(
+          `同名のファイルは追加済みです：${skipped.dup.join('、')}`,
+          `以下文件同名、已添加过：${skipped.dup.join('、')}`,
+        );
+      }
+      if (lines.length) showError(lines.join('\n'));
     }
 
     async function extractText(file, ext, store) {
@@ -857,7 +895,7 @@
 
       // ⚠️ 但均分到文件多的时候会把图像路径压成"每份 1 页"，那时它**比文本路径更差**：
       // 走图像路径的文件不发 content，选错那一页这份文件就归零；而文本路径能在全文里
-      // 按提问 IDF 检索。2026-08-12 地铁样本实测（6 份年报）：每份分到 133KB → 各 1 页，
+      // 按提问 IDF 检索。2026-08-12 地铁样本实测（5 份年报）：每份分到 160KB → 各 1 页，
       // 北京地铁 75 页只看到第 31 页（债券条款），6 份里 4 份哑掉。
       // 详见 js/shared/image-path-viable.js。
       const viable = window.sdfImagePathViable
@@ -1130,12 +1168,20 @@
         // ── 决定本轮取哪几页 ──
         let want; // [{fileIndex, pages[]}]
         if (round === 1) {
-          // 第 1 轮就给启发式选出的页，省掉一轮纯索引的往返。
-          want = cands.map((f, i) => {
-            const sel = window.sdfSelectRelevantPages(f.pageTexts, question, { maxPages: IMG_MAX_PAGES });
-            const order = sel.ranked && sel.ranked.length ? sel.ranked : sel.pages;
-            return { fileIndex: i + 1, pages: order.slice(0, 3) };
-          }).filter(r => r.pages.length);
+          // 第 1 轮**只在文件少时**给启发式选出的页（省掉一轮纯索引的往返）。
+          // 文件多时一页都不发：预算摊到每份只剩 1 页，而启发式挑的那 1 页大概率不对
+          // （地铁样本实测：5 份里 3 份哑掉）。那种情况下索引本身就是最好的第一轮——
+          // 它是纯文本、覆盖**全部**文件，让模型自己挑，比替它猜强得多。
+          const worthGuessing = window.sdfImagePathViable
+            ? window.sdfImagePathViable(cands.length, IMG_TOTAL_BUDGET)
+            : true;
+          want = worthGuessing
+            ? cands.map((f, i) => {
+                const sel = window.sdfSelectRelevantPages(f.pageTexts, question, { maxPages: IMG_MAX_PAGES });
+                const order = sel.ranked && sel.ranked.length ? sel.ranked : sel.pages;
+                return { fileIndex: i + 1, pages: order.slice(0, 3) };
+              }).filter(r => r.pages.length)
+            : [];
         } else {
           want = pendingRequests;
         }
@@ -1235,12 +1281,16 @@
         const mrCands = ready.filter(f =>
           f.ext === 'pdf' && Array.isArray(f.pageTexts) && f.pageTexts.length && f.pdfBuf
         );
+        // ⚠️ 这里**故意不要求** imagePathViable。那道闸是给单轮路径的（一次性猜页、
+        // 预算按文件均分，摊到 1 页就不如全文检索）。多轮不受它约束：第 1 轮可以只发
+        // 索引，第 2 轮起模型点名要哪几页、整份预算就花在那几页上。
+        // 若在这里加上那个条件，4 份以上文件会**静默退回单轮**——而那恰恰是多轮最该
+        // 上场的场景（文件越多，提前猜越不可能猜对）。
         const mrViable = question && mrCands.length > 0 &&
           typeof window.sdfBuildPageIndex === 'function' &&
           typeof window.sdfParsePageRequest === 'function' &&
           typeof window.sdfDecideNextRound === 'function' &&
-          typeof window.sdfSelectRelevantPages === 'function' &&
-          (window.sdfImagePathViable ? window.sdfImagePathViable(mrCands.length, IMG_TOTAL_BUDGET) : true);
+          typeof window.sdfSelectRelevantPages === 'function';
 
         if (mrViable) {
           try {

@@ -21,7 +21,11 @@ test('文件少时照常走图像路径（这是它擅长的场景）', () => {
   assert.equal(imagePathViable(3, BUDGET), true);
 });
 
-test('6 份文件时不走图像路径——每份只剩 1 页，还不如全文检索', () => {
+test('4 份以上不走图像路径——每份只剩 1 页，还不如全文检索', () => {
+  // 地铁样本实测就是 5 份（当时上限 5，作者传的第 6 份被静默丢弃）：
+  // floor(800KB/5)=160KB，而 2 页要 184KB 起 → 每份 1 页，5 份里 3 份哑掉。
+  assert.equal(imagePathViable(4, BUDGET), false);
+  assert.equal(imagePathViable(5, BUDGET), false);
   assert.equal(imagePathViable(6, BUDGET), false);
 });
 
