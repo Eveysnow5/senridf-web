@@ -15,6 +15,15 @@
 //   纯按分数：含「荣耀」的第 86 页排第 11/148，勉强进 top12
 //   稀有词覆盖：只选 5 页（22/46/51/86/107），第 86 页必在其中
 // 5 页图片约 1 万 token，而 8 万字文本约 5.5 万 token —— 既准又便宜。
+//
+// 覆盖逻辑有多稳：2026-08-12 在真实全文 148 页上试提问
+// 「帮我看看两期年报，评估处置荣耀业务对华为的财务报表有多大影响」，
+//   maxPages=1 → [100]              第 86 页丢了
+//   maxPages=2 → [86,100]           已包含
+//   maxPages=3 → [84,86,100]        已包含
+//   maxPages=8 → [64,66,71,84,86,100,107,109]
+// 也就是说给到 2 页就够选中关键页。这很要紧：调用方（analysis.html）受 Workers
+// 10ms CPU 配额限制、只能送很少几页图片，能少送而不丢答案是这条路线成立的前提。
 
 import { extractTerms, normalizeCjkSpacing } from './select-relevant-passages.js';
 
@@ -22,16 +31,19 @@ import { extractTerms, normalizeCjkSpacing } from './select-relevant-passages.js
  * @param {string[]} pageTexts 每页的文本，下标 0 对应第 1 页
  * @param {string} question 用户提问；空则返回空数组（综合分析走文本路径）
  * @param {{maxPages?:number}} [opts]
- * @returns {{pages:number[], distinctiveTerms:string[], missingTerms:string[]}}
- *   pages 是 1 起的页码，已升序
+ * @returns {{pages:number[], ranked:number[], distinctiveTerms:string[], missingTerms:string[]}}
+ *   pages 是 1 起的页码、已升序（送给模型时按原文顺序更好读）；
+ *   ranked 是同一批页码但保持**挑选优先级**顺序（稀有词覆盖在前、分数在后）。
+ *   调用方受字节预算限制、装不下全部页时，必须按 ranked 从后往前砍——
+ *   按 pages 砍等于砍掉页码最大的那几页，与重要性无关。
  */
 export function selectRelevantPages(pageTexts, question, opts = {}) {
   const maxPages = opts.maxPages ?? 8;
   const texts = (pageTexts || []).map((t) => normalizeCjkSpacing(String(t || '')));
-  if (texts.length === 0) return { pages: [], distinctiveTerms: [], missingTerms: [] };
+  if (texts.length === 0) return { pages: [], ranked: [], distinctiveTerms: [], missingTerms: [] };
 
   const terms = extractTerms(question);
-  if (terms.length === 0) return { pages: [], distinctiveTerms: [], missingTerms: [] };
+  if (terms.length === 0) return { pages: [], ranked: [], distinctiveTerms: [], missingTerms: [] };
 
   const df = new Map();
   for (const t of terms) df.set(t, texts.filter((p) => p.includes(t)).length);
@@ -74,6 +86,7 @@ export function selectRelevantPages(pageTexts, question, opts = {}) {
 
   return {
     pages: [...chosen].sort((a, b) => a - b),
+    ranked: [...chosen],
     distinctiveTerms: distinctive,
     missingTerms,
   };

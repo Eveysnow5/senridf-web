@@ -2,7 +2,11 @@
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
 import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
 import { selectRelevantPassages } from '../../js/shared/select-relevant-passages.js';
-import { buildAnalysisSystemPrompt, buildAnalysisUserMessage } from './_lib/buildAnalysisPrompt.js';
+import {
+  buildAnalysisSystemPrompt,
+  buildAnalysisUserMessage,
+  buildQuestionTail,
+} from './_lib/buildAnalysisPrompt.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -24,6 +28,24 @@ export async function onRequest(context) {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
+  }
+
+  // 体积闸门必须在 request.json() **之前**，因为撑死这个函数的正是解析本身。
+  // Workers 免费档给每个请求 10ms CPU（请求体上限 100MB、内存 128MB 都不是瓶颈），
+  // 而 V8 的 JSON 吞吐约 100–300MB/s，且载荷要被扫两遍：一次 parse、一次转发前的
+  // stringify。已知能跑的量级约 1.1MB（两份年报的纯文本）；2026-08-11 图像路径第一版
+  // 送 5.3MB（PNG@scale2 × 16 页）时 Cloudflare 在我们的代码执行前就回了 HTML 502——
+  // 于是下面那个 catch 里的中文错误信息根本没机会发出去，用户只看到"服务器错误"。
+  // 这里提前用 content-length 拦一刀（几乎不耗 CPU），把不可诊断的 502 换成可诊断的 413。
+  const declaredLen = Number(request.headers.get('content-length') || 0);
+  const MAX_BODY = 3 * 1024 * 1024;
+  if (declaredLen > MAX_BODY) {
+    return new Response(
+      JSON.stringify({
+        error: `请求内容过大（${(declaredLen / 1048576).toFixed(1)}MB，上限 3MB）。请减少文件数量或把问题拆开后重试。`,
+      }),
+      { status: 413, headers: { 'Content-Type': 'application/json' } },
+    );
   }
 
   let body;
@@ -53,7 +75,11 @@ export async function onRequest(context) {
   const CHAR_BUDGET = 80000;
   const question = (prompt || '').trim();
 
-  // 图像路径：前端在有提问时，会用文本层选出相关页码、把那几页渲染成 PNG 送来。
+  // 图像路径：前端在有提问时，会用文本层选出相关页码、把那几页渲染成 JPEG 送来
+  // （JPEG@scale1.2 而非 PNG@scale2：实测同一页年报 base64 后 92–179KB vs 152–305KB，
+  // 而 715×1011 下表格里的「–」「55,853」和附注文字仍准确可读；上面的 CPU 闸门说明了
+  // 为什么必须省这个体积）。前端还带了 800KB 字节预算和 5xx/413 退回文本路径的重试，
+  // 参数与实测数字见 solutions/demo/analysis.html 的 IMG_* 常量注释。
   // 财报的答案几乎都在表格里，而文本抽取会把表格压平成一维字符串——2026-08-11
   // 实测同一张「其他净收支」表，抽成文本模型读不出来，渲染成图片一眼可读。
   // 所以分工是：文本层定位页码，视觉读内容。文本路径保留给 docx/xlsx/csv、
@@ -85,10 +111,13 @@ export async function onRequest(context) {
   // 2026-08-11 实测：「荣耀」在送入的 8 万字里只出现 1 次、位于 77% 处、毫无标记，
   // 模型直接没看见，于是照着"找不到就说找不到"答了"未包含"——检索是对的，是注意力
   // 不够。所以把 top 命中块复制一份到显眼处；完整片段仍作背景保留。
+  // 注意用 textFiles[i] 而不是 files[i]：picked 是从 textFiles 映射来的，混合场景
+  // （一份 PDF 走图像路径 + 一份 xlsx 走文本路径）下 files 的下标和它对不上，
+  // 会把命中片段挂到别的文件名下。
   const highlightBlock = picked
     .map((pk, i) =>
       pk.highlights?.length
-        ? `【文件${i + 1}：${files[i].name}】命中片段\n${pk.highlights.join('\n---\n')}`
+        ? `【文件${i + 1}：${textFiles[i].name}】命中片段\n${pk.highlights.join('\n---\n')}`
         : '',
     )
     .filter(Boolean)
@@ -116,8 +145,14 @@ export async function onRequest(context) {
     }
     if (docContext) {
       parts.push({ type: 'text', text: `另有以下文本类文件内容供参考：\n\n${docContext}` });
+      if (highlightBlock) {
+        parts.push({
+          type: 'text',
+          text: `【上述文本类文件里与本次提问命中最强的片段】\n${highlightBlock}`,
+        });
+      }
     }
-    parts.push({ type: 'text', text: userMessage.slice(userMessage.indexOf('='.repeat(40))) });
+    parts.push({ type: 'text', text: buildQuestionTail(question, 'image') });
     userContent = parts;
   }
 

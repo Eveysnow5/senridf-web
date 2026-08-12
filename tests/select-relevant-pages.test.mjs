@@ -69,6 +69,31 @@ test('页面文本里汉字被空格拆开时仍能匹配', () => {
   assert.ok(r.pages.includes(2), `被空格拆开的关键词没匹配上：${r.pages}`);
 });
 
+// ranked 存在的唯一理由：调用方受字节预算限制装不下全部页时，要按优先级从后往前砍。
+// 如果它退化成和 pages 一样的升序，砍掉的就是页码最大的页而不是最不重要的页——
+// 那是静默的准确度下降，不会有任何报错。
+test('ranked 与 pages 同集合，但保持挑选优先级而非页码升序', () => {
+  const r = selectRelevantPages(pages, Q, { maxPages: 8 });
+  assert.deepEqual(
+    [...r.ranked].sort((a, b) => a - b),
+    r.pages,
+    'ranked 应与 pages 是同一批页码',
+  );
+  const target = pages.findIndex((p) => p.includes('荣耀')) + 1;
+  // 稀有词覆盖先跑，所以关键页必须排在靠前的位置——这是"按 ranked 砍尾部安全"的依据。
+  // 不断言 ranked !== 升序（那在某些提问下可能巧合相等），而是断言真正要保的性质。
+  assert.ok(
+    r.ranked.indexOf(target) < r.ranked.length - 1,
+    `关键页 ${target} 排在 ranked 末位，预算裁剪会先砍掉它：${r.ranked}`,
+  );
+});
+
+test('空输入时 ranked 也要存在，调用方不必判 undefined', () => {
+  for (const r of [selectRelevantPages([], Q), selectRelevantPages(pages, '')]) {
+    assert.deepEqual(r.ranked, []);
+  }
+});
+
 test('报告参与覆盖的稀有词，便于排查"为什么选了这些页"', () => {
   const r = selectRelevantPages(pages, Q, { maxPages: 8 });
   assert.ok(r.distinctiveTerms.length > 0);

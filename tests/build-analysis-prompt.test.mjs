@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import {
   buildAnalysisSystemPrompt,
   buildAnalysisUserMessage,
+  buildQuestionTail,
 } from '../functions/api/_lib/buildAnalysisPrompt.js';
 
 const Q = '华为处置子公司荣耀产生的利润，对财务报表有多大影响';
@@ -126,4 +127,41 @@ test('user 消息在有提问时重申来源与不猜的要求', () => {
 test('无提问时 user 消息不塞入空的问题块', () => {
   const msg = buildAnalysisUserMessage('文档', '');
   assert.ok(!msg.includes('本次必须回答的问题'), '未提问时不该出现问题块');
+});
+
+// 图像路径把问题块作为多模态数组的最后一个 text part 追加在图片之后，用的是
+// buildQuestionTail(question, 'image')。它必须指向**页面图像**：图像路径没有
+// 【命中最强片段】那个小节（highlights 只从文本类文件里摘），照抄文本版措辞会让
+// 模型去找一个不存在的小节，而这条恰好是"下结论说查不到之前先看完"的关键指令。
+test('图像模式的问题块指向页面图像，不提不存在的【命中最强片段】', () => {
+  const tail = buildQuestionTail(Q, 'image');
+  assert.ok(tail.includes('逐页看完上面的页面图像'), '图像模式应要求逐页看图');
+  assert.ok(
+    !tail.includes('【命中最强片段】'),
+    '图像模式不该提【命中最强片段】——那个小节在图像路径里不存在',
+  );
+  assert.ok(tail.includes('表格里的每一行'), '答案在表格里，应明确要求逐行看');
+});
+
+test('文本模式的问题块仍指向【命中最强片段】', () => {
+  const tail = buildQuestionTail(Q, 'text');
+  assert.ok(tail.includes('【命中最强片段】'));
+  assert.ok(!tail.includes('页面图像'));
+  assert.equal(buildQuestionTail(Q), tail, '默认应为文本模式');
+});
+
+// 两种模式都不能丢掉作者那两条硬要求——问题块是它们最后一次出现的位置
+test('两种模式都保留"带来源"和"不要猜"', () => {
+  for (const mode of ['text', 'image']) {
+    const tail = buildQuestionTail(Q, mode);
+    assert.ok(tail.includes('每条关键信息都要带来源'), `${mode} 模式丢了来源要求`);
+    assert.ok(tail.includes('不要猜'), `${mode} 模式丢了不要猜`);
+    assert.ok(tail.includes(Q), `${mode} 模式没带上提问本身`);
+  }
+});
+
+// 文本路径的 user 消息必须和问题块保持同一份定义，否则改了一处忘了另一处
+test('文本路径的 user 消息末尾就是文本模式问题块（同一份定义）', () => {
+  const msg = buildAnalysisUserMessage('文档', Q);
+  assert.ok(msg.endsWith(buildQuestionTail(Q, 'text')), '两处应共用同一份问题块定义');
 });

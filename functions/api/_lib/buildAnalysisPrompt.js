@@ -101,6 +101,39 @@ ${RULES_COMMON}
  * @param {string} question 用户提问（已 trim），空串表示未提问
  * @returns {string}
  */
+/**
+ * 问题块：分隔线 + 提问 + 那几条硬要求。
+ *
+ * 单独导出是因为图像路径要把它作为多模态数组的**最后一个 text part** 追加在图片
+ * 之后。之前那里是 `userMessage.slice(userMessage.indexOf('='.repeat(40)))`，有两个
+ * 毛病：① 切的是**第一条**分隔线，混合场景（PDF 走图像 + xlsx 走文本）会把命中
+ * 片段整块重复一遍；② 无提问时 indexOf 返回 -1，slice(-1) 只剩最后一个字符。
+ *
+ * @param {string} question 已 trim 的提问
+ * @param {'text'|'image'} [mode] 参考资料的形态。'image' 时最后那句"下结论前先看完
+ *   上面的东西"必须指向页面图像——图像路径没有【命中最强片段】（highlights 只从
+ *   文本类文件里摘），照抄文本版的措辞会让模型去找一个不存在的小节。
+ * @returns {string}
+ */
+export function buildQuestionTail(question, mode = 'text') {
+  const lookHere =
+    mode === 'image'
+      ? '⚠️ 判定"查不到"之前，必须先逐页看完上面的页面图像，尤其是表格里的每一行——那里通常就是答案所在。'
+      : '⚠️ 判定"查不到"之前，必须先逐条读完上面的【命中最强片段】——那里通常就是答案所在。';
+  return [
+    '='.repeat(40),
+    '',
+    '【本次必须回答的问题】',
+    question,
+    '',
+    mode === 'image'
+      ? '上面的页面图像仅是参考资料。请直接回答这个问题，不要写成通用分析报告。'
+      : '上面的文件内容仅是参考资料。请直接回答这个问题，不要写成通用分析报告。',
+    '回答里每条关键信息都要带来源；查不到的就明确说查不到，不要猜。',
+    lookHere,
+  ].join('\n');
+}
+
 export function buildAnalysisUserMessage(docContext, question, highlightBlock = '') {
   if (question) {
     // highlightBlock 放在文档之后、问题之前：既不破坏"文档在前"的缓存前缀，
@@ -116,16 +149,7 @@ export function buildAnalysisUserMessage(docContext, question, highlightBlock = 
         '',
       );
     }
-    parts.push(
-      '='.repeat(40),
-      '',
-      '【本次必须回答的问题】',
-      question,
-      '',
-      '上面的文件内容仅是参考资料。请直接回答这个问题，不要写成通用分析报告。',
-      '回答里每条关键信息都要带来源；查不到的就明确说查不到，不要猜。',
-      '⚠️ 判定"查不到"之前，必须先逐条读完上面的【命中最强片段】——那里通常就是答案所在。',
-    );
+    parts.push(buildQuestionTail(question));
     return parts.join('\n');
   }
 

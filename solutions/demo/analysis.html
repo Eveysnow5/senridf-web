@@ -661,20 +661,56 @@
     }
 
     /** 把指定页码（1 起）渲染成 PNG dataURL，交给多模态模型看。 */
-    async function renderPagesToImages(buf, pageNums, scale = 2) {
+    // 页面图像参数受 **Cloudflare Workers 免费档 10ms CPU/请求** 这一硬上限支配。
+    // 请求体本身的上限是 100MB、内存 128MB，都不是瓶颈；瓶颈是 Function 里
+    // `request.json()` 解析 + 转发时 `JSON.stringify` 各扫一遍整个载荷，V8 的
+    // JSON 吞吐约 100–300MB/s。
+    //   2026-08-11 第一版：PNG @scale2，8 页/文件 × 2 文件 ≈ 5.3MB
+    //     → 解析+序列化约 40–100ms，超配额 4–10 倍，Cloudflare 直接回 HTML 502
+    //     （不是我们函数返回的 JSON 502，所以真实原因根本传不到前端）。
+    //   已知能跑的量级约 1.1MB：两份华为年报走纯文本路径（各约 187,000 字，汉字
+    //     在 JSON 里是 3 字节 UTF-8 → 各约 560KB），用户实际跑通过多次。
+    // 于是预算定在 800KB。比 1.1MB 留了余量，且 base64 是**纯 ASCII、无转义字符**，
+    // 逐字节的 parse/stringify 成本低于同样体积的中文文本，所以这个余量是真的。
+    //
+    // 体积实测（2026-08-12，headless Edge 跑 pdf.js + canvas，与生产同一条代码路径）：
+    //   华为 2024 年报 @scale1.2 → 715x1011，JPEG(q0.82) 每页 92–179KB、PNG 152–305KB
+    //   ⚠️ 单页体积随版面密度差近 2 倍（p86=92KB、p84=179KB），所以只能按**实际字节**
+    //      记账，不能用"每页 N KB × 页数"估算——预算逻辑就是为此按真实长度累加的。
+    //   ⚠️ 早先用 Python PIL 量出 91KB/页，与真实 canvas 编码差最多 2 倍。别再用
+    //      非生产的编码器代替测量（同类错误：pdftotext 代替 pdf.js 差了 15000 字）。
+    // JPEG@1.2（715×1011）下表格里的「–」「55,853」和附注文字仍准确可读，已人工确认，
+    // 所以宁可降清晰度换页数，也不要超 CPU 配额。
+    const IMG_SCALE = 1.2;
+    const IMG_QUALITY = 0.82;
+    // 真正限流的是**字节预算**，不是页数：单页体积差近 2 倍，按页数限流必然要么
+    // 浪费额度、要么超支。IMG_MAX_PAGES 只做上限兜底（也顺带限制 canvas 渲染耗时）。
+    // 于是页数会自动随文件数收缩：1 份文件约 5 页、2 份各约 3 页、3 份各约 2 页。
+    const IMG_MAX_PAGES = 5;              // 每份文件的硬上限
+    const IMG_TOTAL_BUDGET = 800 * 1024;  // 所有文件的 dataURL 字符数合计
+
+    async function renderPagesToImages(buf, rankedPages, byteBudget) {
       const pdf = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
       const out = [];
-      for (const n of pageNums) {
+      let used = 0;
+      // rankedPages 是**优先级顺序**（稀有词覆盖在前）。预算不够时从后往前丢，
+      // 丢掉的是最不重要的页；若按页码顺序丢，丢的是页码最大的页，与重要性无关。
+      for (const n of rankedPages) {
         if (n < 1 || n > pdf.numPages) continue;
         const page = await pdf.getPage(n);
-        const viewport = page.getViewport({ scale });
+        const viewport = page.getViewport({ scale: IMG_SCALE });
         const canvas = document.createElement('canvas');
         canvas.width = Math.ceil(viewport.width);
         canvas.height = Math.ceil(viewport.height);
         await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        out.push({ page: n, dataUrl: canvas.toDataURL('image/png') });
+        const dataUrl = canvas.toDataURL('image/jpeg', IMG_QUALITY);
         canvas.width = canvas.height = 0; // 及早释放，年报页面不小
+        // `used &&` 保证至少送出一页：单页就超预算时也要送，否则整个图像路径静默变空
+        if (used && used + dataUrl.length > byteBudget) break;
+        used += dataUrl.length;
+        out.push({ page: n, dataUrl });
       }
+      out.sort((a, b) => a.page - b.page); // 送给模型时按原文页序，读起来才连贯
       return out;
     }
 
@@ -790,6 +826,48 @@
       if (chosen.length === 0) return full.slice(0, 5000);
       const perSec = Math.min(12000, Math.floor(28000 / chosen.length));
       return chosen.map(s => `【${s.title}】\n${s.content.slice(0, perSec)}`).join('\n\n');
+    }
+
+    /**
+     * 组装要发给 /api/analyze-stream 的 files 数组。
+     *
+     * PDF + 有提问 → 用文本层选出相关页码，把那几页渲染成图片交给模型看。财报答案
+     * 几乎都在表格里，而文本抽取会把表格压平成一维字符串（行名与数字无法对齐）。
+     * 2026-08-11 实测同一张「其他净收支」表：抽成文本模型读不出来，渲染成图片一眼可读。
+     * 文本路径保留给 docx/xlsx/csv、无提问的综合分析、选页或渲染失败，以及
+     * allowImages=false 的重试（见 runAnalysis 里的 5xx 兜底）。
+     */
+    async function buildPayload(ready, question, allowImages) {
+      const canImage = f =>
+        allowImages && question && f.ext === 'pdf' &&
+        Array.isArray(f.pageTexts) && f.pdfBuf &&
+        typeof window.sdfSelectRelevantPages === 'function';
+
+      // 字节预算在候选文件间均分：否则第一份年报吃掉全部额度，跨年对比只剩一年。
+      const nCands = ready.filter(canImage).length;
+      const perFileBudget = nCands ? Math.floor(IMG_TOTAL_BUDGET / nCands) : 0;
+
+      const payload = [];
+      for (const f of ready) {
+        if (canImage(f)) {
+          try {
+            const sel = window.sdfSelectRelevantPages(f.pageTexts, question, { maxPages: IMG_MAX_PAGES });
+            const order = sel.ranked && sel.ranked.length ? sel.ranked : sel.pages;
+            if (order.length) {
+              const pages = await renderPagesToImages(f.pdfBuf, order, perFileBudget);
+              if (pages.length) {
+                payload.push({ name: f.name, pages, totalPages: f.pageTexts.length });
+                continue;
+              }
+            }
+          } catch (e) {
+            // 渲染失败不能让整次分析失败——退回文本路径
+            console.warn('页面渲染失败，回退文本路径:', e);
+          }
+        }
+        payload.push({ name: f.name, content: buildFileContent(f, Boolean(question)) });
+      }
+      return payload;
     }
 
     /* ── Section panel UI ───────────────────────────────────────────────────── */
@@ -948,39 +1026,42 @@
       try {
         const question = elPrompt.value.trim();
 
-        // PDF + 有提问 -> 用文本层选出相关页码，把那几页渲染成图片交给模型看。
-        // 财报答案几乎都在表格里，而文本抽取会把表格压平成一维字符串（行名与数字
-        // 无法对齐）。2026-08-11 实测同一张「其他净收支」表：抽成文本模型读不出来，
-        // 渲染成图片一眼可读。文本路径保留给 docx/xlsx/csv、无提问的综合分析，
-        // 以及选页失败时的兜底。
-        const payload = [];
-        for (const f of ready) {
-          const canImage =
-            question && f.ext === 'pdf' && Array.isArray(f.pageTexts) && f.pdfBuf &&
-            typeof window.sdfSelectRelevantPages === 'function';
-          if (canImage) {
-            try {
-              const sel = window.sdfSelectRelevantPages(f.pageTexts, question, { maxPages: 8 });
-              if (sel.pages.length) {
-                const pages = await renderPagesToImages(f.pdfBuf, sel.pages);
-                if (pages.length) {
-                  payload.push({ name: f.name, pages, totalPages: f.pageTexts.length });
-                  continue;
-                }
-              }
-            } catch (e) {
-              // 渲染失败不能让整次分析失败——退回文本路径
-              console.warn('页面渲染失败，回退文本路径:', e);
-            }
-          }
-          payload.push({ name: f.name, content: buildFileContent(f, Boolean(question)) });
-        }
+        // 载荷组装（图像路径 vs 文本路径的分工）见 buildPayload 的注释
+        let payload = await buildPayload(ready, question, true);
+        const usedImages = payload.some(p => p.pages);
+        let didFallback = false;
 
-        const res = await apiFetch(API_ENDPOINT, {
+        let res = await apiFetch(API_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ files: payload, prompt: question })
         });
+
+        // 图像路径失败就用纯文本重试一次。文本路径永远是一个可用的替代，所以
+        // **除 429 之外任何失败都兜**（429 是限流，立刻重试只会加剧）：
+        //   · 5xx：撞上 Workers 资源配额时，Cloudflare 在我们的代码跑到之前就返回
+        //     HTML 5xx，函数里那句「分析服务暂时不可用」根本发不出来。字节预算就是
+        //     为了不撞上，但预算是**估算**——单页体积随版面浮动近 2 倍，middleware
+        //     的 token 校验也吃 CPU。
+        //   · 413：我们自己的体积闸门（analyze-stream.js 在 request.json() 之前拦）。
+        //   · 4xx：**「qwen3.8-max 能否在通用 dashscope 端点接受 image_url」至今未验证**
+        //     （百炼的 PDF 理解文档提到需要 WorkspaceId 端点）。若不支持，百炼回的是
+        //     4xx 而非 5xx——只兜 5xx 的话用户就只剩报错、拿不到答案。
+        // 原始错误照旧留在 console 里：别为了"能用"把唯一的诊断线索也吞掉。
+        if (!res.ok && res.status !== 429 && usedImages) {
+          const raw = await res.clone().text().catch(() => '');
+          console.warn(
+            `图像路径失败（HTTP ${res.status}），回退纯文本重试一次。原始响应：`,
+            raw.slice(0, 500)
+          );
+          didFallback = true;
+          payload = await buildPayload(ready, question, false);
+          res = await apiFetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ files: payload, prompt: question })
+          });
+        }
 
         // Check Content-Type before deciding how to parse the error
         if (!res.ok) {
@@ -990,7 +1071,16 @@
             const data = await res.json().catch(() => ({}));
             msg = data.error || `サーバーエラー（HTTP ${res.status}）\n服务器错误（HTTP ${res.status}）`;
           } else {
+            // 非 JSON 的 5xx 说明请求根本没到我们的函数里（Cloudflare 自己拦掉的，
+            // 通常是超了 10ms CPU 配额），这跟"模型报错"是两回事，得分开说。
             msg = `サーバーエラー（HTTP ${res.status}）\n服务器错误（HTTP ${res.status}）`;
+            if (res.status >= 500) {
+              msg += '\nファイルを減らすか、質問を分けてお試しください。\n请减少文件数量或把问题拆开后重试。';
+            }
+          }
+          if (didFallback) {
+            msg += '\n（画像解析に失敗したためテキスト解析を再試行しましたが、それも失敗しました）'
+                 + '\n（图像解析失败后已自动改用文本解析重试，仍未成功）';
           }
           throw new Error(msg);
         }
