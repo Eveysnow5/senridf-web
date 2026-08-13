@@ -6,7 +6,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { extractCitations, scoreCase, summarize } from '../scripts/eval/score.mjs';
+import { extractCitations, scoreCase, summarize, splitAnswer } from '../scripts/eval/score.mjs';
+import { BANNED_HEDGES } from '../functions/api/_lib/buildAnalysisPrompt.js';
 
 const CASES = JSON.parse(
   readFileSync(fileURLToPath(new URL('../docs/eval/analysis-cases.json', import.meta.url)), 'utf8'),
@@ -85,23 +86,91 @@ test('违禁词命中即失败', () => {
   assert.equal(r.verdict, 'fail');
 });
 
-test('多文件用例：少提一份就失败（守香港2025静默消失那个回归）', () => {
+test('多文件用例：某份文件一次都没被引用就失败（守香港2025静默消失那个回归）', () => {
   const c = byId('subway-six-files');
-  const five = c.files
-    .slice(0, 5)
-    .map((f) =>
-      f
-        .split('/')
-        .pop()
-        .replace(/\.pdf$/, ''),
-    )
-    .join('、');
-  const answer = `24,851,813,515.25。涉及北京、东京、香港三家。已分析：${five}`;
+  // 只引用了文件1~文件5，文件6 一次都没出现 —— 正是上次香港2025静默消失的形态
+  const answer = '24,851,813,515.25。北京、东京、香港。见文件1、文件2、文件3、文件4、文件5。';
   const r = scoreCase(c, answer);
-  assert.equal(r.verdict, 'fail', '六份只提到五份必须失败');
-  const missing = r.checks.filter((k) => k.name.startsWith('提到') && !k.ok);
+  assert.equal(r.verdict, 'fail', '有文件一次都没被引用必须失败');
+  const missing = r.checks.filter((k) => k.kind === 'coverage' && !k.ok);
   assert.equal(missing.length, 1);
-  assert.match(missing[0].name, /香港地铁2025财年/);
+  assert.match(missing[0].name, /文件6/);
+});
+
+// 回归护栏：守打分器自己犯过的错。2026-08-13 第一版按**文件名主干**比对，而模型
+// 引用时用的是「文件N」编号，于是六条全判失败——**打分器犯了它要防的那个错**
+// （把对的判成错的）。基线判错比没有基线更糟。
+test('★ 覆盖检查按文件编号而非文件名——模型用「文件N」引用，不写文件名', () => {
+  const c = byId('subway-six-files');
+  const answer =
+    '24,851,813,515.25。北京、东京、香港。数据来源：文件1、文件2、文件3、文件4、文件5、文件6。';
+  const r = scoreCase(c, answer);
+  const cov = r.checks.filter((k) => k.kind === 'coverage');
+  assert.equal(cov.length, 6);
+  assert.ok(
+    cov.every((k) => k.ok),
+    `全部用编号引用时不该判失败：${JSON.stringify(cov.filter((k) => !k.ok))}`,
+  );
+});
+
+test('覆盖检查不许把「文件1」误配成「文件11」', () => {
+  const c = byId('subway-six-files');
+  const r = scoreCase(c, '文件11、文件12、文件13、文件14、文件15、文件16');
+  const cov = r.checks.filter((k) => k.kind === 'coverage');
+  assert.ok(
+    cov.every((k) => !k.ok),
+    '两位数编号不该命中一位数的检查',
+  );
+});
+
+test('splitAnswer 把最终回答与追查过程分开', () => {
+  const raw = '结论在这里。\n\n---\n\n### 追跡プロセス / 追查过程\n第 1 轮 …';
+  const { answer, trail } = splitAnswer(raw);
+  assert.ok(answer.includes('结论在这里'));
+  assert.ok(!answer.includes('第 1 轮'), '追查过程不该留在 answer 里');
+  assert.ok(trail.includes('第 1 轮'));
+});
+
+test('splitAnswer 没有追查过程时整段都是回答', () => {
+  const { answer, trail } = splitAnswer('只有结论');
+  assert.equal(answer, '只有结论');
+  assert.equal(trail, '');
+});
+
+// 追查过程是模型的**工作笔记**，"推测模式类似，需补充 p68"是合理的中间状态。
+// 混在一起判，会把"过程中谨慎、结论里克制"这种正确行为判成失败。
+test('★ 追查过程里的推测只报不判，最终回答里的才算违规', () => {
+  const c = byId('hk-profit-2024');
+  const raw = [
+    '年内利润 16,067 百万港元（文件1·p5 印刷5）。',
+    '',
+    '### 追跡プロセス / 追查过程',
+    '第 2 轮：由于 p69 未显示该行，推测模式类似，需补充 p68。',
+  ].join('\n');
+  const r = scoreCase(c, raw);
+  assert.notEqual(r.verdict, 'fail', '过程里的推测不该判失败');
+  assert.deepEqual(r.trailHedges, ['推测'], '但必须报出来');
+});
+
+test('最终回答里出现推测性措辞照样失败', () => {
+  const c = byId('hk-profit-2024');
+  const raw =
+    '年内利润 16,067（文件1·p5 印刷5），该项**推测**为补助。\n\n### 追跡プロセス / 追查过程\n无';
+  assert.equal(scoreCase(c, raw).verdict, 'fail');
+});
+
+// 单一来源：违禁词表从提示词取，不再手抄。2026-08-13 基线首次实跑时，用例里手抄的
+// 6 个词漏掉了「通常包含」，而模型那次的最终结论正是「其他收益（通常包含政府补助）」。
+test('★ 违禁词表来自提示词，用例没列的也要查（「通常包含」那次漏网）', () => {
+  const c = byId('subway-six-files');
+  assert.ok(!(c.expect.mustNotContain || []).includes('通常包含'), '用例里刻意不列它');
+  assert.ok(BANNED_HEDGES.includes('通常包含'), '提示词里禁了它');
+  const answer =
+    '对"其他收益"（通常包含政府补助）极度依赖。文件1、文件2、文件3、文件4、文件5、文件6。北京 东京 香港 24,851,813,515.25';
+  const r = scoreCase(c, answer);
+  assert.equal(r.verdict, 'fail');
+  const hit = r.checks.find((k) => k.name.includes('通常包含'));
+  assert.ok(hit && !hit.ok, '必须被抓到');
 });
 
 test('负例判 manual 而不是 pass —— 不许自动放行', () => {
