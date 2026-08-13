@@ -2,7 +2,8 @@
 // 评估基线的报告生成器。**手动跑，不进 `npm run check`。**
 //
 // 用法：
-//   1. 在真工具里逐条跑 docs/eval/analysis-cases.json 里的用例（题目和文件都在里面）
+//   1. 在真工具里逐条跑 scripts/eval/cases.json 里的用例（题目在里面；PDF 路径的根
+//      目录用环境变量 SDF_EVAL_FILES_ROOT 指定）
 //   2. 把每条的回答原文存成 <answers-dir>/<case-id>.md
 //      可选：同名 .meta.json 里记 {"rounds": 3, "seconds": 92}
 //   3. node scripts/eval/run-analysis-eval.mjs <answers-dir> [报告输出路径]
@@ -21,7 +22,7 @@ if (!answersDir) {
   process.exit(1);
 }
 
-const cfg = JSON.parse(readFileSync('docs/eval/analysis-cases.json', 'utf8'));
+const cfg = JSON.parse(readFileSync(new URL('./cases.json', import.meta.url), 'utf8'));
 const results = [];
 const missing = [];
 const meta = new Map();

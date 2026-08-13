@@ -10,7 +10,7 @@ import { extractCitations, scoreCase, summarize, splitAnswer } from '../scripts/
 import { BANNED_HEDGES } from '../functions/api/_lib/buildAnalysisPrompt.js';
 
 const CASES = JSON.parse(
-  readFileSync(fileURLToPath(new URL('../docs/eval/analysis-cases.json', import.meta.url)), 'utf8'),
+  readFileSync(fileURLToPath(new URL('../scripts/eval/cases.json', import.meta.url)), 'utf8'),
 );
 const byId = (id) => CASES.cases.find((c) => c.id === id);
 
