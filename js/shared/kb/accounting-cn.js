@@ -26,6 +26,7 @@ export const KB_ENTRIES = [
     verifiedBy:
       '用 pdf.js 从《企业会计准则及应用指南2018年12月修订》PDF 第 113 页（印刷 112）抽出原文逐字比对。⚠️ pdftotext 对该 PDF 抽不出任何中文（字体缺 ToUnicode，7 份中国准则 PDF 全部如此），必须用 pdf.js + CJK CMap。',
     verifiedOn: '2026-08-13',
+    lineItemNames: ['其他收益', '营业外收入', 'Other income', 'Non-operating income'],
   },
   {
     id: 'cas16-16-presentation',
@@ -36,6 +37,7 @@ export const KB_ENTRIES = [
     source: '企业会计准则第16号——政府补助（2017年修订）第十六条',
     verifiedBy: '同上，与第十一条同在 PDF 第 113 页（印刷 112），原文逐字比对。',
     verifiedOn: '2026-08-13',
+    lineItemNames: ['其他收益', 'Other income'],
   },
   {
     id: 'cas16-17-disclosure',
@@ -46,5 +48,6 @@ export const KB_ENTRIES = [
     source: '企业会计准则第16号——政府补助（2017年修订）第十七条',
     verifiedBy: '同上，与第十一、十六条同在 PDF 第 113 页（印刷 112），原文逐字比对。',
     verifiedOn: '2026-08-13',
+    lineItemNames: ['其他收益', '政府补助', 'Government grants', 'Subsidies'],
   },
 ];

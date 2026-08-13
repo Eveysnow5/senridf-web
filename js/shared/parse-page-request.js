@@ -74,9 +74,13 @@ export function parsePageRequest(text, fileCount, totalPagesByFile, opts = {}) {
   // 该页图像"，而用户问的是三家公司。**广度优先于深度**：每份文件先各拿一页，再回头
   // 补第二页——先看全，再看深。
   const order = [...byFile.keys()].sort((a, b) => a - b);
-  const available = new Map(
-    order.map((i) => [i, [...new Set(byFile.get(i))].sort((a, b) => a - b)]),
-  );
+  // ⚠️ **保留模型说出来的顺序，不要在这里排序。**
+  // 这里原本 sort 成升序，于是轮转取 list[0] 时拿到的是**页码最小**的那页，而不是
+  // 模型最想看的那页。2026-08-13 实测：东京索要 f3:10,14，p14 才是合并损益表、
+  // p10 只是业绩综述文字页——升序让它拿到了 p10，于是那一轮白取。
+  // 模型先说的就是它最想看的；升序只用于**最终输出**（读起来按原文顺序才连贯）。
+  const dedupeKeepOrder = (arr) => [...new Set(arr)];
+  const available = new Map(order.map((i) => [i, dedupeKeepOrder(byFile.get(i))]));
   const picked = new Map(order.map((i) => [i, []]));
   let taken = 0;
   for (let depth = 0; taken < maxPages; depth++) {

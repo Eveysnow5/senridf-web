@@ -142,3 +142,16 @@ test('多行 NEED_PAGES 合并，不丢文件', () => {
     { fileIndex: 2, pages: [12] },
   ]);
 });
+
+// ★ 模型先说的那一页 = 它最想看的那一页。
+// 2026-08-13 实测：东京索要 f3:10,14，p14 才是合并损益表、p10 只是业绩综述文字页。
+// 轮转前若把页码升序排，取到的就是 p10，那一轮白取——而且账目单上看起来"取到了"。
+test('★ 轮转按模型说出的顺序取，不按页码大小', () => {
+  const r = parsePageRequest('NEED_PAGES: 文件1:14,10', 1, [148], { maxPages: 1 });
+  assert.deepEqual(r.requests, [{ fileIndex: 1, pages: [14] }], '应取模型先说的 14，不是更小的 10');
+});
+
+test('最终输出仍按页码升序（读起来要跟原文顺序一致）', () => {
+  const r = parsePageRequest('NEED_PAGES: 文件1:14,10', 1, [148], { maxPages: 2 });
+  assert.deepEqual(r.requests, [{ fileIndex: 1, pages: [10, 14] }], '两页都取到时按升序输出');
+});

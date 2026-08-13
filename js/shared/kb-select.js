@@ -45,15 +45,22 @@ export function selectKbEntries(question, entries, opts = {}) {
 export function renderKbBlock(entries) {
   if (!Array.isArray(entries) || entries.length === 0) return '';
   const body = entries
-    .map(
-      (e) =>
-        `【${e.source}】\n${e.text}\n⚠️ 这一条**没有**说：${e.doesNotSay}\n引用时写作：（准则库·${e.source}）`,
-    )
+    .map((e) => {
+      // 用户问的是日常词（"政府补助"），报表里印的是科目名（"其他收益" / "Subsidies"）。
+      // 不把这层对应关系说出来，模型拿着日常词去页面索引里找，什么都找不到。
+      const names =
+        Array.isArray(e.lineItemNames) && e.lineItemNames.length
+          ? `\n📖 报表里通常印作：${e.lineItemNames.join(' / ')}——**在页面索引里就按这些名字找**。`
+          : '';
+      return `【${e.source}】\n${e.text}\n⚠️ 这一条**没有**说：${e.doesNotSay}${names}\n引用时写作：（准则库·${e.source}）`;
+    })
     .join('\n\n');
   return [
     '【准则库】以下条目来自已核实的会计准则原文，**是一种合法的出处**，可以引用。',
     '但它们只解释科目含义与列报规则，**不提供任何公司的任何数字**——数字必须来自上传的文件。',
     '知识库里没有的背景知识，仍然不许用。',
+    '⚠️ 用户会用日常说法提问（如"政府补助"），而报表里印的是科目名（如"其他收益"、"Subsidies"）。',
+    '**别因为索引里搜不到用户的原话就判定"文件没有"**——先按下面每条给出的科目名去找。',
     '',
     body,
   ].join('\n');

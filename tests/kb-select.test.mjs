@@ -105,3 +105,25 @@ test('没有条目时渲染成空串，不塞一个空壳标题', () => {
   assert.equal(renderKbBlock([]), '');
   assert.equal(renderKbBlock(null), '');
 });
+
+// ★ 用户问的是日常词，报表里印的是科目名。不把这层对应关系说出来，模型拿着
+// "政府补助"去页面索引里找，什么都找不到——作者原话："让政府补助这样不甚精确的
+// 词语无法找到，毕竟日常大家不会去说其他收益的"。
+test('★ 每条都要给出「报表里通常印作什么」，供按索引查找', () => {
+  for (const e of KB_ENTRIES) {
+    assert.ok(
+      Array.isArray(e.lineItemNames) && e.lineItemNames.length > 0,
+      `${e.id} 缺 lineItemNames —— 用户的日常词和报表科目名之间没有桥`,
+    );
+  }
+});
+
+test('★ 渲染时把科目名和"别按原话判定文件没有"一起给出去', () => {
+  const block = renderKbBlock(selectKbEntries('政府补助占比多少', KB_ENTRIES));
+  assert.ok(block.includes('报表里通常印作'), '缺少科目名对照');
+  assert.ok(block.includes('其他收益'), '缺少最关键的那个科目名');
+  assert.ok(
+    block.includes('判定"文件没有"'),
+    '缺少那句提醒——只给对照表而不说用途，模型未必会拿它去查索引',
+  );
+});
