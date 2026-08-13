@@ -107,12 +107,12 @@ test('空输入不炸', () => {
 // ⚠️ 索引是单轮固定开销里最大的一项：2026-08-13 实测六份年报的索引 25,819 字符
 // ≈ 21.9K token，占单次调用 23.7K 的 85%，而且**每轮重发**。一天 19 次调用烧掉
 // 451K，把 1M 的免费桶打到只剩 248K。所以摘要长度必须随文件数收缩。
-test('★ 每页摘要长度随文件数收缩（索引是最大的单轮固定开销）', () => {
-  assert.equal(autoPerPage(1), 80, '单文件给足');
-  assert.equal(autoPerPage(6), 40, '六文件减半');
-  assert.equal(autoPerPage(10), 24, '十文件到下限');
-  assert.equal(autoPerPage(100), 24, '下限 24：再短连表名都放不下');
-  assert.equal(autoPerPage(0), 80, '非法输入按单文件处理');
+test('★ 每页摘要长度随总页数收缩（索引是最大的单轮固定开销）', () => {
+  assert.equal(autoPerPage(50), 80, '页数少时给足');
+  assert.equal(autoPerPage(300), 37, '三百页时压到 37');
+  assert.equal(autoPerPage(700), 24, '七百页到下限');
+  assert.equal(autoPerPage(9999), 24, '下限 24：再短连表名都放不下');
+  assert.equal(autoPerPage(0), 80, '非法输入按最宽处理');
 });
 
 test('★ 压缩后仍保住关键那一行的信号（表名在开头，不在结尾）', () => {
@@ -133,9 +133,12 @@ test('★ 压缩后仍保住关键那一行的信号（表名在开头，不在�
     '',
     '10 (2) Consolidated Statements of Income and Comprehensive Income Consolidated Statements of Income Operating revenue 407,832',
   ];
-  const idx = buildPageIndex(pages, { fileCount: 6 });
+  const idx = buildPageIndex(pages, { totalPages: 300 });
   const line = idx.split('\n')[13];
-  assert.ok(line.includes('Statements of Income'), `压到 40 字后仍要看得出是损益表：${line}`);
+  // ⚠️ 压缩是有代价的：37 字时英文长表名会被从中间截断
+  // （"Consolidated Statements of Income" → "Consolidated Statements of Inc"）。
+  // 断言的是**还认不认得出**，不是完整。若哪天连这个都截没了，说明预算压过头了。
+  assert.ok(line.includes('Statements of Inc'), `压缩后仍要看得出这是损益表：${line}`);
 });
 
 test('六文件场景的索引确实变小了', () => {
@@ -143,7 +146,7 @@ test('六文件场景的索引确实变小了', () => {
     { length: 75 },
     (_, i) => `第 ${i + 1} 页 ${'经营讨论与分析内容'.repeat(20)}`,
   );
-  const wide = buildPageIndex(pages, { fileCount: 1 }).length;
-  const narrow = buildPageIndex(pages, { fileCount: 6 }).length;
-  assert.ok(narrow < wide * 0.7, `六文件时应明显更小：${narrow} vs ${wide}`);
+  const wide = buildPageIndex(pages, { totalPages: 50 }).length;
+  const narrow = buildPageIndex(pages, { totalPages: 300 }).length;
+  assert.ok(narrow < wide * 0.7, `页数多时应明显更小：${narrow} vs ${wide}`);
 });

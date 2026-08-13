@@ -65,12 +65,25 @@ export function detectPrintedPages(pageTexts) {
  * @returns {string} 每页一行：`p31 (印刷84) | 9 其他净收支 政府补助 …`
  */
 /**
- * 文件越多，每页摘要越短。单文件时给足 80 字，六文件时压到 40 字。
- * 下限 24 字：再短连表名都放不下，那就不是薄索引而是没有索引了。
+ * 每页摘要给多长 —— 由**总页数**决定，不是文件数。
+ *
+ * ⚠️ 第一版按文件数算，键错了变量：华为那题只有 2 份文件但共 295 页，索引 28,320 字符，
+ * 比六份地铁年报（16,744）还大一倍。索引大小 = 总页数 × (前缀 + 摘要)，跟文件数没关系。
+ *
+ * 改成给整份索引定一个总预算，再反推每页能给多少字。好处是**成本可预测**：
+ * 不管用户传 1 份 300 页还是 10 份 30 页，索引都落在同一个量级，才谈得上做额度预算。
+ * 索引是单轮固定开销的大头，且每轮重发（2026-08-13 实测：一天 19 次调用烧掉 451K，
+ * 1M 免费桶只剩 248K）。
+ *
+ * 下限 24 字：再短连表名都放不下，那就不是"薄索引"而是"没有索引"。
+ * 上限 80 字：页数少时不必刻意压，多给点信号。
  */
-export function autoPerPage(fileCount) {
-  const n = Number.isFinite(fileCount) && fileCount > 0 ? fileCount : 1;
-  return Math.max(24, Math.min(80, Math.round(240 / n)));
+export const INDEX_TOTAL_TARGET = 16000;
+
+export function autoPerPage(totalPages, target = INDEX_TOTAL_TARGET) {
+  const p = Number.isFinite(totalPages) && totalPages > 0 ? totalPages : 1;
+  const PREFIX = 16; // `p148 (印刷146) | ` 这一段的长度
+  return Math.max(24, Math.min(80, Math.round(target / p) - PREFIX));
 }
 
 export function buildPageIndex(pageTexts, opts = {}) {
@@ -85,7 +98,7 @@ export function buildPageIndex(pageTexts, opts = {}) {
   // 为什么敢压：索引的职责是给个地形，精确定位交给 FIND（search-pages.js）——
   // 那是零成本的本地查找。80 字里真正携带信号的通常是前 40 字（章节名/表名就在开头），
   // 后半截多是数字和正文碎片。压到 40 字，六文件场景的索引直接减半。
-  const perPage = opts.perPage ?? autoPerPage(opts.fileCount);
+  const perPage = opts.perPage ?? autoPerPage(opts.totalPages ?? pages.length);
   const { numbers, trustworthy } = detectPrintedPages(pages);
 
   // 前缀（`p148 (印刷146) | `）本身要占预算。先按最长的那个前缀估一份开销，再把
