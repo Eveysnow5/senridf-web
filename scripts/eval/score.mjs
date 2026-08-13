@@ -9,6 +9,7 @@
 // 判据的设计原则：**宁可判"需要人看"，也不要猜。** 判错比没有基线更糟——一个会误报的
 // 基线会让人开始忽略它，那时它就等于不存在。
 import { BANNED_HEDGES } from '../../functions/api/_lib/buildAnalysisPrompt.js';
+import { analyzeAnchors } from './anchor-check.mjs';
 
 /** 多轮的输出里，最终回答和追查过程拼在一起，分隔标记由 analysis.html 写死。 */
 const TRAIL_MARKER = '### 追跡プロセス';
@@ -129,12 +130,19 @@ export function scoreCase(c, raw) {
   // 但要显眼地报出来——过程里频繁出现推测，往往预示结论正在往没有依据的方向硬化。
   const trailHedges = trail ? BANNED_HEDGES.filter((w) => trail.includes(w)) : [];
 
+  // 锚点覆盖率：判断句里有多少能指到出处。
+  // ⚠️ **先当报告项，不当失败项。** 新指标刚上线时不知道正常值是多少，直接当闸门
+  // 必然误伤——而误伤会让人不再看它，那时它等于不存在。基线（2026-08-13 三次实跑）
+  // 是 0% / 0% / 17%，等积累够几轮再决定要不要设阈值。
+  const anchors = analyzeAnchors(text);
+
   const needsHuman = Boolean(e.manualReview || e.mustSayNotFound);
   const autoFailed = checks.some((k) => !k.ok);
 
   return {
     id: c.id,
     checks,
+    anchors,
     trailHedges,
     needsHuman,
     // 人工判的用例：自动检查仍然跑（违禁词之类照样有意义），但最终判定留给人。
@@ -159,5 +167,10 @@ export function summarize(results) {
       ? citationChecks.filter((k) => k.ok).length / citationChecks.length
       : null,
     trailHedgeCases: results.filter((r) => (r.trailHedges || []).length > 0).length,
+    anchorRate: (() => {
+      const j = results.reduce((n, r) => n + (r.anchors?.judgments || 0), 0);
+      const a = results.reduce((n, r) => n + (r.anchors?.anchored || 0), 0);
+      return j > 0 ? a / j : null;
+    })(),
   };
 }

@@ -67,6 +67,7 @@ const lines = [
   `| 自动判通过 | ${s.pass} / ${s.pass + s.fail}（${pct(s.autoRate)}） |`,
   `| 待人工判 | ${s.manual} |`,
   `| **引用正确率** | ${pct(s.citationRate)} |`,
+  `| **锚点覆盖率**（判断句能否指到出处·报告项） | ${pct(s.anchorRate)} |`,
   `| 轮数中位数 | ${medianRounds ?? '—'} |`,
   '',
   '> 引用正确率单独看：**答对但引错页说明它是蒙的**。',
@@ -92,6 +93,10 @@ for (const r of results) {
     lines.push(`- ${k.ok ? '✓' : '✗'} ${k.name}${k.note ? `（${k.note}）` : ''}`);
   }
   if (r.verdict === 'manual') {
+    if (r.anchors?.unanchored?.length) {
+      lines.push('', `**无出处的判断句（${r.anchors.anchored}/${r.anchors.judgments} 有出处）：**`);
+      for (const u of r.anchors.unanchored) lines.push(`- ✗ ${u.replace(/s+/g, ' ').slice(0, 90)}`);
+    }
     lines.push('', '**需要人工判定：**');
     for (const crit of c.expect.manualCriteria || []) lines.push(`- ${crit}`);
   }
