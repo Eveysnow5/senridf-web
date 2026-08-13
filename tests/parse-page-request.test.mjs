@@ -98,14 +98,41 @@ test('非法入参不炸', () => {
   assert.deepEqual(r.requests, [{ fileIndex: 1, pages: [86] }]);
 });
 
-test('总页数上限：模型要一整本时只取前 N 页，别把一轮的预算撑爆', () => {
+// ⚠️ 上限的分配方式是**轮转**，不是顺序截断。
+// 原来按文件号依次 slice(0, budget)，第一份文件能吃光全部配额；2026-08-13 实测
+// 东京两份年报的利润表页一次都没渲染出来，模型只能答"本轮未渲染该页图像"，
+// 而用户问的是三家公司。**广度优先于深度：先看全，再看深。**
+test('★ 总页数上限按轮转分配——第一份文件不许吃光配额', () => {
   const many = 'NEED_PAGES: 文件1:1,2,3,4,5,6,7,8,9,10 文件2:1,2,3';
   const r = parsePageRequest(many, 2, TOTALS, { maxPages: 4 });
   const total = r.requests.reduce((n, q) => n + q.pages.length, 0);
   assert.equal(total, 4, `应截到 4 页，实际 ${total}`);
   assert.equal(r.done, false);
-  // 截断要按出现顺序保留，不能把第二份文件整个饿死之外还打乱第一份
-  assert.deepEqual(r.requests[0], { fileIndex: 1, pages: [1, 2, 3, 4] });
+  assert.equal(r.requests.length, 2, '两份文件都要有份');
+  assert.deepEqual(r.requests[0], { fileIndex: 1, pages: [1, 2] });
+  assert.deepEqual(r.requests[1], { fileIndex: 2, pages: [1, 2] });
+});
+
+// 真实场景的回归：6 份年报，每份要 2 页，上限 8 页。
+// 顺序截断的话文件1~4 拿走 8 页、文件5/6 归零；轮转则六份各得一页。
+test('★ 六份文件同时索要时，每一份至少拿到一页（东京被饿死那次的回归）', () => {
+  const six = 'NEED_PAGES: 文件1:70,72 文件2:68,69 文件3:14,10 文件4:10,6 文件5:3,39 文件6:3,40';
+  const totals = Array(6).fill(148);
+  const r = parsePageRequest(six, 6, totals, { maxPages: 8 });
+  assert.equal(r.requests.length, 6, '六份都要有份，一份都不许归零');
+  for (const q of r.requests) {
+    assert.ok(q.pages.length >= 1, `文件${q.fileIndex} 一页都没拿到`);
+  }
+  const total = r.requests.reduce((n, q) => n + q.pages.length, 0);
+  assert.ok(total <= 8, `超上限：${total}`);
+});
+
+test('页数够分时不因轮转而少给', () => {
+  const r = parsePageRequest('NEED_PAGES: 文件1:1,2 文件2:5', 2, TOTALS, { maxPages: 8 });
+  assert.deepEqual(r.requests, [
+    { fileIndex: 1, pages: [1, 2] },
+    { fileIndex: 2, pages: [5] },
+  ]);
 });
 
 test('多行 NEED_PAGES 合并，不丢文件', () => {

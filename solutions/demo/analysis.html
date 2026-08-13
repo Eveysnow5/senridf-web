@@ -1204,13 +1204,28 @@
           if (!f) continue;
           const fresh = req.pages.filter(p => !sent[req.fileIndex - 1].has(p));
           if (!fresh.length) continue;
-          const remaining = IMG_TOTAL_BUDGET - usedBytes;
-          if (remaining <= 0) break;
-          const pages = await renderPagesToImages(f.pdfBuf, fresh, remaining);
+          // ⚠️ 按**剩余文件数**均摊，不是"把剩下的全给当前这份"。
+          // 先到先得会让排在前面的文件吃光 800KB，后面的一页都渲染不出来——2026-08-13
+          // 实测东京两份年报就是这么被饿死的。均摊后没用完的额度会自动滚给后面的文件，
+          // 所以不浪费；而每份至少还剩自己那一份，保证**先看全**。
+          const filesLeft = want.length - want.indexOf(req);
+          const share = Math.floor((IMG_TOTAL_BUDGET - usedBytes) / Math.max(1, filesLeft));
+          if (share <= 0) break;
+          const pages = await renderPagesToImages(f.pdfBuf, fresh, share);
           if (!pages.length) continue;
           for (const pg of pages) { sent[req.fileIndex - 1].add(pg.page); usedBytes += pg.dataUrl.length; }
           imagePayload.push({ name: f.name, pages, totalPages: f.pageTexts.length });
         }
+
+        // 留在 console：没有这行就分不清"模型没要"和"要了没渲染出来"——
+        // 2026-08-13 排查东京缺页时，正是因为看不到这个而只能靠推断。
+        console.info(
+          '[多轮] 第' + round + '轮 索要:',
+          want.map(r => 'f' + r.fileIndex + ':' + r.pages.join(',')).join(' '),
+          '| 实得:',
+          imagePayload.map(p => p.name + ':' + p.pages.map(x => x.page).join(',')).join(' ') || '（无）',
+          '| 用掉', Math.round(usedBytes / 1024) + 'KB/' + Math.round(IMG_TOTAL_BUDGET / 1024) + 'KB'
+        );
 
         const reading = imagePayload
           .map(p => `${p.name} p${p.pages.map(x => x.page).join(', p')}`)

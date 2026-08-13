@@ -65,17 +65,36 @@ export function parsePageRequest(text, fileCount, totalPagesByFile, opts = {}) {
   }
   if (byFile.size === 0) return DONE;
 
-  // 按文件号顺序输出，页码去重升序；总页数超上限时**按出现顺序截断**，
-  // 而不是按文件均分——模型先说的通常是它最想看的。
-  let budget = maxPages;
-  const requests = [];
-  for (const fileIndex of [...byFile.keys()].sort((a, b) => a - b)) {
-    if (budget <= 0) break;
-    const pages = [...new Set(byFile.get(fileIndex))].sort((a, b) => a - b).slice(0, budget);
-    if (pages.length === 0) continue;
-    budget -= pages.length;
-    requests.push({ fileIndex, pages });
+  // 按文件号顺序输出，页码去重升序；总页数超上限时**轮转分配**（见下），
+  // 保证每份被索要的文件至少拿到一页。
+  // ⚠️ **轮转分配，不是顺序截断。**
+  // 原来是按文件号依次 slice(0, budget)，于是**第一份文件能吃光全部配额**——模型一次
+  // 索要 6 份文件时，排在后面的几份直接归零，而且它不会知道自己被饿死了。
+  // 2026-08-13 实测：东京两份年报的利润表页一次都没渲染出来，模型只能答"本轮未渲染
+  // 该页图像"，而用户问的是三家公司。**广度优先于深度**：每份文件先各拿一页，再回头
+  // 补第二页——先看全，再看深。
+  const order = [...byFile.keys()].sort((a, b) => a - b);
+  const available = new Map(
+    order.map((i) => [i, [...new Set(byFile.get(i))].sort((a, b) => a - b)]),
+  );
+  const picked = new Map(order.map((i) => [i, []]));
+  let taken = 0;
+  for (let depth = 0; taken < maxPages; depth++) {
+    let progressed = false;
+    for (const i of order) {
+      if (taken >= maxPages) break;
+      const list = available.get(i);
+      if (depth < list.length) {
+        picked.get(i).push(list[depth]);
+        taken++;
+        progressed = true;
+      }
+    }
+    if (!progressed) break;
   }
+  const requests = order
+    .filter((i) => picked.get(i).length > 0)
+    .map((i) => ({ fileIndex: i, pages: picked.get(i).sort((x, y) => x - y) }));
 
   return requests.length ? { done: false, requests } : DONE;
 }
