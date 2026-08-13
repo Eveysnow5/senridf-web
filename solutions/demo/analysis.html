@@ -727,7 +727,13 @@
     const IMG_MAX_PAGES = 5;              // 每份文件的硬上限
     const IMG_TOTAL_BUDGET = 800 * 1024;  // 所有文件的 dataURL 字符数合计
 
-    async function renderPagesToImages(buf, rankedPages, byteBudget) {
+    // forceFirst：预算不够时**仍然送出第一页**。单轮路径必须为真，否则单份文件超预算时
+    // 整个图像路径会静默变空。
+    // ⚠️ 但多轮里这条保底是**按文件**生效的，N 份文件各保底一页就会累加冲破全局预算：
+    // 2026-08-13 实测七份文件的一轮跑出 873KB / 800KB（超 9%），而且请求了 7 份只渲染出
+    // 5 份，后两份被挤掉。所以多轮的调用方只在"本轮还一页都没渲染出来"时才给 true——
+    // 保住"不静默变空"的原意，同时让全局预算重新成为硬约束。
+    async function renderPagesToImages(buf, rankedPages, byteBudget, forceFirst = true) {
       const pdf = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
       const out = [];
       let used = 0;
@@ -743,8 +749,8 @@
         await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
         const dataUrl = canvas.toDataURL('image/jpeg', IMG_QUALITY);
         canvas.width = canvas.height = 0; // 及早释放，年报页面不小
-        // `used &&` 保证至少送出一页：单页就超预算时也要送，否则整个图像路径静默变空
-        if (used && used + dataUrl.length > byteBudget) break;
+        // 至少送出一页的保底：只在 forceFirst 时生效（见函数头注释）
+        if ((used || !forceFirst) && used + dataUrl.length > byteBudget) break;
         used += dataUrl.length;
         out.push({ page: n, dataUrl });
       }
@@ -1213,7 +1219,7 @@
           const filesLeft = want.length - want.indexOf(req);
           const share = Math.floor((IMG_TOTAL_BUDGET - usedBytes) / Math.max(1, filesLeft));
           if (share <= 0) break;
-          const pages = await renderPagesToImages(f.pdfBuf, fresh, share);
+          const pages = await renderPagesToImages(f.pdfBuf, fresh, share, imagePayload.length === 0);
           if (!pages.length) continue;
           for (const pg of pages) { sent[req.fileIndex - 1].add(pg.page); usedBytes += pg.dataUrl.length; }
           imagePayload.push({ name: f.name, pages, totalPages: f.pageTexts.length });
