@@ -327,3 +327,18 @@ test('催收敛与压硬化是两回事，别互相顶掉', () => {
   assert.ok(/唯一的判据/.test(buildRoundTail(5, 5)));
   assert.ok(!/唯一的判据/.test(buildRoundTail(2, 5)), '中间轮不必压硬化，它还会继续取证');
 });
+
+// 准则库接入后，「必须给出处」这条规则才**可能被满足**——在此之前，解释一个科目的
+// 含义必然无出处可引，模型只能在"违规"和"给个没用的答案"之间选，三次实跑它每次都选违规。
+test('提示词说明准则库也是一种合法出处，且不提供数字', () => {
+  const p = buildAnalysisSystemPrompt(Q);
+  assert.ok(p.includes('准则库'), '缺少准则库的说明');
+  assert.ok(p.includes('不提供任何公司的任何数字'), '必须说清它不给数字');
+  assert.ok(p.includes('（准则库·XXX）'), '必须给出引用格式');
+});
+
+test('★ 提示词点明不许越过 doesNotSay 的边界', () => {
+  const p = buildAnalysisSystemPrompt(Q);
+  assert.ok(p.includes('没有**说什么'), '缺少对边界的说明');
+  assert.ok(p.includes('把单向规则读成双向'), '要点名这个真实犯过的错，否则边界只是一句空话');
+});

@@ -2,6 +2,8 @@
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
 import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
 import { selectRelevantPassages } from '../../js/shared/select-relevant-passages.js';
+import { selectKbEntries, renderKbBlock } from '../../js/shared/kb-select.js';
+import { KB_ENTRIES } from '../../js/shared/kb/accounting-cn.js';
 import {
   buildAnalysisSystemPrompt,
   buildAnalysisUserMessage,
@@ -152,6 +154,10 @@ export async function onRequest(context) {
   // ⚠️ 多轮时 system prompt **不带轮次号**，逐轮逐字节相同——隐式缓存按前缀匹配，
   // system 在最前面，它一变整个前缀就失配（页面索引那 1.4 万 token 会每轮全价重付）。
   // 逐轮变化的部分走 buildRoundTail，摆在用户消息最末尾。
+  // 准则库：按提问选 ≤3 条已核实的准则原文。选不中就一条都不给——无关条目会把模型
+  // 往那个方向诱导。它每轮内容相同，属于稳定前缀，放在页面索引之后能一起进隐式缓存。
+  const kbBlock = renderKbBlock(selectKbEntries(question, KB_ENTRIES));
+
   const systemPrompt = round
     ? buildAnalysisSystemPrompt(question, { multiRound: true })
     : buildAnalysisSystemPrompt(question);
@@ -172,6 +178,7 @@ export async function onRequest(context) {
         text: `【页面索引】以下是各文件每一页的开头摘要，**不是全文**，只用来定位该看哪几页：\n\n${pageIndex}`,
       });
     }
+    if (kbBlock) parts.push({ type: 'text', text: kbBlock });
     for (const f of imageFiles) {
       const nums = f.pages.map((p) => p.page).join('、');
       parts.push({
@@ -207,13 +214,14 @@ export async function onRequest(context) {
     // 结转内容带上，否则这一轮的模型既没有图、也不知道前几轮发生过什么，只能瞎答。
     // ⚠️ 两块都放在 userMessage **之前**：userMessage 末尾就是问题块，追加在它后面
     // 会把问题挤到中间，而"问题在最后"是刻意的（模型对结尾注意力最高）。
+    const kbHead = kbBlock ? `${kbBlock}\n\n` : '';
     const head = pageIndex
       ? `【页面索引】以下是各文件每一页的开头摘要，**不是全文**：\n\n${pageIndex}\n\n`
       : '';
     const carried = roundState
       ? `【前几轮你已经摘录的内容（图像不会重发，这是你唯一还能看到的证据）】\n${roundState}\n\n`
       : '';
-    userContent = `${head}${carried}${userMessage}
+    userContent = `${head}${kbHead}${carried}${userMessage}
 
 ${buildRoundTail(round, maxRounds)}`;
   }
