@@ -342,3 +342,29 @@ test('★ 提示词点明不许越过 doesNotSay 的边界', () => {
   assert.ok(p.includes('没有**说什么'), '缺少对边界的说明');
   assert.ok(p.includes('把单向规则读成双向'), '要点名这个真实犯过的错，否则边界只是一句空话');
 });
+
+// FIND 是对 2026-08-13 那次失败的直接回应：模型读了东京索引前 5 行（翻译声明 /
+// cash flows / 目录）就断定"未见损益表"、主动放弃索要，而第 9 行明写着
+// `p14 | Consolidated Statements of Income`。索引开头几页天然是封面/目录，
+// **最不能代表全文**。
+test('★ 多轮说明里给出 FIND，并点名"凭开头几行就放弃"这个真实错误', () => {
+  const p = buildAnalysisSystemPrompt(Q, { multiRound: true });
+  assert.ok(p.includes('FIND:'), '缺少查找指令');
+  assert.ok(p.includes('不写文件号'), '要说明可以全文件查找');
+  assert.ok(p.includes('不能代表整份文件'), '要说清索引开头不代表全文');
+  assert.ok(p.includes('凭开头几行就放弃索要'), '要点名这个真实犯过的错，否则只是一句泛泛的提醒');
+});
+
+test('FIND 的示例能被 parseFindRequest 解析出来（跨模块契约）', async () => {
+  const { parseFindRequest } = await import('../js/shared/parse-find-request.js');
+  const p = buildAnalysisSystemPrompt(Q, { multiRound: true });
+  const lines = p
+    .split('\n')
+    .filter((l) => /FIND\s*[:：]/.test(l) && /[:：].+[,，]|[:：]\s*\S/.test(l));
+  assert.ok(lines.length > 0, 'prompt 里应有 FIND 示例');
+  let parsed = 0;
+  for (const line of lines) {
+    if (parseFindRequest(line, 6).finds.length > 0) parsed++;
+  }
+  assert.ok(parsed > 0, `解析器认不出 prompt 里的任何 FIND 示例：${lines.join(' | ')}`);
+});

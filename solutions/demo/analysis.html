@@ -1172,6 +1172,7 @@
       let findings = '';       // 结转给模型的（引文，进下一轮的请求）
       let trail = '';          // 给用户看的（追查过程，只进 DOM）
       let pendingRequests = []; // 上一轮解析出的、还没取过的页
+      let findBlock = '';       // 上一轮 FIND 的回执，随本轮一起发过去
 
       for (let round = 1; round <= MAX_ROUNDS; round++) {
         // ── 决定本轮取哪几页 ──
@@ -1245,7 +1246,7 @@
           round,
           maxRounds: MAX_ROUNDS,
           pageIndex,
-          roundState: findings,
+          roundState: findBlock ? `${findBlock}\n\n${findings}`.trim() : findings,
         }, partial => {
           elReport.innerHTML = renderMarkdown(
             `${roundProgress(round, `読み込み中 / 正在读 ${reading}`)}\n\n${trail}\n\n${partial}`
@@ -1256,11 +1257,40 @@
         // 三条终止路径（模型说够了 / 索要的页全看过 / 轮数到顶）都在 decideNextRound 里，
         // 它是纯函数、有单测——内联脚本是 `npm run check` 的盲区，循环最危险的判断
         // 不能留在这里。
+        // ── 先跑查找：它零成本（文本早抽好了、不调 API），而且能救"索引开头几行
+        // 看不出这页有什么"的场景——2026-08-13 东京就是这么被放弃的。
+        findBlock = '';
+        const findReq = window.sdfParseFindRequest
+          ? window.sdfParseFindRequest(text, cands.length)
+          : { finds: [] };
+        if (findReq.finds.length) {
+          const blocks = [];
+          for (const f of findReq.finds) {
+            const targets = f.fileIndex ? [f.fileIndex] : cands.map((_, i) => i + 1);
+            for (const fi of targets) {
+              const file = cands[fi - 1];
+              if (!file) continue;
+              const res = window.sdfSearchPages(file.pageTexts, f.terms);
+              const b = window.sdfRenderFindResults(res, '文件' + fi + '：' + file.name);
+              if (b) blocks.push(b);
+            }
+          }
+          findBlock = blocks.join('\n\n');
+          // 查找也记进账目：否则"模型搜了什么、搜到没有"同样不可见。
+          const findTerms = findReq.finds.flatMap((f) => f.terms);
+          const findHits = (findBlock.match(/p\d+\(/g) || []).length;
+          roundLog.push(
+            '第 ' + round + ' 轮 · 查找 ' + findTerms.join('/') + ' · 命中 ' + findHits + ' 处',
+          );
+        }
+
         const decision = window.sdfDecideNextRound(
           parseReq(text, cands.length, totals), sent, round, MAX_ROUNDS
         );
 
-        if (decision.done) {
+        // ⚠️ 有查找回执时**不能停**：模型刚提了个问题，得让它看到答案再决定。
+        // 否则查找永远没有下文，等于白给了一个机制。
+        if (decision.done && !findBlock) {
           const answer = stripDirectives(text);
           // 追查过程用纯 markdown 小节，不用 <details>：renderMarkdown 在 marked/DOMPurify
           // 没加载时会把一切转义，那时原始 HTML 会以字面量暴露给用户。
@@ -1496,6 +1526,8 @@ import { textCharBudget } from '/js/shared/text-wire-budget.js';
 import { imagePathViable } from '/js/shared/image-path-viable.js';
 import { buildPageIndex } from '/js/shared/build-page-index.js';
 import { parsePageRequest } from '/js/shared/parse-page-request.js';
+import { parseFindRequest } from '/js/shared/parse-find-request.js';
+import { searchPages, renderFindResults } from '/js/shared/search-pages.js';
 import { decideNextRound } from '/js/shared/multiround-flow.js';
 initErrorReporting({ db });
 window.sdfSheetToMarkdown = sheetRowsToMarkdown;
@@ -1505,6 +1537,9 @@ window.sdfTextCharBudget = textCharBudget;
 window.sdfImagePathViable = imagePathViable;
 window.sdfBuildPageIndex = buildPageIndex;
 window.sdfParsePageRequest = parsePageRequest;
+window.sdfParseFindRequest = parseFindRequest;
+window.sdfSearchPages = searchPages;
+window.sdfRenderFindResults = renderFindResults;
 window.sdfDecideNextRound = decideNextRound;
 window.sdfGetToken=()=>auth.currentUser?.getIdToken();
 const _start=Date.now();let _docId=null,_logged=false;
