@@ -64,12 +64,28 @@ export function detectPrintedPages(pageTexts) {
  * @param {{budget?:number, perPage?:number}} [opts] budget 为索引总字符上限
  * @returns {string} 每页一行：`p31 (印刷84) | 9 其他净收支 政府补助 …`
  */
+/**
+ * 文件越多，每页摘要越短。单文件时给足 80 字，六文件时压到 40 字。
+ * 下限 24 字：再短连表名都放不下，那就不是薄索引而是没有索引了。
+ */
+export function autoPerPage(fileCount) {
+  const n = Number.isFinite(fileCount) && fileCount > 0 ? fileCount : 1;
+  return Math.max(24, Math.min(80, Math.round(240 / n)));
+}
+
 export function buildPageIndex(pageTexts, opts = {}) {
   const pages = Array.isArray(pageTexts) ? pageTexts : [];
   if (pages.length === 0) return '';
 
   const budget = opts.budget ?? 16000;
-  const perPage = opts.perPage ?? 80;
+  // 每页摘要长度。**默认随文件数收缩**——索引是单轮固定开销里最大的一项：
+  // 2026-08-13 实测六份地铁年报的索引 25,819 字符 ≈ 21.9K token，占单次调用
+  // 23.7K 的 85%，而且**每轮重发**。一天 19 次调用烧掉 451K，把 1M 的免费桶打到只剩 248K。
+  //
+  // 为什么敢压：索引的职责是给个地形，精确定位交给 FIND（search-pages.js）——
+  // 那是零成本的本地查找。80 字里真正携带信号的通常是前 40 字（章节名/表名就在开头），
+  // 后半截多是数字和正文碎片。压到 40 字，六文件场景的索引直接减半。
+  const perPage = opts.perPage ?? autoPerPage(opts.fileCount);
   const { numbers, trustworthy } = detectPrintedPages(pages);
 
   // 前缀（`p148 (印刷146) | `）本身要占预算。先按最长的那个前缀估一份开销，再把

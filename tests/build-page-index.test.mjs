@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { buildPageIndex, detectPrintedPages } from '../js/shared/build-page-index.js';
+import { buildPageIndex, detectPrintedPages, autoPerPage } from '../js/shared/build-page-index.js';
 
 /** 真实夹具：华为 2024 年报的 40 页文字层（印刷页码 54–93，两种页眉形态）。 */
 const REAL_PAGES = JSON.parse(
@@ -102,4 +102,48 @@ test('默认预算下 148 页的索引仍在十几 KB 量级（这是"索引很�
 test('空输入不炸', () => {
   assert.equal(buildPageIndex([]), '');
   assert.equal(buildPageIndex(null), '');
+});
+
+// ⚠️ 索引是单轮固定开销里最大的一项：2026-08-13 实测六份年报的索引 25,819 字符
+// ≈ 21.9K token，占单次调用 23.7K 的 85%，而且**每轮重发**。一天 19 次调用烧掉
+// 451K，把 1M 的免费桶打到只剩 248K。所以摘要长度必须随文件数收缩。
+test('★ 每页摘要长度随文件数收缩（索引是最大的单轮固定开销）', () => {
+  assert.equal(autoPerPage(1), 80, '单文件给足');
+  assert.equal(autoPerPage(6), 40, '六文件减半');
+  assert.equal(autoPerPage(10), 24, '十文件到下限');
+  assert.equal(autoPerPage(100), 24, '下限 24：再短连表名都放不下');
+  assert.equal(autoPerPage(0), 80, '非法输入按单文件处理');
+});
+
+test('★ 压缩后仍保住关键那一行的信号（表名在开头，不在结尾）', () => {
+  // 东京那次的失败页：p14 的索引行必须仍能看出这是损益表
+  const pages = [
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '10 (2) Consolidated Statements of Income and Comprehensive Income Consolidated Statements of Income Operating revenue 407,832',
+  ];
+  const idx = buildPageIndex(pages, { fileCount: 6 });
+  const line = idx.split('\n')[13];
+  assert.ok(line.includes('Statements of Income'), `压到 40 字后仍要看得出是损益表：${line}`);
+});
+
+test('六文件场景的索引确实变小了', () => {
+  const pages = Array.from(
+    { length: 75 },
+    (_, i) => `第 ${i + 1} 页 ${'经营讨论与分析内容'.repeat(20)}`,
+  );
+  const wide = buildPageIndex(pages, { fileCount: 1 }).length;
+  const narrow = buildPageIndex(pages, { fileCount: 6 }).length;
+  assert.ok(narrow < wide * 0.7, `六文件时应明显更小：${narrow} vs ${wide}`);
 });

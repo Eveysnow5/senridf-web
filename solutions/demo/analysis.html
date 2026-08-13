@@ -1156,7 +1156,7 @@
       const INDEX_TOTAL_CHARS = 40000;
       const perFileIndex = Math.max(1200, Math.floor(INDEX_TOTAL_CHARS / cands.length));
       const pageIndex = cands
-        .map((f, i) => `【文件${i + 1}：${f.name}】共 ${f.pageTexts.length} 页\n${buildIndex(f.pageTexts, { budget: perFileIndex })}`)
+        .map((f, i) => `【文件${i + 1}：${f.name}】共 ${f.pageTexts.length} 页\n${buildIndex(f.pageTexts, { budget: perFileIndex, fileCount: cands.length })}`)
         .join('\n\n');
       const totals = cands.map(f => f.pageTexts.length);
       const sent = cands.map(() => new Set());
