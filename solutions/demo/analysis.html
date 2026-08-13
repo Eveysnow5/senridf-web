@@ -1168,6 +1168,7 @@
         totalChars: (f.content || '').length,
       }));
 
+      const roundLog = []; // 每轮的取页账目，会印进追查过程给用户看
       let findings = '';       // 结转给模型的（引文，进下一轮的请求）
       let trail = '';          // 给用户看的（追查过程，只进 DOM）
       let pendingRequests = []; // 上一轮解析出的、还没取过的页
@@ -1217,15 +1218,18 @@
           imagePayload.push({ name: f.name, pages, totalPages: f.pageTexts.length });
         }
 
-        // 留在 console：没有这行就分不清"模型没要"和"要了没渲染出来"——
-        // 2026-08-13 排查东京缺页时，正是因为看不到这个而只能靠推断。
-        console.info(
-          '[多轮] 第' + round + '轮 索要:',
-          want.map(r => 'f' + r.fileIndex + ':' + r.pages.join(',')).join(' '),
-          '| 实得:',
-          imagePayload.map(p => p.name + ':' + p.pages.map(x => x.page).join(',')).join(' ') || '（无）',
-          '| 用掉', Math.round(usedBytes / 1024) + 'KB/' + Math.round(IMG_TOTAL_BUDGET / 1024) + 'KB'
+        // 记一笔取页账目。**放进给用户看的追查过程里，而不是只打 console** ——
+        // 诊断信息放在 DevTools 里就等于没有：要翻控制台、要没被扩展报错淹没、还要
+        // 恰好没被日志级别过滤掉。放进回答里，它会跟着回答一起被读到。
+        // 没有这笔账就分不清"模型没要"和"要了没渲染出来"——排查东京缺页时，正是
+        // 因为看不到它而只能靠"渲染顺序是文件号升序"去反推。
+        const wantStr = want.map(r => 'f' + r.fileIndex + ':' + r.pages.join(',')).join(' ') || '（仅索引）';
+        const gotStr = imagePayload.map(p => p.name + ':p' + p.pages.map(x => x.page).join(',p')).join(' ') || '（无）';
+        roundLog.push(
+          '第 ' + round + ' 轮 · 索要 ' + wantStr + ' · 实得 ' + gotStr +
+          ' · ' + Math.round(usedBytes / 1024) + 'KB/' + Math.round(IMG_TOTAL_BUDGET / 1024) + 'KB'
         );
+        console.log('[多轮] ' + roundLog[roundLog.length - 1]);
 
         const reading = imagePayload
           .map(p => `${p.name} p${p.pages.map(x => x.page).join(', p')}`)
@@ -1260,8 +1264,11 @@
           const answer = stripDirectives(text);
           // 追查过程用纯 markdown 小节，不用 <details>：renderMarkdown 在 marked/DOMPurify
           // 没加载时会把一切转义，那时原始 HTML 会以字面量暴露给用户。
-          return trail
-            ? `${answer}\n\n---\n\n### 追跡プロセス / 追查过程\n${trail}`
+          const ledger = roundLog.length
+            ? `\n\n**取页账目 / 取得ページ**\n\n${roundLog.map(l => '- ' + l).join('\n')}\n`
+            : '';
+          return trail || ledger
+            ? `${answer}\n\n---\n\n### 追跡プロセス / 追查过程\n${ledger}${trail}`
             : answer;
         }
 
