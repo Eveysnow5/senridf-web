@@ -1,0 +1,203 @@
+<title>宏观对表看板</title>
+<style>
+:root{
+  --paper:#F6F7F4;--surface:#FFFFFF;--sunk:#EFF1ED;--ink:#14282F;--soft:#4A5F66;
+  --faint:#7A8B90;--rule:#D8DED8;--strong:#B9C3BC;
+  --cool:#14606B;--coolbg:#E2EEEE;--warm:#9C6714;--warmbg:#F5EBD9;
+  --ok:#2E6B4F;--okbg:#E3EFE7;--alert:#93362D;--alertbg:#F6E4E1;
+  --serif:Georgia,"Songti SC","Noto Serif CJK SC",STSong,serif;
+  --sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#101A1D;--surface:#16242A;--sunk:#121E22;--ink:#E4EAE8;--soft:#A6B7B9;
+  --faint:#74888B;--rule:#26383E;--strong:#354B52;
+  --cool:#62B8BE;--coolbg:#14343A;--warm:#D3A052;--warmbg:#33291A;
+  --ok:#6FB98F;--okbg:#163024;--alert:#D98077;--alertbg:#35201E;
+}}
+:root[data-theme="dark"]{
+  --paper:#101A1D;--surface:#16242A;--sunk:#121E22;--ink:#E4EAE8;--soft:#A6B7B9;
+  --faint:#74888B;--rule:#26383E;--strong:#354B52;
+  --cool:#62B8BE;--coolbg:#14343A;--warm:#D3A052;--warmbg:#33291A;
+  --ok:#6FB98F;--okbg:#163024;--alert:#D98077;--alertbg:#35201E;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:44px 22px 80px;display:flex;
+  flex-direction:column;gap:44px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--faint)}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(28px,4.4vw,42px);
+  line-height:1.15;margin:6px 0 0}
+h2{font-family:var(--serif);font-weight:400;font-size:clamp(20px,2.7vw,26px);
+  margin:0;line-height:1.25}
+.sub{color:var(--soft);margin:10px 0 0;max-width:62ch}
+section{display:flex;flex-direction:column;gap:16px}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--cool);display:flex;align-items:center;gap:9px}
+.tag::after{content:"";flex:1;height:1px;background:var(--rule)}
+.lede{margin:0;color:var(--soft);max-width:66ch;font-size:14.5px}
+.banner{padding:11px 16px;border-left:3px solid;font-size:14px;border-radius:0}
+.banner.ok{background:var(--okbg);border-color:var(--ok);color:var(--ink)}
+.banner.bad{background:var(--alertbg);border-color:var(--alert);color:var(--ink)}
+.stats{display:flex;gap:1px;background:var(--rule);border:1px solid var(--rule);flex-wrap:wrap}
+.stat{background:var(--surface);padding:13px 20px;flex:1;min-width:110px}
+.stat b{display:block;font-family:var(--mono);font-size:25px;line-height:1.1;
+  font-variant-numeric:tabular-nums}
+.stat span{font-size:12.5px;color:var(--faint)}
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:9px}
+.card{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--strong);
+  padding:11px 13px}
+.card.ok{border-left-color:var(--ok)}
+.card.known{border-left-color:var(--warm)}
+.card.bad{border-left-color:var(--alert)}
+.card.rec{border-left-color:var(--cool)}
+.ct{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ct b{font-size:14.5px;font-weight:600}
+.cm{font-family:var(--mono);font-size:11.5px;color:var(--faint);margin-top:3px;
+  font-variant-numeric:tabular-nums}
+.pill{font-size:11px;padding:1px 7px;border-radius:9px;white-space:nowrap;font-weight:600}
+.pill.ok{background:var(--okbg);color:var(--ok)}
+.pill.known{background:var(--warmbg);color:var(--warm)}
+.pill.bad{background:var(--alertbg);color:var(--alert)}
+.pill.rec{background:var(--coolbg);color:var(--cool)}
+.panel{background:var(--surface);border:1px solid var(--rule);padding:16px 18px 10px}
+.chart svg{width:100%;height:auto;display:block}
+.grid{stroke:var(--rule);stroke-width:1}
+.grid.vt{stroke-dasharray:2 4}
+.zero{stroke:var(--strong);stroke-width:1.2}
+.ln{fill:none;stroke-width:1.9;stroke-linejoin:round;stroke-linecap:round}
+.ax{fill:var(--faint);font-size:10.5px;font-family:var(--mono)}
+.legend{display:flex;flex-wrap:wrap;gap:16px;padding:10px 2px 4px;font-size:13px;color:var(--soft)}
+.lg{display:flex;align-items:center;gap:6px}
+.lg i{width:13px;height:3px;border-radius:2px;display:inline-block}
+.lg b{font-family:var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
+.empty{color:var(--faint);padding:26px;text-align:center;font-size:13px}
+.banner.warn{background:var(--warmbg);border-color:var(--warm);color:var(--ink)}
+.scroll{overflow-x:auto;border:1px solid var(--rule);background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
+thead th{text-align:left;font-family:var(--mono);font-weight:400;font-size:10.5px;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--faint);padding:9px 12px;
+  border-bottom:1px solid var(--strong);white-space:nowrap}
+tbody td{padding:10px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+td.pr{font-weight:600}
+td.pr i{font-style:normal;color:var(--faint);font-weight:400;margin:0 3px}
+td.nm{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.frq{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);
+  font-weight:400;margin-top:2px}
+.lc{font-size:10.5px;color:var(--warm);font-weight:600}
+tr.exp td{background:var(--sunk);font-size:13px;color:var(--soft);padding:9px 12px}
+tr.nd td{color:var(--faint)}
+.pill.nd{background:var(--sunk);color:var(--faint)}
+.note.alert{border-left-color:var(--alert);background:var(--alertbg)}
+.note ul{margin:8px 0 0;padding-left:20px}
+.note li{margin:3px 0}
+.note{border-left:3px solid var(--cool);background:var(--coolbg);padding:12px 16px;font-size:14px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.two{grid-template-columns:1fr}}
+footer{border-top:2px solid var(--ink);padding-top:16px;color:var(--soft);font-size:13.5px;
+  display:flex;flex-direction:column;gap:7px}
+</style>
+<div class="wrap">
+<header>
+  <div class="eyebrow">采集于 2026-08-16 · 生成于 2026-08-16</div>
+  <h1>宏观对表看板</h1>
+  <p class="sub">配套《中国经济对表框架》。上半页看<b>取数是否可信</b>，下半页才看数本身——
+  源坏了而不自知，比没有数更危险。</p>
+</header>
+
+<section>
+  <div class="tag">取数健康度</div>
+  <div class="banner ok">无未登记异常。已登记滞后 3 项，不视为故障但仍需跟进</div>
+  <div class="stats">
+    <div class="stat"><b>18</b><span>正常</span></div>
+    <div class="stat"><b>3</b><span>已登记滞后</span></div>
+    <div class="stat"><b>0</b><span>未登记异常</span></div>
+    <div class="stat"><b>21</b><span>指标总数</span></div>
+  </div>
+  <div class="grid-cards"><div class="card known"><div class="ct"><b>社会融资规模增量</b><span class="pill known">已登记滞后</span></div><div class="cm">L1 · 最新 2026-04-30 · 滞后 108 天</div></div><div class="card known"><div class="ct"><b>PMI(财新)</b><span class="pill known">已登记滞后</span></div><div class="cm">L4 · 最新 2025-09-01 · 滞后 349 天</div></div><div class="card known"><div class="ct"><b>外商直接投资</b><span class="pill known">已登记滞后</span></div><div class="cm">L4 · 最新 2023-07-31 · 滞后 1112 天</div></div><div class="card ok"><div class="ct"><b>海关进出口</b><span class="pill ok">正常</span></div><div class="cm">L1 · 最新 2026-07-31 · 滞后 16 天</div></div><div class="card ok"><div class="ct"><b>全社会用电量</b><span class="pill ok">正常</span></div><div class="cm">L1 · 最新 2026-06-30 · 滞后 47 天</div></div><div class="card ok"><div class="ct"><b>新增信贷(社融口径)</b><span class="pill ok">正常</span></div><div class="cm">L1 · 最新 2026-07-31 · 滞后 16 天</div></div><div class="card ok"><div class="ct"><b>CPI</b><span class="pill ok">正常</span></div><div class="cm">L1 · 最新 2026-07-31 · 滞后 16 天</div></div><div class="card ok"><div class="ct"><b>PPI</b><span class="pill ok">正常</span></div><div class="cm">L1 · 最新 2026-07-31 · 滞后 16 天</div></div><div class="card ok"><div class="ct"><b>财政收入</b><span class="pill ok">正常</span></div><div class="cm">L1 · 最新 2026-06-30 · 滞后 47 天</div></div><div class="card ok"><div class="ct"><b>货币供应量</b><span class="pill ok">正常</span></div><div class="cm">L1 · 最新 2026-07-31 · 滞后 16 天</div></div><div class="card ok"><div class="ct"><b>铁路货运量</b><span class="pill ok">正常</span></div><div class="cm">L1 · 最新 2026-06-30 · 滞后 47 天</div></div><div class="card ok"><div class="ct"><b>税收收入</b><span class="pill ok">正常</span></div><div class="cm">L1 · 最新 2026-06-30 · 滞后 47 天</div></div><div class="card ok"><div class="ct"><b>GDP</b><span class="pill ok">正常</span></div><div class="cm">L2 · 最新 2026-06-30 · 滞后 47 天</div></div><div class="card ok"><div class="ct"><b>社会消费品零售总额</b><span class="pill ok">正常</span></div><div class="cm">L2 · 最新 2026-06-30 · 滞后 47 天</div></div><div class="card ok"><div class="ct"><b>规上工业增加值</b><span class="pill ok">正常</span></div><div class="cm">L2 · 最新 2026-06-30 · 滞后 47 天</div></div><div class="card ok"><div class="ct"><b>城镇调查失业率</b><span class="pill ok">正常</span></div><div class="cm">L2 · 最新 2026-06-30 · 滞后 47 天</div></div><div class="card ok"><div class="ct"><b>PMI(统计局)</b><span class="pill ok">正常</span></div><div class="cm">L2 · 最新 2026-07-31 · 滞后 16 天</div></div><div class="card ok"><div class="ct"><b>企业景气指数</b><span class="pill ok">正常</span></div><div class="cm">L4 · 最新 2026-06-30 · 滞后 47 天</div></div><div class="card ok"><div class="ct"><b>物流业景气指数</b><span class="pill ok">正常</span></div><div class="cm">L4 · 最新 2026-07-01 · 滞后 46 天</div></div><div class="card ok"><div class="ct"><b>国际航运运价指数</b><span class="pill ok">正常</span></div><div class="cm">L4 · 最新 2026-08-13 · 滞后 3 天</div></div><div class="card ok"><div class="ct"><b>EU27自华进口(镜像旁证)</b><span class="pill ok">正常</span></div><div class="cm">L4 · 最新 2026-06-30 · 滞后 47 天</div></div></div>
+  <div class="note"><b>修订检测：</b>比对 9 个指标的历史快照，未发现历史数据被改动。官方修订通常没有公告，所以这项检查靠跨月积累才真正有力——当前 git 历史还很短。</div>
+</section>
+
+<section>
+  <div class="tag">背离监测</div>
+  <h2>该对得上的，现在对得上吗</h2>
+  <p class="lede">把框架第三层的对表关系算成可比较的量。判据是<b>当前差值落在自身历史分布的什么位置</b>，
+  而不是"差值应该为零"——两个指标常年就有系统性差异（口径、计价货币、覆盖范围），
+  以零为基准会让每组常年报警。系统性差异被历史基线吸收后，剩下的才是信号。</p>
+  <div class="banner warn">2 组偏离历史常态，值得看一眼；无历史罕见背离</div><div class="scroll"><table><thead><tr><th>对表关系</th><th>当前差</th><th>历史中位</th><th>z</th><th>z(标准化)</th><th>判定</th></tr></thead><tbody><tr><td class="pr">社零 <i>vs</i> 税收收入<span class="frq">季频 · n=59</span></td><td class="nm">-5.1</td><td class="nm">+3.2</td><td class="nm">-0.97</td><td class="nm">-1.83</td><td><span class="pill known">偏离</span></td></tr><tr class="exp"><td colspan="6"><b>这意味着：</b>社零涨而税收不涨 → 要么在打价格战（量增价跌，用 CPI 验证），要么口径有问题。两种解释指向完全不同的图景。</td></tr><tr><td class="pr">中国出口 <i>vs</i> EU27 自华进口<span class="frq">月频 · n=58</span></td><td class="nm">+12.1</td><td class="nm">-0.0</td><td class="nm">+0.77</td><td class="nm">+1.90</td><td><span class="pill known">偏离</span></td></tr><tr class="exp"><td colspan="6"><b>这意味着：</b>⚠ 目前不是严格镜像：左边是对全世界的总出口、右边只是对欧那一支（约占 15%），且计价货币不同（美元 vs 欧元）。系统性差异已被历史基线吸收，但结构变化仍会造成假信号。</td></tr><tr><td class="pr">GDP 累计同比 <i>vs</i> 铁路货运量<span class="frq">季频 · n=13</span> <b class="lc">低置信</b></td><td class="nm">+1.9</td><td class="nm">+1.3</td><td class="nm">+0.20</td><td class="nm">+0.04</td><td><span class="pill ok">正常</span></td></tr><tr><td class="pr">GDP 累计同比 <i>vs</i> 全社会用电量<span class="frq">季频 · n=61</span></td><td class="nm">-0.8</td><td class="nm">+0.3</td><td class="nm">-0.26</td><td class="nm">-0.81</td><td><span class="pill ok">正常</span></td></tr><tr><td class="pr">GDP 累计同比 <i>vs</i> 规上工业增加值<span class="frq">季频 · n=55</span></td><td class="nm">+0.1</td><td class="nm">-0.5</td><td class="nm">+0.23</td><td class="nm">+0.10</td><td><span class="pill ok">正常</span></td></tr><tr><td class="pr">GDP 累计同比 <i>vs</i> 新增信贷累计同比<span class="frq">季频 · n=74</span></td><td class="nm">+18.7</td><td class="nm">-1.6</td><td class="nm">+0.53</td><td class="nm">+0.00</td><td><span class="pill ok">正常</span></td></tr></tbody></table></div>
+  <div class="note"><b>怎么读：</b><code>z</code> 是原始差值相对自身历史的偏离倍数；
+  <code>z(标准化)</code> 是两边各自归一化后再作差——配对一方波动极大时（如信贷 vs GDP），
+  原始 z 会被稀释，标准化 z 能补上。判定取两者中更极端的一个。
+  <br><b>阈值 |z|≥2 是统计约定，不是经济判断</b>：它说的是"这个差值在历史上罕见、需要解释"，
+  不是"数据有问题"。解释不了，才降低对该指标的置信度。
+  <br><b>已做突变验证</b>：人为给 GDP 加 25 个百分点，涉 GDP 的 4 组全部转为异常，
+  无关配对判定不变——护栏不是空转。</div>
+</section>
+
+<section>
+  <div class="tag">核心对表</div>
+  <h2>GDP 与实体活动是否同向</h2>
+  <p class="lede">注意口径：GDP 这条是<b>累计同比</b>（源数据即为年内累计，每年 Q1 因累计等于单季而写作"第1季度"），
+  用电量与工业增加值是<b>当月同比</b>。累计值天然更平滑，比较趋势方向可以，比较波动幅度不行。
+  框架第三层的旗舰对表：GDP 若持续稳而用电量、工业增加值同时走弱，
+  优先怀疑核算而非怀疑实体。注意单季背离常来自能源结构变化（新能源占比上升会压低单位 GDP 耗电），
+  须先排除再下结论。</p>
+  <div class="panel"><div class="chart"><svg viewBox="0 0 880 280" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="46" y1="254.0" x2="866" y2="254.0"/><text class="ax" x="39" y="257.5" text-anchor="end">-6%</text><line class="grid" x1="46" y1="194.0" x2="866" y2="194.0"/><text class="ax" x="39" y="197.5" text-anchor="end">2%</text><line class="grid" x1="46" y1="134.0" x2="866" y2="134.0"/><text class="ax" x="39" y="137.5" text-anchor="end">10%</text><line class="grid" x1="46" y1="74.0" x2="866" y2="74.0"/><text class="ax" x="39" y="77.5" text-anchor="end">17%</text><line class="grid" x1="46" y1="14.0" x2="866" y2="14.0"/><text class="ax" x="39" y="17.5" text-anchor="end">25%</text><line class="zero" x1="46" y1="208.4" x2="866" y2="208.4"/><line class="grid vt" x1="125.7" y1="14" x2="125.7" y2="254"/><text class="ax" x="125.7" y="272" text-anchor="middle">2021</text><line class="grid vt" x1="262.4" y1="14" x2="262.4" y2="254"/><text class="ax" x="262.4" y="272" text-anchor="middle">2022</text><line class="grid vt" x1="399.1" y1="14" x2="399.1" y2="254"/><text class="ax" x="399.1" y="272" text-anchor="middle">2023</text><line class="grid vt" x1="535.7" y1="14" x2="535.7" y2="254"/><text class="ax" x="535.7" y="272" text-anchor="middle">2024</text><line class="grid vt" x1="672.4" y1="14" x2="672.4" y2="254"/><text class="ax" x="672.4" y="272" text-anchor="middle">2025</text><line class="grid vt" x1="809.1" y1="14" x2="809.1" y2="254"/><text class="ax" x="809.1" y="272" text-anchor="middle">2026</text><polyline class="ln" stroke="#14606B" points="46.0,220.7 80.2,203.0 114.3,190.7 148.5,62.7 182.7,108.2 216.8,129.8 251.0,142.1 285.2,171.4 319.3,187.6 353.5,183.7 387.7,184.5 421.8,172.2 456.0,164.5 490.2,166.8 524.3,166.8 558.5,167.5 592.7,169.9 626.8,171.4 661.0,169.9 695.2,166.8 729.3,167.5 763.5,168.3 797.7,169.9 831.8,169.9 866.0,172.2"/><circle cx="866.0" cy="172.2" r="3.4" fill="#14606B"/><polyline class="ln" stroke="#9C6714" points="46.0,218.4 57.4,213.8 68.8,204.6 80.2,198.4 91.6,194.5 102.9,189.1 114.3,184.5 137.1,37.2 148.5,44.9 159.9,61.1 171.3,71.9 182.7,83.5 194.1,88.1 205.4,102.0 216.8,108.9 228.2,114.3 239.6,120.5 251.0,129.0 273.8,163.7 285.2,169.9 296.6,182.2 307.9,189.1 319.3,186.0 330.7,182.2 342.1,174.5 353.5,177.6 364.9,179.1 376.3,181.4 387.7,180.7 410.4,190.7 421.8,180.7 433.2,172.2 444.6,168.3 456.0,169.9 467.4,168.3 478.8,169.9 490.2,165.2 501.6,163.7 512.9,159.8 524.3,156.7 547.1,123.6 558.5,132.8 569.9,139.0 581.3,142.1 592.7,146.0 604.1,149.0 615.4,147.5 626.8,147.5 638.2,149.8 649.6,153.7 661.0,156.0 683.8,198.4 695.2,189.1 706.6,184.5 717.9,182.2 729.3,179.9 740.7,173.7 752.1,172.9 763.5,172.9 774.9,169.1 786.3,168.3 797.7,169.9 820.4,161.4 831.8,168.3 843.2,166.8 854.6,164.5 866.0,167.5"/><circle cx="866.0" cy="167.5" r="3.4" fill="#9C6714"/><polyline class="ln" stroke="#5B6E4A" points="46.0,171.4 57.4,171.4 68.8,165.2 80.2,155.2 91.6,155.2 102.9,154.4 114.3,152.1 148.5,99.7 159.9,132.8 171.3,140.6 182.7,144.4 194.1,159.1 205.4,167.5 216.8,184.5 228.2,181.4 239.6,179.1 251.0,175.3 285.2,169.9 296.6,230.8 307.9,203.0 319.3,178.3 330.7,179.1 342.1,176.0 353.5,159.8 364.9,169.9 376.3,191.4 387.7,198.4 421.8,178.3 433.2,165.2 444.6,181.4 456.0,174.5 467.4,179.9 478.8,173.7 490.2,173.7 501.6,172.9 512.9,157.5 524.3,156.0 558.5,173.7 569.9,156.7 581.3,165.2 592.7,167.5 604.1,169.1 615.4,173.7 626.8,166.8 638.2,167.5 649.6,166.8 661.0,160.6 695.2,149.0 706.6,161.4 717.9,163.7 729.3,156.0 740.7,164.5 752.1,168.3 763.5,158.3 774.9,170.6 786.3,171.4 797.7,168.3 831.8,164.5 843.2,176.8 854.6,173.7 866.0,167.5"/><circle cx="866.0" cy="167.5" r="3.4" fill="#5B6E4A"/><polyline class="ln" stroke="#5A5B8C" points="319.3,151.3 330.7,113.6 342.1,185.3 353.5,138.2 364.9,183.0 376.3,220.7 387.7,216.1 399.1,215.4 410.4,156.0 421.8,179.1 433.2,221.5 444.6,225.4 456.0,226.9 467.4,199.2 478.8,200.7 490.2,206.9 501.6,169.1 512.9,179.1 524.3,179.9 558.5,220.0 569.9,213.8 581.3,172.2 592.7,150.6 604.1,176.0 615.4,166.8 626.8,182.2 638.2,175.3 649.6,159.1 661.0,169.9 695.2,189.9 706.6,170.6 717.9,203.0 729.3,190.7 740.7,173.7 752.1,165.2 763.5,176.0 774.9,203.8 786.3,199.2 797.7,228.5 820.4,213.0 831.8,182.2 843.2,175.3 854.6,174.5 866.0,211.5"/><circle cx="866.0" cy="211.5" r="3.4" fill="#5A5B8C"/></svg><div class="legend"><span class="lg"><i style="background:#14606B"></i>GDP 累计同比<b>4.7%</b></span><span class="lg"><i style="background:#9C6714"></i>全社会用电量同比<b>5.3%</b></span><span class="lg"><i style="background:#5B6E4A"></i>规上工业增加值同比<b>5.3%</b></span><span class="lg"><i style="background:#5A5B8C"></i>铁路货运量同比<b>-0.4%</b></span></div></div></div>
+  <div class="note"><b>克强指数三件套已齐</b>——用电量与铁路货运量在本图，新增信贷因量纲差一个数量级单独成图（见下节）。
+  铁路货运量走自建取数源：akshare 原函数要抓完 ~80 页回溯到 1952 年，实测三次两败；只取近 12 页则约 20 秒且稳定。</div>
+</section>
+
+<section>
+  <div class="tag">对表</div>
+  <h2>融资侧：信贷投放</h2>
+  <p class="lede">克强指数第三项「新增银行贷款」。单独成图是因为它的波动幅度比 GDP 大一个数量级，
+  同图会把实体三条线压成一团。看的是<b>方向</b>：融资持续收缩而 GDP 稳，是需要解释的背离。</p>
+  <div class="panel"><div class="chart"><svg viewBox="0 0 880 240" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="46" y1="214.0" x2="866" y2="214.0"/><text class="ax" x="39" y="217.5" text-anchor="end">-30%</text><line class="grid" x1="46" y1="164.0" x2="866" y2="164.0"/><text class="ax" x="39" y="167.5" text-anchor="end">-13%</text><line class="grid" x1="46" y1="114.0" x2="866" y2="114.0"/><text class="ax" x="39" y="117.5" text-anchor="end">4%</text><line class="grid" x1="46" y1="64.0" x2="866" y2="64.0"/><text class="ax" x="39" y="67.5" text-anchor="end">22%</text><line class="grid" x1="46" y1="14.0" x2="866" y2="14.0"/><text class="ax" x="39" y="17.5" text-anchor="end">39%</text><line class="zero" x1="46" y1="126.9" x2="866" y2="126.9"/><line class="grid vt" x1="114.3" y1="14" x2="114.3" y2="214"/><text class="ax" x="114.3" y="232" text-anchor="middle">2021</text><line class="grid vt" x1="251.0" y1="14" x2="251.0" y2="214"/><text class="ax" x="251.0" y="232" text-anchor="middle">2022</text><line class="grid vt" x1="387.7" y1="14" x2="387.7" y2="214"/><text class="ax" x="387.7" y="232" text-anchor="middle">2023</text><line class="grid vt" x1="524.3" y1="14" x2="524.3" y2="214"/><text class="ax" x="524.3" y="232" text-anchor="middle">2024</text><line class="grid vt" x1="661.0" y1="14" x2="661.0" y2="214"/><text class="ax" x="661.0" y="232" text-anchor="middle">2025</text><line class="grid vt" x1="797.7" y1="14" x2="797.7" y2="214"/><text class="ax" x="797.7" y="232" text-anchor="middle">2026</text><polyline class="ln" stroke="#5A5B8C" points="46.0,59.2 57.4,63.7 68.8,68.5 80.2,68.3 91.6,70.3 102.9,72.7 114.3,99.8 125.7,61.5 137.1,100.5 148.5,116.5 159.9,121.4 171.3,112.4 182.7,117.5 194.1,121.4 205.4,124.5 216.8,122.7 228.2,126.6 239.6,128.2 251.0,97.9 262.4,129.9 273.8,111.3 285.2,142.6 296.6,129.7 307.9,112.7 319.3,122.6 330.7,121.8 342.1,108.6 353.5,114.9 364.9,118.2 376.3,112.7 387.7,76.2 399.1,33.4 410.4,44.5 421.8,45.2 433.2,76.0 444.6,83.4 456.0,92.4 467.4,95.3 478.8,100.4 490.2,100.4 501.6,102.4 512.9,108.7 524.3,132.3 535.7,167.1 547.1,170.1 558.5,171.2 569.9,176.3 581.3,185.6 592.7,187.6 604.1,188.0 615.4,188.4 626.8,189.7 638.2,194.5 649.6,194.6 661.0,104.1 672.4,124.2 683.8,108.2 695.2,116.5 706.6,123.7 717.9,120.4 729.3,128.5 740.7,137.4 752.1,143.0 763.5,148.5 774.9,149.8 786.3,146.3 797.7,144.6 809.1,133.1 820.4,150.8 831.8,165.1 843.2,165.6 854.6,172.0 866.0,177.4"/><circle cx="866.0" cy="177.4" r="3.4" fill="#5A5B8C"/><polyline class="ln" stroke="#14606B" points="68.8,124.9 102.9,120.2 137.1,71.9 171.3,89.1 205.4,97.2 239.6,101.9 273.8,113.0 307.9,119.1 342.1,117.6 376.3,117.9 410.4,113.2 444.6,110.3 478.8,111.2 512.9,111.2 547.1,111.5 581.3,112.4 615.4,113.0 649.6,112.4 683.8,111.2 717.9,111.5 752.1,111.8 786.3,112.4 820.4,112.4 854.6,113.2"/><circle cx="854.6" cy="113.2" r="3.4" fill="#14606B"/></svg><div class="legend"><span class="lg"><i style="background:#5A5B8C"></i>新增信贷累计同比<b>-17.4%</b></span><span class="lg"><i style="background:#14606B"></i>GDP 累计同比（参照）<b>4.7%</b></span></div></div></div>
+  <div class="note"><b>口径提醒：</b>这是<b>社融口径</b>的「对实体经济人民币贷款」，
+  与媒体常报的金融机构口径「新增人民币贷款」不是一回事——2026 年前七月累计，
+  本口径 10.17 万亿、金融机构口径 10.38 万亿，差额主要是对非银金融机构的贷款。引用时别混。</div>
+</section>
+
+<section>
+  <div class="tag">对表</div>
+  <h2>消费与财政</h2>
+  <p class="lede">社零是名义值。它涨而税收不涨，要么在打价格战（量增价跌，用 CPI 验证），要么口径有问题——
+  两种解释指向完全不同的图景。<b>税收收入</b>比财政收入总额更贴：后者含非税收入（国有资源有偿使用、罚没等），
+  与消费的关系弱得多。注意税收是<b>季度累计</b>口径、社零是<b>当月</b>，比方向可以，比幅度不行。</p>
+  <div class="panel"><div class="chart"><svg viewBox="0 0 880 280" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="46" y1="254.0" x2="866" y2="254.0"/><text class="ax" x="39" y="257.5" text-anchor="end">-55%</text><line class="grid" x1="46" y1="194.0" x2="866" y2="194.0"/><text class="ax" x="39" y="197.5" text-anchor="end">-20%</text><line class="grid" x1="46" y1="134.0" x2="866" y2="134.0"/><text class="ax" x="39" y="137.5" text-anchor="end">14%</text><line class="grid" x1="46" y1="74.0" x2="866" y2="74.0"/><text class="ax" x="39" y="77.5" text-anchor="end">49%</text><line class="grid" x1="46" y1="14.0" x2="866" y2="14.0"/><text class="ax" x="39" y="17.5" text-anchor="end">83%</text><line class="zero" x1="46" y1="158.9" x2="866" y2="158.9"/><line class="grid vt" x1="125.7" y1="14" x2="125.7" y2="254"/><text class="ax" x="125.7" y="272" text-anchor="middle">2021</text><line class="grid vt" x1="262.4" y1="14" x2="262.4" y2="254"/><text class="ax" x="262.4" y="272" text-anchor="middle">2022</text><line class="grid vt" x1="399.1" y1="14" x2="399.1" y2="254"/><text class="ax" x="399.1" y="272" text-anchor="middle">2023</text><line class="grid vt" x1="535.7" y1="14" x2="535.7" y2="254"/><text class="ax" x="535.7" y="272" text-anchor="middle">2024</text><line class="grid vt" x1="672.4" y1="14" x2="672.4" y2="254"/><text class="ax" x="672.4" y="272" text-anchor="middle">2025</text><line class="grid vt" x1="809.1" y1="14" x2="809.1" y2="254"/><text class="ax" x="809.1" y="272" text-anchor="middle">2026</text><polyline class="ln" stroke="#14606B" points="46.0,162.0 57.4,160.8 68.8,158.0 80.2,153.1 91.6,151.4 102.9,150.2 114.3,150.9 148.5,99.4 159.9,128.1 171.3,137.3 182.7,137.8 194.1,144.1 205.4,154.5 216.8,151.2 228.2,150.4 239.6,152.1 251.0,155.9 285.2,165.0 296.6,178.2 307.9,170.5 319.3,153.5 330.7,154.2 342.1,149.5 353.5,154.5 364.9,159.8 376.3,169.1 387.7,162.0 421.8,140.5 433.2,126.9 444.6,136.8 456.0,153.5 467.4,154.5 478.8,150.9 490.2,149.3 501.6,145.7 512.9,141.3 524.3,146.0 558.5,153.5 569.9,154.9 581.3,152.4 592.7,155.4 604.1,154.2 615.4,155.2 626.8,153.3 638.2,150.5 649.6,153.7 661.0,152.4 695.2,148.6 706.6,150.0 717.9,147.8 729.3,150.5 740.7,152.4 752.1,153.0 763.5,153.7 774.9,153.8 786.3,156.6 797.7,157.3 831.8,155.9 843.2,158.5 854.6,159.9 866.0,157.1"/><circle cx="866.0" cy="157.1" r="3.4" fill="#14606B"/><polyline class="ln" stroke="#9C6714" points="46.0,178.5 80.2,170.0 114.3,162.9 148.5,115.8 182.7,119.8 216.8,126.9 251.0,138.2 285.2,145.5 319.3,184.6 353.5,179.1 387.7,165.0 421.8,161.3 456.0,130.2 490.2,138.2 524.3,143.8 558.5,167.4 592.7,168.6 626.8,168.1 661.0,164.8 695.2,165.0 729.3,161.0 763.5,157.7 797.7,157.5 831.8,155.1 866.0,149.7"/><circle cx="866.0" cy="149.7" r="3.4" fill="#9C6714"/><polyline class="ln" stroke="#5B6E4A" points="46.0,153.3 57.4,151.3 68.8,149.7 80.2,151.0 91.6,153.7 102.9,163.6 114.3,128.6 148.5,85.2 159.9,107.8 171.3,126.4 182.7,138.6 194.1,139.7 205.4,154.1 216.8,162.6 228.2,159.1 239.6,178.4 251.0,186.4 285.2,152.9 296.6,230.8 307.9,215.5 319.3,177.2 330.7,166.0 342.1,149.2 353.5,144.2 364.9,131.7 376.3,116.1 387.7,52.6 421.8,149.4 433.2,37.2 444.6,101.9 456.0,149.2 467.4,155.6 478.8,166.9 490.2,161.1 501.6,154.3 512.9,151.5 524.3,173.5 558.5,163.1 569.9,165.4 581.3,164.5 592.7,163.4 604.1,162.2 615.4,163.8 626.8,154.6 638.2,149.3 649.6,139.7 661.0,116.7 695.2,158.4 706.6,155.6 717.9,158.7 729.3,159.4 740.7,154.3 752.1,155.4 763.5,154.4 774.9,153.4 786.3,158.9 797.7,202.3 831.8,146.9 843.2,147.3 854.6,147.4 866.0,143.8"/><circle cx="866.0" cy="143.8" r="3.4" fill="#5B6E4A"/></svg><div class="legend"><span class="lg"><i style="background:#14606B"></i>社零同比<b>1.0%</b></span><span class="lg"><i style="background:#9C6714"></i>税收收入累计同比<b>5.3%</b></span><span class="lg"><i style="background:#5B6E4A"></i>财政收入当月同比<b>8.7%</b></span></div></div></div>
+</section>
+
+<section>
+  <div class="tag">对表 · 旁证</div>
+  <h2>镜像：中国报的出口 vs 欧盟报的进口</h2>
+  <p class="lede">对手方数据没有配合的动机，所以这类比对本该是全框架最硬的一组。
+  <b>但目前这张图还不是严格镜像</b>，三个差异未排除前不能当证据用。</p>
+  <div class="panel"><div class="chart"><svg viewBox="0 0 880 250" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="46" y1="224.0" x2="866" y2="224.0"/><text class="ax" x="39" y="227.5" text-anchor="end">-53%</text><line class="grid" x1="46" y1="171.5" x2="866" y2="171.5"/><text class="ax" x="39" y="175.0" text-anchor="end">5%</text><line class="grid" x1="46" y1="119.0" x2="866" y2="119.0"/><text class="ax" x="39" y="122.5" text-anchor="end">62%</text><line class="grid" x1="46" y1="66.5" x2="866" y2="66.5"/><text class="ax" x="39" y="70.0" text-anchor="end">120%</text><line class="grid" x1="46" y1="14.0" x2="866" y2="14.0"/><text class="ax" x="39" y="17.5" text-anchor="end">177%</text><line class="zero" x1="46" y1="175.9" x2="866" y2="175.9"/><line class="grid vt" x1="114.3" y1="14" x2="114.3" y2="224"/><text class="ax" x="114.3" y="242" text-anchor="middle">2021</text><line class="grid vt" x1="251.0" y1="14" x2="251.0" y2="224"/><text class="ax" x="251.0" y="242" text-anchor="middle">2022</text><line class="grid vt" x1="387.7" y1="14" x2="387.7" y2="224"/><text class="ax" x="387.7" y="242" text-anchor="middle">2023</text><line class="grid vt" x1="524.3" y1="14" x2="524.3" y2="224"/><text class="ax" x="524.3" y="242" text-anchor="middle">2024</text><line class="grid vt" x1="661.0" y1="14" x2="661.0" y2="224"/><text class="ax" x="661.0" y="242" text-anchor="middle">2025</text><line class="grid vt" x1="797.7" y1="14" x2="797.7" y2="224"/><text class="ax" x="797.7" y="242" text-anchor="middle">2026</text><polyline class="ln" stroke="#14606B" points="46.0,169.7 57.4,167.6 68.8,167.3 80.2,165.9 91.6,157.1 102.9,159.4 114.3,153.4 125.7,34.3 137.1,147.9 148.5,146.6 159.9,150.6 171.3,146.6 182.7,158.3 194.1,152.7 205.4,150.3 216.8,151.3 228.2,156.1 239.6,156.8 251.0,154.0 262.4,170.4 273.8,162.8 285.2,172.7 296.6,160.9 307.9,160.3 319.3,159.4 330.7,169.1 342.1,170.8 353.5,176.2 364.9,184.1 376.3,184.9 387.7,186.9 399.1,178.5 410.4,165.9 421.8,169.4 433.2,182.8 444.6,187.2 456.0,188.9 467.4,183.7 478.8,182.1 490.2,181.9 501.6,175.3 512.9,173.8 524.3,168.9 535.7,170.1 547.1,182.8 558.5,174.7 569.9,169.1 581.3,168.1 592.7,169.6 604.1,168.0 615.4,173.7 626.8,164.3 638.2,169.9 649.6,166.1 661.0,170.5 672.4,178.7 683.8,164.7 695.2,168.6 706.6,171.7 717.9,170.6 729.3,169.4 740.7,172.0 752.1,168.4 763.5,177.0 774.9,170.5 786.3,169.9 797.7,166.8 809.1,139.7 820.4,173.6 831.8,163.1 843.2,158.3 854.6,151.2 866.0,154.0"/><circle cx="866.0" cy="154.0" r="3.4" fill="#14606B"/><polyline class="ln" stroke="#9C6714" points="182.7,173.1 194.1,148.2 205.4,148.4 216.8,151.3 228.2,145.2 239.6,131.1 251.0,130.1 262.4,140.4 273.8,144.1 285.2,143.0 296.6,129.6 307.9,130.0 319.3,141.1 330.7,133.8 342.1,140.3 353.5,147.0 364.9,163.3 376.3,184.6 387.7,180.8 399.1,179.9 410.4,192.3 421.8,185.1 433.2,187.5 444.6,191.7 456.0,188.4 467.4,202.9 478.8,203.7 490.2,190.2 501.6,192.3 512.9,193.3 524.3,194.5 535.7,183.8 547.1,177.8 558.5,176.9 569.9,181.5 581.3,183.8 592.7,167.9 604.1,161.9 615.4,162.2 626.8,166.1 638.2,169.8 649.6,164.1 661.0,155.7 672.4,164.2 683.8,160.6 695.2,167.6 706.6,173.3 717.9,159.3 729.3,170.9 740.7,181.7 752.1,170.7 763.5,179.4 774.9,172.7 786.3,165.3 797.7,175.1 809.1,173.7 820.4,173.1 831.8,170.1 843.2,171.1 854.6,164.5"/><circle cx="854.6" cy="164.5" r="3.4" fill="#9C6714"/></svg><div class="legend"><span class="lg"><i style="background:#14606B"></i>中国总出口同比（美元计价）<b>23.9%</b></span><span class="lg"><i style="background:#9C6714"></i>EU27 自华进口同比（欧元计价）<b>12.5%</b></span></div></div></div>
+  <div class="note"><b>解读前必须排除三件事：</b>
+  ① <b>口径不匹配</b>——左边是中国对<b>全世界</b>的总出口，右边只是<b>对欧盟</b>那一支（约占中国出口 15%）。
+  中国对东盟、非洲出口增长快时，总出口自然高于对欧口径。严格镜像需要「中国对欧盟出口」，akshare 无分国别数据。
+  ② <b>计价货币不同</b>——中国海关按<b>美元</b>计价，Eurostat 按<b>欧元</b>计价，欧元升值会系统性压低右边的增速。
+  ③ <b>春节错位</b>——1—2 月中国数据受春节影响极大，2026 年 2 月两边差 37 个百分点大概率源于此。
+  <br>近 12 期左边平均高 <b>8.1 个百分点</b>。这是个<b>待解释的背离</b>，不是结论。</div>
+</section>
+
+<section>
+  <div class="tag">背景</div>
+  <h2>价格 · 外贸 · 就业</h2>
+  <div class="two">
+    <div class="panel"><div class="chart"><svg viewBox="0 0 880 280" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="46" y1="254.0" x2="866" y2="254.0"/><text class="ax" x="39" y="257.5" text-anchor="end">-8%</text><line class="grid" x1="46" y1="194.0" x2="866" y2="194.0"/><text class="ax" x="39" y="197.5" text-anchor="end">-2%</text><line class="grid" x1="46" y1="134.0" x2="866" y2="134.0"/><text class="ax" x="39" y="137.5" text-anchor="end">4%</text><line class="grid" x1="46" y1="74.0" x2="866" y2="74.0"/><text class="ax" x="39" y="77.5" text-anchor="end">10%</text><line class="grid" x1="46" y1="14.0" x2="866" y2="14.0"/><text class="ax" x="39" y="17.5" text-anchor="end">16%</text><line class="zero" x1="46" y1="175.5" x2="866" y2="175.5"/><line class="grid vt" x1="114.3" y1="14" x2="114.3" y2="254"/><text class="ax" x="114.3" y="272" text-anchor="middle">2021</text><line class="grid vt" x1="251.0" y1="14" x2="251.0" y2="254"/><text class="ax" x="251.0" y="272" text-anchor="middle">2022</text><line class="grid vt" x1="387.7" y1="14" x2="387.7" y2="254"/><text class="ax" x="387.7" y="272" text-anchor="middle">2023</text><line class="grid vt" x1="524.3" y1="14" x2="524.3" y2="254"/><text class="ax" x="524.3" y="272" text-anchor="middle">2024</text><line class="grid vt" x1="661.0" y1="14" x2="661.0" y2="254"/><text class="ax" x="661.0" y="272" text-anchor="middle">2025</text><line class="grid vt" x1="797.7" y1="14" x2="797.7" y2="254"/><text class="ax" x="797.7" y="272" text-anchor="middle">2026</text><polyline class="ln" stroke="#14606B" points="46.0,147.8 57.4,150.9 68.8,158.1 80.2,170.4 91.6,180.6 102.9,173.4 114.3,178.5 125.7,177.5 137.1,171.4 148.5,166.3 159.9,162.2 171.3,164.2 182.7,165.2 194.1,167.3 205.4,168.3 216.8,160.1 228.2,151.9 239.6,160.1 251.0,166.3 262.4,166.3 273.8,160.1 285.2,154.0 296.6,154.0 307.9,149.9 319.3,147.8 330.7,149.9 342.1,146.8 353.5,154.0 364.9,159.1 376.3,157.0 387.7,154.0 399.1,165.2 410.4,168.3 421.8,174.5 433.2,173.4 444.6,175.5 456.0,178.5 467.4,174.5 478.8,175.5 490.2,177.5 501.6,180.6 512.9,178.5 524.3,183.7 535.7,168.3 547.1,174.5 558.5,172.4 569.9,172.4 581.3,173.4 592.7,170.4 604.1,169.3 615.4,171.4 626.8,172.4 638.2,173.4 649.6,174.5 661.0,170.4 672.4,182.6 683.8,176.5 695.2,176.5 706.6,176.5 717.9,174.5 729.3,175.5 740.7,179.6 752.1,178.5 763.5,173.4 774.9,168.3 786.3,167.3 797.7,173.4 809.1,162.2 820.4,165.2 831.8,163.2 843.2,163.2 854.6,165.2 866.0,170.4"/><circle cx="866.0" cy="170.4" r="3.4" fill="#14606B"/><polyline class="ln" stroke="#9C6714" points="46.0,200.1 57.4,196.0 68.8,197.0 80.2,197.0 91.6,190.8 102.9,179.6 114.3,172.4 125.7,158.1 137.1,130.4 148.5,105.8 159.9,83.3 171.3,85.4 182.7,83.3 194.1,78.2 205.4,65.9 216.8,37.2 228.2,43.4 239.6,70.0 251.0,82.3 262.4,85.4 273.8,90.5 285.2,93.5 296.6,109.9 307.9,113.0 319.3,132.5 330.7,151.9 342.1,166.3 353.5,188.8 364.9,188.8 376.3,182.6 387.7,183.7 399.1,189.8 410.4,201.1 421.8,212.3 433.2,222.6 444.6,230.8 456.0,220.5 467.4,206.2 478.8,201.1 490.2,202.1 501.6,206.2 512.9,203.1 524.3,201.1 535.7,203.1 547.1,204.1 558.5,201.1 569.9,189.8 581.3,183.7 592.7,183.7 604.1,193.9 615.4,204.1 626.8,205.2 638.2,201.1 649.6,199.0 661.0,199.0 672.4,198.0 683.8,201.1 695.2,203.1 706.6,209.3 717.9,212.3 729.3,212.3 740.7,205.2 752.1,199.0 763.5,197.0 774.9,198.0 786.3,194.9 797.7,189.8 809.1,184.7 820.4,170.4 831.8,146.8 843.2,135.5 854.6,133.5 866.0,139.6"/><circle cx="866.0" cy="139.6" r="3.4" fill="#9C6714"/></svg><div class="legend"><span class="lg"><i style="background:#14606B"></i>CPI 同比<b>0.5%</b></span><span class="lg"><i style="background:#9C6714"></i>PPI 同比<b>3.5%</b></span></div></div></div>
+    <div class="panel"><div class="chart"><svg viewBox="0 0 880 280" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="46" y1="254.0" x2="866" y2="254.0"/><text class="ax" x="39" y="257.5" text-anchor="end">-42%</text><line class="grid" x1="46" y1="194.0" x2="866" y2="194.0"/><text class="ax" x="39" y="197.5" text-anchor="end">12%</text><line class="grid" x1="46" y1="134.0" x2="866" y2="134.0"/><text class="ax" x="39" y="137.5" text-anchor="end">67%</text><line class="grid" x1="46" y1="74.0" x2="866" y2="74.0"/><text class="ax" x="39" y="77.5" text-anchor="end">121%</text><line class="grid" x1="46" y1="14.0" x2="866" y2="14.0"/><text class="ax" x="39" y="17.5" text-anchor="end">176%</text><line class="zero" x1="46" y1="207.7" x2="866" y2="207.7"/><line class="grid vt" x1="114.3" y1="14" x2="114.3" y2="254"/><text class="ax" x="114.3" y="272" text-anchor="middle">2021</text><line class="grid vt" x1="251.0" y1="14" x2="251.0" y2="254"/><text class="ax" x="251.0" y="272" text-anchor="middle">2022</text><line class="grid vt" x1="387.7" y1="14" x2="387.7" y2="254"/><text class="ax" x="387.7" y="272" text-anchor="middle">2023</text><line class="grid vt" x1="524.3" y1="14" x2="524.3" y2="254"/><text class="ax" x="524.3" y="272" text-anchor="middle">2024</text><line class="grid vt" x1="661.0" y1="14" x2="661.0" y2="254"/><text class="ax" x="661.0" y="272" text-anchor="middle">2025</text><line class="grid vt" x1="797.7" y1="14" x2="797.7" y2="254"/><text class="ax" x="797.7" y="272" text-anchor="middle">2026</text><polyline class="ln" stroke="#14606B" points="46.0,200.2 57.4,197.7 68.8,197.3 80.2,195.7 91.6,185.0 102.9,187.8 114.3,180.6 125.7,37.2 137.1,174.0 148.5,172.3 159.9,177.2 171.3,172.3 182.7,186.5 194.1,179.7 205.4,176.9 216.8,178.1 228.2,183.8 239.6,184.7 251.0,181.3 262.4,201.1 273.8,191.9 285.2,203.8 296.6,189.6 307.9,188.9 319.3,187.8 330.7,199.5 342.1,201.5 353.5,208.0 364.9,217.6 376.3,218.6 387.7,220.9 399.1,210.7 410.4,195.7 421.8,199.9 433.2,216.0 444.6,221.3 456.0,223.3 467.4,217.0 478.8,215.1 490.2,214.9 501.6,206.9 512.9,205.1 524.3,199.2 535.7,200.7 547.1,216.0 558.5,206.2 569.9,199.5 581.3,198.3 592.7,200.1 604.1,198.2 615.4,205.0 626.8,193.7 638.2,200.4 649.6,195.9 661.0,201.2 672.4,211.1 683.8,194.2 695.2,198.9 706.6,202.6 717.9,201.3 729.3,199.9 740.7,202.9 752.1,198.6 763.5,209.0 774.9,201.2 786.3,200.4 797.7,196.7 809.1,164.1 820.4,204.9 831.8,192.3 843.2,186.4 854.6,178.0 866.0,181.4"/><circle cx="866.0" cy="181.4" r="3.4" fill="#14606B"/><polyline class="ln" stroke="#9C6714" points="46.0,209.4 57.4,210.2 68.8,193.7 80.2,202.8 91.6,203.4 102.9,200.5 114.3,176.1 125.7,186.9 137.1,164.6 148.5,159.3 159.9,150.4 171.3,166.8 182.7,176.6 194.1,171.7 205.4,188.7 216.8,185.2 228.2,173.1 239.6,186.2 251.0,184.6 262.4,194.8 273.8,206.9 285.2,207.6 296.6,203.8 307.9,207.7 319.3,205.9 330.7,207.7 342.1,207.4 353.5,208.4 364.9,219.3 376.3,215.9 387.7,230.8 399.1,202.9 410.4,209.9 421.8,217.4 433.2,213.4 444.6,215.4 456.0,221.0 467.4,215.6 478.8,214.6 490.2,204.5 501.6,208.4 512.9,207.4 524.3,190.5 535.7,216.5 547.1,209.9 558.5,198.5 569.9,205.5 581.3,210.4 592.7,200.2 604.1,207.4 615.4,207.4 626.8,210.3 638.2,212.1 649.6,206.6 661.0,225.6 672.4,205.9 683.8,212.4 695.2,208.0 706.6,211.3 717.9,206.3 729.3,203.0 740.7,206.1 752.1,199.5 763.5,206.7 774.9,205.6 786.3,201.4 797.7,178.4 809.1,191.9 820.4,176.5 831.8,179.9 843.2,177.5 854.6,168.1 866.0,177.4"/><circle cx="866.0" cy="177.4" r="3.4" fill="#9C6714"/></svg><div class="legend"><span class="lg"><i style="background:#14606B"></i>出口同比<b>23.9%</b></span><span class="lg"><i style="background:#9C6714"></i>进口同比<b>27.5%</b></span></div></div></div>
+  </div>
+  <div class="panel"><div class="chart"><svg viewBox="0 0 880 210" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="46" y1="184.0" x2="866" y2="184.0"/><text class="ax" x="39" y="187.5" text-anchor="end">4.76%</text><line class="grid" x1="46" y1="141.5" x2="866" y2="141.5"/><text class="ax" x="39" y="145.0" text-anchor="end">5.13%</text><line class="grid" x1="46" y1="99.0" x2="866" y2="99.0"/><text class="ax" x="39" y="102.5" text-anchor="end">5.50%</text><line class="grid" x1="46" y1="56.5" x2="866" y2="56.5"/><text class="ax" x="39" y="60.0" text-anchor="end">5.87%</text><line class="grid" x1="46" y1="14.0" x2="866" y2="14.0"/><text class="ax" x="39" y="17.5" text-anchor="end">6.24%</text><line class="grid vt" x1="125.7" y1="14" x2="125.7" y2="184"/><text class="ax" x="125.7" y="202" text-anchor="middle">2021</text><line class="grid vt" x1="262.4" y1="14" x2="262.4" y2="184"/><text class="ax" x="262.4" y="202" text-anchor="middle">2022</text><line class="grid vt" x1="399.1" y1="14" x2="399.1" y2="184"/><text class="ax" x="399.1" y="202" text-anchor="middle">2023</text><line class="grid vt" x1="535.7" y1="14" x2="535.7" y2="184"/><text class="ax" x="535.7" y="202" text-anchor="middle">2024</text><line class="grid vt" x1="672.4" y1="14" x2="672.4" y2="184"/><text class="ax" x="672.4" y="202" text-anchor="middle">2025</text><line class="grid vt" x1="809.1" y1="14" x2="809.1" y2="184"/><text class="ax" x="809.1" y="202" text-anchor="middle">2026</text><polyline class="ln" stroke="#14606B" points="46.0,76.2 57.4,76.2 68.8,87.6 80.2,110.4 91.6,121.8 102.9,133.3 114.3,133.3 125.7,110.4 137.1,99.0 148.5,121.8 159.9,144.7 171.3,156.1 182.7,156.1 194.1,144.7 205.4,144.7 216.8,167.5 228.2,167.5 239.6,156.1 251.0,144.7 262.4,121.8 273.8,99.0 285.2,64.7 296.6,30.5 307.9,53.3 319.3,99.0 330.7,110.4 342.1,121.8 353.5,99.0 364.9,99.0 376.3,76.2 387.7,99.0 399.1,99.0 410.4,87.6 421.8,121.8 433.2,133.3 444.6,133.3 456.0,133.3 467.4,121.8 478.8,133.3 490.2,156.1 501.6,156.1 512.9,156.1 524.3,144.7 535.7,133.3 547.1,121.8 558.5,133.3 569.9,156.1 581.3,156.1 592.7,156.1 604.1,133.3 615.4,121.8 626.8,144.7 638.2,156.1 649.6,156.1 661.0,144.7 672.4,133.3 683.8,110.4 695.2,133.3 706.6,144.7 717.9,156.1 729.3,156.1 740.7,133.3 752.1,121.8 763.5,133.3 774.9,144.7 786.3,144.7 797.7,144.7 809.1,133.3 820.4,121.8 831.8,110.4 843.2,133.3 854.6,144.7 866.0,156.1"/><circle cx="866.0" cy="156.1" r="3.4" fill="#14606B"/></svg><div class="legend"><span class="lg"><i style="background:#14606B"></i>城镇调查失业率<b>5.0%</b></span></div></div></div>
+  <p class="lede">失业率只覆盖城镇常住人口，失业返乡者会同时退出分子分母。
+  要补这个缺口需接农民工总量与社保参保人数，目前均未接入。</p>
+</section>
+
+<footer>
+  <div>数据来源 AKShare（聚合公开发布），本页由 <code>dashboard.py</code> 从 <code>data/</code> 快照生成。</div>
+  <div>看板只回答"数据能不能信、几个数对不对得上"，不回答经济好不好——后者需要人判断。</div>
+</footer>
+</div>
