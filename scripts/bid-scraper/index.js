@@ -3,6 +3,8 @@ const cheerio = require('cheerio');
 const { createHash } = require('crypto');
 const admin = require('firebase-admin');
 const { loadModelConfig } = require('../_lib/model-config');
+const { isTransientCallError, retryDelayMs } = require('../_lib/llm-retry');
+const { emptyUsage, addUsage, formatUsage } = require('../_lib/llm-usage');
 const {
   isClosed,
   detectToyonakaCategory,
@@ -58,6 +60,12 @@ function initFirebase() {
 function urlHash(url) {
   return createHash('md5').update(url).digest('hex');
 }
+
+// 单条摘要在同一轮内最多试几次（瞬时故障才重试，见 _lib/llm-retry.js）。
+const TRANSLATE_ATTEMPTS_PER_RUN = 2;
+
+// 本进程累计的 token 用量。与情报爬虫共用一个免费桶，两边数字可直接相加。
+const usageAcc = emptyUsage();
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -159,7 +167,24 @@ async function translate(bid) {
     },
   );
 
+  addUsage(usageAcc, res.data?.usage);
   return res.data.choices?.[0]?.message?.content?.trim() || '';
+}
+
+// 摘要失败会让条目带着空摘要永久入库（去重后再也不会重译），所以瞬时故障要在轮内重试。
+async function translateWithRetry(bid) {
+  let lastErr;
+  for (let attempt = 1; attempt <= TRANSLATE_ATTEMPTS_PER_RUN; attempt++) {
+    try {
+      return await translate(bid);
+    } catch (err) {
+      lastErr = err;
+      if (attempt === TRANSLATE_ATTEMPTS_PER_RUN || !isTransientCallError(err)) break;
+      console.error(`  Translate attempt ${attempt} failed (${err.message}), retrying…`);
+      await sleep(retryDelayMs(attempt));
+    }
+  }
+  throw lastErr;
 }
 
 // ── Run report ──────────────────────────────────────────────────────────────
@@ -261,7 +286,7 @@ async function main() {
 
         let summary = '';
         try {
-          summary = await translate(bid);
+          summary = await translateWithRetry(bid);
         } catch (err) {
           console.error(`  Translation failed for "${bid.title}": ${err.message}`);
           totals.translate_failed++;
@@ -293,18 +318,22 @@ async function main() {
     }
 
     console.log(`\nDone. ${totals.inserted} new bids added.`);
+    console.log(formatUsage(usageAcc));
     await writeRunReport(db, {
       ok: true,
       duration_ms: Date.now() - startedAt,
       totals,
+      usage: usageAcc,
       sources,
     });
   } catch (err) {
+    console.log(formatUsage(usageAcc));
     await writeRunReport(db, {
       ok: false,
       error: err.message,
       duration_ms: Date.now() - startedAt,
       totals,
+      usage: usageAcc,
       sources,
     });
     throw err;

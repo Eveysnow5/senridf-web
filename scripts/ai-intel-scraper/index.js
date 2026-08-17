@@ -2,10 +2,13 @@ const axios = require('axios');
 const { createHash } = require('crypto');
 const admin = require('firebase-admin');
 const { loadModelConfig } = require('../_lib/model-config');
+const { isTransientCallError, retryDelayMs } = require('../_lib/llm-retry');
+const { emptyUsage, addUsage, formatUsage } = require('../_lib/llm-usage');
 const SOURCES = require('./sources');
 const { parseFeed, parseListLinks } = require('./parse');
 const { isoWeek } = require('./week');
 const { buildJudgmentPrompt, parseJudgment } = require('./relevance');
+const { shouldRejudge, attemptsOf } = require('./rejudge');
 const { buildDigestPrompt, validateDigestCitations } = require('./digest');
 
 // 政府反爬（如 meti.go.jp）对无 UA / "compatible; XxxScraper" 形式的 UA 返回 403，
@@ -16,6 +19,17 @@ const USER_AGENT =
 // 每源单轮最多判定的条目数：PR TIMES/ITmedia 等是全行业消防栓 feed，
 // 大多数条目会被 filtered_out。周频 + qwen-plus 计费下，加上限护成本（尤其首轮空去重时）。
 const MAX_ITEMS_PER_SOURCE = 40;
+
+// 单条判定在**同一轮内**最多试几次。跨轮的上限另有其数（见 rejudge.js）。
+const JUDGE_ATTEMPTS_PER_RUN = 2;
+const JUDGE_TIMEOUT_MS = 30000;
+// 重试用更长的超时：观测到的失败全部是"卡在 30 秒"，用同样的超时再试一次很可能同样卡死。
+// ⚠️ 45s 是暂定值——本轮同时接入了 usage 统计，等拿到真实的每次调用耗时/推理 token
+// 再决定该调这个数还是该关掉思考模式。别把它当成量出来的结论。
+const JUDGE_RETRY_TIMEOUT_MS = 45000;
+
+// 本进程累计的 token 用量。两个爬虫共用一个免费桶，所以这个数字要能直接相加。
+const usageAcc = emptyUsage();
 
 function initFirebase() {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -63,7 +77,27 @@ async function qwen(prompt, maxTokens, timeout) {
       timeout,
     },
   );
+  addUsage(usageAcc, res.data?.usage);
   return res.data.choices?.[0]?.message?.content?.trim() || '';
+}
+
+// 判定一条候选。瞬时故障（超时/限流/5xx/网络抖动）在轮内重试；
+// 拿不到判定才回落成 llm_error —— 而 llm_error 现在是**可跨轮重判**的，不再是死刑。
+async function judgeWithRetry(item) {
+  let lastErr;
+  for (let attempt = 1; attempt <= JUDGE_ATTEMPTS_PER_RUN; attempt++) {
+    try {
+      const timeout = attempt === 1 ? JUDGE_TIMEOUT_MS : JUDGE_RETRY_TIMEOUT_MS;
+      return parseJudgment(await qwen(buildJudgmentPrompt(item), 500, timeout));
+    } catch (err) {
+      lastErr = err;
+      if (attempt === JUDGE_ATTEMPTS_PER_RUN || !isTransientCallError(err)) break;
+      console.error(`  Judge attempt ${attempt} failed (${err.message}), retrying…`);
+      await sleep(retryDelayMs(attempt));
+    }
+  }
+  console.error(`  Judge failed for "${item.title}": ${lastErr.message}`);
+  return { keep: false, reason: 'llm_error' };
 }
 
 // ── Run report ──────────────────────────────────────────────────────────────
@@ -98,6 +132,8 @@ async function main() {
     bad_json: 0,
     llm_error: 0,
     failed_fetch: 0,
+    rejudged: 0, // 旁路库里"没拿到判断"的条目被重新判定的次数
+    recovered: 0, // 其中重判后真正入库的（即上一轮被误丢的情报）
   };
   const sources = [];
   const weekItems = [];
@@ -140,46 +176,65 @@ async function main() {
       for (const item of toProcess) {
         const hash = urlHash(item.url);
 
-        // 去重：主库或旁路库里已有即跳过（失败条目也不每周重判）。
+        // 去重：主库已有即跳过。
         const dupMain = await col.where('url_hash', '==', hash).limit(1).get();
         if (!dupMain.empty) {
           totals.skipped_dup++;
           continue;
         }
+        // 旁路库已有：模型做过判断（filtered_out）才是结论，跳过；
+        // 「没拿到判断」的（超时/坏 JSON/额度耗尽）要重判，到次数上限才转永久。
         const dupRej = await rejectedCol.where('url_hash', '==', hash).limit(1).get();
+        let rejectedRef = null;
+        let priorAttempts = 0;
         if (!dupRej.empty) {
-          totals.skipped_dup++;
-          continue;
+          const doc = dupRej.docs[0];
+          const prior = doc.data();
+          if (!shouldRejudge(prior)) {
+            totals.skipped_dup++;
+            continue;
+          }
+          rejectedRef = doc.ref;
+          priorAttempts = attemptsOf(prior);
+          totals.rejudged++;
+          console.log(
+            `  ↻ rejudge (第 ${priorAttempts + 1} 次，前次 ${prior.reason}): ${item.title}`,
+          );
         }
 
-        let verdict;
-        try {
-          const rawJudgment = await qwen(buildJudgmentPrompt(item), 500, 30000);
-          verdict = parseJudgment(rawJudgment);
-        } catch (err) {
-          console.error(`  Judge failed for "${item.title}": ${err.message}`);
-          verdict = { keep: false, reason: 'llm_error' };
-        }
+        const verdict = await judgeWithRetry(item);
 
         if (!verdict.keep) {
           const reason = verdict.reason || 'filtered_out';
           if (reason === 'llm_error') totals.llm_error++;
           else if (reason === 'bad_json') totals.bad_json++;
           else totals.filtered_out++;
-          await rejectedCol.add({
+          const record = {
             url_hash: hash,
             title: item.title || '',
             url: item.url,
             source: src.name,
             reason,
+            attempts: priorAttempts + 1,
             raw_snippet: (item.raw || item.title || '').slice(0, 500),
             fetched_at: admin.firestore.FieldValue.serverTimestamp(),
             week,
             expireAt: sixMonthsFromNow(),
-          });
-          console.log(`  - reject (${reason}): ${item.title}`);
+          };
+          // 重判失败就更新原条目，不另开一条——否则旁路库里会为同一 URL 堆出多条，
+          // 而去重只取 limit(1)，attempts 计数会失真、上限永远到不了顶。
+          if (rejectedRef) await rejectedRef.set(record, { merge: true });
+          else await rejectedCol.add(record);
+          console.log(`  - reject (${reason}, 第 ${record.attempts} 次): ${item.title}`);
           await sleep(400);
           continue;
+        }
+
+        // 重判成功：条目要进主库，旁路库里那条同 URL 的记录必须删掉，
+        // 否则它会一直躺在那儿，让人以为这条被拒过。
+        if (rejectedRef) {
+          await rejectedRef.delete();
+          totals.recovered++;
         }
 
         await col.add({
@@ -243,23 +298,29 @@ async function main() {
     }
 
     console.log(
-      `\nDone. +${totals.inserted} ingested, ${totals.filtered_out} filtered, ${totals.llm_error} llm-errors.`,
+      `\nDone. +${totals.inserted} ingested, ${totals.filtered_out} filtered, ` +
+        `${totals.llm_error} llm-errors, ${totals.rejudged} rejudged (${totals.recovered} recovered).`,
     );
+    console.log(formatUsage(usageAcc));
     await writeRunReport(db, {
       ok: true,
       week,
       digest_ok: digestOk,
       duration_ms: Date.now() - startedAt,
       totals,
+      usage: usageAcc,
       sources,
     });
   } catch (err) {
+    // 崩掉的那轮更需要知道烧了多少——额度见底正是这条路径的典型成因。
+    console.log(formatUsage(usageAcc));
     await writeRunReport(db, {
       ok: false,
       error: err.message,
       week,
       duration_ms: Date.now() - startedAt,
       totals,
+      usage: usageAcc,
       sources,
     });
     throw err;
