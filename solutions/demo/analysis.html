@@ -1161,8 +1161,16 @@
       // 模型就永远不会索要它的页，那份文件等于不存在。
       const INDEX_TOTAL_CHARS = 40000;
       const perFileIndex = Math.max(1200, Math.floor(INDEX_TOTAL_CHARS / cands.length));
+      // 文字层体检结果随文件抬头一起给：一份扫描件的索引全是「（无文字层）」，
+      // 模型看得见每一页的状态，却看不见"这一份整体读不了"这个结论——那正是它
+      // 会说"该文件中未提及"的时候。
+      const assessments = cands.map(f => window.sdfAssessTextLayer
+        ? window.sdfAssessTextLayer(f.pageTexts) : null);
       const pageIndex = cands
-        .map((f, i) => `【文件${i + 1}：${f.name}】共 ${f.pageTexts.length} 页\n${buildIndex(f.pageTexts, { budget: perFileIndex, totalPages: cands.reduce((n, c) => n + c.pageTexts.length, 0) })}`)
+        .map((f, i) => {
+          const note = window.sdfDescribeTextLayer ? window.sdfDescribeTextLayer(assessments[i]) : '';
+          return `【文件${i + 1}：${f.name}】共 ${f.pageTexts.length} 页${note ? '\n' + note : ''}\n${buildIndex(f.pageTexts, { budget: perFileIndex, totalPages: cands.reduce((n, c) => n + c.pageTexts.length, 0) })}`;
+        })
         .join('\n\n');
       const totals = cands.map(f => f.pageTexts.length);
       const sent = cands.map(() => new Set());
@@ -1277,7 +1285,7 @@
               const file = cands[fi - 1];
               if (!file) continue;
               const res = window.sdfSearchPages(file.pageTexts, f.terms);
-              const b = window.sdfRenderFindResults(res, '文件' + fi + '：' + file.name);
+              const b = window.sdfRenderFindResults(res, '文件' + fi + '：' + file.name, assessments[fi - 1]);
               if (b) blocks.push(b);
             }
           }
@@ -1534,6 +1542,7 @@ import { buildPageIndex } from '/js/shared/build-page-index.js';
 import { parsePageRequest } from '/js/shared/parse-page-request.js';
 import { parseFindRequest } from '/js/shared/parse-find-request.js';
 import { searchPages, renderFindResults } from '/js/shared/search-pages.js';
+import { assessTextLayer, describeTextLayer } from '/js/shared/text-layer.js';
 import { decideNextRound } from '/js/shared/multiround-flow.js';
 initErrorReporting({ db });
 window.sdfSheetToMarkdown = sheetRowsToMarkdown;
@@ -1546,6 +1555,8 @@ window.sdfParsePageRequest = parsePageRequest;
 window.sdfParseFindRequest = parseFindRequest;
 window.sdfSearchPages = searchPages;
 window.sdfRenderFindResults = renderFindResults;
+window.sdfAssessTextLayer = assessTextLayer;
+window.sdfDescribeTextLayer = describeTextLayer;
 window.sdfDecideNextRound = decideNextRound;
 window.sdfGetToken=()=>auth.currentUser?.getIdToken();
 const _start=Date.now();let _docId=null,_logged=false;

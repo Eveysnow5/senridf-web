@@ -14,6 +14,7 @@
 // 成本：零。文本在解析 PDF 时就抽好了，搜索在浏览器里跑，不产生任何 API 调用。
 
 import { normalizeCjkSpacing } from './select-relevant-passages.js';
+import { findCaveat } from './text-layer.js';
 
 /** 一个词最多报几页命中。报太多会把回执撑大，而模型也只会挑前几页。 */
 const MAX_HITS_PER_TERM = 8;
@@ -61,7 +62,7 @@ export function searchPages(pageTexts, terms, opts = {}) {
  * 两回事：前者它会以为搜索没跑、可能再搜一次；后者才是可以据以判断"文件里确实没有"
  * 的证据（也才对得上核心规则第九条——区分"文件没有"和"我没看到"）。
  */
-export function renderFindResults(results, fileLabel) {
+export function renderFindResults(results, fileLabel, assessment) {
   if (!Array.isArray(results) || results.length === 0) return '';
   const lines = results.map((r) => {
     if (!r.hits.length) return `  「${r.term}」：全文未命中`;
@@ -69,5 +70,9 @@ export function renderFindResults(results, fileLabel) {
     const eg = r.hits[0];
     return `  「${r.term}」：${where}\n    例 p${eg.page}：…${eg.snippet}…`;
   });
-  return `【${fileLabel}】查找结果\n${lines.join('\n')}`;
+  // ⚠️ 扫描件上「全文未命中」是**必然结果**，跟"文件里没有"毫无关系。
+  // 不加这句尾注，上面那行字面上完全正确的回执，会把模型直接引向一个错误结论。
+  // （2026-08-13 韩红样本实测的形态：系统层面造成的"把读不了说成没有"。）
+  const caveat = findCaveat(assessment);
+  return `【${fileLabel}】查找结果\n${lines.join('\n')}${caveat ? '\n' + caveat : ''}`;
 }

@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseFindRequest } from '../js/shared/parse-find-request.js';
 import { searchPages, renderFindResults } from '../js/shared/search-pages.js';
+import { assessTextLayer } from '../js/shared/text-layer.js';
 
 /* ── 解析 ───────────────────────────────────────────────────────────────── */
 
@@ -123,4 +124,26 @@ test('命中时给出页码、次数和一段例子', () => {
 test('空结果渲染成空串', () => {
   assert.equal(renderFindResults([], '文件1'), '');
   assert.equal(renderFindResults(null, '文件1'), '');
+});
+
+// ★ 扫描件上的"全文未命中"是必然结果，跟"文件里没有"无关。
+// 少了尾注，上面那条字面正确的回执会把模型直接引向错误结论
+// （2026-08-13 韩红样本：工具把"我读不了"表达成了"文件里没有"）。
+test('★ 扫描件的"未命中"必须附带"这不是证据"的尾注', () => {
+  const scanned = assessTextLayer(['', '', '', '', '']);
+  const out = renderFindResults(searchPages(['', '', '', '', ''], ['救护车']), '文件2', scanned);
+  assert.ok(out.includes('全文未命中'), '未命中本身仍要说');
+  assert.ok(out.includes('查找对其无效'), `必须说明查找无效：${out}`);
+  assert.ok(out.includes('不能作为'), '必须否掉"据此断定文件里没有"');
+});
+
+test('正常文件的回执不加尾注（不传体检结果时也不能报错）', () => {
+  const out = renderFindResults(searchPages(PAGES, ['Statements of Income']), '文件3');
+  assert.ok(!out.includes('无文字层'), '正常文件不该出现扫描件提示');
+  const out2 = renderFindResults(
+    searchPages(PAGES, ['Statements of Income']),
+    '文件3',
+    assessTextLayer(PAGES),
+  );
+  assert.equal(out, out2, '正常文件传不传体检结果，回执应完全一致');
 });
