@@ -102,6 +102,25 @@ test('页面引用的 i18n 键都真实存在于 T（键打错 = 永远显示兜
   assert.deepEqual(bad, [], `这些键在 T 里不存在：\n${bad.join('\n')}`);
 });
 
+// 2026-08-17 亲手踩的坑：给 lifestory/proofreader/japanese_learner 的登录门控加了
+// data-i18n，但这三个页面**根本不加载 main.js**——属性是死的，只是把可见的兜底文案
+// 从中文换成了日文，而这三个工具通篇是中文界面。
+// "标记加上了"和"翻译真的会发生"是两回事，这条把它变成红灯。
+test('用了 data-i18n 的页面必须加载 main.js，否则标记是死的', () => {
+  const bad = [];
+  for (const p of PAGES) {
+    if (OWN_TABLE.has(path.basename(p))) continue;
+    const html = readFileSync(p, 'utf8');
+    const marked = /data-i18n(?:-placeholder|-title)?=|data-page-title=/.test(html);
+    if (marked && !html.includes('js/main.js')) bad.push(path.relative(ROOT, p));
+  }
+  assert.deepEqual(
+    bad,
+    [],
+    `这些页面带 i18n 标记却没加载 main.js（标记不会生效）：\n${bad.join('\n')}`,
+  );
+});
+
 // data-i18n 会覆写 textContent，挂在有子元素的容器上会把子元素整个抹掉。
 test('data-i18n 没有挂在含子元素的容器上', () => {
   const bad = [];
