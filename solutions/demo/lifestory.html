@@ -158,18 +158,28 @@
     .privacy-label { display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--text2);cursor:pointer; }
     .privacy-label input[type="checkbox"] { cursor:pointer; }
   </style>
+  <style>
+    /* 语言切换：main.js 给当前语言的按钮加 .active */
+    .lang-sw { display:inline-flex; gap:2px; margin-right:8px; }
+    .lang-sw button { background:none; border:none; cursor:pointer; font-size:12px; color:var(--text2); padding:2px 5px; border-radius:4px; }
+    .lang-sw button:hover { color:var(--text); }
+    .lang-sw button.active { color:var(--accent); font-weight:600; }
+  </style>
 </head>
-<body>
-<div id="auth-gate"><div class="ag-center"><div class="ag-spinner"></div><p class="ag-text">验证身份中…</p></div></div>
+<body data-page-title="ls_page_title">
+<div id="auth-gate"><div class="ag-center"><div class="ag-spinner"></div><p class="ag-text" data-i18n="ag_verifying">验证身份中…</p></div></div>
 <style>@keyframes ag-s{to{transform:rotate(360deg)}}</style>
 
 <header class="hdr">
   <div class="hdr-left">
-    <a href="../demo.html" class="back">← 返回</a>
-    <span class="hdr-title">生平故事</span>
+    <a href="../demo.html" class="back" data-i18n="ls_back">← 返回</a>
+    <span class="hdr-title" data-i18n="ls_hdr_title">生平故事</span>
     <span class="hdr-prog" id="hdr-prog"></span>
   </div>
-  <button type="button" class="btn-gen" id="btn-gen" onclick="confirmGenStory()" disabled>生成我的故事</button>
+  <span class="lang-sw">
+    <button type="button" data-lang="ja">日</button><button type="button" data-lang="zh">中</button><button type="button" data-lang="en">EN</button>
+  </span>
+  <button type="button" class="btn-gen" id="btn-gen" onclick="confirmGenStory()" disabled data-i18n="ls_btn_gen">生成我的故事</button>
 </header>
 <div class="prog-bar"><div class="prog-fill prog-fill-init" id="prog-fill"></div></div>
 
@@ -179,14 +189,14 @@
   <section class="sec on" id="sec-welcome">
     <div class="welcome">
       <div class="welcome-icon">📖</div>
-      <h1 class="welcome-title" id="w-title">记录你的故事</h1>
+      <h1 class="welcome-title" id="w-title" data-i18n="ls_w_title">记录你的故事</h1>
       <p class="welcome-desc" id="w-desc">
-        我会提出一些问题，你用文字或语音回答。<br>
-        不需要一次说完，随时可以停下来。<br>
-        当你觉得够了，AI 会为你写出一篇传记。
+        <span data-i18n="ls_w_desc1">我会提出一些问题，你用文字或语音回答。</span><br>
+        <span data-i18n="ls_w_desc2">不需要一次说完，随时可以停下来。</span><br>
+        <span data-i18n="ls_w_desc">当你觉得够了，AI 会为你写出一篇传记。</span>
       </p>
-      <button type="button" class="btn-start" id="btn-start" onclick="nextTurn(null)">开始 →</button>
-      <button type="button" class="btn-view-story hidden" id="btn-prev-story" onclick="showPrevStory()">查看上次的故事</button>
+      <button type="button" class="btn-start" id="btn-start" onclick="nextTurn(null)" data-i18n="ls_btn_start">开始 →</button>
+      <button type="button" class="btn-view-story hidden" id="btn-prev-story" onclick="showPrevStory()" data-i18n="ls_btn_prev_story">查看上次的故事</button>
     </div>
   </section>
 
@@ -194,7 +204,7 @@
   <section class="sec" id="sec-loading">
     <div class="loading">
       <div class="spinner"></div>
-      <span id="loading-msg">正在思考下一个问题…</span>
+      <span id="loading-msg" data-i18n="ls_loading_msg">正在思考下一个问题…</span>
     </div>
   </section>
 
@@ -212,9 +222,9 @@
       <div class="answer-foot">
         <button type="button" class="btn-mic" id="btn-mic" onclick="toggleVoice()">
           <span class="mic-dot"></span>
-          <span id="mic-lbl">语音输入</span>
+          <span id="mic-lbl" data-i18n="ls_mic_lbl">语音输入</span>
         </button>
-        <span class="char-ct" id="char-ct">0 字</span>
+        <span class="char-ct" id="char-ct" data-i18n="ls_char_ct" data-i18n-n="0">0 字</span>
       </div>
       <label class="privacy-label">
         <input type="checkbox" id="privacy-chk"> 🔒 标记为隐私，不分析
@@ -222,8 +232,8 @@
     </div>
     <div id="q-err"></div>
     <div class="q-foot">
-      <button type="button" class="btn-skip" onclick="skipCurrent()">跳过这题</button>
-      <button type="button" class="btn-submit" onclick="submitAnswer()">提交回答 →</button>
+      <button type="button" class="btn-skip" onclick="skipCurrent()" data-i18n="ls_btn_skip">跳过这题</button>
+      <button type="button" class="btn-submit" onclick="submitAnswer()" data-i18n="ls_btn_submit">提交回答 →</button>
     </div>
   </section>
 
@@ -232,19 +242,19 @@
     <div class="soft-card">
       <div class="soft-icon">○</div>
       <p class="soft-msg" id="soft-msg"></p>
-      <button type="button" class="btn-continue" onclick="nextTurn(null)">继续 →</button>
+      <button type="button" class="btn-continue" onclick="nextTurn(null)" data-i18n="ls_btn_continue">继续 →</button>
     </div>
   </section>
 
   <!-- 本轮结束 -->
   <section class="sec" id="sec-between">
     <div class="between">
-      <div class="between-title" id="bw-title">这段到这里</div>
+      <div class="between-title" id="bw-title" data-i18n="ls_bw_title">这段到这里</div>
       <p class="between-desc" id="bw-desc"></p>
       <div class="between-list" id="bw-list"></div>
       <div class="between-btns">
-        <button type="button" class="btn-more" onclick="nextTurn(null)">继续回答</button>
-        <button type="button" class="btn-rest" onclick="restForNow()">先到这里</button>
+        <button type="button" class="btn-more" onclick="nextTurn(null)" data-i18n="ls_btn_more">继续回答</button>
+        <button type="button" class="btn-rest" onclick="restForNow()" data-i18n="ls_btn_rest">先到这里</button>
       </div>
     </div>
   </section>
@@ -252,8 +262,8 @@
   <!-- 故事 -->
   <section class="sec" id="sec-story">
     <div class="story-hdr">
-      <h2 class="story-hdr-title">我的生平故事</h2>
-      <button type="button" class="btn-back" onclick="backFromStory()">← 返回</button>
+      <h2 class="story-hdr-title" data-i18n="ls_story_hdr_title">我的生平故事</h2>
+      <button type="button" class="btn-back" onclick="backFromStory()" data-i18n="ls_btn_back">← 返回</button>
     </div>
     <div id="story-wrap"></div>
   </section>
@@ -261,18 +271,22 @@
 </main>
 
 <div class="action-btns">
-  <button type="button" class="action-btn" onclick="exportData()" title="导出所有数据为 JSON">导出</button>
-  <button type="button" class="action-btn" onclick="document.getElementById('import-file').click()" title="从 JSON 文件恢复数据">导入</button>
-  <button type="button" class="action-btn" onclick="resetAll()" title="清除所有数据，无法恢复">重置</button>
+  <button type="button" class="action-btn" onclick="exportData()" data-i18n-title="ls_export_title" title="导出所有数据为 JSON" data-i18n="ls_export">导出</button>
+  <button type="button" class="action-btn" onclick="document.getElementById('import-file').click()" data-i18n-title="ls_import_title" title="从 JSON 文件恢复数据" data-i18n="ls_import">导入</button>
+  <button type="button" class="action-btn" onclick="resetAll()" data-i18n-title="ls_reset_title" title="清除所有数据，无法恢复" data-i18n="ls_reset">重置</button>
 </div>
 <input type="file" id="import-file" accept=".json" onchange="importData(event)">
 
+<script src="../../js/main.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════════════════════
 // 问题库
 // ══════════════════════════════════════════════════════════════════════════════
 
 // 锚点题 — 覆盖人生大轮廓的必答骨架（按优先级排列）
+// 取译文的快捷入口。main.js 未加载时回落成 key 本身，不让页面炸。
+const t = (k) => (window.sdfT ? window.sdfT(k) : k);
+
 const ANCHORS = [
   { id:'a01', cat:'起点',     text:'你是在哪里长大的？那个地方，塑造了你性格里的哪些东西？' },
   { id:'a02', cat:'家人',     text:'家里谁对你影响最深？那种影响，你现在还能感受到吗？' },
@@ -447,11 +461,11 @@ async function confirmGenStory() {
   const privateN = state.answers.filter(a => a.privacy).length;
   const cats = new Set(state.answers.map(a => a.cat)).size;
 
-  const summary = `即将基于 ${n} 条回答生成故事` +
+  const summary = t('ls_gen_summary').replace('{n}', n) +
     `${privateN > 0 ? `（其中 ${privateN} 条标记为隐私，不会被分析）` : ``}` +
-    `，涉及 ${cats} 个主题。`;
+    t('ls_gen_summary_cats').replace('{n}', cats);
 
-  if (confirm(summary + '\n\n确定生成吗？')) {
+  if (confirm(summary + '\n\n' + t('ls_gen_confirm'))) {
     await genStory();
   }
 }
@@ -469,7 +483,7 @@ async function genStory() {
     if (dots) {
       const text = dots.textContent;
       if (text.endsWith('…')) {
-        dots.textContent = '正在撰写你的故事';
+        window.sdfSetText(dots, 'ls_writing');
       } else {
         dots.textContent += '…';
       }
@@ -542,12 +556,12 @@ function showQ(q, transition) {
   // 覆盖所有换题路径（含回避软着陆、每8题提示后继续），避免追问额度跨锚点泄漏。
   if (q.type !== 'followup') state.followupCount = 0;
   document.getElementById('q-cat').textContent = q.cat;
-  document.getElementById('q-num').textContent = `第 ${state.answers.length + 1} 题`;
+  window.sdfSetText(document.getElementById('q-num'), 'ls_q_num', state.answers.length + 1);
   document.getElementById('q-transition').textContent = transition || '';
   document.getElementById('q-text').textContent = q.text;
   document.getElementById('q-ta').value = '';
   document.getElementById('privacy-chk').checked = false;
-  document.getElementById('char-ct').textContent = '0 字';
+  window.sdfSetText(document.getElementById('char-ct'), 'ls_char_ct', 0);
   document.getElementById('char-hint').style.display = 'none';
   document.getElementById('q-err').innerHTML = '';
 
@@ -578,7 +592,7 @@ async function submitAnswer() {
   saveState();
 
   show('sec-loading');
-  document.getElementById('loading-msg').textContent = '正在理解你的回答…';
+  window.sdfSetText(document.getElementById('loading-msg'), 'ls_understanding');
 
   let analysis, probeResult;
   try {
@@ -683,21 +697,21 @@ function showBetween(desc, allDone) {
   if (allDone) {
     if (state.themeFilter) {
       // 主题筛选完成：显示清除筛选或生成故事
-      btnMore.textContent = '清除筛选，继续';
+      window.sdfSetText(btnMore, 'ls_clear_filter_continue');
       btnMore.onclick = () => { state.themeFilter = null; saveState(); nextTurn(null); };
-      btnRest.textContent = '生成故事';
+      window.sdfSetText(btnRest, 'ls_gen_story');
       btnRest.onclick = () => confirmGenStory();
     } else {
       // 全部答完
       btnMore.style.display = 'none';
-      btnRest.textContent = '生成故事';
+      window.sdfSetText(btnRest, 'ls_gen_story');
       btnRest.onclick = () => confirmGenStory();
     }
   } else {
-    btnMore.textContent = '继续回答';
+    window.sdfSetText(btnMore, 'ls_btn_more');
     btnMore.onclick = () => nextTurn(null);
     btnMore.style.display = '';
-    btnRest.textContent = '先到这里';
+    window.sdfSetText(btnRest, 'ls_btn_rest');
     btnRest.onclick = () => restForNow();
   }
   show('sec-between');
@@ -705,7 +719,7 @@ function showBetween(desc, allDone) {
 
 function restForNow() {
   const n = state.answers.length;
-  document.getElementById('w-title').textContent = '今天到这里吧';
+  window.sdfSetText(document.getElementById('w-title'), 'ls_today_enough');
 
   // 收集已答过的主题，建议用户选择不同的主题继续
   const answeredCats = new Set(state.answers.map(a => a.cat));
@@ -724,7 +738,7 @@ function restForNow() {
   }
 
   document.getElementById('w-desc').innerHTML = descHtml + btnHtml;
-  document.getElementById('btn-start').textContent = '全部继续 →';
+  window.sdfSetText(document.getElementById('btn-start'), 'ls_all_continue');
   show('sec-welcome');
 }
 
@@ -751,7 +765,7 @@ function renderStory(md) {
 
 function exportData() {
   if (!state.answers.length) {
-    alert('没有数据可导出。');
+    alert(t('ls_no_data'));
     return;
   }
   const dataStr = JSON.stringify(state, null, 2);
@@ -762,7 +776,7 @@ function exportData() {
   a.download = `lifestory-${new Date().toISOString().split('T')[0]}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  alert('✓ 数据已下载');
+  alert(t('ls_downloaded'));
 }
 
 function importData(event) {
@@ -779,13 +793,13 @@ function importData(event) {
         throw new Error('数据格式错误：缺少 answers 数组');
       }
 
-      if (!confirm(`即将导入 ${imported.answers.length} 条回答。现有数据将被覆盖。确定吗？`)) {
+      if (!confirm(t('ls_confirm_import').replace('{n}', imported.answers.length))) {
         return;
       }
 
       // 合并或覆盖：若当前有数据，提示选择
       if (state.answers.length > 0) {
-        if (!confirm('当前已有 ' + state.answers.length + ' 条回答。覆盖还是合并？（取消=取消导入）')) {
+        if (!confirm(t('ls_confirm_overwrite').replace('{n}', state.answers.length))) {
           return;
         }
         // 如果用户点击确定，则覆盖
@@ -800,10 +814,10 @@ function importData(event) {
       updateHdr();
 
       // 刷新页面以更新 UI
-      alert(`✓ 已导入 ${state.answers.length} 条回答。页面将刷新。`);
+      alert(t('ls_imported').replace('{n}', state.answers.length));
       location.reload();
     } catch (err) {
-      alert(`导入失败：${err.message}`);
+      alert(t('ls_import_failed') + err.message);
     }
   };
   reader.readAsText(file);
@@ -813,7 +827,7 @@ function importData(event) {
 }
 
 function resetAll() {
-  if (!confirm('确定要清除所有回答和数据吗？此操作不可撤销。')) return;
+  if (!confirm(t('ls_confirm_reset'))) return;
   localStorage.removeItem(SK);
   location.reload();
 }
@@ -836,17 +850,17 @@ function startRecTimer() {
   recSeconds = 0;
   recTimer = setInterval(() => {
     recSeconds++;
-    document.getElementById('mic-lbl').textContent = `录音中… ${recSeconds} 秒`;
+    window.sdfSetText(document.getElementById('mic-lbl'), 'ls_recording', recSeconds);
   }, 1000);
 }
 
 function stopRecTimer() {
   if (recTimer) { clearInterval(recTimer); recTimer = null; }
-  document.getElementById('mic-lbl').textContent = '语音输入';
+  window.sdfSetText(document.getElementById('mic-lbl'), 'ls_mic_lbl');
 }
 
 function toggleVoice() {
-  if (!recognition && !initRec()) { alert('您的浏览器不支持语音输入，请使用 Chrome 或 Edge。'); return; }
+  if (!recognition && !initRec()) { alert(t('ls_no_speech')); return; }
   if (isRec) { recognition.stop(); return; }
 
   const ta  = document.getElementById('q-ta');
@@ -880,7 +894,7 @@ function toggleVoice() {
     // 如果应该重试且次数未超限，自动重新启动
     if (shouldRetry && recRetries < 2) {
       recRetries++;
-      document.getElementById('mic-lbl').textContent = `重新连接中… (${recRetries}/2)`;
+      window.sdfSetText(document.getElementById('mic-lbl'), 'ls_reconnecting', recRetries);
       setTimeout(() => toggleVoice(), 500);
     } else {
       recRetries = 0;
@@ -901,26 +915,26 @@ function toggleVoice() {
 
 function updateCount() {
   const len = document.getElementById('q-ta').value.length;
-  document.getElementById('char-ct').textContent = `${len} 字`;
+  window.sdfSetText(document.getElementById('char-ct'), 'ls_char_ct', len);
 
   const hint = document.getElementById('char-hint');
   if (len === 0) {
     hint.style.display = 'none';
   } else if (len < 20) {
     hint.className = 'char-hint short';
-    hint.textContent = '太短了，AI 可能理解不了。试试说得详细一点？';
+    window.sdfSetText(hint, 'ls_hint_short');
     hint.style.display = 'block';
   } else if (len < 100) {
     hint.className = 'char-hint good';
-    hint.textContent = '✓ 长度适中';
+    window.sdfSetText(hint, 'ls_hint_ok');
     hint.style.display = 'block';
   } else if (len < 500) {
     hint.className = 'char-hint long';
-    hint.textContent = '⚠ 有点长，可以精简';
+    window.sdfSetText(hint, 'ls_hint_long');
     hint.style.display = 'block';
   } else {
     hint.className = 'char-hint toolong';
-    hint.textContent = '太长了，建议 200-400 字';
+    window.sdfSetText(hint, 'ls_hint_too_long');
     hint.style.display = 'block';
   }
 }
@@ -949,8 +963,8 @@ function updateHdr() {
       .length;
   }
 
-  const progText = n ? `已回答 ${n} 题` : '';
-  const remText = remaining > 0 ? ` · 还剩 ${remaining} 题` : '';
+  const progText = n ? t('ls_answered').replace('{n}', n) : '';
+  const remText = remaining > 0 ? t('ls_remaining').replace('{n}', remaining) : '';
   document.getElementById('hdr-prog').textContent = progText + remText;
   document.getElementById('btn-gen').disabled = n === 0;
   document.getElementById('prog-fill').style.width = `${Math.min(n / 15 * 100, 100)}%`;
@@ -967,12 +981,12 @@ if (state.answers.length > 0) {
   const cats = new Set(state.answers.map(a => a.cat)).size;
   const chars = state.answers.reduce((sum, a) => sum + a.answer.length, 0);
 
-  document.getElementById('w-title').textContent = '欢迎回来';
+  window.sdfSetText(document.getElementById('w-title'), 'ls_welcome_back');
   document.getElementById('w-desc').innerHTML =
     `你已经分享了 <strong>${state.answers.length}</strong> 个故事片段<br>` +
     `涉及 <strong>${cats}</strong> 个主题，共约 <strong>${Math.round(chars/1000)*1000 || chars}</strong> 字。<br>` +
     `准备好继续了吗？`;
-  document.getElementById('btn-start').textContent = '继续 →';
+  window.sdfSetText(document.getElementById('btn-start'), 'ls_btn_continue');
   if (state.lastStory) document.getElementById('btn-prev-story').classList.remove('hidden');
 }
 

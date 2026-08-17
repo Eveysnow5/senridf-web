@@ -61,6 +61,8 @@ test('三语键完全对齐——漏一条就是那个语种静默显示兜底�
 function htmlFiles(dir, acc = []) {
   for (const name of readdirSync(dir)) {
     if (name === 'node_modules' || name === '.git' || name === 'docs') continue;
+    // __ 开头的是渲染验证用的临时预览副本，不是站点页面
+    if (name.startsWith('__')) continue;
     const p = path.join(dir, name);
     if (statSync(p).isDirectory()) htmlFiles(p, acc);
     else if (name.endsWith('.html')) acc.push(p);
@@ -121,6 +123,31 @@ test('用了 data-i18n 的页面必须加载 main.js，否则标记是死的', (
     bad,
     [],
     `这些页面带 i18n 标记却没加载 main.js（标记不会生效）：\n${bad.join('\n')}`,
+  );
+});
+
+// 2026-08-17 踩到的第二个坑：lifestory 的主逻辑是**普通** <script>（不是 module），
+// 它在解析时就执行，而 main.js 原本放在文件末尾 —— 于是 window.sdfT 还不存在，
+// t() 回落成 key 本身，页面上直接印出 "ls_remaining" 这样的原始键名。不报错。
+// module 型内联脚本是 defer 的，没这个问题；这条只管普通 script。
+test('普通内联脚本用到 window.sdf* 时，main.js 必须排在它前面', () => {
+  const bad = [];
+  for (const p of PAGES) {
+    const html = readFileSync(p, 'utf8');
+    const mainIdx = html.indexOf('js/main.js');
+    if (mainIdx < 0) continue;
+    // 找第一个用到 window.sdf* 的**普通**内联 script
+    for (const m of html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g)) {
+      const isModule = /type\s*=\s*["']module["']/.test(m[1]);
+      if (isModule || !/window\.sdf[A-Z]/.test(m[2])) continue;
+      if (m.index < mainIdx) bad.push(`${path.relative(ROOT, p)}（内联脚本在 main.js 之前）`);
+      break;
+    }
+  }
+  assert.deepEqual(
+    bad,
+    [],
+    `这些页面会在 window.sdfT 就绪前调用它，页面上会印出原始键名：\n${bad.join('\n')}`,
   );
 });
 
