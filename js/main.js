@@ -205,6 +205,35 @@ const T = {
     tl_btn_clear: 'クリア',
     tl_text_summary_btn: '会議まとめを生成',
 
+    /* Translation tool — 実行時に書き換わる文言も含む（2026-08-17） */
+    tl_error_prefix: 'エラー',
+    tl_tab_voice: '音声通訳',
+    tl_tab_text: 'テキスト翻訳',
+    tl_status_ready: '準備完了',
+    tl_status_ready_voice: 'Deepgram · 準備完了',
+    tl_status_translating: '翻訳中…',
+    tl_status_local: 'ローカルプレビュー — API 未接続',
+    tl_count_voice: '{n} 件',
+    tl_count_exchange: '{n} 件の翻訳',
+    tl_browser_warn:
+      'お使いのブラウザは音声入力に対応していません。Chrome または Edge をご利用ください。',
+    tl_spk_a: '甲',
+    tl_spk_b: '乙',
+    tl_spk_a_title: '甲（自分）の言語',
+    tl_spk_b_title: '乙（相手）の言語',
+    tl_marker_me: '自分が話す',
+    tl_marker_them: '相手が話す',
+    tl_marker_me_title: '自分が話すときに押してください',
+    tl_marker_them_title: '相手が話すときに押してください',
+    tl_marker_selected: '選択中',
+    tl_marker_unselected: '未選択',
+    tl_tts_title: '読み上げ',
+    tl_badge_auto: '— 自動検出 —',
+    tl_badge_zh_ja: '中国語 → 日本語',
+    tl_badge_ja_zh: '日本語 → 中国語',
+    tl_badge_undetected: '— 検出できません —',
+    tl_btn_submit: '翻訳する →',
+
     /* Auth gate (5 つのツールページ共通) */
     ag_verifying: '認証中…',
 
@@ -399,6 +428,34 @@ const T = {
     tl_btn_abstract: '摘要',
     tl_btn_clear: '清空',
     tl_text_summary_btn: '生成会议摘要',
+
+    /* Translation tool — 含运行时改写的文案（2026-08-17） */
+    tl_error_prefix: '错误',
+    tl_tab_voice: '语音口译',
+    tl_tab_text: '文字翻译',
+    tl_status_ready: '准备就绪',
+    tl_status_ready_voice: 'Deepgram · 准备就绪',
+    tl_status_translating: '翻译中…',
+    tl_status_local: '本地预览 — API 未连接',
+    tl_count_voice: '{n} 条',
+    tl_count_exchange: '{n} 条翻译',
+    tl_browser_warn: '您的浏览器不支持语音输入，请使用 Chrome 或 Edge。',
+    tl_spk_a: '甲',
+    tl_spk_b: '乙',
+    tl_spk_a_title: '甲方语言（我）',
+    tl_spk_b_title: '乙方语言（对方）',
+    tl_marker_me: '我说',
+    tl_marker_them: '对方说',
+    tl_marker_me_title: '我说话时按此按钮',
+    tl_marker_them_title: '对方说话时按此按钮',
+    tl_marker_selected: '选中',
+    tl_marker_unselected: '未选中',
+    tl_tts_title: '朗读',
+    tl_badge_auto: '— 自动检测 —',
+    tl_badge_zh_ja: '中文 → 日文',
+    tl_badge_ja_zh: '日文 → 中文',
+    tl_badge_undetected: '— 无法检测 —',
+    tl_btn_submit: '开始翻译 →',
 
     /* Auth gate（五个工具页共用） */
     ag_verifying: '验证身份中…',
@@ -616,6 +673,34 @@ const T = {
     tl_btn_clear: 'Clear',
     tl_text_summary_btn: 'Generate Meeting Summary',
 
+    /* Translation tool — includes strings written at runtime (2026-08-17) */
+    tl_error_prefix: 'Error',
+    tl_tab_voice: 'Live Interpretation',
+    tl_tab_text: 'Text Translation',
+    tl_status_ready: 'Ready',
+    tl_status_ready_voice: 'Deepgram · Ready',
+    tl_status_translating: 'Translating…',
+    tl_status_local: 'Local preview — API not connected',
+    tl_count_voice: '{n} items',
+    tl_count_exchange: '{n} translations',
+    tl_browser_warn: 'Your browser does not support voice input. Please use Chrome or Edge.',
+    tl_spk_a: 'A',
+    tl_spk_b: 'B',
+    tl_spk_a_title: 'Language of speaker A (you)',
+    tl_spk_b_title: 'Language of speaker B (the other party)',
+    tl_marker_me: 'I speak',
+    tl_marker_them: 'They speak',
+    tl_marker_me_title: 'Press this while you are speaking',
+    tl_marker_them_title: 'Press this while the other party is speaking',
+    tl_marker_selected: 'Selected',
+    tl_marker_unselected: 'Not selected',
+    tl_tts_title: 'Read aloud',
+    tl_badge_auto: '— Auto-detect —',
+    tl_badge_zh_ja: 'Chinese → Japanese',
+    tl_badge_ja_zh: 'Japanese → Chinese',
+    tl_badge_undetected: '— Cannot detect —',
+    tl_btn_submit: 'Translate →',
+
     /* Auth gate (shared by the five tool pages) */
     ag_verifying: 'Verifying…',
 
@@ -748,7 +833,11 @@ function applyTranslations(lang) {
   const t = T[lang] || T.ja;
   document.querySelectorAll('[data-i18n]').forEach((el) => {
     const key = el.dataset.i18n;
-    if (t[key] !== undefined) el.textContent = t[key];
+    if (t[key] === undefined) return;
+    // 计数类文案（「3 件」「3 条翻译」）把数字存在 data-i18n-n 上，值里写 {n}。
+    // 这样切语言时数字不会丢——直接写死整句的话，重新翻译会把计数抹成 0。
+    const n = el.dataset.i18nN;
+    el.textContent = n === undefined ? t[key] : String(t[key]).replace('{n}', n);
   });
   // 属性也要能翻译：textContent 管不到 placeholder / title，而工具页的输入框提示、
   // 以及靠 title 做无障碍名字的图标按钮，都是用户看得见的文案。
@@ -781,6 +870,34 @@ function switchLang(lang) {
   localStorage.setItem('sdf_lang', lang);
   applyTranslations(lang);
 }
+
+/* === i18n API for inline page scripts ===
+   工具页的主逻辑写在内联 <script> 里，拿不到这个模块作用域的 T。
+   没有这个入口，运行时写入的文案只能硬编码——那不但绕过整套 i18n，
+   还有个更隐蔽的后果：**切语言时它们不会更新**，页面会变成半中半日。
+   sdfSetText 把 key 记在 dataset 上，所以之后每次 applyTranslations
+   都会重新翻译它，切语言仍然有效。 */
+window.sdfT = function (key, fallback) {
+  const t = T[currentLang] || T.ja;
+  if (t[key] !== undefined) return t[key];
+  if (T.ja[key] !== undefined) return T.ja[key];
+  return fallback !== undefined ? fallback : key;
+};
+
+/** 动态插入 DOM 之后重新翻译一遍（新插入的节点没经历过初次 applyTranslations）。 */
+window.sdfApplyI18n = function () {
+  applyTranslations(currentLang);
+};
+
+/** @param {Element} el @param {string} key @param {number} [n] 计数类文案的数字（值里写 {n}） */
+window.sdfSetText = function (el, key, n) {
+  if (!el) return;
+  el.dataset.i18n = key;
+  if (n === undefined) delete el.dataset.i18nN;
+  else el.dataset.i18nN = String(n);
+  const raw = window.sdfT(key);
+  el.textContent = n === undefined ? raw : String(raw).replace('{n}', String(n));
+};
 
 /* === NAV MEMBER STATUS === */
 function updateNavMember() {

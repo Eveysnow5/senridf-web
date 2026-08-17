@@ -871,8 +871,8 @@
 
         <!-- Tabs -->
         <div class="tl-tabs">
-          <button type="button" class="tl-tab is-active" data-tab="Voice">◉ &nbsp;音声通訳 / 语音口译</button>
-          <button type="button" class="tl-tab" data-tab="Text">◎ &nbsp;テキスト翻訳 / 文字翻译</button>
+          <button type="button" class="tl-tab is-active" data-tab="Voice"><span aria-hidden="true">◉</span>&nbsp;<span data-i18n="tl_tab_voice">音声通訳</span></button>
+          <button type="button" class="tl-tab" data-tab="Text"><span aria-hidden="true">◎</span>&nbsp;<span data-i18n="tl_tab_text">テキスト翻訳</span></button>
         </div>
 
         <!-- ══════════════════════════════ VOICE TAB ══════════════════════════════ -->
@@ -880,21 +880,20 @@
 
           <div class="tl-status">
             <div class="tl-status__dot" id="voiceStatusDot"></div>
-            <span id="voiceStatusText">準備完了</span>
-            <span class="tl-status__count" id="voiceCount">0 件</span>
+            <span id="voiceStatusText" data-i18n="tl_status_ready">準備完了</span>
+            <span class="tl-status__count" id="voiceCount" data-i18n="tl_count_voice" data-i18n-n="0">0 件</span>
           </div>
 
           <!-- Browser not supported -->
-          <div class="voice-browser-warn" id="voiceBrowserWarn">
-            お使いのブラウザは音声入力に対応していません。<strong>Chrome または Edge</strong> をご利用ください。<br>
-            <strong>您的浏览器不支持语音输入，请使用 Chrome 或 Edge。</strong>
+          <div class="voice-browser-warn" id="voiceBrowserWarn" data-i18n="tl_browser_warn">
+            お使いのブラウザは音声入力に対応していません。Chrome または Edge をご利用ください。
           </div>
 
           <!-- Speaker setup -->
           <div class="voice-setup-row">
             <div class="voice-spk-cfg">
-              <span class="voice-spk-id">甲</span>
-              <select class="voice-lang-sel" id="selA" title="甲方语言（我）">
+              <span class="voice-spk-id" data-i18n="tl_spk_a">甲</span>
+              <select class="voice-lang-sel" id="selA" data-i18n-title="tl_spk_a_title" title="甲（自分）の言語">
                 <option value="zh">中文</option>
                 <option value="ja">日本語</option>
                 <option value="en">English</option>
@@ -902,8 +901,8 @@
             </div>
             <span class="voice-lang-sep">⇄</span>
             <div class="voice-spk-cfg">
-              <span class="voice-spk-id">乙</span>
-              <select class="voice-lang-sel" id="selB" title="乙方语言（对方）">
+              <span class="voice-spk-id" data-i18n="tl_spk_b">乙</span>
+              <select class="voice-lang-sel" id="selB" data-i18n-title="tl_spk_b_title" title="乙（相手）の言語">
                 <option value="ja">日本語</option>
                 <option value="zh">中文</option>
                 <option value="en">English</option>
@@ -925,18 +924,18 @@
           <div class="voice-session-bar">
             <div class="voice-interim-line" id="voiceInterim"></div>
             <div class="voice-btn-row">
-              <button type="button" class="ci-btn ci-btn--marker" id="btnMarkerMe" disabled title="我说话时按此按钮">
+              <button type="button" class="ci-btn ci-btn--marker" id="btnMarkerMe" disabled data-i18n-title="tl_marker_me_title" title="自分が話すときに押してください">
                 <span class="ci-marker-icon">🟢</span>
-                <span class="ci-marker-label">我说</span>
-                <span class="ci-marker-status" id="markerMeStatus">未选中</span>
+                <span class="ci-marker-label" data-i18n="tl_marker_me">自分が話す</span>
+                <span class="ci-marker-status" id="markerMeStatus" data-i18n="tl_marker_unselected">未選択</span>
               </button>
-              <button type="button" class="ci-btn ci-btn--marker" id="btnMarkerThem" disabled title="对方说话时按此按钮">
+              <button type="button" class="ci-btn ci-btn--marker" id="btnMarkerThem" disabled data-i18n-title="tl_marker_them_title" title="相手が話すときに押してください">
                 <span class="ci-marker-icon">🔵</span>
-                <span class="ci-marker-label">对方说</span>
-                <span class="ci-marker-status" id="markerThemStatus">未选中</span>
+                <span class="ci-marker-label" data-i18n="tl_marker_them">相手が話す</span>
+                <span class="ci-marker-status" id="markerThemStatus" data-i18n="tl_marker_unselected">未選択</span>
               </button>
               <div class="ci-side-btns">
-                <button type="button" class="tl-action-btn tl-action-btn--primary" id="voiceTts" title="朗读 / 朗読">🔊</button>
+                <button type="button" class="tl-action-btn tl-action-btn--primary" id="voiceTts" data-i18n-title="tl_tts_title" title="読み上げ">🔊</button>
                 <button type="button" class="tl-action-btn tl-action-btn--primary" id="voiceGenSummary" disabled>📝 <span data-i18n="tl_btn_gen_summary">生成纪要</span></button>
                 <button type="button" class="tl-action-btn tl-action-btn--ghost" id="voiceClear" data-i18n="tl_btn_clear">クリア</button>
               </div>
@@ -950,8 +949,8 @@
 
           <div class="tl-status">
             <div class="tl-status__dot" id="tlStatusDot"></div>
-            <span id="tlStatusText">準備完了</span>
-            <span class="tl-status__count" id="tlExchangeCount">0 件の翻訳</span>
+            <span id="tlStatusText" data-i18n="tl_status_ready">準備完了</span>
+            <span class="tl-status__count" id="tlExchangeCount" data-i18n="tl_count_exchange" data-i18n-n="0">0 件の翻訳</span>
           </div>
 
           <!-- Input / output side by side (collapses to stacked under 900px) -->
@@ -965,8 +964,8 @@
                 placeholder="中国語または日本語を入力してください…"
               ></textarea>
               <div class="tl-input-footer">
-                <span class="tl-lang-badge" id="tlLangBadge">— 自動検出 / 自动检测 —</span>
-                <button type="button" class="tl-submit" id="tlSubmit" disabled>翻訳する →</button>
+                <span class="tl-lang-badge" id="tlLangBadge" data-i18n="tl_badge_auto">— 自動検出 —</span>
+                <button type="button" class="tl-submit" id="tlSubmit" disabled data-i18n="tl_btn_submit">翻訳する →</button>
               </div>
             </div>
 
@@ -974,7 +973,7 @@
               <div class="tl-output-placeholder" id="tlPlaceholder" data-i18n="tl_output_placeholder">翻訳結果がここに表示されます</div>
               <div class="tl-loading" id="tlLoading">
                 <div class="tl-spinner"></div>
-                <span>翻訳中 / 翻译中…</span>
+                <span data-i18n="tl_status_translating">翻訳中…</span>
               </div>
               <div class="tl-error" id="tlError"></div>
               <div class="tl-output-content" id="tlOutputContent"></div>
@@ -1219,13 +1218,13 @@
       if (currentMarker === "我说") {
         elBtnMarkerMe.classList.add('is-active');
         elBtnMarkerThem.classList.remove('is-active');
-        elMarkerMeStatus.textContent = "选中";
-        elMarkerThemStatus.textContent = "未选中";
+        window.sdfSetText(elMarkerMeStatus, 'tl_marker_selected');
+        window.sdfSetText(elMarkerThemStatus, 'tl_marker_unselected');
       } else {
         elBtnMarkerMe.classList.remove('is-active');
         elBtnMarkerThem.classList.add('is-active');
-        elMarkerMeStatus.textContent = "未选中";
-        elMarkerThemStatus.textContent = "选中";
+        window.sdfSetText(elMarkerMeStatus, 'tl_marker_unselected');
+        window.sdfSetText(elMarkerThemStatus, 'tl_marker_selected');
       }
     }
 
@@ -1526,7 +1525,7 @@
           voiceHistory.shift();
           elVoiceStream.firstElementChild?.remove();
         }
-        elVoiceCount.textContent = `${voiceHistory.length} 件`;
+        window.sdfSetText(elVoiceCount, 'tl_count_voice', voiceHistory.length);
       } catch (err) {
         errorStreamItem(item, err.message);
       } finally {
@@ -1536,7 +1535,7 @@
 
     function setVoiceStatusBusy(busy) {
       elVoiceStatusDot.classList.toggle('tl-status__dot--offline', busy);
-      elVoiceStatusText.textContent = busy ? '翻訳中 / 翻译中…' : 'Deepgram · 準備完了';
+      window.sdfSetText(elVoiceStatusText, busy ? 'tl_status_translating' : 'tl_status_ready_voice');
     }
 
     function appendStreamItem(src, spk, dir) {
@@ -1573,12 +1572,12 @@
       pendingBuffer = '';
       elVoiceStream.innerHTML = '';
       setInterim('', 'live');
-      elVoiceCount.textContent = '0 件';
+      window.sdfSetText(elVoiceCount, 'tl_count_voice', 0);
     });
 
     if (isLocal) {
       elVoiceStatusDot.classList.add('tl-status__dot--offline');
-      elVoiceStatusText.textContent = 'ローカルプレビュー — API 未接続';
+      window.sdfSetText(elVoiceStatusText, 'tl_status_local');
     }
 
     /* ════════════════════════════════════════════════════════
@@ -1603,7 +1602,7 @@
 
     if (isLocal) {
       elStatusDot.classList.add('tl-status__dot--offline');
-      elStatusText.textContent = 'ローカルプレビュー — API 未接続';
+      window.sdfSetText(elStatusText, 'tl_status_local');
     } else {
       elSubmit.disabled = false;
     }
@@ -1618,16 +1617,16 @@
       const text = elInput.value.trim();
       const lang = detectLang(text);
       if (!text) {
-        elLangBadge.textContent = '— 自動検出 / 自动检测 —';
+        window.sdfSetText(elLangBadge, 'tl_badge_auto');
         elLangBadge.className = 'tl-lang-badge';
       } else if (lang === 'zh') {
-        elLangBadge.textContent = '中文 → 日本語';
+        window.sdfSetText(elLangBadge, 'tl_badge_zh_ja');
         elLangBadge.className = 'tl-lang-badge tl-lang-badge--zh';
       } else if (lang === 'ja') {
-        elLangBadge.textContent = '日本語 → 中文';
+        window.sdfSetText(elLangBadge, 'tl_badge_ja_zh');
         elLangBadge.className = 'tl-lang-badge tl-lang-badge--ja';
       } else {
-        elLangBadge.textContent = '— 検出不可 —';
+        window.sdfSetText(elLangBadge, 'tl_badge_undetected');
         elLangBadge.className = 'tl-lang-badge';
       }
       if (!isLocal) elSubmit.disabled = !text;
@@ -1663,12 +1662,12 @@
         renderOutput(content);
         addHistoryItem(text, content);
         elInput.value = '';
-        elLangBadge.textContent = '— 自動検出 / 自动検測 —';
+        window.sdfSetText(elLangBadge, 'tl_badge_auto');
         elLangBadge.className = 'tl-lang-badge';
         elSummary.disabled = false;
 
       } catch (err) {
-        elError.textContent = `エラー / 错误: ${err.message}`;
+        elError.textContent = window.sdfT('tl_error_prefix') + ': ' + err.message;
         elError.classList.add('is-visible');
         elPlaceholder.style.display = 'flex';
         conversationHistory.pop();
@@ -1745,7 +1744,7 @@
         <div class="tl-history-item__source">${escapeHtml(source)}</div>`;
       item.addEventListener('click', () => renderOutput(response));
       elHistoryList.prepend(item);
-      elExchangeCount.textContent = `${elHistoryList.children.length} 件の翻訳`;
+      window.sdfSetText(elExchangeCount, 'tl_count_exchange', elHistoryList.children.length);
     }
 
     elSummary.addEventListener('click', async () => {
@@ -1771,7 +1770,7 @@
           </div>`;
         elOutputContent.classList.add('is-visible');
       } catch (err) {
-        elError.textContent = `エラー / 错误: ${err.message}`;
+        elError.textContent = window.sdfT('tl_error_prefix') + ': ' + err.message;
         elError.classList.add('is-visible');
       } finally {
         elLoading.classList.remove('is-visible');
@@ -1785,13 +1784,13 @@
       elInput.value = '';
       elHistoryList.innerHTML = '';
       elHistoryEmpty.style.display = '';
-      elExchangeCount.textContent = '0 件の翻訳';
+      window.sdfSetText(elExchangeCount, 'tl_count_exchange', 0);
       elOutputContent.classList.remove('is-visible');
       elOutputContent.innerHTML = '';
       elError.classList.remove('is-visible');
       elPlaceholder.style.display = '';
       elSummary.disabled = true;
-      elLangBadge.textContent = '— 自動検出 / 自动検测 —';
+      window.sdfSetText(elLangBadge, 'tl_badge_auto');
       elLangBadge.className = 'tl-lang-badge';
     });
 
@@ -1994,7 +1993,7 @@
         state.docxData = { base64: null, filename: null };
         document.getElementById('voiceStream').innerHTML = '';
         document.getElementById('summaryResultPanel').style.display = 'none';
-        elVoiceCount.textContent = '0 件';
+        window.sdfSetText(elVoiceCount, 'tl_count_voice', 0);
         btnGenSummary.disabled = false;
       }
     });
