@@ -141,6 +141,31 @@ test('★ 切语言后计数不会丢——数字存在 dataset 上而不是拼�
   assert.equal(el.textContent, '12 translations');
 });
 
+test('多参数文案：{name} 与 {n} 都被填上，且切语言后参数不丢', () => {
+  const { win, els } = boot('zh');
+  const el = makeEl();
+  els.push(el);
+  win.sdfSetText(el, 'pf_file_ok', { name: '报告.docx', n: '12,345' });
+  assert.match(el.textContent, /报告\.docx/);
+  assert.match(el.textContent, /12,345/);
+
+  const en = boot('en');
+  en.els.push(el);
+  en.win.sdfApplyI18n();
+  assert.match(el.textContent, /报告\.docx/, '切语言后文件名丢了');
+  assert.match(el.textContent, /12,345/, '切语言后字数丢了');
+  assert.match(el.textContent, /characters|chars/i, '切语言后没有换成英文文案');
+});
+
+test('参数是坏 JSON 时保留原文，不让文案消失', () => {
+  const { win, els } = boot('ja');
+  const el = makeEl({ i18n: 'pf_file_ok', i18nParams: '{坏的' });
+  els.push(el);
+  win.sdfApplyI18n();
+  assert.ok(el.textContent.length > 0, '坏参数不该让文案变成空');
+  assert.match(el.textContent, /\{name\}|\{n\}/, '应保留未替换的占位符而不是清空');
+});
+
 test('placeholder 与 title 属性也会被翻译', () => {
   const { win, els } = boot('en');
   const input = makeEl({ i18nPlaceholder: 'tl_input_placeholder' });

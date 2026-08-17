@@ -95,6 +95,9 @@ test('页面引用的 i18n 键都真实存在于 T（键打错 = 永远显示兜
       ...html.matchAll(/data-page-title="([^"]+)"/g),
     ].map((m) => m[1]);
     for (const key of refs) {
+      // `data-i18n="${cat.labelKey}"` 这类键是运行时算出来的，静态解析不了。
+      // 跳过它们**不等于不管**——下面有一条专门断言 CATS 里那些键真实存在。
+      if (key.includes('${')) continue;
       if (!ja.has(key)) bad.push(`${path.relative(ROOT, p)} → ${key}`);
     }
   }
@@ -135,6 +138,25 @@ test('data-i18n 没有挂在含子元素的容器上', () => {
     [],
     `这些元素带 data-i18n 却含子元素，翻译时子元素会被抹掉：\n${bad.join('\n')}`,
   );
+});
+
+// 上面那条对动态键（`${cat.labelKey}`）无能为力，这条补上：
+// 校对工具的分类名走 CATS 里的 labelKey/shortKey，逐个确认它们真的在 T 里。
+test('校对工具 CATS 里的 i18n 键都存在，且 keywords 仍是中文', () => {
+  const src = readFileSync(path.join(ROOT, 'solutions', 'demo', 'proofreader.html'), 'utf8');
+  const labelKeys = [...src.matchAll(/labelKey:\s*'([^']+)'/g)].map((m) => m[1]);
+  const shortKeys = [...src.matchAll(/shortKey:\s*'([^']+)'/g)].map((m) => m[1]);
+  assert.equal(labelKeys.length, 7, `labelKey 应有 7 个，实际 ${labelKeys.length}`);
+  assert.equal(shortKeys.length, 7, `shortKey 应有 7 个，实际 ${shortKeys.length}`);
+  for (const k of [...labelKeys, ...shortKeys]) assert.ok(ja.has(k), `T 里缺 ${k}`);
+
+  // ⚠️ keywords 匹配的是**模型返回的中文报告**，与界面语言无关。
+  // 一旦有人"顺手"把它翻成日文/英文，所有分类都会判成「未找到对应章节」——而且不报错。
+  const keywords = [...src.matchAll(/keywords:\s*\['([^']+)'\]/g)].map((m) => m[1]);
+  assert.equal(keywords.length, 7, `keywords 应有 7 个，实际 ${keywords.length}`);
+  for (const kw of keywords) {
+    assert.match(kw, /^[一二三四五六七]、[一-龥]+$/, `keywords 必须保持中文小节标题：${kw}`);
+  }
 });
 
 test('分析工具与翻译工具的关键文案都已接入 i18n', () => {

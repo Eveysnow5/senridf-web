@@ -234,6 +234,78 @@ const T = {
     tl_badge_undetected: '— 検出できません —',
     tl_btn_submit: '翻訳する →',
 
+    /* Proofreader tool（2026-08-17 三言語化） */
+    pf_page_title: '原稿校正 — 千里同風',
+    pf_title: '原稿校正アシスタント',
+    pf_subtitle:
+      '誤字 · 重複 · 編集指示の残留 · 事実と論理 · 表現の明確さ · 論証の完全性 · 見出しの整合',
+    pf_history: '履歴',
+    pf_logout: 'ログアウト',
+    pf_history_title: '校正履歴（直近 30 件）',
+    pf_clear_all: 'すべて削除',
+    pf_close: '閉じる',
+    pf_tab_paste: 'テキストを貼り付け',
+    pf_tab_upload: 'Word をアップロード',
+    pf_input_placeholder: '中国語の原稿をここに貼り付けてください…',
+    pf_input_hint: '中国語のニュース原稿・記事・寄稿に対応',
+    pf_char_count: '{n} / 20,000 字',
+    pf_file_pick: 'クリックして .docx または .txt を選択',
+    pf_file_title: 'ファイルをアップロード',
+    pf_ref_label: '参考資料（インタビュー記録など・任意）',
+    pf_ref_hint:
+      'アップロードすると、原稿がその資料に忠実かどうかも点検します。.docx / .txt に対応。',
+    pf_ref_title: '参考資料をアップロード',
+    pf_loading: '校正中です。しばらくお待ちください（約 10〜30 秒）…',
+    pf_check: '校正を開始',
+    pf_expand_all: 'すべて展開',
+    pf_collapse_all: 'すべて折りたたむ',
+    pf_copy_report: 'レポート全文をコピー',
+    pf_copied: 'コピーしました ✓',
+    pf_copy_failed: 'コピーに失敗しました。テキストを選択して手動でコピーしてください',
+    pf_result_hint:
+      '項目をクリックすると説明が開きます。✓ を押すと「問題なし」として印を付けられます（元に戻せます）。',
+    pf_original_marked: '原文（問題箇所をマーキング済み）',
+    pf_ai_disclaimer:
+      '以上は AI による生成です。参考情報として扱い、最終判断は人が行ってください。',
+    pf_parsing: '解析中…',
+    pf_file_ok: '✓ {name}（{n} 字）',
+    pf_file_error: 'ファイルの解析に失敗しました。.txt で保存し直してからアップロードしてください',
+    pf_ref_error: '参考資料の解析に失敗しました。.txt で保存し直してからアップロードしてください',
+    pf_no_history: '履歴はまだありません',
+    pf_col_time: '日時',
+    pf_col_doc: '原稿',
+    pf_col_total: '合計',
+    pf_confirm_clear: '校正履歴をすべて削除しますか？',
+    pf_over_limit: 'テキストが 20,000 字を超えています（現在 {n} 字）。超過分は切り捨てられます',
+    pf_failed: '校正に失敗しました：',
+    pf_summary: '{n} 件の問題の可能性を検出しました',
+    pf_summary_truncated: '（テキストは 20,000 字に切り詰められました）',
+    pf_no_section: '該当するセクションが見つかりません',
+    pf_no_issues: '問題は見つかりませんでした',
+    pf_count_unit: '{n} 件',
+    pf_count_none: 'なし',
+    pf_item_issue: '問題',
+    pf_item_suggestion: '提案',
+    pf_dismiss_title: '問題なしとして印を付ける',
+    pf_dismissed_title: '確認済みです。クリックで元に戻します',
+    pf_need_paste: 'まず原稿を貼り付けてください',
+    pf_need_upload: 'まずファイルをアップロードしてください',
+    pf_request_failed: 'リクエストに失敗しました',
+    pf_cat_typos: '一、誤字',
+    pf_cat_repeat: '二、重複・未完成の文',
+    pf_cat_marks: '三、編集指示・挿入メモの残留',
+    pf_cat_facts: '四、事実と論理の整合',
+    pf_cat_clarity: '五、表現の明確さ',
+    pf_cat_argue: '六、論証の完全性',
+    pf_cat_title: '七、見出しと本文の整合',
+    pf_short_typos: '誤字',
+    pf_short_repeat: '重複',
+    pf_short_marks: '編集指示',
+    pf_short_facts: '事実論理',
+    pf_short_clarity: '表現',
+    pf_short_argue: '論証',
+    pf_short_title: '見出し',
+
     /* Auth gate (5 つのツールページ共通) */
     ag_verifying: '認証中…',
 
@@ -456,6 +528,74 @@ const T = {
     tl_badge_ja_zh: '日文 → 中文',
     tl_badge_undetected: '— 无法检测 —',
     tl_btn_submit: '开始翻译 →',
+
+    /* Proofreader tool（2026-08-17 三语化） */
+    pf_page_title: '文稿校对 — 千里同風',
+    pf_title: '文稿校对助手',
+    pf_subtitle: '错别字 · 重复 · 编辑残留 · 事实逻辑 · 表述清晰 · 论证完整 · 标题一致',
+    pf_history: '历史',
+    pf_logout: '退出',
+    pf_history_title: '历史校对记录（最近 30 次）',
+    pf_clear_all: '清除全部',
+    pf_close: '关闭',
+    pf_tab_paste: '粘贴文本',
+    pf_tab_upload: '上传 Word',
+    pf_input_placeholder: '请将中文文稿粘贴于此…',
+    pf_input_hint: '支持中文新闻稿、文章、稿件',
+    pf_char_count: '{n} / 20,000 字',
+    pf_file_pick: '点击选择 .docx 或 .txt 文件',
+    pf_file_title: '上传文件',
+    pf_ref_label: '参考资料（访谈记录等，可选）',
+    pf_ref_hint: '上传后，校对会核查稿件是否忠实于该来源。支持 .docx / .txt。',
+    pf_ref_title: '上传参考资料',
+    pf_loading: '正在校对，请稍候（约 10–30 秒）…',
+    pf_check: '开始校对',
+    pf_expand_all: '展开全部',
+    pf_collapse_all: '折叠全部',
+    pf_copy_report: '复制完整报告',
+    pf_copied: '已复制 ✓',
+    pf_copy_failed: '复制失败，请手动选择文本复制',
+    pf_result_hint: '点击条目展开查看问题说明；点击 ✓ 标记为已确认无误（可恢复）',
+    pf_original_marked: '原文（已标注问题片段）',
+    pf_ai_disclaimer: '以上内容由 AI 生成，仅供参考，请以人工判断为准',
+    pf_parsing: '解析中…',
+    pf_file_ok: '✓ {name}（{n} 字）',
+    pf_file_error: '文件解析失败，请尝试另存为 .txt 后上传',
+    pf_ref_error: '参考资料解析失败，请尝试另存为 .txt 后上传',
+    pf_no_history: '暂无历史记录',
+    pf_col_time: '时间',
+    pf_col_doc: '文稿',
+    pf_col_total: '合计',
+    pf_confirm_clear: '确定清除全部历史记录？',
+    pf_over_limit: '文本超过 20,000 字（当前 {n} 字），超出部分将被截断',
+    pf_failed: '校对失败：',
+    pf_summary: '发现 {n} 处可能的问题',
+    pf_summary_truncated: '（文本已截断至 20,000 字）',
+    pf_no_section: '未找到对应章节',
+    pf_no_issues: '未发现问题',
+    pf_count_unit: '{n} 处',
+    pf_count_none: '无',
+    pf_item_issue: '问题',
+    pf_item_suggestion: '建议',
+    pf_dismiss_title: '标记为无误',
+    pf_dismissed_title: '已确认无误，点击恢复',
+    pf_need_paste: '请先粘贴文稿',
+    pf_need_upload: '请先上传文件',
+    pf_request_failed: '请求失败',
+    pf_cat_typos: '一、错别字',
+    pf_cat_repeat: '二、重复或未完成的句子',
+    pf_cat_marks: '三、编辑指令和插入提示',
+    pf_cat_facts: '四、事实与逻辑一致',
+    pf_cat_clarity: '五、表述清晰',
+    pf_cat_argue: '六、论证完整',
+    pf_cat_title: '七、标题与正文一致性',
+    pf_short_typos: '错别字',
+    pf_short_repeat: '重复句',
+    pf_short_marks: '编辑指令',
+    pf_short_facts: '事实逻辑',
+    pf_short_clarity: '表述',
+    pf_short_argue: '论证',
+    pf_short_title: '标题',
 
     /* Auth gate（五个工具页共用） */
     ag_verifying: '验证身份中…',
@@ -701,6 +841,77 @@ const T = {
     tl_badge_undetected: '— Cannot detect —',
     tl_btn_submit: 'Translate →',
 
+    /* Proofreader tool (trilingual since 2026-08-17) */
+    pf_page_title: 'Proofreading — Senridoufuu',
+    pf_title: 'Proofreading Assistant',
+    pf_subtitle:
+      'Typos · Repetition · Leftover edit marks · Facts & logic · Clarity · Completeness of argument · Heading consistency',
+    pf_history: 'History',
+    pf_logout: 'Sign out',
+    pf_history_title: 'Proofreading history (last 30)',
+    pf_clear_all: 'Clear all',
+    pf_close: 'Close',
+    pf_tab_paste: 'Paste text',
+    pf_tab_upload: 'Upload Word',
+    pf_input_placeholder: 'Paste your Chinese manuscript here…',
+    pf_input_hint: 'For Chinese press releases, articles and manuscripts',
+    pf_char_count: '{n} / 20,000 characters',
+    pf_file_pick: 'Click to choose a .docx or .txt file',
+    pf_file_title: 'Upload a file',
+    pf_ref_label: 'Reference material (interview notes etc., optional)',
+    pf_ref_hint:
+      'If provided, the check also verifies the manuscript against this source. .docx / .txt supported.',
+    pf_ref_title: 'Upload reference material',
+    pf_loading: 'Proofreading, please wait (about 10–30 seconds)…',
+    pf_check: 'Start proofreading',
+    pf_expand_all: 'Expand all',
+    pf_collapse_all: 'Collapse all',
+    pf_copy_report: 'Copy full report',
+    pf_copied: 'Copied ✓',
+    pf_copy_failed: 'Copy failed — please select the text and copy manually',
+    pf_result_hint:
+      'Click an item to see the explanation; click ✓ to mark it as verified (reversible).',
+    pf_original_marked: 'Original text (problem spans highlighted)',
+    pf_ai_disclaimer: 'Generated by AI. For reference only — the final judgement is yours.',
+    pf_parsing: 'Parsing…',
+    pf_file_ok: '✓ {name} ({n} characters)',
+    pf_file_error: 'Could not parse the file. Try saving it as .txt and uploading again',
+    pf_ref_error: 'Could not parse the reference file. Try saving it as .txt and uploading again',
+    pf_no_history: 'No history yet',
+    pf_col_time: 'Time',
+    pf_col_doc: 'Manuscript',
+    pf_col_total: 'Total',
+    pf_confirm_clear: 'Clear the entire proofreading history?',
+    pf_over_limit: 'Text exceeds 20,000 characters (currently {n}); the excess will be truncated',
+    pf_failed: 'Proofreading failed: ',
+    pf_summary: '{n} possible issues found',
+    pf_summary_truncated: ' (text truncated to 20,000 characters)',
+    pf_no_section: 'No matching section found',
+    pf_no_issues: 'No issues found',
+    pf_count_unit: '{n}',
+    pf_count_none: 'none',
+    pf_item_issue: 'Issue',
+    pf_item_suggestion: 'Suggestion',
+    pf_dismiss_title: 'Mark as verified',
+    pf_dismissed_title: 'Verified — click to undo',
+    pf_need_paste: 'Please paste your manuscript first',
+    pf_need_upload: 'Please upload a file first',
+    pf_request_failed: 'Request failed',
+    pf_cat_typos: '1. Typos',
+    pf_cat_repeat: '2. Repeated or unfinished sentences',
+    pf_cat_marks: '3. Leftover edit marks and inserted notes',
+    pf_cat_facts: '4. Consistency of facts and logic',
+    pf_cat_clarity: '5. Clarity of expression',
+    pf_cat_argue: '6. Completeness of argument',
+    pf_cat_title: '7. Heading vs. body consistency',
+    pf_short_typos: 'Typos',
+    pf_short_repeat: 'Repetition',
+    pf_short_marks: 'Edit marks',
+    pf_short_facts: 'Facts',
+    pf_short_clarity: 'Clarity',
+    pf_short_argue: 'Argument',
+    pf_short_title: 'Headings',
+
     /* Auth gate (shared by the five tool pages) */
     ag_verifying: 'Verifying…',
 
@@ -828,16 +1039,33 @@ const VALID_LANGS = ['ja', 'zh', 'en'];
 let currentLang =
   (VALID_LANGS.includes(LANG_PARAM) && LANG_PARAM) || localStorage.getItem('sdf_lang') || 'ja';
 
+/* 把 {n} / {name} 这类占位符替换成实际值。
+   n 是最常见的计数场景的简写，params 是 JSON 形式的任意键值。
+   ⚠️ 参数解析失败时**保留原文**而不是返回空——坏数据不该让文案消失。 */
+function fillParams(text, n, paramsJson) {
+  let out = String(text);
+  if (n !== undefined) out = out.split('{n}').join(n);
+  if (paramsJson) {
+    try {
+      const p = JSON.parse(paramsJson);
+      for (const k of Object.keys(p)) out = out.split('{' + k + '}').join(p[k]);
+    } catch (err) {
+      console.error('[main] bad data-i18n-params:', err);
+    }
+  }
+  return out;
+}
+
 /* === APPLY TRANSLATIONS === */
 function applyTranslations(lang) {
   const t = T[lang] || T.ja;
   document.querySelectorAll('[data-i18n]').forEach((el) => {
     const key = el.dataset.i18n;
     if (t[key] === undefined) return;
-    // 计数类文案（「3 件」「3 条翻译」）把数字存在 data-i18n-n 上，值里写 {n}。
-    // 这样切语言时数字不会丢——直接写死整句的话，重新翻译会把计数抹成 0。
-    const n = el.dataset.i18nN;
-    el.textContent = n === undefined ? t[key] : String(t[key]).replace('{n}', n);
+    // 带参数的文案（「3 件」「✓ 报告.docx（12,345 字）」）把参数存在 dataset 上，
+    // 值里写 {n} / {name} 这样的占位符。这样切语言时参数不会丢——
+    // 直接把整句写死的话，重新翻译会把数字和文件名一起抹掉。
+    el.textContent = fillParams(t[key], el.dataset.i18nN, el.dataset.i18nParams);
   });
   // 属性也要能翻译：textContent 管不到 placeholder / title，而工具页的输入框提示、
   // 以及靠 title 做无障碍名字的图标按钮，都是用户看得见的文案。
@@ -889,14 +1117,27 @@ window.sdfApplyI18n = function () {
   applyTranslations(currentLang);
 };
 
-/** @param {Element} el @param {string} key @param {number} [n] 计数类文案的数字（值里写 {n}） */
-window.sdfSetText = function (el, key, n) {
+/** 运行时设置 title 属性（同样记 key，切语言时会被重新翻译）。 */
+window.sdfSetTitle = function (el, key) {
+  if (!el) return;
+  el.dataset.i18nTitle = key;
+  el.setAttribute('title', window.sdfT(key));
+};
+
+/**
+ * 写入译文并记住 key + 参数，使其在切语言时能被重新翻译。
+ * @param {Element} el
+ * @param {string} key
+ * @param {number|Object} [arg] 数字 → 填 {n}；对象 → 按键名填 {xxx}
+ */
+window.sdfSetText = function (el, key, arg) {
   if (!el) return;
   el.dataset.i18n = key;
-  if (n === undefined) delete el.dataset.i18nN;
-  else el.dataset.i18nN = String(n);
-  const raw = window.sdfT(key);
-  el.textContent = n === undefined ? raw : String(raw).replace('{n}', String(n));
+  delete el.dataset.i18nN;
+  delete el.dataset.i18nParams;
+  if (typeof arg === 'number' || typeof arg === 'string') el.dataset.i18nN = String(arg);
+  else if (arg && typeof arg === 'object') el.dataset.i18nParams = JSON.stringify(arg);
+  el.textContent = fillParams(window.sdfT(key), el.dataset.i18nN, el.dataset.i18nParams);
 };
 
 /* === NAV MEMBER STATUS === */
