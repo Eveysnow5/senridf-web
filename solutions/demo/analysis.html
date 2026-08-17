@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>千里同風 — 文書分析 / 文件分析</title>
+  <title>千里同風 — 文書分析ツール</title>
   <base href="../../">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -430,7 +430,6 @@
     .ag-center { text-align:center; }
     .ag-spinner { width:28px;height:28px;border:2px solid #e5e7eb;border-top-color:#a87c4f;border-radius:50%;animation:ag-s .8s linear infinite;margin:0 auto; }
     .ag-text { color:#9ca3af;font-size:13px;margin-top:12px;font-family:sans-serif; }
-    .an-hint { font-size:0.875em;opacity:0.7; }
     /* 隐藏用工具类。此前这里是 `#anPromptSection,#anActions,... { display:none }`，
        而 JS 用 `style.display = ''` 来显示——`''` 是移除内联样式，于是回落到这条
        ID 规则（优先级 100）继续隐藏，文档分析工具从 2026-06-15 起完全不可用。
@@ -441,8 +440,8 @@
     .is-hidden { display: none !important; }
   </style>
 </head>
-<body>
-<div id="auth-gate"><div class="ag-center"><div class="ag-spinner"></div><p class="ag-text">验证身份中…</p></div></div>
+<body data-page-title="an_page_title">
+<div id="auth-gate"><div class="ag-center"><div class="ag-spinner"></div><p class="ag-text" data-i18n="ag_verifying">認証中…</p></div></div>
 <style>@keyframes ag-s{to{transform:rotate(360deg)}}</style>
 
   <div id="nav-placeholder"></div>
@@ -451,11 +450,10 @@
     <div class="page-header page-header--tool">
       <div class="page-header__container">
         <div data-animate>
-          <span class="section__eyebrow">分析ツール / 分析工具</span>
-          <h1 class="section__title">文書分析 · 比較レポート</h1>
-          <p class="section__lead">
+          <span class="section__eyebrow" data-i18n="an_eyebrow">分析ツール</span>
+          <h1 class="section__title" data-i18n="an_title">文書分析 · 比較レポート</h1>
+          <p class="section__lead" data-i18n="an_lead">
             複数の PDF・Word・Excel を読み込み、AI が内容を横断分析してレポートを生成します。
-            <span class="an-hint">上传多份文件，AI 跨文件交叉分析，生成对比报告。</span>
           </p>
         </div>
       </div>
@@ -465,15 +463,14 @@
       <div class="an-wrap">
 
         <!-- Local preview notice -->
-        <div class="an-notice" id="anNotice">
-          ローカルプレビュー中のため、分析機能はご利用いただけません。Netlify にデプロイ後にご利用ください。<br>
-          <strong>本功能需部署到 Netlify 后方可使用（本地预览不支持）。</strong>
+        <div class="an-notice" id="anNotice" data-i18n="an_notice">
+          ローカルプレビューでは分析機能をご利用いただけません。デプロイ後にお試しください。
         </div>
 
         <!-- Status -->
         <div class="an-status">
           <div class="an-status__dot"></div>
-          <span>ストリーミング / 流式输出</span>
+          <span data-i18n="an_status">ストリーミング出力</span>
         </div>
 
         <!-- Drop zone -->
@@ -482,8 +479,8 @@
             accept=".pdf,.docx,.xlsx,.xls,.csv" hidden>
           <div class="an-drop-icon">↑</div>
           <div class="an-drop-text">
-            ファイルをドロップ、またはクリックして選択 / 拖放文件或点击选择
-            <span class="an-drop-sub">PDF · Word (.docx) · Excel (.xlsx/.xls) · CSV &nbsp;|&nbsp; 最大 10 ファイル / 最多 10 个文件</span>
+            <span data-i18n="an_drop_text">ファイルをドロップ、またはクリックして選択</span>
+            <span class="an-drop-sub" data-i18n="an_drop_sub">PDF · Word (.docx) · Excel (.xlsx/.xls) · CSV ｜ 最大 10 ファイル</span>
           </div>
         </div>
 
@@ -493,29 +490,30 @@
         <!-- Prompt -->
         <div class="an-prompt-section is-hidden" id="anPromptSection">
           <div class="an-prompt-label">
-            分析方向 / 分析问题
-            <span>（省略可・省略时 AI 自动综合分析 / 可留空）</span>
+            <span data-i18n="an_prompt_label">分析の観点</span>
+            <span data-i18n="an_prompt_hint">（省略可・空欄の場合は AI が全体を総合分析します）</span>
           </div>
           <textarea class="an-prompt-input" id="anPrompt"
-            placeholder="例：三つの地下鉄の収益モデルを比較し、持続可能性を評価してください / 比较三条地铁的盈利模式，评估可持续性"></textarea>
+            data-i18n-placeholder="an_prompt_placeholder"
+            placeholder="例：三つの地下鉄の収益モデルを比較し、持続可能性を評価してください"></textarea>
         </div>
 
         <!-- Actions -->
         <div class="an-actions is-hidden" id="anActions">
-          <button type="button" class="an-action-btn an-action-btn--primary" id="anSubmit">
-            分析する / 开始分析
+          <button type="button" class="an-action-btn an-action-btn--primary" id="anSubmit" data-i18n="an_btn_submit">
+            分析する
           </button>
-          <button type="button" class="an-action-btn an-action-btn--ghost" id="anClear">
-            クリア / 清空
+          <button type="button" class="an-action-btn an-action-btn--ghost" id="anClear" data-i18n="an_btn_clear">
+            クリア
           </button>
         </div>
 
         <!-- Result -->
         <div class="an-result is-hidden" id="anResult">
-          <div class="an-result-header">分析レポート / 分析报告</div>
+          <div class="an-result-header" data-i18n="an_result_header">分析レポート</div>
           <div class="an-loading is-hidden" id="anLoading">
             <div class="an-spinner"></div>
-            <span>分析中 / 分析中…</span>
+            <span data-i18n="an_loading">分析中…</span>
           </div>
           <div class="an-error is-hidden" id="anError"></div>
           <div class="an-report" id="anReport"></div>
@@ -1330,7 +1328,7 @@
 
     async function runAnalysis() {
       if (isLocal) {
-        showError('ローカル環境では動作しません。Netlify にデプロイしてください。\n本地环境不可用，请部署到 Netlify。');
+        showError('ローカル環境では動作しません。デプロイ後にお試しください。\n本地环境不可用，请部署后使用。');
         return;
       }
 

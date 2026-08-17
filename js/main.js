@@ -175,11 +175,17 @@ const T = {
     blog_empty: '記事は近日公開予定です。',
 
     /* Translation tool */
-    tl_page_title: '千里同風 — 中日翻訳ツール',
-    tl_eyebrow: '翻訳ツール',
-    tl_title: '中日翻訳 + 回訳検証',
-    tl_lead: '中国語・日本語を相互翻訳し、回訳で精度を確認。会議の議事録作成にも対応。',
-    tl_input_label: '入力 / 输入',
+    tl_page_title: '千里同風 — 中日翻訳・音声通訳ツール',
+    tl_eyebrow: '翻訳・通訳ツール',
+    // ⚠️ 2026-08-17 更新：旧値は「中日翻訳 + 回訳検証」だったが、ページ側の見出しは
+    // とっくに音声通訳を含む内容に変わっていた（キーが未使用のまま放置されていたため
+    // 気づかれなかった）。そのまま接続すると日本語だけ古い文言に戻るので値を更新した。
+    tl_title: '中日翻訳 · 音声通訳',
+    tl_lead:
+      'テキスト翻訳・音声リアルタイム通訳に対応。講義や会議の同時通訳にもご利用いただけます。',
+    tl_input_label: '入力',
+    tl_input_placeholder: '中国語または日本語を入力してください…',
+    tl_notice: 'ローカルプレビューでは翻訳機能をご利用いただけません。デプロイ後にお試しください。',
     tl_output_placeholder: '翻訳結果がここに表示されます',
     tl_voice_feed_empty: '「我说」または「对方说」を押して通訳を開始します',
     tl_history_label: '対話記録 / 对话记录',
@@ -198,6 +204,26 @@ const T = {
     tl_btn_abstract: '要約',
     tl_btn_clear: 'クリア',
     tl_text_summary_btn: '会議まとめを生成',
+
+    /* Auth gate (5 つのツールページ共通) */
+    ag_verifying: '認証中…',
+
+    /* Document analysis tool */
+    an_page_title: '千里同風 — 文書分析ツール',
+    an_eyebrow: '分析ツール',
+    an_title: '文書分析 · 比較レポート',
+    an_lead: '複数の PDF・Word・Excel を読み込み、AI が内容を横断分析してレポートを生成します。',
+    an_notice: 'ローカルプレビューでは分析機能をご利用いただけません。デプロイ後にお試しください。',
+    an_status: 'ストリーミング出力',
+    an_drop_text: 'ファイルをドロップ、またはクリックして選択',
+    an_drop_sub: 'PDF · Word (.docx) · Excel (.xlsx/.xls) · CSV ｜ 最大 10 ファイル',
+    an_prompt_label: '分析の観点',
+    an_prompt_hint: '（省略可・空欄の場合は AI が全体を総合分析します）',
+    an_prompt_placeholder: '例：三つの地下鉄の収益モデルを比較し、持続可能性を評価してください',
+    an_btn_submit: '分析する',
+    an_btn_clear: 'クリア',
+    an_result_header: '分析レポート',
+    an_loading: '分析中…',
   },
 
   zh: {
@@ -348,11 +374,13 @@ const T = {
     blog_intro: '记录我们对AI、硬件与日本市场的思考与发现。',
     blog_empty: '文章即将发布，敬请期待。',
 
-    tl_page_title: '千里同風 — 中日翻译工具',
-    tl_eyebrow: '翻译工具',
-    tl_title: '中日互译 + 回译验证',
-    tl_lead: '中文与日文双向翻译，通过回译确认准确度，支持会议记录生成。',
-    tl_input_label: '输入 / 入力',
+    tl_page_title: '千里同風 — 中日翻译·语音口译工具',
+    tl_eyebrow: '翻译·口译工具',
+    tl_title: '中日翻译 · 语音口译',
+    tl_lead: '支持文字翻译及语音实时口译，适用于授课和会议场景。',
+    tl_input_label: '输入',
+    tl_input_placeholder: '请输入中文或日文…',
+    tl_notice: '本地预览不支持翻译功能，请部署后使用。',
     tl_output_placeholder: '译文将显示在这里',
     tl_voice_feed_empty: '按「我说」或「对方说」开始口译',
     tl_history_label: '对话记录 / 対話記録',
@@ -371,6 +399,26 @@ const T = {
     tl_btn_abstract: '摘要',
     tl_btn_clear: '清空',
     tl_text_summary_btn: '生成会议摘要',
+
+    /* Auth gate（五个工具页共用） */
+    ag_verifying: '验证身份中…',
+
+    /* Document analysis tool */
+    an_page_title: '千里同風 — 文件分析工具',
+    an_eyebrow: '分析工具',
+    an_title: '文件分析 · 对比报告',
+    an_lead: '上传多份 PDF、Word、Excel，AI 跨文件交叉分析，生成对比报告。',
+    an_notice: '本地预览不支持分析功能，请部署后使用。',
+    an_status: '流式输出',
+    an_drop_text: '拖放文件或点击选择',
+    an_drop_sub: 'PDF · Word (.docx) · Excel (.xlsx/.xls) · CSV ｜ 最多 10 个文件',
+    an_prompt_label: '分析方向',
+    an_prompt_hint: '（可留空，留空时 AI 自动综合分析）',
+    an_prompt_placeholder: '例：比较三条地铁的盈利模式，评估可持续性',
+    an_btn_submit: '开始分析',
+    an_btn_clear: '清空',
+    an_result_header: '分析报告',
+    an_loading: '分析中…',
   },
 
   en: {
@@ -541,12 +589,14 @@ const T = {
       'Notes on AI, hardware, and the Japanese market — our observations and discoveries.',
     blog_empty: 'Articles coming soon.',
 
-    tl_page_title: 'Senridoufuu — Translation Tool',
-    tl_eyebrow: 'Translation Tool',
-    tl_title: 'Chinese ⇄ Japanese + Back-Translation',
+    tl_page_title: 'Senridoufuu — Translation & Interpretation Tool',
+    tl_eyebrow: 'Translation & Interpretation',
+    tl_title: 'Chinese ⇄ Japanese · Live Interpretation',
     tl_lead:
-      'Bidirectional translation with back-translation verification. Meeting minutes generation included.',
-    tl_input_label: 'Input / 入力 / 输入',
+      'Text translation and real-time voice interpretation — suitable for lectures and meetings.',
+    tl_input_label: 'Input',
+    tl_input_placeholder: 'Enter Chinese or Japanese…',
+    tl_notice: 'Translation is unavailable in local preview. Please try it on the deployed site.',
     tl_output_placeholder: 'The translation will appear here',
     tl_voice_feed_empty: 'Press “我说” or “对方说” to start interpreting',
     tl_history_label: 'Session Log / 対話記録 / 对话记录',
@@ -565,6 +615,28 @@ const T = {
     tl_btn_abstract: 'Summary',
     tl_btn_clear: 'Clear',
     tl_text_summary_btn: 'Generate Meeting Summary',
+
+    /* Auth gate (shared by the five tool pages) */
+    ag_verifying: 'Verifying…',
+
+    /* Document analysis tool */
+    an_page_title: 'Senridoufuu — Document Analysis',
+    an_eyebrow: 'Analysis Tool',
+    an_title: 'Document Analysis · Comparative Report',
+    an_lead:
+      'Upload multiple PDF, Word or Excel files; the AI analyses them together and produces a comparative report.',
+    an_notice: 'Analysis is unavailable in local preview. Please try it on the deployed site.',
+    an_status: 'Streaming output',
+    an_drop_text: 'Drop files here, or click to select',
+    an_drop_sub: 'PDF · Word (.docx) · Excel (.xlsx/.xls) · CSV | up to 10 files',
+    an_prompt_label: 'Focus of the analysis',
+    an_prompt_hint: '(optional — blank means a general analysis)',
+    an_prompt_placeholder:
+      'e.g. Compare the revenue models of the three subway operators and assess their sustainability',
+    an_btn_submit: 'Analyse',
+    an_btn_clear: 'Clear',
+    an_result_header: 'Analysis Report',
+    an_loading: 'Analysing…',
   },
 };
 
@@ -677,6 +749,18 @@ function applyTranslations(lang) {
   document.querySelectorAll('[data-i18n]').forEach((el) => {
     const key = el.dataset.i18n;
     if (t[key] !== undefined) el.textContent = t[key];
+  });
+  // 属性也要能翻译：textContent 管不到 placeholder / title，而工具页的输入框提示、
+  // 以及靠 title 做无障碍名字的图标按钮，都是用户看得见的文案。
+  // ⚠️ data-i18n 会覆写 textContent，所以**有子元素的容器不要挂 data-i18n**——
+  // 会把子元素整个抹掉。要翻译的文字请自己包一层 <span>。
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+    const key = el.dataset.i18nPlaceholder;
+    if (t[key] !== undefined) el.setAttribute('placeholder', t[key]);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+    const key = el.dataset.i18nTitle;
+    if (t[key] !== undefined) el.setAttribute('title', t[key]);
   });
   // Active state on language buttons
   document.querySelectorAll('[data-lang]').forEach((btn) => {

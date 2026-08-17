@@ -833,7 +833,6 @@
     .ag-center { text-align:center; }
     .ag-spinner { width:28px;height:28px;border:2px solid #e5e7eb;border-top-color:#a87c4f;border-radius:50%;animation:ag-s .8s linear infinite;margin:0 auto; }
     .ag-text { color:#9ca3af;font-size:13px;margin-top:12px;font-family:sans-serif; }
-    .tl-hint { font-size:0.875em;opacity:0.7; }
     #tabText { display:none; }
     #summaryResultPanel { display:none;margin-top:32px;padding:20px;background:var(--c-bg-alt);border:1px solid var(--c-border); }
     .srp-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:16px; }
@@ -844,7 +843,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js" integrity="sha384-m0l2AUT4Jav54eU04duv01OVjxoNwi2sQ7RYz0dW55Wi9yZlyq/wWWnMCQK30nM0" crossorigin="anonymous"></script>
 </head>
 <body data-page-title="tl_page_title">
-<div id="auth-gate"><div class="ag-center"><div class="ag-spinner"></div><p class="ag-text">验证身份中…</p></div></div>
+<div id="auth-gate"><div class="ag-center"><div class="ag-spinner"></div><p class="ag-text" data-i18n="ag_verifying">認証中…</p></div></div>
 <style>@keyframes ag-s{to{transform:rotate(360deg)}}</style>
 
   <div id="nav-placeholder"></div>
@@ -854,10 +853,9 @@
       <div class="page-header__container">
         <div data-animate>
           <span class="section__eyebrow" data-i18n="tl_eyebrow">翻訳・通訳ツール</span>
-          <h1 class="section__title">中日翻訳 · 音声通訳</h1>
-          <p class="section__lead">
+          <h1 class="section__title" data-i18n="tl_title">中日翻訳 · 音声通訳</h1>
+          <p class="section__lead" data-i18n="tl_lead">
             テキスト翻訳・音声リアルタイム通訳に対応。講義や会議の同時通訳にもご利用いただけます。
-            <span class="tl-hint">支持文字翻译及语音实时口译，适用于授课和会议场景。</span>
           </p>
         </div>
       </div>
@@ -867,9 +865,8 @@
       <div class="tl-wrap">
 
         <!-- Local preview notice -->
-        <div class="tl-notice" id="tlNotice">
-          ローカルプレビュー中のため、翻訳機能はご利用いただけません。Netlify にデプロイ後にご利用ください。<br>
-          <strong>本功能需部署到 Netlify 后方可使用（本地预览不支持）。</strong>
+        <div class="tl-notice" id="tlNotice" data-i18n="tl_notice">
+          ローカルプレビューでは翻訳機能をご利用いただけません。デプロイ後にお試しください。
         </div>
 
         <!-- Tabs -->
@@ -960,11 +957,12 @@
           <!-- Input / output side by side (collapses to stacked under 900px) -->
           <div class="tl-io">
             <div class="tl-input-panel">
-              <div class="tl-input-label" data-i18n="tl_input_label">入力 / 输入</div>
+              <div class="tl-input-label" data-i18n="tl_input_label">入力</div>
               <textarea
                 class="tl-textarea"
                 id="tlInput"
-                placeholder="中国語または日本語を入力してください… / 请输入中文或日文…"
+                data-i18n-placeholder="tl_input_placeholder"
+                placeholder="中国語または日本語を入力してください…"
               ></textarea>
               <div class="tl-input-footer">
                 <span class="tl-lang-badge" id="tlLangBadge">— 自動検出 / 自动检测 —</span>
