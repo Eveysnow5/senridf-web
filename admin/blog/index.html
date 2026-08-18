@@ -156,7 +156,16 @@
   <div id="blog-compose" hidden>
     <div class="compose-row">
       <label class="compose-label">标签</label>
-      <input type="text" id="compose-tag" class="compose-input" placeholder="如：AI・ハードウェア" oninput="onComposeInput()">
+      <select id="compose-tag-select" class="compose-input" onchange="onTagSelect()" title="文章分类">
+        <option value="ai_hardware">AI 与硬件</option>
+        <option value="research">市场调研</option>
+        <option value="product">产品开发</option>
+        <option value="news">公司动态</option>
+        <option value="tech">技术笔记</option>
+        <option value="__custom">其他（自由输入，不翻译）</option>
+      </select>
+      <input type="text" id="compose-tag" class="compose-input" placeholder="自定义分类（三语页面都原样显示）"
+        oninput="onComposeInput()" hidden>
     </div>
     <div class="compose-row">
       <label class="compose-label">封面图（可选）</label>
@@ -266,7 +275,16 @@ function editPost(slug) {
 }
 
 function renderCompose() {
-  document.getElementById('compose-tag').value = composeState.tag;
+  // 标签：已登记的分类走下拉（存 key，前台按语言取文案）；
+  // 不认识的值落到「其他」，原样保存、三语页面原样显示。
+  const tagSel = document.getElementById('compose-tag-select');
+  const tagInput = document.getElementById('compose-tag');
+  const known = Array.from(tagSel.options).some(
+    (o) => o.value === composeState.tag && o.value !== '__custom',
+  );
+  tagSel.value = known ? composeState.tag : '__custom';
+  tagInput.hidden = known;
+  tagInput.value = known ? '' : composeState.tag || '';
   document.getElementById('compose-title-zh').value = composeState.title.zh;
   document.getElementById('compose-body-zh').value = composeState.body.zh;
   const preview = document.getElementById('compose-cover-preview');
@@ -295,10 +313,23 @@ function switchComposeOtherLang(lang) {
   renderOtherLangFields();
 }
 
+// 标签取值：下拉选中「其他」时用自由输入框的值，否则用下拉的 key。
+function currentTagValue() {
+  const sel = document.getElementById('compose-tag-select');
+  if (!sel) return '';
+  return sel.value === '__custom' ? document.getElementById('compose-tag').value : sel.value;
+}
+
+function onTagSelect() {
+  const sel = document.getElementById('compose-tag-select');
+  document.getElementById('compose-tag').hidden = sel.value !== '__custom';
+  onComposeInput();
+}
+
 // 任意撰写字段变化时，把当前 DOM 值同步进 composeState，并安排一次草稿自动保存。
 function onComposeInput() {
   if (!composeState) return;
-  composeState.tag = document.getElementById('compose-tag').value;
+  composeState.tag = currentTagValue();
   composeState.title.zh = document.getElementById('compose-title-zh').value;
   composeState.body.zh = document.getElementById('compose-body-zh').value;
   composeState.title[composeOtherLang] = document.getElementById('compose-title-other').value;

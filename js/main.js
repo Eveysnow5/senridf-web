@@ -173,6 +173,12 @@ const T = {
     blog_title: 'インサイト',
     blog_intro: 'AI・ハードウェア・日本市場に関する考察と発見を書き留めています。',
     blog_empty: '記事は近日公開予定です。',
+    /* Blog tags（固定映射表。未登记的分类原样显示，见 js/shared/blog-tags.js） */
+    blog_tag_ai_hardware: 'AI・ハードウェア',
+    blog_tag_research: '市場調査',
+    blog_tag_product: '製品開発',
+    blog_tag_news: 'お知らせ',
+    blog_tag_tech: '技術メモ',
 
     /* Translation tool */
     tl_page_title: '千里同風 — 中日翻訳・音声通訳ツール',
@@ -544,6 +550,12 @@ const T = {
     blog_title: '洞察',
     blog_intro: '记录我们对AI、硬件与日本市场的思考与发现。',
     blog_empty: '文章即将发布，敬请期待。',
+    /* Blog tags（固定映射表。未登记的分类原样显示） */
+    blog_tag_ai_hardware: 'AI 与硬件',
+    blog_tag_research: '市场调研',
+    blog_tag_product: '产品开发',
+    blog_tag_news: '公司动态',
+    blog_tag_tech: '技术笔记',
 
     tl_page_title: '千里同風 — 中日翻译·语音口译工具',
     tl_eyebrow: '翻译·口译工具',
@@ -922,6 +934,12 @@ const T = {
     blog_intro:
       'Notes on AI, hardware, and the Japanese market — our observations and discoveries.',
     blog_empty: 'Articles coming soon.',
+    /* Blog tags (fixed map; unregistered tags render as typed) */
+    blog_tag_ai_hardware: 'AI & Hardware',
+    blog_tag_research: 'Market Research',
+    blog_tag_product: 'Product Development',
+    blog_tag_news: 'News',
+    blog_tag_tech: 'Engineering Notes',
 
     tl_page_title: 'Senridoufuu — Translation & Interpretation Tool',
     tl_eyebrow: 'Translation & Interpretation',

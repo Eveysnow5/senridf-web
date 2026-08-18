@@ -46,6 +46,11 @@
 
   <script src="js/main.js"></script>
   <script type="module" src="js/tracking.js"></script>
+  <script type="module">
+    // 本页主逻辑是普通 <script>，拿不到模块作用域，用 window 桥接（与工具页同一做法）
+    import { tagLabel } from '/js/shared/blog-tags.js';
+    window.sdfBlogTagLabel = tagLabel;
+  </script>
   <script>
     let blogPostsCache = [];
 
@@ -81,7 +86,9 @@
           return `<a href="/solutions/blog/${p.slug}.html" class="blog-item">
           <div class="blog-item__date">${y}<br>${m}.${day}</div>
           <div>
-            <div class="blog-item__tag">${escapeHtmlList(p.tag)}</div>
+            <div class="blog-item__tag">${escapeHtmlList(
+            window.sdfBlogTagLabel ? window.sdfBlogTagLabel(p.tag, window.sdfT) : p.tag,
+          )}</div>
             <h2 class="blog-item__title">${escapeHtmlList(title)}</h2>
             <p class="blog-item__excerpt">${escapeHtmlList(excerpt)}…</p>
           </div>
@@ -95,7 +102,17 @@
       .then((r) => (r.ok ? r.json() : []))
       .then((posts) => {
         blogPostsCache = Array.isArray(posts) ? posts : [];
-        renderBlogCards(currentLang);
+        // ⚠️ 分类文案由**模块**脚本挂上 window.sdfBlogTagLabel，而模块是 defer 的：
+        //    posts.json 回得早的时候，渲染会跑在桥之前，分类就退回显示原始 key
+        //    （实测截到过 `AI_HARDWARE`）。defer 脚本保证在 DOMContentLoaded 之前
+        //    执行完，所以等这个事件再渲染，而不是赌 fetch 比它慢。
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', () => renderBlogCards(currentLang), {
+            once: true,
+          });
+        } else {
+          renderBlogCards(currentLang);
+        }
       })
       .catch(() => {});
 
