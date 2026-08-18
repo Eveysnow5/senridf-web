@@ -340,6 +340,10 @@ async function main() {
   }
 }
 
+// 导出给回填脚本复用。**必须复用同一个 translate**：回填若自带一份提示词，
+// 产出的摘要格式会跟夜间流程慢慢分叉，而这种不一致没有任何报错。
+module.exports = { translate, translateWithRetry, usageAcc };
+
 if (require.main === module) {
   main().catch((err) => {
     console.error(err);

@@ -1,0 +1,41 @@
+# 手动触发的一次性维护任务：回填「已入库但摘要为空」的招标条目。
+#
+# 为什么单独一个 workflow 而不是塞进夜间爬虫：这件事会**烧额度**，
+# 必须由人决定什么时候跑、跑多少条，不能每晚自动来一遍。
+# 默认 dry-run —— 直接点 Run 只会报数，不写库、不调用 LLM。
+name: Backfill Bid Summaries
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: '真的写库（不勾选＝只报数的 dry-run）'
+        type: boolean
+        default: false
+      limit:
+        description: '本次最多回填几条（护额度用）'
+        type: string
+        default: '20'
+
+jobs:
+  backfill:
+    # 同事仓库是镜像副本、没有 secrets，跑起来只会失败发邮件。只在源仓库跑。
+    if: github.repository == 'sherlockafa007/senridoufuu-web'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install deps
+        working-directory: scripts/bid-scraper
+        run: npm ci || npm install
+      - name: Run backfill
+        working-directory: scripts/bid-scraper
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
+        run: |
+          node backfill.js \
+            ${{ inputs.apply && '--apply' || '' }} \
+            --limit "${{ inputs.limit }}"
