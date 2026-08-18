@@ -47,7 +47,7 @@ senridoufuu-web/
 │   └── main.js                 ← i18n・ナビ・アニメーション（翻訳データを含む）
 ├── assets/
 │   └── images/                 ← 画像ファイルをここに配置
-└── netlify.toml                ← Netlify 設定
+└── functions/api/              ← バックエンド（Cloudflare Pages Functions）
 ```
 
 ---
@@ -84,7 +84,7 @@ mission_title: 'ここを変更する',
 
 ---
 
-## Netlify へのデプロイ手順
+## デプロイ手順
 
 ### 手順 1: GitHub にコードをアップロード
 
@@ -99,24 +99,31 @@ git remote add origin https://github.com/[your-username]/senridoufuu-web.git
 git push -u origin main
 ```
 
-### 手順 2: Netlify に接続
+### 手順 2: デプロイ（現行の構成）
 
-1. [netlify.com](https://www.netlify.com/) にアクセス（無料アカウントを作成）
-2. 「Add new site」→「Import an existing project」
-3. GitHub を選択して先ほどのリポジトリを選択
-4. Build settings はそのままで「Deploy site」をクリック
-5. 数分後にサイトが公開されます（例: `random-name.netlify.app`）
+本番サイト **https://www.senridf.com/** は **Cloudflare Pages** で配信しています。
+デプロイは以下の二段構成です（詳細は `docs/tools/00-architecture.md`）:
 
-### 手順 3: カスタムドメインの設定
+```
+自分の GitHub リポジトリ に push
+  → GitHub Actions が同僚のリポジトリへ自動ミラー
+  → 同僚の Cloudflare アカウントがビルドして公開
+```
 
-1. Netlify の「Domain settings」→「Add custom domain」
-2. `senridoufuu.com` と `www.senridoufuu.com` を追加
-3. ドメインレジストラ（ドメインを購入した会社）の DNS 設定で以下を変更:
-   - **A レコード**: `@` → `75.2.60.5`（Netlify の IP）
-   - **CNAME**: `www` → `[your-site].netlify.app`
-4. Netlify の「HTTPS」設定で SSL 証明書を有効化（Let's Encrypt、無料）
+つまり **push しても即座には反映されません**。ミラーとビルドの完了を待つ必要があります。
+反映確認は Cloudflare の管理画面より `curl` で本番ファイルを直接見るほうが速くて確実です
+（`.html` は拡張子なし URL へ 308 リダイレクトするため `-L` が必要）。
 
-※ DNS の反映には最大 24〜48 時間かかる場合があります。
+バックエンド（`/api/*`）は `functions/api/` の Cloudflare Pages Functions です。
+API キー等の環境変数は **同僚の Cloudflare Pages → Settings → Environment variables** に設定されており、
+変更後は再デプロイしないと反映されません。
+
+> ⚠️ **Netlify は使っていません（2026-06 に移行済み）。**
+> 2026-05〜06 の初期はホスティング・バックエンド・ログイン（Netlify Identity）すべてが Netlify 上にありましたが、
+> ログインは Firebase Auth（2026-06-04）へ、ホスティングとバックエンドは Cloudflare Pages へ移行しました。
+> `netlify.toml` と `netlify/` は 2026-07-01 に削除済みです。
+> なお **移行後も Netlify 側のプロジェクトだけが残って自動ビルドを続けており**、
+> 2026-08-19 に削除しました（経緯は `docs/tools/00-architecture.md` を参照）。
 
 ---
 
