@@ -1,4 +1,5 @@
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
+import { recordUsage } from './_lib/usageRecorder.js';
 import { buildProofreadPrompt } from './_lib/buildProofreadPrompt.js';
 import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
 
@@ -54,6 +55,13 @@ export async function onRequest(context) {
     }
 
     const data = await qwenRes.json();
+    recordUsage({
+      task: 'proofread',
+      usage: data.usage,
+      idToken: context.data?.idToken,
+      waitUntil: context.waitUntil?.bind(context),
+    });
+
     const result = data.choices?.[0]?.message?.content?.trim() || '';
 
     return new Response(

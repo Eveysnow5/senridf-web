@@ -1,5 +1,6 @@
 // Cloudflare Pages Function — meeting summary (JSON only; DOCX generated client-side)
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
+import { recordUsage } from './_lib/usageRecorder.js';
 import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
 
 const SYS_SUMMARY =
@@ -92,6 +93,13 @@ export async function onRequest(context) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
+
+    recordUsage({
+      task: 'summary',
+      usage: data.usage,
+      idToken: context.data?.idToken,
+      waitUntil: context.waitUntil?.bind(context),
+    });
 
     const raw = data.choices[0].message.content.trim();
     let summary;

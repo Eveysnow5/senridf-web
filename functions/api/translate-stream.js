@@ -1,5 +1,6 @@
 // Cloudflare Pages Function — streaming translation proxy (SSE)
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
+import { recordUsage } from './_lib/usageRecorder.js';
 import { buildGlossaryPrompt } from './_lib/buildGlossaryPrompt.js';
 import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
 
@@ -90,6 +91,17 @@ export async function onRequest(context) {
     // 注意：这层 try/catch 只覆盖"建立连接、拿到 headers"这个阶段——一旦下面这行
     // return 执行，函数调用栈就结束了，upstream.body 流式读取是之后由前端消费时才
     // 发生的，如果那时候 DashScope 中途断流，这层 catch 捕获不到。
+    // ⚠️ 流式端点**只记调用次数**：这里是把 upstream.body 原样透传，函数并不读流。
+    // 要拿 usage 就得插一层 TransformStream 逐块扫描，那等于把逐字节的工作放回
+    // Workers 免费档 10ms CPU 预算上 —— 2026-08-12 的 502 就是这么来的。
+    // 少一个数字，好过把线上端点重新推到墙上。usage 记为 missing。
+    recordUsage({
+      task: 'translateStream',
+      usage: null,
+      idToken: context.data?.idToken,
+      waitUntil: context.waitUntil?.bind(context),
+    });
+
     return new Response(upstream.body, {
       headers: {
         'Content-Type': 'text/event-stream',

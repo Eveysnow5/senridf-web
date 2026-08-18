@@ -1,8 +1,9 @@
 // Cloudflare Pages Function — lifestory interview actions
 import { buildProbePrompt, parseProbeJson } from './_lib/lifestory-probe.js';
+import { recordUsage } from './_lib/usageRecorder.js';
 import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
 
-async function qwen(apiKey, system, user, maxTokens = 800, temp = 0.7) {
+async function qwen(apiKey, system, user, maxTokens = 800, temp = 0.7, onUsage) {
   const res = await fetch(CHAT_ENDPOINT, {
     method: 'POST',
     headers: {
@@ -22,6 +23,8 @@ async function qwen(apiKey, system, user, maxTokens = 800, temp = 0.7) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || `API ${res.status}`);
+  // 用量回调：这个 helper 是模块级的、拿不到 context，所以由调用方注入
+  if (typeof onUsage === 'function') onUsage(data.usage);
   return data.choices[0].message.content.trim();
 }
 
@@ -79,6 +82,16 @@ export async function onRequest(context) {
     });
   }
 
+  // 用量记录回调：本文件的 qwen() 是模块级 helper，拿不到 context，所以在这里注入。
+  // 一次请求可能调用多次（分析/追问/衔接/成稿），每次都单独计入。
+  const rec = (usage) =>
+    recordUsage({
+      task: 'lifestory',
+      usage,
+      idToken: context.data?.idToken,
+      waitUntil: context.waitUntil?.bind(context),
+    });
+
   const apiKey = env.QWEN_API_KEY;
   if (!apiKey) {
     return new Response(JSON.stringify({ error: '未配置 API Key' }), {
@@ -118,7 +131,7 @@ export async function onRequest(context) {
         knownTags.length ? `\n\n已知标签：${knownTags.join('、')}` : '',
         '\n\n请分析并输出JSON：',
       ].join('');
-      const raw = await qwen(apiKey, SYS_ANALYZE, userPrompt, 450, 0.2);
+      const raw = await qwen(apiKey, SYS_ANALYZE, userPrompt, 450, 0.2, rec);
       let analysis;
       try {
         analysis = JSON.parse(
@@ -154,6 +167,7 @@ export async function onRequest(context) {
         buildProbePrompt(question, answer, recentHistory, knownTags),
         500,
         0.5,
+        rec,
       );
       const result = parseProbeJson(raw);
       return new Response(JSON.stringify(result), { headers: h });
@@ -173,6 +187,7 @@ export async function onRequest(context) {
         `用户刚才的回答：\n${lastAnswer}\n\n即将提出的下一个问题：\n${nextQuestion}\n\n请输出衔接语：`,
         100,
         0.6,
+        rec,
       );
       return new Response(JSON.stringify({ bridge: bridge.trim() }), {
         headers: h,
@@ -200,6 +215,7 @@ export async function onRequest(context) {
         `以下是受访者亲口说出的所有信息。请严格基于这些内容撰写，禁止添加任何未提及的细节。标记为 [用户选择不分享] 的部分保持空白。\n\n${qaText}`,
         3000,
         0.5,
+        rec,
       );
       return new Response(JSON.stringify({ story }), { headers: h });
     }

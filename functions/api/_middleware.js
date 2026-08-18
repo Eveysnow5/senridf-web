@@ -56,6 +56,8 @@ export async function onRequest(context) {
   }
 
   context.data.user = user;
+  // 用量记录要用调用者的 ID token 写 Firestore（与限流同一套 REST 授权方式）
+  context.data.idToken = token;
 
   // Attach CORS headers to the actual response
   const response = await context.next();

@@ -1,5 +1,6 @@
 // Cloudflare Pages Function — non-streaming translation proxy
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
+import { recordUsage } from './_lib/usageRecorder.js';
 import { buildGlossaryPrompt } from './_lib/buildGlossaryPrompt.js';
 import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
 
@@ -91,6 +92,13 @@ Use formal, precise language. Never skip the 【回訳】 step for Chinese or Ja
         headers: { 'Content-Type': 'application/json' },
       });
     }
+
+    recordUsage({
+      task: 'translate',
+      usage: data.usage,
+      idToken: context.data?.idToken,
+      waitUntil: context.waitUntil?.bind(context),
+    });
 
     return new Response(JSON.stringify({ content: data.choices[0].message.content }), {
       headers: { 'Content-Type': 'application/json' },
