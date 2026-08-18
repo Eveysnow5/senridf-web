@@ -237,7 +237,21 @@ const T = {
   }
 };
 
-let lang = localStorage.getItem('jl_lang') || 'zh';
+// 语言选择与站点统一（2026-08-18）。本页**自带 T**（动词活用那套文案是领域专有的，
+// 不并入共享 T），但"当前是哪种语言"这件事走站点统一的 sdf_lang——
+// 于是在别处切了语言，进这里也是同一种；在这里切了，出去也保持。
+// 优先级：?lang= > sdf_lang > 旧的 jl_lang（一次性迁移）> zh
+// ⚠️ 默认仍是 zh 而不是站点默认的 ja：本工具是给中文母语者学日语用的，
+//    改默认会影响所有从没点过语言按钮的老用户。这是刻意保留的差异。
+const VALID_LANGS = ['ja', 'zh', 'en'];
+function initLang() {
+  const q = new URLSearchParams(location.search).get('lang');
+  const stored = localStorage.getItem('sdf_lang');
+  const legacy = localStorage.getItem('jl_lang');
+  return [q, stored, legacy].find((v) => VALID_LANGS.includes(v)) || 'zh';
+}
+
+let lang = initLang();
 
 function applyLang() {
   const t = T[lang];
@@ -266,8 +280,11 @@ function applyLang() {
 }
 
 function setLang(l) {
+  if (!VALID_LANGS.includes(l)) return;
   lang = l;
-  localStorage.setItem('jl_lang', l);
+  localStorage.setItem('sdf_lang', l);
+  // 旧键迁移完就清掉，否则两个源会各自漂移，出现"这里显示中文、别处显示日文"
+  localStorage.removeItem('jl_lang');
   applyLang();
 }
 
