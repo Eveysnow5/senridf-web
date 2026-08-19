@@ -290,26 +290,95 @@ const t = (k) => (window.sdfT ? window.sdfT(k) : k);
 // 「日文的问题 + 中文的追问 + 中文的传记」。main.js 没加载时回落 zh。
 const uiLang = () => (window.sdfLang ? window.sdfLang() : 'zh');
 
+// cat 现在是**键**，不是显示文案。显示走 T 的 ls_cat_*（三语），
+// 键则用于主题筛选和已答统计——这两件事此前共用一个中文字符串，
+// 跟校对工具 CATS.label 是同一个陷阱。
+const catLabel = (key) => t('ls_cat_' + key);
+
+// 2026-08-19 之前 cat 存的是中文显示名，存档里还留着。不迁移的话，
+// themeFilter='起点' 永远匹配不上 'origin' → 一道题都出不来，
+// 而界面只会说"你已经回答了所有问题"，不报错。
+const LEGACY_CAT = {
+  起点:'origin', 家人:'family', 成长:'growing', 职业:'work', 转折:'turning',
+  关系:'bonds', 挫折:'setback', 热忱:'passion', 内心:'inner', 价值观:'values',
+  金钱:'money', 影响力:'influence', 遗憾:'regret', 印记:'mark', 传承:'legacy',
+};
+
 const ANCHORS = [
-  { id:'a01', cat:'起点',     text:'你是在哪里长大的？那个地方，塑造了你性格里的哪些东西？' },
-  { id:'a02', cat:'家人',     text:'家里谁对你影响最深？那种影响，你现在还能感受到吗？' },
-  { id:'a03', cat:'成长',     text:'成长过程中，有没有某件具体的事，让你意识到"世界和我想的不一样"？' },
-  { id:'a04', cat:'职业',     text:'你是怎么走上现在这条路的？是主动选择，还是被某些事情推着走的？' },
-  { id:'a05', cat:'转折',     text:'你人生里有没有一个决定，回头看是真正的分叉口？那时候你是怎么做决定的？' },
-  { id:'a06', cat:'关系',     text:'对你来说，最重要的关系是什么样的？可以是任何形式的。' },
-  { id:'a07', cat:'挫折',     text:'你有没有经历过一次彻底的失败或溃败？那段日子是怎么过的？' },
-  { id:'a08', cat:'热忱',     text:'什么事情是你做起来完全不需要理由的？这个答案，有没有随时间变过？' },
-  { id:'a09', cat:'内心',     text:'你害怕什么？不是蛇或高空那种，而是深处的、会影响你做决定的那种。' },
-  { id:'a10', cat:'价值观',   text:'有没有什么事是你绝对不会做的？这条线，是怎么划定的？' },
-  { id:'a11', cat:'金钱',     text:'你和钱的关系是什么样的？有没有哪段时期，金钱真正改变了你的选择？' },
-  { id:'a12', cat:'影响力',   text:'你觉得你改变过谁吗？或者，有没有人会因为认识你而不一样？' },
-  { id:'a13', cat:'遗憾',     text:'如果有遗憾，你愿意说说吗？没有也完全可以。' },
-  { id:'a14', cat:'印记',     text:'你希望自己被记住的是什么？或者，你根本不在乎被记住？' },
-  { id:'a15', cat:'传承',     text:'如果你的故事能传下去，你最想让人知道的一件事是什么？' },
+  { id:'a01', cat:'origin', text:{
+    zh:'你是在哪里长大的？那个地方，塑造了你性格里的哪些东西？',
+    ja:'どちらで育ちましたか。その土地は、あなたのどんなところを形づくったと思いますか。',
+    en:'Where did you grow up? What did that place shape in you?' } },
+  { id:'a02', cat:'family', text:{
+    zh:'家里谁对你影响最深？那种影响，你现在还能感受到吗？',
+    ja:'ご家族の中で、いちばん影響を受けたのはどなたですか。その影響は、今でも感じますか。',
+    en:'Who in your family shaped you most? Can you still feel that today?' } },
+  { id:'a03', cat:'growing', text:{
+    zh:'成长过程中，有没有某件具体的事，让你意识到"世界和我想的不一样"？',
+    ja:'育つ過程で、「世の中は自分が思っていたのとは違う」と気づいた出来事はありますか。',
+    en:"Growing up, was there a moment when you realized the world wasn't what you thought?" } },
+  { id:'a04', cat:'work', text:{
+    zh:'你是怎么走上现在这条路的？是主动选择，还是被某些事情推着走的？',
+    ja:'今の道に進むことになったきっかけは何でしたか。ご自分で選んだものでしたか、それとも何かに押されて進んだものでしたか。',
+    en:'How did you end up on your path? Did you choose it, or were you pushed there?' } },
+  { id:'a05', cat:'turning', text:{
+    zh:'你人生里有没有一个决定，回头看是真正的分叉口？那时候你是怎么做决定的？',
+    ja:'振り返ってみて、ここが本当の分かれ道だったと思う決断はありますか。そのとき、どうやって決めましたか。',
+    en:'Looking back, was there a decision that turned out to be a real fork in the road? How did you decide?' } },
+  { id:'a06', cat:'bonds', text:{
+    zh:'对你来说，最重要的关系是什么样的？可以是任何形式的。',
+    ja:'あなたにとっていちばん大切な関係は、どんな関係ですか。どんな形のものでもかまいません。',
+    en:'What does your most important relationship look like? It can be any kind.' } },
+  { id:'a07', cat:'setback', text:{
+    zh:'你有没有经历过一次彻底的失败或溃败？那段日子是怎么过的？',
+    ja:'すっかりうまくいかなくなった、という経験はありますか。その時期は、どう過ごされましたか。',
+    en:'Have you ever failed completely? How did you get through that time?' } },
+  { id:'a08', cat:'passion', text:{
+    zh:'什么事情是你做起来完全不需要理由的？这个答案，有没有随时间变过？',
+    ja:'理由などなくても、つい打ち込んでしまうことは何ですか。その答えは、年月とともに変わりましたか。',
+    en:'What do you do that needs no reason at all? Has that answer changed over time?' } },
+  { id:'a09', cat:'inner', text:{
+    zh:'你害怕什么？不是蛇或高空那种，而是深处的、会影响你做决定的那种。',
+    ja:'何を恐れていますか。蛇や高いところといったものではなく、決断に影響するような、もっと奥のほうにあるものです。',
+    en:'What are you afraid of? Not snakes or heights — the deeper kind that shapes your decisions.' } },
+  { id:'a10', cat:'values', text:{
+    zh:'有没有什么事是你绝对不会做的？这条线，是怎么划定的？',
+    ja:'何があっても絶対にしない、と決めていることはありますか。その線は、どうやって引かれたのでしょう。',
+    en:'Is there something you would never do? How did you draw that line?' } },
+  { id:'a11', cat:'money', text:{
+    zh:'你和钱的关系是什么样的？有没有哪段时期，金钱真正改变了你的选择？',
+    ja:'お金とは、どんな付き合い方をしてこられましたか。お金が実際に選択を変えた時期はありましたか。',
+    en:"What's your relationship with money? Was there a time when money really changed your choices?" } },
+  { id:'a12', cat:'influence', text:{
+    zh:'你觉得你改变过谁吗？或者，有没有人会因为认识你而不一样？',
+    ja:'誰かを変えたと思うことはありますか。あなたと出会ったことで変わった人は、いるでしょうか。',
+    en:"Do you think you've changed anyone? Is someone different for having known you?" } },
+  { id:'a13', cat:'regret', text:{
+    zh:'如果有遗憾，你愿意说说吗？没有也完全可以。',
+    ja:'心残りがあれば、よろしければ聞かせていただけますか。なければ、それでかまいません。',
+    en:"If you have regrets, would you share one? It's fine if you don't." } },
+  { id:'a14', cat:'mark', text:{
+    zh:'你希望自己被记住的是什么？或者，你根本不在乎被记住？',
+    ja:'どんなふうに覚えていてほしいですか。それとも、覚えられることにはこだわりませんか。',
+    en:'What would you like to be remembered for? Or do you not mind being forgotten?' } },
+  { id:'a15', cat:'legacy', text:{
+    zh:'如果你的故事能传下去，你最想让人知道的一件事是什么？',
+    ja:'あなたの話が誰かに受け継がれるとしたら、いちばん知っておいてほしいことは何ですか。',
+    en:'If your story were passed on, what one thing would you most want people to know?' } },
 ];
 
-// 历史时空触发 — 年份 + 地点匹配后作为"故事催化剂"出现（全程最多 2 次）
-const HISTORICAL = [
+// 历史时空触发 — 年份 + 地点匹配后作为"故事催化剂"出现（全程最多 2 次）。
+//
+// ⚠️ 这三套**不是互相翻译**，是各写各的。历史锚点绑的是**国家**而不是语言：
+// 「1997年香港回归」对日语受访者毫无重量，直译过去比不问更糟。
+// 英文一栏没有"默认国家"，所以走的是全球共同经验（登月、9·11、金融危机、疫情）
+// 加两条相对时间锚（放在最后，让具体事件优先命中）。
+//
+// ⚠️ locations 是拿来**匹配模型抽出的地点**的，不是显示文案。必须与该语言
+// 受访者实际会写出的字形一致——简体的 '东京' 匹配不上日语的「東京」。
+// 这也正是旧版对非中文输入形同虚设的原因：整份 locations 都是简体中文。
+const HISTORICAL_BY_LANG = {
+zh: [
   {
     id:'h01', yearRange:[1996,1998],
     locations:['香港','深圳','广州','珠海','澳门'],
@@ -345,7 +414,92 @@ const HISTORICAL = [
     locations:null,
     text:'2020年疫情开始的那段时间，生活里有什么是彻底变了、再也回不去的？',
   },
-];
+],
+
+ja: [
+  {
+    id:'hj01', yearRange:[1944,1947],
+    locations:null,
+    text:'終戦のころのことで、いちばんはっきり覚えている場面はどんな場面ですか。',
+  },
+  {
+    id:'hj02', yearRange:[1963,1965],
+    locations:null,
+    text:'1964年の東京オリンピックのころ、街や暮らしはどんなふうに変わっていきましたか。',
+  },
+  {
+    id:'hj03', yearRange:[1969,1971],
+    locations:['大阪','関西','京都','神戸','兵庫'],
+    text:'1970年の大阪万博のころ、{location}では身のまわりに何か変わったことはありましたか。',
+  },
+  {
+    id:'hj04', yearRange:[1990,1994],
+    locations:null,
+    text:'バブルが崩れていったころ、ご自身や周りの方の暮らしはどう変わりましたか。',
+  },
+  {
+    id:'hj05', yearRange:[1994,1996],
+    locations:['神戸','兵庫','大阪','関西','西宮','芦屋','淡路'],
+    text:'1995年の阪神・淡路大震災のとき、{location}にいらっしゃったのですね。あのとき、いちばん覚えていることは何ですか。',
+  },
+  {
+    id:'hj06', yearRange:[2010,2012],
+    locations:null,
+    text:'2011年の震災のあと、変わってしまってもう戻らなかったものはありますか。',
+  },
+  {
+    id:'hj07', yearRange:[2019,2022],
+    locations:null,
+    text:'コロナのころ、暮らしの中で変わってしまったことは何でしたか。',
+  },
+],
+
+en: [
+  {
+    id:'he01', yearRange:[1968,1970],
+    locations:null,
+    text:'People tend to remember where they were for the 1969 moon landing. Do you?',
+  },
+  {
+    id:'he02', yearRange:[1988,1991],
+    locations:null,
+    text:'Around {year} the map of the world was changing fast. Did any of that reach your daily life?',
+  },
+  {
+    id:'he03', yearRange:[2000,2002],
+    locations:null,
+    text:'Do you remember where you were in September 2001? Did anything change for you after that?',
+  },
+  {
+    id:'he04', yearRange:[2007,2010],
+    locations:null,
+    text:'In the {year} financial crisis, was anyone close to you badly hit? Were you?',
+  },
+  {
+    id:'he05', yearRange:[2019,2022],
+    locations:null,
+    text:'When the pandemic started, what changed for good — something that never went back?',
+  },
+  // 下面两条是相对时间锚，范围很宽，**必须排在具体事件之后**：
+  // nextQuestion 取的是第一个匹配项，放前面会把具体事件全部挡掉。
+  {
+    id:'he06', yearRange:[1960,2030],
+    locations:null,
+    text:'Was there a World Cup or an Olympics you remember watching? Who were you with?',
+  },
+  {
+    id:'he07', yearRange:[1900,2100],
+    locations:null,
+    text:'Think back to around {year}. What did an ordinary day look like for you then?',
+  },
+],
+};
+
+/** 当前语言的历史题库。没有对应语言就回落中文那套。 */
+const historicalBank = () => HISTORICAL_BY_LANG[uiLang()] || HISTORICAL_BY_LANG.zh;
+
+/** 题面按当前语言取；缺哪一条就回落中文，不让问题变成空白。 */
+const qText = (q) => (typeof q.text === 'string' ? q.text : q.text[uiLang()] || q.text.zh);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // 状态
@@ -377,7 +531,23 @@ let recTimer   = null;
 let recSeconds = 0;
 let recRetries = 0;  // 语音识别重试次数
 
-function loadState()  { try { return JSON.parse(localStorage.getItem(SK)) || defState(); } catch { return defState(); } }
+/**
+ * 把 2026-08-19 之前存的中文 cat 值迁成新的键。
+ *
+ * 不迁的后果不是报错，是**静默失灵**：themeFilter 停在 '起点'，
+ * 而题库里现在写的是 'origin'，于是 nextQuestion 一道题也找不到，
+ * 界面显示「你已经回答了所有问题」——正在做的访谈就这么断了。
+ */
+function migrateCats(s) {
+  if (!s || typeof s !== 'object') return s;
+  if (s.themeFilter && LEGACY_CAT[s.themeFilter]) s.themeFilter = LEGACY_CAT[s.themeFilter];
+  if (Array.isArray(s.answers)) {
+    for (const a of s.answers) if (a && LEGACY_CAT[a.cat]) a.cat = LEGACY_CAT[a.cat];
+  }
+  return s;
+}
+
+function loadState()  { try { return migrateCats(JSON.parse(localStorage.getItem(SK))) || defState(); } catch (err) { console.warn('存档读取失败，从空白开始：', err); return defState(); } }
 function saveState()  { localStorage.setItem(SK, JSON.stringify(state)); }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -395,7 +565,7 @@ function pickNext(analysis) {
 
   // 优先级 1：历史时空催化（满足年份+地点，且全程 < 2 次）
   if (analysis && !analysis.isEvasion && historicalUsed < 2 && analysis.year) {
-    const hist = HISTORICAL.find(h => {
+    const hist = historicalBank().find(h => {
       if (usedIds.includes(h.id)) return false;
       const inRange = analysis.year >= h.yearRange[0] && analysis.year <= h.yearRange[1];
       if (!inRange) return false;
@@ -404,16 +574,18 @@ function pickNext(analysis) {
     });
     if (hist && matchesTheme(hist)) {
       state.historicalUsed++;
-      const text = hist.text
-        .replace('{location}', analysis.location || '那里')
+      const text = qText(hist)
+        .replace('{location}', analysis.location || t('ls_that_place'))
         .replace('{year}', String(analysis.year));
       return { ...hist, type: 'historical', text };
     }
   }
 
   // 优先级 3：下一道锚点题
+  // text 在这里就解析成字符串——下游（渲染、存档、传给模型）拿到的一律是字符串，
+  // 不用到处判断"这是不是三语对象"。
   const anchor = ANCHORS.find(q => !usedIds.includes(q.id) && matchesTheme(q));
-  if (anchor) return { ...anchor, type: 'anchor' };
+  if (anchor) return { ...anchor, type: 'anchor', text: qText(anchor) };
 
   return null;
 }
@@ -535,7 +707,7 @@ async function nextTurn(analysis, lastAnswer) {
   const next = pickNext(analysis);
   if (!next) {
     const msg = state.themeFilter
-      ? `"${state.themeFilter}" 主题的问题都答完了！要继续回答其他主题，还是生成故事？`
+      ? t('ls_theme_done').replace('{cat}', catLabel(state.themeFilter))
       : '你已经回答了所有问题！';
     showBetween(msg, true);
     return;
@@ -559,7 +731,7 @@ function showQ(q, transition) {
   // 展示非追问题（锚点/历史题）即进入新锚点，重置本锚点追问计数；
   // 覆盖所有换题路径（含回避软着陆、每8题提示后继续），避免追问额度跨锚点泄漏。
   if (q.type !== 'followup') state.followupCount = 0;
-  document.getElementById('q-cat').textContent = q.cat;
+  document.getElementById('q-cat').textContent = catLabel(q.cat);
   window.sdfSetText(document.getElementById('q-num'), 'ls_q_num', state.answers.length + 1);
   document.getElementById('q-transition').textContent = transition || '';
   document.getElementById('q-text').textContent = q.text;
@@ -736,7 +908,7 @@ function restForNow() {
   if (availableCats.length > 0 && availableCats.length <= 5) {
     descHtml += `<br><br><strong style="display:block; margin-top:12px; font-size:14px; color:var(--text);">或选择只回答关于某个主题的问题：</strong>`;
     const catBtns = availableCats.map(cat =>
-      `<button type="button" class="btn-start" onclick="setThemeFilter('${cat}'); nextTurn(null);" style="margin:8px 6px 0 0; padding:8px 16px; font-size:13px; background:var(--accentl); color:var(--accent);">仅 ${cat}</button>`
+      `<button type="button" class="btn-start" onclick="setThemeFilter('${cat}'); nextTurn(null);" style="margin:8px 6px 0 0; padding:8px 16px; font-size:13px; background:var(--accentl); color:var(--accent);">${t('ls_only_cat').replace('{cat}', catLabel(cat))}</button>`
     ).join('');
     btnHtml = `<div style="margin-top:16px;">${catBtns}<br>${btnHtml}</div>`;
   }
@@ -749,7 +921,7 @@ function restForNow() {
 function setThemeFilter(theme) {
   state.themeFilter = theme;
   saveState();
-  document.getElementById('w-desc').innerHTML = `<div style="font-size:14px; color:var(--text2);">已筛选：仅回答关于 <strong>${theme}</strong> 的问题<br><button type="button" style="margin-top:8px; padding:6px 12px; background:none; border:1px solid var(--border); border-radius:16px; font-size:12px; cursor:pointer; color:var(--text2);" onclick="state.themeFilter=null; saveState(); restForNow();">清除筛选</button></div>`;
+  document.getElementById('w-desc').innerHTML = `<div style="font-size:14px; color:var(--text2);">${t('ls_filtered').replace('{theme}', `<strong>${catLabel(theme)}</strong>`)}<br><button type="button" style="margin-top:8px; padding:6px 12px; background:none; border:1px solid var(--border); border-radius:16px; font-size:12px; cursor:pointer; color:var(--text2);" onclick="state.themeFilter=null; saveState(); restForNow();">${t('ls_clear_filter')}</button></div>`;
 }
 
 function backFromStory() { show(prevSec); }
@@ -958,11 +1130,11 @@ function updateHdr() {
 
   // 计算剩余题目数
   if (state.themeFilter) {
-    remaining = [...ANCHORS, ...HISTORICAL]
+    remaining = [...ANCHORS, ...historicalBank()]
       .filter(q => !state.usedIds.includes(q.id) && q.cat === state.themeFilter)
       .length;
   } else {
-    remaining = [...ANCHORS, ...HISTORICAL]
+    remaining = [...ANCHORS, ...historicalBank()]
       .filter(q => !state.usedIds.includes(q.id))
       .length;
   }
