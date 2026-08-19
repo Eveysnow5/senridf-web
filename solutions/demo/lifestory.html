@@ -217,7 +217,7 @@
     <p class="q-transition" id="q-transition"></p>
     <p class="q-text" id="q-text"></p>
     <div class="answer-box">
-      <textarea class="answer-ta" id="q-ta" placeholder="在这里写下你的回答…" rows="5"></textarea>
+      <textarea class="answer-ta" id="q-ta" placeholder="在这里写下你的回答…" data-i18n-placeholder="ls_answer_placeholder" rows="5"></textarea>
       <div class="char-hint" id="char-hint"></div>
       <div class="answer-foot">
         <button type="button" class="btn-mic" id="btn-mic" onclick="toggleVoice()">
@@ -638,7 +638,7 @@ async function confirmGenStory() {
   const cats = new Set(state.answers.map(a => a.cat)).size;
 
   const summary = t('ls_gen_summary').replace('{n}', n) +
-    `${privateN > 0 ? `（其中 ${privateN} 条标记为隐私，不会被分析）` : ``}` +
+    `${privateN > 0 ? t('ls_privacy_note').replace('{n}', privateN) : ``}` +
     t('ls_gen_summary_cats').replace('{n}', cats);
 
   if (confirm(summary + '\n\n' + t('ls_gen_confirm'))) {
@@ -652,7 +652,7 @@ async function genStory() {
   show('sec-story');
 
   let progressEl = document.getElementById('story-wrap');
-  progressEl.innerHTML = '<div class="loading"><div class="spinner"></div><span>正在撰写你的故事</span><div style="font-size:12px; color:var(--text2); margin-top:8px;">这可能需要 30-60 秒…</div></div>';
+  progressEl.innerHTML = `<div class="loading"><div class="spinner"></div><span>${t('ls_writing')}</span><div style="font-size:12px; color:var(--text2); margin-top:8px;">${t('ls_writing_note')}</div></div>`;
 
   let progressTimer = setInterval(() => {
     const dots = progressEl.querySelector('span');
@@ -687,10 +687,10 @@ async function genStory() {
   } catch (e) {
     clearInterval(progressTimer);
     const errMsg = e.name === 'AbortError'
-      ? '生成超时（服务器响应过慢）。请稍后重试。'
-      : `生成失败：${e.message}`;
+      ? t('ls_gen_timeout')
+      : t('ls_gen_failed') + e.message;
     document.getElementById('story-wrap').innerHTML =
-      `<div class="err">${errMsg}<br><button onclick="genStory()" style="margin-top:10px; padding:6px 16px; background:var(--accent); color:#fff; border:none; border-radius:16px; cursor:pointer; font-size:13px;">重新生成</button></div>`;
+      `<div class="err">${errMsg}<br><button onclick="genStory()" style="margin-top:10px; padding:6px 16px; background:var(--accent); color:#fff; border:none; border-radius:16px; cursor:pointer; font-size:13px;">${t('ls_regenerate')}</button></div>`;
   }
 }
 
@@ -702,13 +702,13 @@ async function genStory() {
 async function nextTurn(analysis, lastAnswer) {
   show('sec-loading');
   document.getElementById('loading-msg').textContent =
-    lastAnswer ? '正在思考下一个问题…' : '正在准备问题…';
+    lastAnswer ? t('ls_loading_msg') : t('ls_loading_first');
 
   const next = pickNext(analysis);
   if (!next) {
     const msg = state.themeFilter
       ? t('ls_theme_done').replace('{cat}', catLabel(state.themeFilter))
-      : '你已经回答了所有问题！';
+      : t('ls_all_answered');
     showBetween(msg, true);
     return;
   }
@@ -744,7 +744,7 @@ function showQ(q, transition) {
   // 检查是否有未提交的草稿
   if (state.draft.qId === q.id && state.draft.text) {
     const msg = document.getElementById('q-err');
-    msg.innerHTML = `<div class="err">✓ 检测到未提交的回答，已为你恢复。</div>`;
+    msg.innerHTML = `<div class="err">${t('ls_restored')}</div>`;
     document.getElementById('q-ta').value = state.draft.text;
     document.getElementById('privacy-chk').checked = state.draft.privacy;
     state.draft = { qId: null, text: '', privacy: false };
@@ -759,7 +759,7 @@ async function submitAnswer() {
   const answer = document.getElementById('q-ta').value.trim();
   if (!answer) {
     document.getElementById('q-err').innerHTML =
-      '<div class="err">请先写下你的回答，或者点"跳过这题"。</div>';
+      `<div class="err">${t('ls_need_answer')}</div>`;
     return;
   }
 
@@ -783,7 +783,7 @@ async function submitAnswer() {
     // 网络失败：显示重试对话框
     show('sec-q');
     const msg = document.getElementById('q-err');
-    msg.innerHTML = `<div class="err">提交失败：${err.message}<br><button onclick="submitAnswer()" style="margin-top:10px; padding:6px 16px; background:var(--accent); color:#fff; border:none; border-radius:16px; cursor:pointer; font-size:13px;">重试</button></div>`;
+    msg.innerHTML = `<div class="err">${t('ls_submit_failed')}${err.message}<br><button onclick="submitAnswer()" style="margin-top:10px; padding:6px 16px; background:var(--accent); color:#fff; border:none; border-radius:16px; cursor:pointer; font-size:13px;">${t('ls_retry')}</button></div>`;
     return;
   }
 
@@ -822,7 +822,7 @@ async function submitAnswer() {
 
   // 每答完 8 题提示一次"可以生成故事了"
   if (state.answers.length > 0 && state.answers.length % 8 === 0) {
-    showBetween(`已回答 ${state.answers.length} 题，现在可以生成故事，或者继续深入。`, false);
+    showBetween(t('ls_can_gen_now').replace('{n}', state.answers.length), false);
     return;
   }
 
@@ -850,15 +850,15 @@ function skipCurrent() {
 }
 
 function showSoftLanding(msg) {
-  const defaultMsg = '没关系，有些经历确实适合存放在心底。\n我们换个方向聊聊别的。';
+  const defaultMsg = t('ls_soft_landing');
   document.getElementById('soft-msg').textContent = msg || defaultMsg;
   show('sec-soft');
 }
 
 function showBetween(desc, allDone) {
   const n = state.answers.length;
-  document.getElementById('bw-title').textContent = allDone ? '了不起' : '这里是一个好的停顿';
-  document.getElementById('bw-desc').textContent = desc || `你已经分享了 ${n} 个故事片段。`;
+  document.getElementById('bw-title').textContent = allDone ? t('ls_well_done') : t('ls_good_pause');
+  document.getElementById('bw-desc').textContent = desc || t('ls_shared_n').replace('{n}', n);
 
   const recent = state.answers.slice(-3);
   document.getElementById('bw-list').innerHTML = recent.map(a => `
@@ -902,13 +902,13 @@ function restForNow() {
   const availableCats = [...new Set([...ANCHORS].map(q => q.cat))]
     .filter(cat => !answeredCats.has(cat));
 
-  let descHtml = `你已经分享了 ${n} 个故事片段。<br>随时回来继续，你的答案都保存好了。`;
-  let btnHtml = '<button type="button" class="btn-start" onclick="nextTurn(null)" style="margin-top:12px;">继续 →</button>';
+  let descHtml = t('ls_shared_n').replace('{n}', n) + '<br>' + t('ls_come_back');
+  let btnHtml = `<button type="button" class="btn-start" onclick="nextTurn(null)" style="margin-top:12px;">${t('ls_btn_continue')}</button>`;
 
   if (availableCats.length > 0 && availableCats.length <= 5) {
-    descHtml += `<br><br><strong style="display:block; margin-top:12px; font-size:14px; color:var(--text);">或选择只回答关于某个主题的问题：</strong>`;
+    descHtml += `<br><br><strong style="display:block; margin-top:12px; font-size:14px; color:var(--text);">${t('ls_or_pick_theme')}</strong>`;
     const catBtns = availableCats.map(cat =>
-      `<button type="button" class="btn-start" onclick="setThemeFilter('${cat}'); nextTurn(null);" style="margin:8px 6px 0 0; padding:8px 16px; font-size:13px; background:var(--accentl); color:var(--accent);">${t('ls_only_cat').replace('{cat}', catLabel(cat))}</button>`
+      `<button type="button" class="btn-start" onclick="setThemeFilter('${cat}'); nextTurn(null);" style="margin:8px 6px 0 0; padding:8px 16px; font-size:13px; background:var(--accentl); color:var(--accent);">${t('ls_only_theme').replace('{cat}', catLabel(cat))}</button>`
     ).join('');
     btnHtml = `<div style="margin-top:16px;">${catBtns}<br>${btnHtml}</div>`;
   }
@@ -966,7 +966,7 @@ function importData(event) {
 
       // 数据验证：检查必要字段
       if (!imported.answers || !Array.isArray(imported.answers)) {
-        throw new Error('数据格式错误：缺少 answers 数组');
+        throw new Error(t('ls_bad_format'));
       }
 
       if (!confirm(t('ls_confirm_import').replace('{n}', imported.answers.length))) {
@@ -1159,9 +1159,9 @@ if (state.answers.length > 0) {
 
   window.sdfSetText(document.getElementById('w-title'), 'ls_welcome_back');
   document.getElementById('w-desc').innerHTML =
-    `你已经分享了 <strong>${state.answers.length}</strong> 个故事片段<br>` +
-    `涉及 <strong>${cats}</strong> 个主题，共约 <strong>${Math.round(chars/1000)*1000 || chars}</strong> 字。<br>` +
-    `准备好继续了吗？`;
+    t('ls_sum_shared').replace('{n}', `<strong>${state.answers.length}</strong>`) + '<br>' +
+    t('ls_sum_themes').replace('{c}', `<strong>${cats}</strong>`).replace('{n}', `<strong>${Math.round(chars/1000)*1000 || chars}</strong>`) + '<br>' +
+    t('ls_sum_ready');
   window.sdfSetText(document.getElementById('btn-start'), 'ls_btn_continue');
   if (state.lastStory) document.getElementById('btn-prev-story').classList.remove('hidden');
 }

@@ -184,3 +184,95 @@ test('没有对应键的元素保持原样，不会被清空', () => {
   win.sdfApplyI18n();
   assert.equal(el.textContent, '原有文字');
 });
+
+// ── 人生故事三语化（2026-08-19）─────────────────────────────────────────────
+// 静态断言只能证明"键存在、页面引用了它"。**切到日语后实际拿到的是不是日文**
+// 得真跑一遍才知道——上一轮就是靠静态检查判断"做完了"，结果日语界面里
+// 运行时文案全是中文。
+
+test('sdfLang 返回当前语言（人生故事靠它决定后端提示词的语言）', () => {
+  assert.equal(boot('ja').win.sdfLang(), 'ja');
+  assert.equal(boot('en').win.sdfLang(), 'en');
+  assert.equal(boot('zh').win.sdfLang(), 'zh');
+});
+
+test('人生故事的整句文案切到日语后确实是日文，不是中文', () => {
+  const ja = boot('ja').win;
+  const zh = boot('zh').win;
+  // 只对**整句**要求含假名。短标签（原点 / 家族 / 挫折）纯汉字是正当日语，
+  // 其中 挫折 中日完全同形——对它们用同一把尺子会误报。
+  for (const key of [
+    'ls_loading_msg',
+    'ls_all_answered',
+    'ls_need_answer',
+    'ls_soft_landing',
+    'ls_shared_n',
+    'ls_sum_ready',
+  ]) {
+    const v = ja.sdfT(key);
+    assert.notEqual(v, key, `${key} 在 ja 里缺失，回落成了 key 本身`);
+    assert.notEqual(v, zh.sdfT(key), `${key} 的日文和中文一模一样，多半是漏翻`);
+    // 整句日文不可能一个假名都没有；没有就说明是把中文原样搬过去了
+    assert.match(v, /[ぁ-んァ-ヶ]/, `${key} 的日文里没有假名：${v}`);
+  }
+});
+
+test('15 个主题标签三语齐全，且日文不是把中文原样照搬', () => {
+  const ja = boot('ja').win;
+  const zh = boot('zh').win;
+  const keys = [
+    'origin',
+    'family',
+    'growing',
+    'work',
+    'turning',
+    'bonds',
+    'setback',
+    'passion',
+    'inner',
+    'values',
+    'money',
+    'influence',
+    'regret',
+    'mark',
+    'legacy',
+  ].map((k) => `ls_cat_${k}`);
+  let differ = 0;
+  for (const key of keys) {
+    const v = ja.sdfT(key);
+    assert.notEqual(v, key, `${key} 在 ja 里缺失`);
+    assert.ok(v.length <= 8, `${key} 的日文太长，不像标签：${v}`);
+    if (v !== zh.sdfT(key)) differ++;
+  }
+  // 中日同形的词（挫折・価値観 等）确实存在，但不可能 15 个全同形——
+  // 全同形就说明整块是复制过去的。
+  assert.ok(differ >= 10, `15 个标签里只有 ${differ} 个与中文不同，像是整块照搬`);
+});
+
+test('人生故事的运行时文案切到英文后不含汉字', () => {
+  const en = boot('en').win;
+  for (const key of [
+    'ls_loading_msg',
+    'ls_all_answered',
+    'ls_need_answer',
+    'ls_soft_landing',
+    'ls_shared_n',
+    'ls_sum_ready',
+    'ls_cat_origin',
+    'ls_cat_money',
+  ]) {
+    const v = en.sdfT(key);
+    assert.notEqual(v, key, `${key} 在 en 里缺失`);
+    assert.doesNotMatch(v, /[一-鿿ぁ-んァ-ヶ]/, `${key} 的英文里混进了汉字/假名：${v}`);
+  }
+});
+
+test('带占位符的文案三语都保留了占位符（丢了就永远显示 {n}）', () => {
+  for (const lang of ['zh', 'ja', 'en']) {
+    const w = boot(lang).win;
+    assert.match(w.sdfT('ls_shared_n'), /\{n\}/, `${lang} 的 ls_shared_n 丢了 {n}`);
+    assert.match(w.sdfT('ls_can_gen_now'), /\{n\}/, `${lang} 的 ls_can_gen_now 丢了 {n}`);
+    assert.match(w.sdfT('ls_sum_themes'), /\{c\}/, `${lang} 的 ls_sum_themes 丢了 {c}`);
+    assert.match(w.sdfT('ls_sum_themes'), /\{n\}/, `${lang} 的 ls_sum_themes 丢了 {n}`);
+  }
+});
