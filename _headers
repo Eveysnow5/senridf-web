@@ -17,11 +17,12 @@
 #   Content-Security-Policy 即可转为强制拦截。
 # 【白名单来源出处】fonts.googleapis/gstatic=Google字体；www.gstatic=Firebase SDK；*.googleapis.com
 #   +securetoken.google.com=Firebase后端；api.deepgram.com(+wss)=语音；sdf-admin.*.workers.dev=管理后台
-#   Worker；cdn.jsdelivr/cdnjs.cloudflare=marked/dompurify/pdf.js/mammoth/xlsx(均带SRI)；cloudflareinsights=CF分析。
+#   Worker；cdn.jsdelivr/cdnjs.cloudflare=marked/dompurify/pdf.js/mammoth/xlsx(均带SRI)；cloudflareinsights=CF分析；
+#   api.github.com=admin 发布后轮询镜像仓库 HEAD 确认上线（admin/index.html、admin/blog/index.html）。
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), camera=(), microphone=(self)
   Strict-Transport-Security: max-age=31536000; includeSubDomains
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://securetoken.google.com https://api.deepgram.com wss://api.deepgram.com https://sdf-admin.sherlockafa.workers.dev https://static.cloudflareinsights.com https://cloudflareinsights.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://securetoken.google.com https://api.deepgram.com wss://api.deepgram.com https://sdf-admin.sherlockafa.workers.dev https://api.github.com https://static.cloudflareinsights.com https://cloudflareinsights.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'
