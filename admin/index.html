@@ -392,6 +392,7 @@ function finishEdit(commit) {
 import { auth, db } from '/js/shared/firebase-init.js';
 import { initErrorReporting } from '/js/shared/report-error.js';
 import { isAdmin } from '/js/shared/admins.js';
+import { pollMirrorHead } from '/js/shared/deploy-poll.js';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 
@@ -427,17 +428,23 @@ async function loadContent() {
 
 async function waitForDeploy(commitSha, statusEl) {
   statusEl.className = 'status'; statusEl.textContent = '✓ 已保存，同步部署中…（约2-3分钟）';
-  for (let i = 0; i < 15; i++) {
-    await new Promise(r => setTimeout(r, 20000));
-    try {
-      const res = await fetch(MIRROR_API);
-      const data = await res.json();
-      if (data.sha === commitSha) {
-        statusEl.className = 'status ok';
-        statusEl.textContent = '✓ 已上线（如未见变化，等约1分钟后刷新网站）';
-        return;
-      }
-    } catch { /* 网络抖动，继续轮询 */ }
+  const r = await pollMirrorHead({
+    url: MIRROR_API,
+    commitSha,
+    fetchImpl: (u) => fetch(u),
+    sleep: (ms) => new Promise((done) => setTimeout(done, ms)),
+  });
+  if (r.state === 'synced') {
+    statusEl.className = 'status ok';
+    statusEl.textContent = '✓ 已上线（如未见变化，等约1分钟后刷新网站）';
+    return;
+  }
+  if (r.state === 'unreachable') {
+    // 一次都没查到 ≠ 部署慢。说出原因，否则 CSP 拦截、限流、断网都长一样。
+    statusEl.className = 'status err';
+    statusEl.textContent = `已保存；但一次都没查到镜像状态（${r.lastError?.message || '原因未知'}），请直接打开网站确认`;
+    console.warn('镜像状态查询全程失败，最后一次错误：', r.lastError);
+    return;
   }
   statusEl.textContent = '已保存；上线状态未确认，稍后可直接查看网站';
 }

@@ -207,6 +207,7 @@
       <button type="button" class="btn-save" onclick="publishPost()">发布</button>
       <button type="button" class="btn-link" onclick="cancelCompose()">取消</button>
       <span id="compose-publish-status" class="status"></span>
+      <span id="draft-status" class="status"></span>
     </div>
   </div>
 </div>
@@ -451,6 +452,7 @@ function handleInlineImageFile(file) {
 import { auth, db } from '/js/shared/firebase-init.js';
 import { initErrorReporting } from '/js/shared/report-error.js';
 import { isAdmin } from '/js/shared/admins.js';
+import { pollMirrorHead } from '/js/shared/deploy-poll.js';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import { doc, setDoc, getDoc, serverTimestamp }
@@ -481,17 +483,23 @@ async function api(method, path, body) {
 
 async function waitForDeploy(commitSha, statusEl) {
   statusEl.className = 'status'; statusEl.textContent = '✓ 已保存，同步部署中…（约2-3分钟）';
-  for (let i = 0; i < 15; i++) {
-    await new Promise(r => setTimeout(r, 20000));
-    try {
-      const res = await fetch(MIRROR_API);
-      const data = await res.json();
-      if (data.sha === commitSha) {
-        statusEl.className = 'status ok';
-        statusEl.textContent = '✓ 已上线（如未见变化，等约1分钟后刷新网站）';
-        return;
-      }
-    } catch { /* 网络抖动，继续轮询 */ }
+  const r = await pollMirrorHead({
+    url: MIRROR_API,
+    commitSha,
+    fetchImpl: (u) => fetch(u),
+    sleep: (ms) => new Promise((done) => setTimeout(done, ms)),
+  });
+  if (r.state === 'synced') {
+    statusEl.className = 'status ok';
+    statusEl.textContent = '✓ 已上线（如未见变化，等约1分钟后刷新网站）';
+    return;
+  }
+  if (r.state === 'unreachable') {
+    // 一次都没查到 ≠ 部署慢。说出原因，否则 CSP 拦截、限流、断网都长一样。
+    statusEl.className = 'status err';
+    statusEl.textContent = `已保存；但一次都没查到镜像状态（${r.lastError?.message || '原因未知'}），请直接打开网站确认`;
+    console.warn('镜像状态查询全程失败，最后一次错误：', r.lastError);
+    return;
   }
   statusEl.textContent = '已保存；上线状态未确认，稍后可直接查看网站';
 }
@@ -504,6 +512,7 @@ window.loadBlogPosts = async function () {
 
 window.saveDraft = async function () {
   if (!composeState) return;
+  const el = document.getElementById('draft-status');
   try {
     const { cover, coverChanged, ...rest } = composeState;
     await setDoc(doc(db, 'blog_drafts', 'current'), {
@@ -511,8 +520,19 @@ window.saveDraft = async function () {
       published: false,
       updatedAt: serverTimestamp(),
     });
-  } catch {
-    /* 草稿保存失败不打断撰写，只是少一层保险 */
+    if (el) {
+      el.className = 'status';
+      el.textContent = `草稿已存 ${new Date().toTimeString().slice(0, 5)}`;
+    }
+  } catch (err) {
+    // 保存失败不打断撰写，但**必须让作者看见**：原先这里是空的，
+    // 而自动保存成功时也没任何提示——于是"一直在存"和"一次都没存上"
+    // 在界面上长得一模一样，直到浏览器崩了才发现什么都没恢复。
+    console.warn('草稿自动保存失败：', err);
+    if (el) {
+      el.className = 'status err';
+      el.textContent = '⚠ 草稿未能保存，请自行备份正文';
+    }
   }
 };
 
@@ -534,8 +554,9 @@ window.checkDraft = async function () {
     composeOtherLang = 'ja';
     renderCompose();
     document.getElementById('blog-compose').hidden = false;
-  } catch {
-    /* 读取失败忽略，不阻塞正常使用 */
+  } catch (err) {
+    // 不阻塞正常使用，但要留痕：读不到草稿和“本来就没草稿”在界面上无法区分。
+    console.warn('草稿读取失败：', err);
   }
 };
 

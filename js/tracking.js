@@ -57,7 +57,11 @@ async function track() {
       page: getPageName(),
       device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
     });
-  } catch {}
+  } catch (err) {
+    // 不影响页面使用，但不能一声不吽：匿名登录或 visits 写入持续失败时，
+    // 后台统计会静静归零——而"没人访问"和"统计坏了"在图表上长得一模一样。
+    console.warn('访问统计未记录：', err);
+  }
 }
 
 function finish() {
