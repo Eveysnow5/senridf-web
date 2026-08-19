@@ -89,6 +89,31 @@ test('前端三个调用点都带上了界面语言', () => {
   assert.match(s, /window\.sdfLang \? window\.sdfLang\(\) : 'zh'/, 'uiLang 回落写法变了');
 });
 
+// 2026-08-19：删掉 action === 'analyze' 时加的。它是两步走旧设计的残骸，
+// 前端调用早在 865a8d7 就删了，服务端分支却留着——那次清理只做了一半。
+// 代价不是"多几行代码"：它自带一份分析提示词，活着的那份后来长出了整块
+// 访谈规则，加语言指令时也只有活的那份跟上了。**改活的那份时不会想起死的那份。**
+// 这条断言让"服务端留了个没人调的分支"变成红灯。
+test('服务端接受的 action 与前端实际发出的完全一致', () => {
+  const server = readFileSync(path.join(ROOT, 'functions', 'api', 'lifestory.js'), 'utf8');
+  const page = readFileSync(path.join(ROOT, 'solutions', 'demo', 'lifestory.html'), 'utf8');
+
+  // 只认 if 判断里的，避免把注释里提到的旧名字算进来
+  const accepted = [...server.matchAll(/if \(action === '(\w+)'\)/g)].map((m) => m[1]).sort();
+  const sent = [...new Set([...page.matchAll(/action: '(\w+)'/g)].map((m) => m[1]))].sort();
+
+  assert.ok(accepted.length >= 3, `只解析到 ${accepted.length} 个服务端 action，护栏失效`);
+  assert.deepEqual(
+    accepted,
+    sent,
+    `服务端与前端的 action 集合不一致。\n服务端：${accepted.join(', ')}\n前端：${sent.join(', ')}`,
+  );
+  // 删干净了：连同它那份提示词一起。
+  // 只认**定义**，不认名字——文件顶部的注释里写了它为什么被删，
+  // 用 /SYS_ANALYZE/ 会被那段注释满足（实测红过一次）。
+  assert.doesNotMatch(server, /const SYS_ANALYZE/, '第二份分析提示词又回来了');
+});
+
 test('main.js 暴露了 sdfLang（页面拿不到语言就只能一直发 zh）', () => {
   const s = readFileSync(path.join(ROOT, 'js', 'main.js'), 'utf8');
   assert.match(s, /window\.sdfLang = function \(\) \{\s*return currentLang;/);

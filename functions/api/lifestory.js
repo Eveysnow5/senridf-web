@@ -29,24 +29,13 @@ async function qwen(apiKey, system, user, maxTokens = 800, temp = 0.7, onUsage) 
   return data.choices[0].message.content.trim();
 }
 
-const SYS_ANALYZE =
-  '你是一个访谈对话分析系统。分析用户对问题的回答，提取结构化信息。\n' +
-  '严格输出 JSON，不要代码块，不要其他文字：\n' +
-  '{\n' +
-  '  "tags": [],\n' +
-  '  "year": null,\n' +
-  '  "location": null,\n' +
-  '  "isEvasion": false,\n' +
-  '  "evasionType": null,\n' +
-  '  "softLanding": null\n' +
-  '}\n' +
-  'tags 从以下词汇中选择：entrepreneur startup quit_job career_change fired achievement\n' +
-  'parent_conflict family_pressure expectation sibling marriage divorce partner loneliness\n' +
-  'isolation friendship betrayal migration moved abroad cultural_shock belonging death loss\n' +
-  'grief illness health art music writing creative design performance study university teacher\n' +
-  'finance debt wealthy poor investment faith religion belief spiritual identity culture heritage\n' +
-  'fairness justice courage sacrifice risk';
-
+// 2026-08-19 删掉了 action === 'analyze' 分支与它的 SYS_ANALYZE。
+// 它是两步走的旧设计（先分析、再决定下一题），后来被 probe 取代（一次调用
+// 同时拿回分析与追问）。865a8d7 删掉了前端的 callAnalyze，但只删了一半，
+// 服务端分支留了下来，此后一年多零调用者。
+// 留着的代价是实打实的：它自带一份分析提示词，而活着的那份（_lib/lifestory-probe.js）
+// 后来长出了整块访谈规则；2026-08-19 加语言指令时也只有活的那份跟上了——
+// 改活的那份时根本不会想起还有一份死的。未知 action 走末尾的 400，行为干净。
 const bridgeSys = (lang) =>
   '你负责生成访谈中的衔接语：读取用户的上一条回答，生成一句连接到下一个问题的过渡句。\n' +
   '规则：\n' +
@@ -118,46 +107,6 @@ export async function onRequest(context) {
   const h = { 'Content-Type': 'application/json' };
 
   try {
-    if (action === 'analyze') {
-      const { question, answer, recentHistory = [], knownTags = [] } = body;
-      if (!question || !answer) {
-        return new Response(JSON.stringify({ error: '缺少 question/answer' }), {
-          status: 400,
-          headers: h,
-        });
-      }
-      const histText = recentHistory
-        .slice(-4)
-        .map((a) => `问：${a.question}\n答：${a.answer}`)
-        .join('\n\n');
-      const userPrompt = [
-        histText ? `最近的对话：\n${histText}\n\n` : '',
-        `当前问答：\n问：${question}\n答：${answer}`,
-        knownTags.length ? `\n\n已知标签：${knownTags.join('、')}` : '',
-        '\n\n请分析并输出JSON：',
-      ].join('');
-      const raw = await qwen(apiKey, SYS_ANALYZE, userPrompt, 450, 0.2, rec);
-      let analysis;
-      try {
-        analysis = JSON.parse(
-          raw
-            .replace(/```(?:json)?\n?/g, '')
-            .replace(/```/g, '')
-            .trim(),
-        );
-      } catch {
-        analysis = {
-          tags: [],
-          year: null,
-          location: null,
-          isEvasion: false,
-          evasionType: null,
-          softLanding: null,
-        };
-      }
-      return new Response(JSON.stringify({ analysis }), { headers: h });
-    }
-
     if (action === 'probe') {
       const { question, answer, recentHistory = [], knownTags = [] } = body;
       if (!question || !answer) {
