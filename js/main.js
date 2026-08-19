@@ -1622,7 +1622,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('[main] applyImages failed:', err);
       }
     })
-    .catch(() => {})
+    .catch((err) => console.warn('[main] content.json 加载失败，页面用的是内置兜底文案：', err))
     .finally(() => {
       try {
         applyTranslations(currentLang);

@@ -32,7 +32,7 @@ export function trackVisit({ db, email, anonId, page, device }) {
       expireAt: Timestamp.fromMillis(Date.now() + RETENTION_MS),
     },
     { merge: true },
-  ).catch(() => {});
+  ).catch((err) => console.warn('[visits] 写入失败，这次访问不会出现在后台统计里：', err));
   return docId;
 }
 
@@ -41,5 +41,5 @@ export function updateVisitDuration({ db, docId, duration }) {
   updateDoc(doc(db, 'visits', docId), {
     duration,
     expireAt: Timestamp.fromMillis(Date.now() + RETENTION_MS),
-  }).catch(() => {});
+  }).catch((err) => console.warn('[visits] 停留时长写入失败：', err));
 }

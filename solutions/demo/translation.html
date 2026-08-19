@@ -2028,7 +2028,7 @@ function loadGlossary() {
     .then((snap) => {
       window.sdfGlossary = snap.docs.map((d) => d.data());
     })
-    .catch(() => {});
+    .catch((err) => console.warn('[glossary] 术语表读取失败，翻译将不带术语：', err));
 }
 mountAuthGate({
   auth,

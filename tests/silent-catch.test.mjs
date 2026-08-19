@@ -32,7 +32,12 @@ test('护栏自身有效：扫到了文件', () => {
 });
 
 // 只匹配**一层**花括号内没有任何内容的 catch —— 连注释都没有的那种。
-const EMPTY_CATCH = /catch\s*(?:\(\s*\w*\s*\))?\s*\{\s*\}/g;
+//
+// 两种形式都要认。2026-08-19 首版只写了语句形式，结果全站 6 处
+// `.catch(() => {})` 一个都没拦住——其中两处就在 visits 写入上，
+// 统计一旦坏掉会静静归零。**护栏只覆盖了它作者当时想到的那一种写法。**
+const EMPTY_CATCH =
+  /catch\s*(?:\(\s*\w*\s*\))?\s*\{\s*\}|\.catch\s*\(\s*(?:\(\s*\w*\s*\)|\w+)\s*=>\s*\{\s*\}\s*\)|\.catch\s*\(\s*function\s*\(\s*\w*\s*\)\s*\{\s*\}\s*\)/g;
 
 test('没有完全空的 catch —— 吞异常可以，但必须写下为什么', () => {
   const bad = [];
@@ -52,12 +57,27 @@ test('没有完全空的 catch —— 吞异常可以，但必须写下为什么
 
 // 护栏的护栏：确认上面那条正则真的认得出空 catch。
 // 不做这步的话，正则哪天被改坏（比如 \s* 掉了），它会永远绿。
-test('护栏自身有效：正则确实能识别空 catch', () => {
-  for (const s of ['try{}catch{}', 'try{}catch (e){}', 'try{}catch(err) {   }']) {
+test('护栏自身有效：两种写法的空 catch 都认得出', () => {
+  const samples = [
+    'try{}catch{}',
+    'try{}catch (e){}',
+    'try{}catch(err) {   }',
+    'p.catch(() => {})',
+    'p.catch((err) => {})',
+    'p.catch(err => {})',
+    'p.catch(function (e) {})',
+  ];
+  for (const s of samples) {
     assert.match(s, new RegExp(EMPTY_CATCH.source), `认不出：${s}`);
   }
-  // 带注释的不算空
-  assert.doesNotMatch('try{}catch{ /* 说明 */ }', new RegExp(EMPTY_CATCH.source));
+  // 有内容的不算空
+  for (const s of [
+    'try{}catch{ /* 说明 */ }',
+    'p.catch((err) => console.warn(err))',
+    'p.catch(() => { retry(); })',
+  ]) {
+    assert.doesNotMatch(s, new RegExp(EMPTY_CATCH.source), `误报：${s}`);
+  }
 });
 
 test('草稿自动保存的失败会被作者看见（原先成败都没有任何提示）', () => {

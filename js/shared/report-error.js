@@ -42,7 +42,7 @@ export function initErrorReporting({ db }) {
           expireAt: Timestamp.fromMillis(Date.now() + RETENTION_MS),
         },
         { merge: true },
-      ).catch(() => {});
+      ).catch((err) => console.warn('[errors] 错误上报本身写入失败（收集链路断了）：', err));
     } catch {
       /* 上报本身绝不抛错 */
     }

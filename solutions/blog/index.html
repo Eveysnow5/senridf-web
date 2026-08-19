@@ -114,7 +114,7 @@
           renderBlogCards(currentLang);
         }
       })
-      .catch(() => {});
+      .catch((err) => console.warn('[blog] 文章列表加载失败，页面会是空的：', err));
 
     // main.js 的语言按钮通过 addEventListener(() => switchLang(...)) 调用时才查找
     // window.switchLang，可以安全包一层而不改 main.js。
