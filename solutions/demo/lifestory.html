@@ -286,6 +286,9 @@
 // 锚点题 — 覆盖人生大轮廓的必答骨架（按优先级排列）
 // 取译文的快捷入口。main.js 未加载时回落成 key 本身，不让页面炸。
 const t = (k) => (window.sdfT ? window.sdfT(k) : k);
+// 访谈的追问/衔接/成稿都由模型生成，必须跟随界面语言——否则会出现
+// 「日文的问题 + 中文的追问 + 中文的传记」。main.js 没加载时回落 zh。
+const uiLang = () => (window.sdfLang ? window.sdfLang() : 'zh');
 
 const ANCHORS = [
   { id:'a01', cat:'起点',     text:'你是在哪里长大的？那个地方，塑造了你性格里的哪些东西？' },
@@ -438,6 +441,7 @@ async function callProbe(question, answer) {
       question, answer,
       recentHistory: state.answers.slice(-4),
       knownTags: state.tags,
+      lang: uiLang(),
     }),
   });
   const data = await res.json();
@@ -449,7 +453,7 @@ async function callBridge(lastAnswer, nextQuestion) {
   const res = await apiFetch('/api/lifestory', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'bridge', lastAnswer, nextQuestion }),
+    body: JSON.stringify({ action: 'bridge', lastAnswer, nextQuestion, lang: uiLang() }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
@@ -498,7 +502,7 @@ async function genStory() {
       method: 'POST',
       signal: ctrl.signal,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'story', answers: state.answers }),
+      body: JSON.stringify({ action: 'story', answers: state.answers, lang: uiLang() }),
     });
 
     clearTimeout(timeoutId);

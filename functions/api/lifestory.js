@@ -1,5 +1,6 @@
 // Cloudflare Pages Function — lifestory interview actions
 import { buildProbePrompt, parseProbeJson } from './_lib/lifestory-probe.js';
+import { normalizeLang, langSpec, langDirective } from './_lib/lifestory-lang.js';
 import { recordUsage } from './_lib/usageRecorder.js';
 import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
 
@@ -46,16 +47,17 @@ const SYS_ANALYZE =
   'finance debt wealthy poor investment faith religion belief spiritual identity culture heritage\n' +
   'fairness justice courage sacrifice risk';
 
-const SYS_BRIDGE =
+const bridgeSys = (lang) =>
   '你负责生成访谈中的衔接语：读取用户的上一条回答，生成一句连接到下一个问题的过渡句。\n' +
   '规则：\n' +
-  '· 只输出一句话，20到35字之间\n' +
+  `· 只输出一句话，长度 ${langSpec(lang).bridgeLen}\n` +
   '· 从用户回答的具体内容出发（细节、关键词、感受），不要泛泛而谈\n' +
   '· 自然引向下一个问题涉及的主题方向，但不要直接重复问题本身\n' +
   '· 语气克制平实，禁止"太棒了""你真的很勇敢""谢谢你的分享"之类奉承或煽情语\n' +
-  '· 只输出这一句话，不要解释，不要换行，不要引号';
+  '· 只输出这一句话，不要解释，不要换行，不要引号' +
+  langDirective(lang);
 
-const SYS_STORY =
+const storySys = (lang) =>
   '你是传记整理员，将访谈问答整理成第一人称自述文章。\n\n' +
   '═══ 风格规则 ═══\n' +
   '· 写法：白描，纪录片解说词式，克制，不煽情，不渲染\n' +
@@ -68,9 +70,10 @@ const SYS_STORY =
   '3. 推断、猜测、联想、补全——全部禁止\n' +
   '4. 某个维度没有信息则保持空白，完全不写\n\n' +
   '═══ 结构要求 ═══\n' +
-  '· 用 ## 分隔章节，章节名不超过6字\n' +
-  '· 中文写作，直接开始，不写序言和后记\n' +
-  '· 篇幅由素材决定，素材少则写短';
+  `· 用 ## 分隔章节，${langSpec(lang).chapterLen}\n` +
+  `· ${langSpec(lang).storyLine}，直接开始，不写序言和后记\n` +
+  '· 篇幅由素材决定，素材少则写短' +
+  langDirective(lang);
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -110,6 +113,8 @@ export async function onRequest(context) {
   }
 
   const { action } = body;
+  // 界面语言。认不出就回落 zh —— 这是不可信输入，不能直接拼进提示词。
+  const lang = normalizeLang(body.lang);
   const h = { 'Content-Type': 'application/json' };
 
   try {
@@ -164,7 +169,7 @@ export async function onRequest(context) {
       const raw = await qwen(
         apiKey,
         '你是访谈分析与追问系统，严格按用户消息的要求只输出 JSON。',
-        buildProbePrompt(question, answer, recentHistory, knownTags),
+        buildProbePrompt(question, answer, recentHistory, knownTags, lang),
         500,
         0.5,
         rec,
@@ -183,7 +188,7 @@ export async function onRequest(context) {
       }
       const bridge = await qwen(
         apiKey,
-        SYS_BRIDGE,
+        bridgeSys(lang),
         `用户刚才的回答：\n${lastAnswer}\n\n即将提出的下一个问题：\n${nextQuestion}\n\n请输出衔接语：`,
         100,
         0.6,
@@ -211,7 +216,7 @@ export async function onRequest(context) {
         .join('\n\n');
       const story = await qwen(
         apiKey,
-        SYS_STORY,
+        storySys(lang),
         `以下是受访者亲口说出的所有信息。请严格基于这些内容撰写，禁止添加任何未提及的细节。标记为 [用户选择不分享] 的部分保持空白。\n\n${qaText}`,
         3000,
         0.5,

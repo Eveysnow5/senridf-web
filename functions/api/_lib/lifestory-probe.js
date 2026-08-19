@@ -1,5 +1,6 @@
 // 服务端纯逻辑：拼「分析+追问」提示词、解析 LLM 输出成 {analysis, followup}。
 // 零依赖，可 node --test。
+import { langDirective } from './lifestory-lang.js';
 
 const TAG_VOCAB =
   'entrepreneur startup quit_job career_change fired achievement parent_conflict family_pressure ' +
@@ -8,7 +9,13 @@ const TAG_VOCAB =
   'design performance study university teacher finance debt wealthy poor investment faith religion ' +
   'belief spiritual identity culture heritage fairness justice courage sacrifice risk';
 
-export function buildProbePrompt(question, answer, recentHistory = [], knownTags = []) {
+export function buildProbePrompt(
+  question,
+  answer,
+  recentHistory = [],
+  knownTags = [],
+  lang = 'zh',
+) {
   const hist = (Array.isArray(recentHistory) ? recentHistory : [])
     .slice(-4)
     .map((a) => `问：${a.question}\n答：${a.answer}`)
@@ -37,7 +44,12 @@ export function buildProbePrompt(question, answer, recentHistory = [], knownTags
 }
 tags 从以下词汇中选择：${TAG_VOCAB}
 
-${hist ? `最近的对话：\n${hist}\n\n` : ''}当前问答：\n问：${question}\n答：${answer}${known}\n\n请分析并输出 JSON：`;
+${hist ? `最近的对话：\n${hist}\n\n` : ''}当前问答：\n问：${question}\n答：${answer}${known}
+${langDirective(lang)}
+注意：followup.question 与 softLanding 是**直接说给受访者听的话**，必须用上面指定的语言；
+tags 仍从上面那份英文词表里选，不翻译。
+
+请分析并输出 JSON：`;
 }
 
 export function parseProbeJson(raw) {

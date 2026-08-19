@@ -1341,6 +1341,11 @@ window.sdfApplyI18n = function () {
   applyTranslations(currentLang);
 };
 
+/** 当前界面语言。给需要把语言传给后端的页面用（人生故事的访谈提示词要跟随它）。 */
+window.sdfLang = function () {
+  return currentLang;
+};
+
 /** 运行时设置 title 属性（同样记 key，切语言时会被重新翻译）。 */
 window.sdfSetTitle = function (el, key) {
   if (!el) return;
