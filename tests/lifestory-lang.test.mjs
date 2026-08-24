@@ -118,3 +118,34 @@ test('main.js 暴露了 sdfLang（页面拿不到语言就只能一直发 zh）'
   const s = readFileSync(path.join(ROOT, 'js', 'main.js'), 'utf8');
   assert.match(s, /window\.sdfLang = function \(\) \{\s*return currentLang;/);
 });
+
+// 2026-08-24：语音识别的语种此前写死 'zh-CN'。08-19 把界面做成三语时没有跟着改，
+// 于是日语用户看到「音声入力」、说日语，被当成普通话识别 —— 出来是乱码，**不报错**。
+// 本工具面向各国中老年用户，语音是主要输入方式，识别语种错了整条路就不通。
+test('语音识别的语种跟随界面语言，而不是写死中文', () => {
+  const s = readFileSync(path.join(ROOT, 'solutions', 'demo', 'lifestory.html'), 'utf8');
+
+  // 三个语种都要有映射
+  assert.match(s, /REC_LANG = \{[^}]*zh: 'zh-CN'[^}]*\}/s, '缺 zh 映射');
+  assert.match(s, /REC_LANG = \{[^}]*ja: 'ja-JP'[^}]*\}/s, '缺 ja 映射');
+  assert.match(s, /REC_LANG = \{[^}]*en: 'en-US'[^}]*\}/s, '缺 en 映射');
+
+  // 必须由 uiLang() 决定，不能是常量
+  assert.match(s, /recognition\.lang = REC_LANG\[uiLang\(\)\]/, '识别语种没有跟随界面语言');
+  assert.doesNotMatch(s, /recognition\.lang = 'zh-CN'/, '又写死成中文了');
+
+  // ★ 关键：必须在**每次开始录音前**设。recognition 只创建一次，
+  // 放进 initRec() 的话，中途切语言不会生效 —— 而且同样不报错。
+  const starts = [...s.matchAll(/recognition\.start\(\)/g)];
+  assert.equal(
+    starts.length,
+    1,
+    `启动路径有 ${starts.length} 条，每条都要先设语种，这条断言要跟着改`,
+  );
+  const before = s.slice(Math.max(0, starts[0].index - 200), starts[0].index);
+  assert.match(before, /applyRecLang\(\)/, 'start() 之前没有设置识别语种');
+
+  // initRec 里不该再设：那等于回到"只在创建时设一次"
+  const initBody = s.slice(s.indexOf('function initRec()'), s.indexOf('function applyRecLang()'));
+  assert.doesNotMatch(initBody, /\.lang =/, 'initRec 里又设了一次，切语言会失效');
+});

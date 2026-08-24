@@ -1012,14 +1012,24 @@ function resetAll() {
 // 语音
 // ══════════════════════════════════════════════════════════════════════════════
 
+// 语音识别的语种必须跟界面语言走。日语用户看到「音声入力」、对着麦克风说日语，
+// 却被当成普通话识别 —— 出来是乱码，而且**不报错**。
+// 本工具面向各国中老年用户，语音是主要输入方式，识别语种错了等于整条路不通。
+const REC_LANG = { zh: 'zh-CN', ja: 'ja-JP', en: 'en-US' };
+
 function initRec() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return false;
   recognition = new SR();
-  recognition.lang = 'zh-CN';
   recognition.continuous = true;   // 不自动停止，手动控制
   recognition.interimResults = true;
   return true;
+}
+
+// 在**每次开始录音时**设，不是 initRec() 里设一次：recognition 只创建一次，
+// 中途切语言的话，init 时设的值会一直沿用下去。
+function applyRecLang() {
+  recognition.lang = REC_LANG[uiLang()] || REC_LANG.zh;
 }
 
 function startRecTimer() {
@@ -1086,6 +1096,7 @@ function toggleVoice() {
     }
     // 不立即显示错误，等 onend 触发后决定是否重试
   };
+  applyRecLang();
   recognition.start();
 }
 
