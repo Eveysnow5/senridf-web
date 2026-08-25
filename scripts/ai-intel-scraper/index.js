@@ -2,7 +2,7 @@ const axios = require('axios');
 const { createHash } = require('crypto');
 const admin = require('firebase-admin');
 const { loadModelConfig } = require('../_lib/model-config');
-const { isTransientCallError, retryDelayMs } = require('../_lib/llm-retry');
+const { isTransientCallError, retryDelayMs, describeCallError } = require('../_lib/llm-retry');
 const { emptyUsage, addUsage, formatUsage } = require('../_lib/llm-usage');
 const SOURCES = require('./sources');
 const { parseFeed, parseListLinks } = require('./parse');
@@ -10,6 +10,7 @@ const { isoWeek } = require('./week');
 const { buildJudgmentPrompt, parseJudgment } = require('./relevance');
 const { shouldRejudge, attemptsOf } = require('./rejudge');
 const { buildDigestPrompt, validateDigestCitations } = require('./digest');
+const { runHealth } = require('./health');
 
 // 政府反爬（如 meti.go.jp）对无 UA / "compatible; XxxScraper" 形式的 UA 返回 403，
 // 必须用完整桌面浏览器 UA 才稳。
@@ -92,7 +93,7 @@ async function judgeWithRetry(item) {
     } catch (err) {
       lastErr = err;
       if (attempt === JUDGE_ATTEMPTS_PER_RUN || !isTransientCallError(err)) break;
-      console.error(`  Judge attempt ${attempt} failed (${err.message}), retrying…`);
+      console.error(`  Judge attempt ${attempt} failed (${describeCallError(err)}), retrying…`);
       await sleep(retryDelayMs(attempt));
     }
   }
@@ -268,7 +269,8 @@ async function main() {
     // weekItems 只作"本轮有无新增"的触发信号；简报按本周全量入库条目构建，
     // 这样同周多次运行（如重试）不会用更少条目覆盖掉更全的简报，且幂等。
     let digestOk = false;
-    if (weekItems.length > 0) {
+    const digestAttempted = weekItems.length > 0;
+    if (digestAttempted) {
       try {
         const weekSnap = await col.where('week', '==', week).get();
         const digestItems = weekSnap.docs.map((d) => {
@@ -293,7 +295,7 @@ async function main() {
         digestOk = ok;
         console.log(`Digest written for ${week} (${digestItems.length} items, citation_ok=${ok})`);
       } catch (err) {
-        console.error(`Digest failed: ${err.message}`);
+        console.error(`Digest failed: ${describeCallError(err)}`);
       }
     }
 
@@ -302,8 +304,22 @@ async function main() {
         `${totals.llm_error} llm-errors, ${totals.rejudged} rejudged (${totals.recovered} recovered).`,
     );
     console.log(formatUsage(usageAcc));
+
+    // "脚本没崩" 不等于 "这轮有产出"。2026-08 连续三周瘫痪都报了 success，
+    // 因为每处失败单独看都被合理地设计成"不中断整轮"。这里重新定义退出码。
+    const health = runHealth({
+      ingested: totals.inserted,
+      filtered: totals.filtered_out,
+      llmErrors: totals.llm_error,
+      digestAttempted,
+      digestWritten: digestOk,
+    });
+    for (const r of health.reasons) console.error(`UNHEALTHY: ${r}`);
+
     await writeRunReport(db, {
       ok: true,
+      healthy: health.ok,
+      unhealthy_reasons: health.reasons,
       week,
       digest_ok: digestOk,
       duration_ms: Date.now() - startedAt,
@@ -311,6 +327,7 @@ async function main() {
       usage: usageAcc,
       sources,
     });
+    return health;
   } catch (err) {
     // 崩掉的那轮更需要知道烧了多少——额度见底正是这条路径的典型成因。
     console.log(formatUsage(usageAcc));
@@ -328,8 +345,15 @@ async function main() {
 }
 
 if (require.main === module) {
-  main().catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
+  main()
+    .then((health) => {
+      // 退出码代表"这轮有没有产出"，不是"脚本有没有崩"。
+      // 不健康就以 1 退出 —— GitHub Actions 会标红并发邮件，
+      // 那是唯一能让人**在下一周之前**知道出事的渠道。
+      if (health && !health.ok) process.exit(1);
+    })
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
 }

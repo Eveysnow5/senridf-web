@@ -3,7 +3,7 @@ const cheerio = require('cheerio');
 const { createHash } = require('crypto');
 const admin = require('firebase-admin');
 const { loadModelConfig } = require('../_lib/model-config');
-const { isTransientCallError, retryDelayMs } = require('../_lib/llm-retry');
+const { isTransientCallError, retryDelayMs, describeCallError } = require('../_lib/llm-retry');
 const { emptyUsage, addUsage, formatUsage } = require('../_lib/llm-usage');
 const {
   isClosed,
@@ -180,7 +180,7 @@ async function translateWithRetry(bid) {
     } catch (err) {
       lastErr = err;
       if (attempt === TRANSLATE_ATTEMPTS_PER_RUN || !isTransientCallError(err)) break;
-      console.error(`  Translate attempt ${attempt} failed (${err.message}), retrying…`);
+      console.error(`  Translate attempt ${attempt} failed (${describeCallError(err)}), retrying…`);
       await sleep(retryDelayMs(attempt));
     }
   }
@@ -288,7 +288,7 @@ async function main() {
         try {
           summary = await translateWithRetry(bid);
         } catch (err) {
-          console.error(`  Translation failed for "${bid.title}": ${err.message}`);
+          console.error(`  Translation failed for "${bid.title}": ${describeCallError(err)}`);
           totals.translate_failed++;
         }
 

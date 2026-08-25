@@ -110,12 +110,40 @@ export const CHAT_ENDPOINT = 'https://dashscope.aliyuncs.com/compatible-mode/v1/
 // （爬虫约 200K/月 + 交互工具几十 K），到 11-01 约 2.7 个月——**贴着边**。
 // 观测点是百炼控制台的「模型用量」；若消耗快于预期，先关掉四个非流式端点
 // 的 thinking（推理 token 同样计费却被直接丢弃），那是最便宜的止血。
+// ⚠️⚠️ 2026-08-24：qwen3.8-max **已用尽**（控制台「我的试用」显示 0 tokens / 0%）。
+// 08-13 那条预言应验了，而且比预期早：三个档位同时指向它，于是翻译、会议纪要、
+// 文档分析、校对、人生故事、招标摘要、AI 情报、后台一键同步日英**全部 403**，
+// 只有走 fast 的实时口译幸免。
+//
+// 症状是怎么被发现的，值得记：**不是靠监控，是靠作者发现 AI 情报页停在 W31**。
+// GitHub Actions 连续四周报 success（简报失败被设计成"不中断整轮"），
+// 而 403 的响应体没被记录，日志里只有 "Request failed with status code 403"。
+// 中间三周各死一种（103×403 / 60s 超时 / 49×403），一次都没人知道。
+//
+// 换成控制台里还满额的两个**同家族**模型。跨家族（kimi-k3、deepseek-v4-*）
+// 额度也满，但上面那条否决仍然成立：招标摘要要稳定输出【内容】【发注元】【截标】、
+// 会议纪要要输出【议题】【客户反馈】【行动项】，格式漂移只在无人值守时发作。
 export const TIERS = {
-  strong: 'qwen3.8-max',
-  balanced: 'qwen3.8-max',
-  fast: 'qwen3.7-flash',
-  batch: 'qwen3.8-max',
+  strong: 'qwen3.8-2.4t-a95b', // 100%，2026-11-12 到期
+  balanced: 'qwen3.8-27b', // 100%，2026-11-18 到期
+  fast: 'qwen3.7-flash', // 余量未核实，见下方待办
+  batch: 'qwen3.8-2.4t-a95b', // 与 strong 共桶 —— 妥协，见下
 };
+
+// ⚠️ **batch 与 strong 共桶是妥协，不是设计。** 上面写着"batch 单独一个模型是
+// 刻意的：爬虫每晚成批跑，否则会喝掉白天交互工具依赖的那个桶"——这条判断没变，
+// 只是控制台里**同家族且满额的文本模型只剩这两个**（作者只翻了第一页，共 486 个
+// 模型 / 49 页，很可能还有）。
+// 选择让 batch 跟 strong 共桶而不是跟 balanced：balanced 挂着 analyze，
+// 而 analyze 单次约 23.7K token、08-13 一天烧掉 451K，是全站最大的消耗源；
+// strong 那几个任务（翻译/校对/后台同步）量小且不定期。
+//
+// 🧑 待办：在控制台「我的试用」用模型名搜索框确认这几个的余量，
+// 若有同家族、满额、到期晚于 11-12 的第三个文本模型，就把 batch 拆出去：
+//   qwen3.7-flash（fast 正在用，余量未知）· qwen3.8-flash · qwen3.7-plus
+//   qwen3.8-plus · qwen3.8-turbo
+// 排除项不变：*-ocr / qwen-vl-*（视觉，另有独立桶）、*-thinking（推理，延迟不可接受）、
+// qwen-math-*、*-code。
 
 // Which tier each task needs, and why. This is the durable record of intent:
 // tiers may collapse onto one model when quota forces it, but these

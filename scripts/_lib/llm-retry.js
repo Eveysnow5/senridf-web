@@ -32,4 +32,30 @@ function retryDelayMs(attempt) {
   return Math.min(1000 * 2 ** (n - 1), 8000);
 }
 
-module.exports = { isTransientCallError, retryDelayMs };
+/**
+ * 把 LLM 调用错误变成一句**能定位原因**的话。
+ *
+ * axios 的 err.message 只有 `Request failed with status code 403` —— 但 403 至少
+ * 有四种完全不同的原因：额度用尽（Arrearage）、限流（Throttling）、模型不存在、
+ * 密钥无权限。真实原因在**响应体**里，而它一直被丢掉。
+ *
+ * 代价是实打实的：2026-08-09 起情报爬虫连续三周失败（103×403 / 60s 超时 /
+ * 49×403），日志里只有那句通用文案，工作流每次都报 success，
+ * **最后是靠作者发现情报页停在 W31 才发现的**。若当时记了响应体，
+ * 第一周就能看见"额度用尽"四个字。
+ *
+ * 截断到 300 字符：DashScope 出错时偶尔回整页 HTML，整段打进日志会淹掉别的行。
+ */
+function describeCallError(err) {
+  if (!err) return 'unknown error';
+  const status = err.response?.status ?? err.status;
+  const data = err.response?.data;
+  const detail = data?.error?.message || data?.message || data?.error?.code || data?.code || '';
+  const parts = [];
+  if (Number.isFinite(status)) parts.push(`HTTP ${status}`);
+  if (detail) parts.push(String(detail).replace(/\s+/g, ' ').slice(0, 300));
+  if (!parts.length) parts.push(err.message || String(err));
+  return parts.join(' — ');
+}
+
+module.exports = { isTransientCallError, retryDelayMs, describeCallError };
