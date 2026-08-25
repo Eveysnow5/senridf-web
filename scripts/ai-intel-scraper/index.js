@@ -314,6 +314,8 @@ async function main() {
     // "脚本没崩" 不等于 "这轮有产出"。2026-08 连续三周瘫痪都报了 success，
     // 因为每处失败单独看都被合理地设计成"不中断整轮"。这里重新定义退出码。
     const health = runHealth({
+      found: totals.found,
+      skippedDup: totals.skipped_dup,
       ingested: totals.inserted,
       filtered: totals.filtered_out,
       llmErrors: totals.llm_error,

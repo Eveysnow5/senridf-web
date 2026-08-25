@@ -18,6 +18,8 @@ const LLM_ERROR_RATIO_LIMIT = 0.3;
 
 /**
  * @param {object} r
+ * @param {number} r.found           本轮从信源抓到的候选总数（去重之前）
+ * @param {number} r.skippedDup      其中因为已经入过库而跳过的条数
  * @param {number} r.ingested        本轮新入库条数
  * @param {number} r.filtered        本轮被判定为无关而滤掉的条数（这是**结论**，不是失败）
  * @param {number} r.llmErrors       拿不到判定的条数
@@ -26,6 +28,8 @@ const LLM_ERROR_RATIO_LIMIT = 0.3;
  * @returns {{ok: boolean, reasons: string[]}}
  */
 function runHealth({
+  found = 0,
+  skippedDup = 0,
   ingested = 0,
   filtered = 0,
   llmErrors = 0,
@@ -51,10 +55,22 @@ function runHealth({
     }
   }
 
-  // 一条都没判成功、也没有任何产出：即使没报错也不该算成功轮次。
-  if (judged === 0) {
-    reasons.push('本轮一条候选都没有处理 —— 信源全挂或抓取被拦');
+  // ⚠️ 2026-08-25 修正：这里原本写的是「judged === 0 就不健康」，理由是
+  // "信源全挂或抓取被拦"。当天手动连跑三次，第三次所有条目都已入过库、
+  // 全部去重跳过 → judged 为 0 → **误报**。信源明明是好的（解析出近 300 条）。
+  //
+  // 教训跟阈值那条一样：判据只在**四个历史样本**上验过，而那四轮里没有一轮是
+  // "抓到了但全是旧的"。真实世界的形态永远比手里的样本多一种。
+  //
+  // 现在分三种：
+  if (found === 0) {
+    // 一条都没抓到 —— 这才是信源全挂
+    reasons.push('本轮一条候选都没抓到 —— 信源全挂或抓取被拦');
+  } else if (judged === 0 && skippedDup === 0) {
+    // 抓到了，却既没判定也没去重 —— 条目凭空消失了，是真 bug
+    reasons.push(`抓到 ${found} 条候选，却既没判定也没去重 —— 条目在中途丢了`);
   }
+  // 抓到了、但全部因为已入库而跳过 = **正常**（这一轮确实没有新东西），不报警。
 
   return { ok: reasons.length === 0, reasons };
 }
