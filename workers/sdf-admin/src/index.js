@@ -162,6 +162,12 @@ export default {
             model: modelFor('adminTranslate', env),
             messages: [{ role: 'user', content: buildTranslatePrompt(body.fields) }],
             max_tokens: 4000,
+            // Qwen3 在 DashScope 上默认开混合思考。本调用只读 message.content，
+            // 推理内容被直接丢弃——花钱买了扔掉，还慢好几倍。
+            // 2026-08-25：六个 Pages Functions 端点关掉了，但**爬虫和 Worker 漏了**，
+            // 于是情报简报仍然 60 秒超时（那一轮判定只剩 1 次报错，唯独简报没生成）。
+            // 当天写的护栏只扫了 functions/api/ —— 护栏本身也只覆盖了作者当时想到的范围。
+            enable_thinking: false,
           }),
         });
         if (!qwenRes.ok) return json(502, { error: '翻译服务暂时不可用，请稍后重试' }, cors);
