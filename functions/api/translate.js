@@ -81,6 +81,13 @@ Use formal, precise language. Never skip the 【回訳】 step for Chinese or Ja
           ...messages,
         ],
         max_tokens: 2000,
+        // Qwen3 在 DashScope 上默认开启混合思考模式。开着的话模型会先生成一大段
+        // 推理链，而**本端点只读 message.content，推理内容被直接丢弃**——
+        // 等于花钱买了扔掉，还把响应拖慢好几倍。
+        // 2026-08-25 实测：一次 max_tokens=100 的调用要 17.6 秒；校对（max_tokens 6000）
+        // 因此超过 30 秒超时，被 Cloudflare 掐成 502。两个流式端点早就关了，
+        // 这四个非流式的一直漏着——models.js 里"最便宜的止血"那条待办说的就是这个。
+        enable_thinking: false,
         temperature: 0.2,
       }),
     });

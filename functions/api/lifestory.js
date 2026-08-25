@@ -20,6 +20,12 @@ async function qwen(apiKey, system, user, maxTokens = 800, temp = 0.7, onUsage) 
       ],
       max_tokens: maxTokens,
       temperature: temp,
+      // Qwen3 在 DashScope 上默认开启混合思考模式。开着的话模型会先生成一大段
+      // 推理链，而**本端点只读 message.content，推理内容被直接丢弃**——
+      // 等于花钱买了扔掉，还把响应拖慢好几倍。
+      // 2026-08-25 实测：这个 helper 一次 max_tokens=100 的衔接语调用要 17.6 秒。
+      // 两个流式端点早就关了，四个非流式的一直漏着。
+      enable_thinking: false,
     }),
   });
   const data = await res.json();
