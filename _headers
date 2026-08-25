@@ -19,10 +19,20 @@
 #   +securetoken.google.com=Firebase后端；api.deepgram.com(+wss)=语音；sdf-admin.*.workers.dev=管理后台
 #   Worker；cdn.jsdelivr/cdnjs.cloudflare=marked/dompurify/pdf.js/mammoth/xlsx(均带SRI)；cloudflareinsights=CF分析；
 #   api.github.com=admin 发布后轮询镜像仓库 HEAD 确认上线（admin/index.html、admin/blog/index.html）。
+# 【2026-08-24 追加】apis.google.com（script-src）与 senridfauthentication.firebaseapp.com
+#   （frame-src）都是 **Firebase Auth 的弹窗/跳转登录解析器**：SDK 会加载 gapi 的
+#   iframe 装载器，并在 authDomain 上开一个隐藏 iframe。本站只用邮箱密码登录，
+#   **这套机制其实用不上**，放行的理由不是怕它坏，而是不放行的话后台错误日志里
+#   会一直堆这三条已知的良性违规 —— 日志里堆着良性噪声，正是真违规被漏掉的路径。
+#   来源：不是静态扫描发现的（这些 URL 由 SDK 在运行时拼出，带随机后缀如
+#   ?onload=__iframefcb292202，静态扫描原理上看不到），是 report-error.js 的
+#   securitypolicyviolation 上报捞到的。两条渠道互补的一个实证。
+# 【frame-src】此前完全没声明，靠 default-src 'self' 回落 —— 能用但意图不可见。
+#   现在显式写出。站内两个 iframe（admin 的页面预览、宏观看板）都是同源，不受影响。
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), camera=(), microphone=(self)
   Strict-Transport-Security: max-age=31536000; includeSubDomains
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://securetoken.google.com https://api.deepgram.com wss://api.deepgram.com https://sdf-admin.sherlockafa.workers.dev https://api.github.com https://static.cloudflareinsights.com https://cloudflareinsights.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://securetoken.google.com https://api.deepgram.com wss://api.deepgram.com https://sdf-admin.sherlockafa.workers.dev https://api.github.com https://static.cloudflareinsights.com https://cloudflareinsights.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; frame-src 'self' https://senridfauthentication.firebaseapp.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'

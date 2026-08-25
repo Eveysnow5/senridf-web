@@ -203,3 +203,60 @@ test('记录 CSP 当前是观察期还是强制（转强制前先让上面三条
     );
   }
 });
+
+// ── 运行时渠道捞到的违规（2026-08-24）──────────────────────────────────────
+// 后台错误日志里出现三条 CSP 违规，全部来自 Firebase Auth 的弹窗/跳转登录解析器：
+// gapi 的 iframe 装载器（apis.google.com）+ authDomain 上的隐藏 iframe。
+//
+// **这三条静态扫描原理上抓不到**：URL 由 SDK 在运行时拼出，还带随机后缀
+// （?onload=__iframefcb292202）。它们是 report-error.js 的 securitypolicyviolation
+// 上报捞到的 —— 正是本文件开头写的"两条渠道互补"的一个实证。
+//
+// 放行的理由不是怕它坏（本站只用邮箱密码登录，这套机制用不上），
+// 而是不放行的话日志里会一直堆这三条已知的良性违规，而**日志里堆着良性噪声
+// 正是真违规被漏掉的路径**。
+test('Firebase Auth 的 iframe 机制已放行（否则错误日志会一直堆良性噪声）', () => {
+  assert.ok(covered('script-src', 'https://apis.google.com/js/api.js'), 'gapi 装载器没放行');
+  assert.ok(
+    covered('frame-src', 'https://senridfauthentication.firebaseapp.com/__/auth/iframe'),
+    'authDomain 的隐藏 iframe 没放行',
+  );
+});
+
+// frame-src 此前**完全没有声明**，靠 default-src 'self' 回落。能用，但意图不可见：
+// 读规则的人无法区分"想清楚了只允许同源"和"压根没考虑过 iframe"。
+test('frame-src 显式声明，不靠 default-src 回落', () => {
+  assert.ok(DIRECTIVES.has('frame-src'), 'frame-src 又退回成靠 default-src 回落了');
+  // frame-ancestors 管的是"谁能嵌入我们"，跟"我们能嵌入谁"是两回事，别混为一谈
+  assert.ok(DIRECTIVES.has('frame-ancestors'), 'frame-ancestors 不该被 frame-src 取代');
+});
+
+// 站内自己的 iframe 都是同源的（admin 页面预览、宏观看板）。哪天加了外部 iframe
+// 而 frame-src 没跟着加，页面上就是一块空白 —— 不报错、不留痕。
+//
+// ⚠️ 能力边界：本站这两个 iframe 的 src 都是**用 JS 赋的**（`frame.src = …`），
+// 标签上没有 src 属性。所以只扫 `<iframe src="…">` 会一个都匹配不到、断言空转
+// 通过 —— 首版就是这样，靠下面那条自检才发现。
+// 现在两头都查：标签必须扫得到（证明扫描器有效），字面量地址无论写在属性上
+// 还是赋给 `.src` 都要对账。运行时拼出来的地址仍然看不见，那部分归
+// report-error.js 的 securitypolicyviolation 上报管。
+test('站内 iframe 仍然全是同源（外部 iframe 需要同步 frame-src）', () => {
+  let tags = 0;
+  const external = [];
+  for (const p of FILES) {
+    const src = readFileSync(p, 'utf8');
+    tags += [...src.matchAll(/<iframe\b/gi)].length;
+    const literal = [
+      ...src.matchAll(/<iframe\b[^>]*\bsrc=["'](https?:\/\/[^"']+)["']/gi),
+      ...src.matchAll(/\.src\s*=\s*['"`](https?:\/\/[^'"`]+)/gi),
+    ];
+    for (const m of literal) {
+      // 脚本节点也走 .src，所以两个指令有一个盖得住就算过
+      if (!covered('frame-src', m[1]) && !covered('script-src', m[1])) {
+        external.push(`${path.relative(ROOT, p).split(path.sep).join('/')} → ${m[1]}`);
+      }
+    }
+  }
+  assert.ok(tags >= 2, `只扫到 ${tags} 个 iframe 标签，扫描器失效（站内已知有两个）`);
+  assert.deepEqual(external, [], `这些会被 CSP 拦掉：\n${external.join('\n')}`);
+});
