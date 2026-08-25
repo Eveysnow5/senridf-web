@@ -32,10 +32,17 @@ jobs:
         run: npm ci || npm install
       - name: Run backfill
         working-directory: scripts/bid-scraper
+        # ⚠️ 同 rebuild-ai-intel-digest.yml：输入不能插进 run 的脚本文本里。
+        # 这个 workflow 从没被这样触发过，但它有同样的写法 —— 一并改掉，
+        # 免得"只修出问题的那一处"（这仓库里已经有过三次这种教训）。
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
+          LIMIT: ${{ inputs.limit }}
+          APPLY: ${{ inputs.apply }}
         run: |
-          node backfill.js \
-            ${{ inputs.apply && '--apply' || '' }} \
-            --limit "${{ inputs.limit }}"
+          if [ "$APPLY" = "true" ]; then
+            node backfill.js --apply --limit "$LIMIT"
+          else
+            node backfill.js --limit "$LIMIT"
+          fi

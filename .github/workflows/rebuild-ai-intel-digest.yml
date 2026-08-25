@@ -35,10 +35,21 @@ jobs:
 
       - name: Rebuild digest
         working-directory: scripts/ai-intel-scraper
+        # ⚠️ 输入**不能**插进 run 的脚本文本里（`${{ inputs.x }}`）。
+        # 2026-08-25 实测：作者误把上一次的整段日志粘进了输入框，那段文本直接把
+        # shell 命令撑爆（punycode: command not found、最后 exit 127），
+        # 脚本自己的周次格式校验根本没机会跑到。
+        # 这也是 GitHub Actions 有名的脚本注入点 —— 输入里只要有引号或换行，
+        # 就能跳出引号执行任意命令。走 env 传值，脚本里只引用变量名，
+        # 内容永远不会被当成命令解析。
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
+          WEEKS: ${{ inputs.weeks }}
+          APPLY: ${{ inputs.apply }}
         run: |
-          node rebuild-digest.js \
-            --weeks "${{ inputs.weeks }}" \
-            ${{ inputs.apply && '--apply' || '' }}
+          if [ "$APPLY" = "true" ]; then
+            node rebuild-digest.js --weeks "$WEEKS" --apply
+          else
+            node rebuild-digest.js --weeks "$WEEKS"
+          fi
