@@ -123,11 +123,20 @@ export const CHAT_ENDPOINT = 'https://dashscope.aliyuncs.com/compatible-mode/v1/
 // 换成控制台里还满额的两个**同家族**模型。跨家族（kimi-k3、deepseek-v4-*）
 // 额度也满，但上面那条否决仍然成立：招标摘要要稳定输出【内容】【发注元】【截标】、
 // 会议纪要要输出【议题】【客户反馈】【行动项】，格式漂移只在无人值守时发作。
+// ⚠️ 2026-08-25 二次调整：strong 原本选了 qwen3.8-2.4t-a95b（2.4T 的 MoE），
+// 结果校对端点回 **HTTP 502**，响应体是 Cloudflare 的 HTML 错误页。
+// 判据：我们的函数全程 try/catch、**任何路径都返回 JSON**（连超时都是），
+// 所以 HTML 一定是平台发的，不是我们的代码。
+// 与 2026-08-12 那次 502 **不同源**：那次是请求体 5.3MB、`request.json()` 解析
+// 撞 10ms CPU 上限；这次输入只有 78 个字，CPU 不可能是瓶颈——是模型太慢，
+// Cloudflare 在我们 30 秒超时之前就断了连接。
+// 交互端点对延迟敏感，大模型在这条路上不可用；把它留给不受 Cloudflare 限制的
+// GitHub Actions 爬虫（batch）。
 export const TIERS = {
-  strong: 'qwen3.8-2.4t-a95b', // 100%，2026-11-12 到期
+  strong: 'qwen3.8-27b', // 100%，2026-11-18 到期（与 balanced 共桶）
   balanced: 'qwen3.8-27b', // 100%，2026-11-18 到期
   fast: 'qwen3.7-flash', // 余量未核实，见下方待办
-  batch: 'qwen3.8-2.4t-a95b', // 与 strong 共桶 —— 妥协，见下
+  batch: 'qwen3.8-2.4t-a95b', // 100%，2026-11-12。爬虫跑在 Actions 上，不受 Cloudflare 时限
 };
 
 // ⚠️ **batch 与 strong 共桶是妥协，不是设计。** 上面写着"batch 单独一个模型是
