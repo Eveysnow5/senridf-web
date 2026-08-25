@@ -1,0 +1,44 @@
+name: Rebuild AI Intel Digest
+
+# 按周补建情报简报。只手动触发 —— 它会烧额度，不该有定时。
+#
+# 用途：2026-08 出现过 W32~W34 三周没生成简报（各因不同原因失败），
+# 而条目大多已经入库。素材在、摘要没有，且下周跑的是下周的，洞不会自己长回来。
+on:
+  workflow_dispatch:
+    inputs:
+      weeks:
+        description: '周次，逗号分隔（如 2026-W34 或 2026-W33,2026-W34）'
+        required: true
+        type: string
+      apply:
+        description: '真的写库（不勾选＝dry-run，只看会做什么）'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  rebuild:
+    # 只在源仓库跑（有 secrets）。镜像副本里跳过、不失败、不发邮件。
+    if: github.repository == 'sherlockafa007/senridoufuu-web'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: scripts/ai-intel-scraper
+        run: npm install
+
+      - name: Rebuild digest
+        working-directory: scripts/ai-intel-scraper
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
+        run: |
+          node rebuild-digest.js \
+            --weeks "${{ inputs.weeks }}" \
+            ${{ inputs.apply && '--apply' || '' }}

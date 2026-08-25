@@ -93,6 +93,12 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
 
     <!-- Digest -->
     <div class="text-xs font-medium text-gray-500 mb-2">本周简报</div>
+    <div class="flex items-center gap-2 mb-2">
+      <label for="aiIntelWeek" class="text-xs text-gray-500">简报周次</label>
+      <select id="aiIntelWeek" class="text-xs border border-gray-200 rounded px-2 py-1 bg-white"
+        title="选择要查看的周次"></select>
+      <span id="aiIntelWeekNote" class="text-xs text-gray-400"></span>
+    </div>
     <div id="aiIntelDigest" class="mb-4">
       <div class="text-gray-400 text-xs py-2">加载中…</div>
     </div>
@@ -188,19 +194,45 @@ const AI_THEME = {
 let aiIntelTheme = 'all';
 
 // 简报（最新一周）——若无 marked 渲染器则以纯文本 pre 呈现，绝不引新 CDN
-window.loadAiIntelDigest = async function () {
+window.loadAiIntelDigest = async function (week) {
   const el = document.getElementById('aiIntelDigest');
+  const sel = document.getElementById('aiIntelWeek');
+  const note = document.getElementById('aiIntelWeekNote');
   if (!el) return;
   el.innerHTML = '<div class="text-gray-400 text-xs py-2">加载中…</div>';
   try {
+    // 取最近 52 周的简报当**存档**用。原先是 limit(1)：历史简报都还在库里，
+    // 只是界面没有入口 —— 2026-08-25 作者问"之前几周的记录在哪里"，
+    // 一半答案就是这个 limit(1)（另一半是那三周压根没生成）。
     const snap = await getDocs(
-      query(collection(db, 'ai_intel_digest'), orderBy('week', 'desc'), limit(1)),
+      query(collection(db, 'ai_intel_digest'), orderBy('week', 'desc'), limit(52)),
     );
     if (snap.empty) {
-      el.innerHTML = '<div class="text-gray-400 text-xs py-2">本周暂无简报</div>';
+      el.innerHTML = '<div class="text-gray-400 text-xs py-2">暂无简报</div>';
+      if (sel) sel.innerHTML = '';
       return;
     }
-    const d = snap.docs[0].data();
+    const docs = snap.docs.map((x) => x.data());
+
+    // 下拉只在首次（未指定周次）时重建，免得每次切换都重置选中项
+    if (sel && !week) {
+      sel.innerHTML = '';
+      for (const d of docs) {
+        const opt = document.createElement('option');
+        opt.value = d.week;
+        opt.textContent = d.week + '（' + (d.item_count || 0) + ' 条）';
+        sel.appendChild(opt);
+      }
+      sel.onchange = () => window.loadAiIntelDigest(sel.value);
+    }
+
+    const d = docs.find((x) => x.week === week) || docs[0];
+    if (sel) sel.value = d.week;
+    if (note) {
+      // 补建的和当周自动生成的要能分辨 —— 看历史时这点很重要
+      note.textContent = d.rebuilt_at ? '（此份为事后补建）' : '';
+    }
+
     el.innerHTML = '';
     const head = document.createElement('div');
     head.className = 'text-sm font-medium text-gray-700 mb-2';
