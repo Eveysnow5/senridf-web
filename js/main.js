@@ -349,6 +349,12 @@ const T = {
     ls_cat_regret: '心残り',
     ls_cat_mark: '記憶',
     ls_cat_legacy: '受け継ぐもの',
+    api_bad_gateway:
+      'サーバーが一時的に応答できません（HTTP {status}）。これは当サイトのサービスからの応答ではなく、上流のタイムアウトまたはプラットフォーム側で遮断された可能性が高いです。しばらくしてからお試しください。',
+    api_not_found:
+      'エンドポイントが見つかりません（HTTP {status}）。デプロイまたはルーティングの問題と思われます。操作に誤りがあるわけではありません。',
+    api_not_json:
+      'サーバーから想定外の応答が返りました（HTTP {status}）。これは当サイトのサービスからの応答ではありません。',
     ls_answer_placeholder: 'ここに回答を書いてください…',
     ls_privacy_note: '（うち {n} 件はプライベート指定のため分析されません）',
     ls_gen_timeout:
@@ -751,6 +757,10 @@ const T = {
     ls_cat_regret: '遗憾',
     ls_cat_mark: '印记',
     ls_cat_legacy: '传承',
+    api_bad_gateway:
+      '服务器暂时无法处理请求（HTTP {status}）。这不是本站服务返回的，通常是上游超时或被平台拦下，请稍后重试。',
+    api_not_found: '接口地址不存在（HTTP {status}）。多半是部署或路由的问题，不是你的操作有误。',
+    api_not_json: '服务器返回了预期之外的内容（HTTP {status}）。这不是本站服务返回的。',
     ls_answer_placeholder: '在这里写下你的回答…',
     ls_privacy_note: '（其中 {n} 条标记为隐私，不会被分析）',
     ls_gen_timeout: '生成超时（服务器响应过慢）。请稍后重试。',
@@ -1173,6 +1183,12 @@ const T = {
     ls_cat_regret: 'Regrets',
     ls_cat_mark: 'Being remembered',
     ls_cat_legacy: 'Legacy',
+    api_bad_gateway:
+      'The server could not handle the request (HTTP {status}). This response did not come from our service — usually an upstream timeout or a platform-level block. Please try again shortly.',
+    api_not_found:
+      'Endpoint not found (HTTP {status}). This is most likely a deployment or routing problem, not something you did.',
+    api_not_json:
+      'The server returned something unexpected (HTTP {status}). This response did not come from our service.',
     ls_answer_placeholder: 'Write your answer here…',
     ls_privacy_note: '({n} of them are marked private and will not be analysed)',
     ls_gen_timeout: 'Timed out — the server took too long. Please try again shortly.',

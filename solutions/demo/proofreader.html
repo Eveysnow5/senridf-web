@@ -163,6 +163,7 @@
       from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
     import { mountAuthGate } from '/js/shared/auth-gate.js';
     import { locateSnippet, buildAnnotatedSegments } from '/js/shared/proofread-highlight.js';
+    import { readApiJson } from '/js/shared/api-json.js';
 
     initErrorReporting({ db });
 
@@ -509,7 +510,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text, reference: referenceText }),
         });
-        const data = await res.json();
+        const data = await readApiJson(res);
         if (!res.ok || data.error) throw new Error(data.error || t('pf_request_failed'));
         lastRawResult = data.result;
         if (data.ref_truncated) console.warn('参考资料已截断至 20000 字');

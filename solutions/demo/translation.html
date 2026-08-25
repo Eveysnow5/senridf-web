@@ -1042,6 +1042,12 @@
   <div id="footer-placeholder"></div>
   <script src="js/main.js"></script>
   <script>
+// api-json.js 是 ESM，本块是**普通** <script>，拿不到 import。
+// 由下面的 module 块挂到 window 上；本块所有调用都发生在事件处理器里，
+// 那时 module（defer）早已执行完毕。
+// ⚠️ 刻意不做 `?? res.json()` 的兜底：兜底会把"桥接断了"变成"悄悄退回旧行为"，
+// 而旧行为正是这次要修掉的东西。桥断了就该当场报错。
+const readApiJson = (res) => window.sdfReadApiJson(res);
     const API_ENDPOINT = '/api/translate';
     const isLocal = location.protocol === 'file:' ||
                     location.hostname === '127.0.0.1' ||
@@ -1481,9 +1487,10 @@
           { signal: activeFetchCtrl.signal },
         );
         if (!res.ok) {
-          let errMsg = `HTTP ${res.status}`;
-          try { const d = await res.json(); errMsg = d.error || errMsg; } catch { /* HTML error page */ }
-          throw new Error(errMsg);
+          // readApiJson 会在响应不是 JSON 时给出「不是本站服务返回的 + 状态码」，
+          // 取代原先那句被吞掉的 /* HTML error page */。
+          const d = await readApiJson(res).catch((e) => ({ error: e.message }));
+          throw new Error(d.error || `HTTP ${res.status}`);
         }
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
@@ -1654,7 +1661,7 @@
 
       try {
         const res = await requestTranslate(API_ENDPOINT, { messages: conversationHistory });
-        const data = await res.json();
+        const data = await readApiJson(res);
         if (!res.ok) throw new Error(data.error || 'API error');
 
         const content = data.content;
@@ -1761,7 +1768,7 @@
             { role: 'user', content: '会議まとめを生成してください / 请生成会议摘要' }
           ]
         });
-        const data = await res.json();
+        const data = await readApiJson(res);
         if (!res.ok) throw new Error(data.error || 'API error');
         elOutputContent.innerHTML = `
           <div class="tl-block tl-block--source">
@@ -1815,11 +1822,11 @@
         });
 
         if (!response.ok) {
-          const error = await response.json();
+          const error = await readApiJson(response).catch((e) => ({ error: e.message }));
           throw new Error(error.error || `API 错误: ${response.status}`);
         }
 
-        const result = await response.json();
+        const result = await readApiJson(response);
         return result;
       } catch (err) {
         console.error('Summary API error:', err);
@@ -2012,6 +2019,9 @@ import { mountAuthGate } from '/js/shared/auth-gate.js';
 import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js';
 import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { speak, ttsSupported } from '/js/shared/speak.js';
+import { readApiJson } from '/js/shared/api-json.js';
+window.sdfReadApiJson = readApiJson;
+
 initErrorReporting({ db });
 const _start=Date.now();let _docId=null,_logged=false;
 function _anonId(){let i=localStorage.getItem('sdf_anon_id');if(!i){i='anon_'+Math.random().toString(36).slice(2,9);localStorage.setItem('sdf_anon_id',i);}return i;}

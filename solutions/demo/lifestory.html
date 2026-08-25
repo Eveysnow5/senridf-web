@@ -289,6 +289,13 @@ const t = (k) => (window.sdfT ? window.sdfT(k) : k);
 // 访谈的追问/衔接/成稿都由模型生成，必须跟随界面语言——否则会出现
 // 「日文的问题 + 中文的追问 + 中文的传记」。main.js 没加载时回落 zh。
 const uiLang = () => (window.sdfLang ? window.sdfLang() : 'zh');
+// api-json.js 是 ESM，本块是**普通** <script>，拿不到 import。
+// 由下面的 module 块挂到 window 上；本块所有调用都发生在事件处理器里，
+// 那时 module（defer）早已执行完毕。
+// ⚠️ 刻意不做 `?? res.json()` 的兜底：兜底会把"桥接断了"变成"悄悄退回旧行为"，
+// 而旧行为正是这次要修掉的东西。桥断了就该当场报错。
+const readApiJson = (res) => window.sdfReadApiJson(res);
+
 
 // cat 现在是**键**，不是显示文案。显示走 T 的 ls_cat_*（三语），
 // 键则用于主题筛选和已答统计——这两件事此前共用一个中文字符串，
@@ -616,7 +623,7 @@ async function callProbe(question, answer) {
       lang: uiLang(),
     }),
   });
-  const data = await res.json();
+  const data = await readApiJson(res);
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data; // { analysis, followup }
 }
@@ -627,7 +634,7 @@ async function callBridge(lastAnswer, nextQuestion) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'bridge', lastAnswer, nextQuestion, lang: uiLang() }),
   });
-  const data = await res.json();
+  const data = await readApiJson(res);
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data.bridge || '';
 }
@@ -678,7 +685,7 @@ async function genStory() {
     });
 
     clearTimeout(timeoutId);
-    const data = await res.json();
+    const data = await readApiJson(res);
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     state.lastStory = data.story;
     saveState();
@@ -1184,6 +1191,8 @@ import { auth, db } from '/js/shared/firebase-init.js';
 import { initErrorReporting } from '/js/shared/report-error.js';
 import { mountAuthGate } from '/js/shared/auth-gate.js';
 import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js';
+import { readApiJson } from '/js/shared/api-json.js';
+window.sdfReadApiJson = readApiJson;
 import { decideProbe } from '/js/shared/lifestory-flow.js';
 initErrorReporting({ db });
 window.sdfGetToken=()=>auth.currentUser?.getIdToken();
