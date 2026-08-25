@@ -132,11 +132,23 @@ export const CHAT_ENDPOINT = 'https://dashscope.aliyuncs.com/compatible-mode/v1/
 // Cloudflare 在我们 30 秒超时之前就断了连接。
 // 交互端点对延迟敏感，大模型在这条路上不可用；把它留给不受 Cloudflare 限制的
 // GitHub Actions 爬虫（batch）。
+// ⚠️⚠️ 2026-08-25 三次调整：**qwen3.8-2.4t-a95b 是只能思考的模型**。
+// 它拒绝 enable_thinking: false，直接回
+//   HTTP 400 InternalError.Algo.InvalidParameter:
+//   The value of the enable_thinking parameter is restricted to True.
+// 也就是说这个模型的推理 token **无法关闭**，而我们所有调用都只读
+// message.content、把推理直接丢弃 —— 它在这个项目里是纯粹的浪费，
+// 无论跑在哪个平台。已从全部档位移除。
+//
+// **教训写在这里，别只留在提交信息里**：换模型时必须先验证
+// "这个模型接不接受我们要传的参数"，不能假设同家族行为一致。
+// 验证成本极低（一次调用），而没验证的代价是一整轮部署 + 一次用户点击。
+// 见 scripts/ai-intel-scraper/probe-model.js。
 export const TIERS = {
-  strong: 'qwen3.8-27b', // 100%，2026-11-18 到期（与 balanced 共桶）
-  balanced: 'qwen3.8-27b', // 100%，2026-11-18 到期
+  strong: 'qwen3.8-27b', // 100%，2026-11-18。接受 enable_thinking:false（实测 17.6s → 2.2s）
+  balanced: 'qwen3.8-27b', // 同上，共桶
   fast: 'qwen3.7-flash', // 余量未核实，见下方待办
-  batch: 'qwen3.8-2.4t-a95b', // 100%，2026-11-12。爬虫跑在 Actions 上，不受 Cloudflare 时限
+  batch: 'qwen3.8-27b', // 同上。原为 a95b，因无法关闭思考而换掉
 };
 
 // ⚠️ **batch 与 strong 共桶是妥协，不是设计。** 上面写着"batch 单独一个模型是

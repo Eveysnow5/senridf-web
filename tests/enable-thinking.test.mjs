@@ -42,8 +42,15 @@ function walk(dir, acc = []) {
  * 排除只导出配置/桥接的那两个（models.js 定义 CHAT_ENDPOINT、
  * model-config.js 只是 CJS→ESM 的桥），它们不发请求，没有请求体可设参数。
  */
+// 唯一的豁免：探针脚本的**职责就是**"带这个参数试一次、不带再试一次"，
+// 所以它必须能不传。豁免本身要被断言住（见下面那条测试），否则哪天它变成
+// 普通调用方，这个口子会让一整个文件失去检查 —— 跟 i18n 那边 account.html
+// 的豁免是同一个道理。
+const EXEMPT = new Set(['scripts/ai-intel-scraper/probe-model.js']);
+
 function llmCallers() {
   return walk(ROOT)
+    .filter((p) => !EXEMPT.has(path.relative(ROOT, p).split(path.sep).join('/')))
     .map((p) => ({
       name: path.relative(ROOT, p).split(path.sep).join('/'),
       src: readFileSync(p, 'utf8'),
@@ -87,6 +94,16 @@ test('护栏自身有效：扫到了调用模型的端点', () => {
       `${n} 没被扫到 —— 它是否还在调 CHAT_ENDPOINT？名单：${names.join(', ')}`,
     );
   }
+});
+
+// 豁免项的前提必须成立：探针之所以能不传这个参数，是因为它**就是用来探这件事的**。
+// 哪天它变成普通调用方，这条会红，提醒把豁免撤掉 —— 而不是让一整个文件静静失去检查。
+test('豁免项的前提仍然成立：探针确实能开关这个参数', () => {
+  const p = path.join(ROOT, 'scripts', 'ai-intel-scraper', 'probe-model.js');
+  const src = readFileSync(p, 'utf8');
+  assert.match(src, /--no-thinking-off/, '探针没有"不传该参数"的选项，就不该再被豁免');
+  assert.match(src, /thinkingOff/, '探针没有按开关决定传不传');
+  assert.match(src, /rejects_flag/, '探针不再判断"模型拒绝该参数"，豁免失去意义');
 });
 
 test('每个调模型的端点都显式关掉了思考模式', () => {

@@ -1,0 +1,49 @@
+name: Probe LLM Model
+
+# 用一次真实调用探模型：能不能用、多快、推理占比、接不接受 enable_thinking:false。
+#
+# 存在的理由：2026-08-25 那天「换模型 / 加参数」失败了四次，每次都要走完
+# push → 镜像 → 部署 → 作者手动点一次 → 读日志。四次里三次一次调用就能判掉。
+# 这个 workflow 把验证成本从「一轮部署 + 一次用户点击」降到「20 秒」。
+#
+# 只手动触发；单次调用，额度消耗可忽略。
+on:
+  workflow_dispatch:
+    inputs:
+      models:
+        description: '模型名，逗号分隔（如 qwen3.8-27b,qwen3.7-flash）'
+        required: true
+        type: string
+      thinking_off:
+        description: '传 enable_thinking:false（取消勾选＝不传，用来对比）'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  probe:
+    if: github.repository == 'sherlockafa007/senridoufuu-web'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: scripts/ai-intel-scraper
+        run: npm install
+      - name: Probe
+        working-directory: scripts/ai-intel-scraper
+        # 输入走 env，不插进脚本文本 —— 见 tests/workflow-injection.test.mjs
+        env:
+          QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
+          MODELS: ${{ inputs.models }}
+          THINKING_OFF: ${{ inputs.thinking_off }}
+        run: |
+          ARGS=""
+          IFS=',' read -ra LIST <<< "$MODELS"
+          for m in "${LIST[@]}"; do
+            ARGS="$ARGS --model $(echo "$m" | xargs)"
+          done
+          if [ "$THINKING_OFF" != "true" ]; then ARGS="$ARGS --no-thinking-off"; fi
+          node probe-model.js $ARGS

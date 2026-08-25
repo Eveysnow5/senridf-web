@@ -27,17 +27,35 @@ const SCANNED_DIRS = [
   '../workers/sdf-admin/src/',
 ];
 
+// 唯一的豁免：probe-model.js 的职责就是**探任意模型名**（含还没进 TIERS 的候选），
+// 所以它必须接受 --model 传进来的字符串，不能走 modelFor。
+// 豁免的前提由下面一条测试钉住，不会静静扩大。
+const MODEL_SCAN_EXEMPT = new Set(['../scripts/ai-intel-scraper/probe-model.js']);
+
 function sourcesUnderScan() {
   const out = [];
   for (const rel of SCANNED_DIRS) {
     const dir = new URL(rel, import.meta.url);
     for (const name of readdirSync(dir)) {
       if (!name.endsWith('.js')) continue;
+      if (MODEL_SCAN_EXEMPT.has(rel + name)) continue;
       out.push({ label: rel + name, src: readFileSync(new URL(name, dir), 'utf8') });
     }
   }
   return out;
 }
+
+// 豁免的前提：它确实是个探针（接受任意模型名、并判断该模型可不可用），
+// 而不是一个忘了走 modelFor 的普通调用方。
+test('豁免项的前提仍然成立：probe-model.js 确实是探针', () => {
+  const src = readFileSync(
+    new URL('../scripts/ai-intel-scraper/probe-model.js', import.meta.url),
+    'utf8',
+  );
+  assert.match(src, /--model/, '不再接受任意模型名，就不该豁免');
+  assert.match(src, /rejects_flag/, '不再判断模型可用性，豁免失去意义');
+  assert.doesNotMatch(src, /model:\s*['"`]qwen/, '探针自己也不该硬编码模型 id');
+});
 
 test('每个任务都解析出非空模型 id', () => {
   for (const task of TASKS) {
