@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<rss version="2.0">
+<channel>
+<title>ITmedia AI＋ 最新記事一覧</title>
+<link>https://www.itmedia.co.jp/aiplus/</link>
+<description>ITmedia AI＋ の最新記事一覧です。</description>
+<language>ja</language>
+<copyright>Copyright (c) 2026 ITmedia, Inc. All Rights Reserved.</copyright>
+<pubDate>Wed, 26 Aug 2026 16:25:00 +0900</pubDate>
+<item>
+<title>こんなところに野良AIが？　事例で解説、実際にあった2つの発覚パターンと防衛策</title>
+<link>https://kn.itmedia.co.jp/kn/articles/2608/24/news039.html</link>
+<description>社内の誰がどのAIを使っているのか、正確に把握できている企業は多くない。しかも問題は、たいてい事後に発覚する。約500社の商談分析と複数の実例から、野良AIとの現実的な付き合い方を探る。</description>
+<pubDate>Wed, 26 Aug 2026 13:42:06 +0900</pubDate>
+</item>
+<item>
+<title>「AIエージェントを本番運用中」日本が最下位　“PoC止まり”の原因と、抜け出す方法は？</title>
+<link>https://atmarkit.itmedia.co.jp/ait/articles/2608/26/news040.html</link>
+<description>AIエージェントなど自律型AIを本番運用している日本企業は17％にとどまることが、Confluentの調査で分かった。活用を進める上での課題とは何か。その解決策とは。</description>
+<pubDate>Wed, 26 Aug 2026 13:00:00 +0900</pubDate>
+</item>
+<item>
+<title>「取りあえずChatGPT」はもう古い？　2社に1社が複数AIを併用、企業はどう管理すべきか</title>
+<link>https://atmarkit.itmedia.co.jp/ait/articles/2608/26/news044.html</link>
+<description>Okta Japanは、企業におけるAIツールの利用実態をまとめたレポートを発表した。Okta Platformの2万以上の組織における4年間の匿名化されたアクセスデータを分析したものだ。</description>
+<pubDate>Wed, 26 Aug 2026 13:00:00 +0900</pubDate>
+</item>
+<item>
+<title>ChatGPT Work、ログイン必要なサイトも操作可能に　「パスワードは一切見ない」</title>
+<link>https://www.itmedia.co.jp/aiplus/article/2608/26/2000000788/</link>
+<description>ユーザーが自分でログインすれば、その後もログイン状態を維持でき、その後の作業をChatGPTに任せられる。AIがユーザー名やパスワードを見ることは「一切ない」としている。</description>
+<pubDate>Wed, 26 Aug 2026 11:27:57 +0900</pubDate>
+</item>
+<item>
+<title>4台のM5 Ultra Mac Studioで「データセンター級」メモリ帯域幅4.8TB/s　巨大LLMも高速でローカル実行可能に</title>
+<link>https://www.itmedia.co.jp/aiplus/article/2608/26/2000000786/</link>
+<description>EXO Labsが、「M5 Ultra」搭載の新型「Mac Studio」4台のクラスタで約4.8TB/sのメモリ帯域幅を実現できると発表。データセンター級の速度で、「Kimi K3」など巨大LLMをローカル実行できるとうたう。</description>
+<pubDate>Wed, 26 Aug 2026 11:17:10 +0900</pubDate>
+</item>
+<item>
+<title>AIエージェントがCAEを動かすとどうなる？　人に残る役割は？</title>
+<link>https://monoist.itmedia.co.jp/mn/articles/2608/26/news007.html</link>
+<description>AIエージェントがCAEツールを操作し、解析作業を担うようになれば、人の役割はどう変わるのか。「CAEユニバーシティ 特別公開フォーラム 2026」で行われたサイバネットシステムの講演では、AIエージェントによるCAE解析の実験を通じて、AIに任せられることと人に残る仕事、CAE教育の在り方が紹介された。</description>
+<pubDate>Wed, 26 Aug 2026 07:00:00 +0900</pubDate>
+</item>
+<item>
+<title>「Jetson Orin Nano 2」は推論性能が2倍、エッジ生成AIもリアルタイム処理可能</title>
+<link>https://monoist.itmedia.co.jp/mn/articles/2608/26/news048.html</link>
+<description>NVIDIAは、組み込み機器向けAIモジュール「Jetson Orin」の新たなラインアップとなる「Jetson Orin Nano 2」を発表した。現行の「Jetson Orin Nano」のメモリ容量8GBモデルと比べて推論性能が2倍に向上した一方で、同じ推論性能であれば消費電力を40％削減できるという。</description>
+<pubDate>Wed, 26 Aug 2026 06:15:00 +0900</pubDate>
+</item>
+<item>
+<title>あなたが使うAIの「中身」、実は中国モデルかも　米企業のAPI利用で58％</title>
+<link>https://atmarkit.itmedia.co.jp/ait/articles/2608/26/news010.html</link>
+<description>Arena AIのコーディング性能ランキングでは、上位20モデルのうち8つを中国発が占める。AIモデルの中継サービスOpenRouterでも、米企業が中国モデルに流すトークンの比率は58％に達した。利用者からは見えないAIサービスの「中身」で、いま何が起きているのかを追う。</description>
+<pubDate>Wed, 26 Aug 2026 05:00:00 +0900</pubDate>
+</item>
+<item>
+<title>「今からロボットを現場投入できないか？」　増えた日本企業からの問い合わせ　“頭脳”を作る韓国企業が感じた国内の変化</title>
+<link>https://www.itmedia.co.jp/news/article/2608/25/2000000731/</link>
+<description>日本にも拠点を置くRLWRLD（リアルワールド）は、フィジカルAI分野で注目を集める国際企業だ。産業用ロボットの導入もかなり進んでいる日本市場で最近起こった変化について聞いた。</description>
+<pubDate>Tue, 25 Aug 2026 19:42:15 +0900</pubDate>
+</item>
+<item>
+<title>政府、AI事業者向け「知財保護ルール」策定　対象範囲・運用方針は？</title>
+<link>https://www.itmedia.co.jp/aiplus/article/2608/25/2000000767/</link>
+<description>政府は、生成AI事業者向けに透明性の確保と知的財産権の保護を促す「プリンシプル・コード」を策定した。</description>
+<pubDate>Tue, 25 Aug 2026 19:28:22 +0900</pubDate>
+</item>
+<item>
+<title>話題のステルスモデル「Ox Alpha」はナニモノか　うわさをまとめてみた</title>
+<link>https://www.itmedia.co.jp/aiplus/article/2608/25/2000000748/</link>
+<description>開発元を伏せたまま米OpenRouterで無料公開されたAIモデル「Ox Alpha」が話題だ。一部の開発ツールでは利用シェア1位に。確認できる事実と、中国Z.aiの「GLM」系とみる有力なうわさを整理した。</description>
+<pubDate>Tue, 25 Aug 2026 16:50:42 +0900</pubDate>
+</item>
+<item>
+<title>シャープ、対話型AIロボ「ポケとも」に新モデル　あえて“全肯定しないキャラ”に　「暇だなー」と話しかけると……</title>
+<link>https://www.itmedia.co.jp/aiplus/article/2608/25/2000000747/</link>
+<description>シャープは対話型のAIロボット「ポケとも」の新モデルを発表した。従来のモデルとは性格を変え、あえてユーザーを“全肯定しないキャラクター”にした。</description>
+<pubDate>Tue, 25 Aug 2026 15:56:11 +0900</pubDate>
+</item>
+<item>
+<title>社内ITの不備で1人年18営業日の時間ロス、100人企業で約4400万円の損失換算に</title>
+<link>https://kn.itmedia.co.jp/kn/article/2608/25/2000000716/</link>
+<description>ある調査によると、社内IT環境の不備によって従業員1人あたり年147時間が失われるという。しかも、この損失はほとんど可視化されておらず、運用課題のずれや、採用・離職へ影響している可能性もある。</description>
+<pubDate>Tue, 25 Aug 2026 14:35:00 +0900</pubDate>
+</item>
+<item>
+<title>「ChatGPT Plus」で5時間制限復活、Work／Codex対象　Proは「数カ月は対象外」</title>
+<link>https://www.itmedia.co.jp/aiplus/article/2608/25/2000000744/</link>
+<description>「5時間制限により計算資源の負荷を平準化でき、週単位の利用枠を手厚く維持できる」</description>
+<pubDate>Tue, 25 Aug 2026 14:11:59 +0900</pubDate>
+</item>
+<item>
+<title>Linux版の「ChatGPTデスクトップアプリ」ついに登場　何ができて、何ができない？</title>
+<link>https://atmarkit.itmedia.co.jp/ait/articles/2608/25/news033.html</link>
+<description>「ChatGPT」に加えて「ChatGPT Work」「Codex」も使える、Linux版のデスクトップアプリケーションのプレビュー版が登場した。できることと、できないことを整理しよう。</description>
+<pubDate>Tue, 25 Aug 2026 13:00:00 +0900</pubDate>
+</item>
+<item>
+<title>中国製AIが上位を占有、米国製AIに3倍差　Mozillaレポートが明かす「オープンモデル」の現在地</title>
+<link>https://atmarkit.itmedia.co.jp/ait/articles/2608/25/news055.html</link>
+<description>Mozillaは、オープンウェイトのAIモデルの利用動向など現状をまとめたレポート「The State of Open Source AI」を公開した。同社と調査会社SlashDataによる調査、「Chatbot Arena」やOpenRouterの公開データに基づいている。</description>
+<pubDate>Tue, 25 Aug 2026 13:00:00 +0900</pubDate>
+</item>
+<item>
+<title>人型ロボットが本社周辺をうろうろ　米Figureの目撃動画が話題、CEO「キャンパスは“SF映画”」</title>
+<link>https://www.itmedia.co.jp/aiplus/article/2608/25/2000000738/</link>
+<description>米Figure AIの人型ロボットが本社周辺の屋外を歩き回る様子を捉えた動画がXで話題だ。同社のブレット・アドコックCEOは「FigureのキャンパスはSF映画だ」とコメントした。</description>
+<pubDate>Tue, 25 Aug 2026 12:28:57 +0900</pubDate>
+</item>
+<item>
+<title>千葉豪雨、なぜ当日昼前まで予測できなかったのか　ウェザーニューズに聞く「天気予報のメカニズム」のイマ</title>
+<link>https://www.itmedia.co.jp/aiplus/article/2608/25/2000000689/</link>
+<description>8月13日午後から夜にかけて千葉県を襲った記録的な大雨「令和8年8月千葉豪雨」。線状降水帯が繰り返し発生し、千葉市では観測史上1位となる雨量を記録、死者・行方不明者が出る大きな災害となった。現代の天気予報は、なぜこれほどの豪雨を直前まで捉えられなかったのか。ウェザーニューズ（千葉市美浜区）の気象予報士・内藤邦裕氏に聞いた。</description>
+<pubDate>Tue, 25 Aug 2026 12:10:00 +0900</pubDate>
+</item>
+<item>
+<title>ランボルギーニのSDV開発やAI設計改善も、PTCが“アジア初”デモ機公開</title>
+<link>https://monoist.itmedia.co.jp/mn/articles/2608/25/news043.html</link>
+<description>PTCジャパンは日本橋の新オフィスに開設したデモセンター「JXC」において、ランボルギーニのSDV開発や建機のAI設計改善のデモンストレーションを披露した。</description>
+<pubDate>Tue, 25 Aug 2026 08:15:00 +0900</pubDate>
+</item>
+<item>
+<title>建築業でも「Claudeの有料導入」が急増　AI導入レベルが上がった企業を悩ます「新たな壁」とは</title>
+<link>https://atmarkit.itmedia.co.jp/ait/articles/2608/25/news041.html</link>
+<description>建築AI経営研究会は、「建築AI経営実態調査」の結果を公開した。特定部署以上でAIを活用する企業が68.5％に達したことが判明した。課題は導入初期の試行錯誤から「新たな壁」にシフトしている。</description>
+<pubDate>Tue, 25 Aug 2026 08:00:00 +0900</pubDate>
+</item>
+</channel>
+</rss>

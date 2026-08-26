@@ -9,3 +9,6 @@ package-lock.json
 # 本地工具与资源目录，不纳入格式化
 tools
 assets
+# 真实信源快照：它的价值就在于**和线上一字不差**。格式化会重排缩进和换行，
+# 快照就不再是快照了（HTML 已被上面的 **/*.html 覆盖，这里连 MANIFEST.json 一起挡住）。
+tests/corpus

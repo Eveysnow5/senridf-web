@@ -1,0 +1,47 @@
+name: Corpus Drift Check
+
+# 每周体检真实信源：还抓得到吗？解析器还认得出吗？
+#
+# 存在的理由：ai-intel 曾经静默退化四周，GitHub Actions 一路报「成功」。
+# 因为「跑完了没抛错」和「产出是对的」是两回事 —— 信源改版、选择器打空、
+# 字段换名，全都不会让脚本崩掉，只会让结果悄悄变空。
+#
+# 这里盯的是**结构**不是字节：新闻 feed 的内容每小时都在变，字节比对天天报警
+# 等于没有报警。判据见 scripts/corpus/shape.js。
+#
+# 注意：这个 workflow **只体检、不重采**。重采会覆盖语料，得有人看着 git diff
+# 确认「信源确实改版了、解析器也跟上了」才能做，所以那一步留在本地：
+#   node scripts/corpus/snapshot.js --apply
+
+on:
+  schedule:
+    # 每周一 02:00 UTC（日本时间周一 11:00）
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+    inputs:
+      only:
+        description: '只查某些目标（id 片段，如 bids 或 ai-intel/prtimes），留空查全部'
+        required: false
+        type: string
+
+jobs:
+  drift:
+    if: github.repository == 'sherlockafa007/senridoufuu-web'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install
+      - name: 体检
+        # 输入走 env，不插进脚本文本 —— 见 tests/workflow-injection.test.mjs
+        env:
+          ONLY: ${{ inputs.only }}
+        run: |
+          if [ -n "$ONLY" ]; then
+            node scripts/corpus/snapshot.js --only "$ONLY"
+          else
+            node scripts/corpus/snapshot.js
+          fi

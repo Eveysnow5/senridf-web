@@ -13,43 +13,8 @@ const {
   parseToyonakaLinks,
 } = require('./parse');
 
-// NOTE: Suita City URLs are year-specific (令和8年度 = 2026).
-// Update these each April when a new fiscal year begins.
-const TARGETS = [
-  {
-    city: '大阪市',
-    url: 'https://www.city.osaka.lg.jp/templates/gyomuitaku_nyusatsuanken/0-Curr.html',
-    type: 'osaka',
-    category: 'gyomuitaku',
-    categoryLabel: '業務委託',
-  },
-  {
-    city: '大阪市',
-    url: 'https://www.city.osaka.lg.jp/templates/buppin_nyusatsuanken/0-Curr.html',
-    type: 'osaka',
-    category: 'buppin',
-    categoryLabel: '物品供給',
-  },
-  {
-    city: '吹田市',
-    url: 'https://www.city.suita.osaka.jp/sangyo/1017983/1017993/1042102/index.html',
-    type: 'suita',
-    category: 'gyomuitaku',
-    categoryLabel: '業務委託',
-  },
-  {
-    city: '吹田市',
-    url: 'https://www.city.suita.osaka.jp/sangyo/1017983/1017993/1042103/index.html',
-    type: 'suita',
-    category: 'buppin',
-    categoryLabel: '物品購入',
-  },
-  {
-    city: '豊中市',
-    url: 'https://www.city.toyonaka.osaka.jp/jigyosya/keiyaku/kokokutanto/index.html',
-    type: 'toyonaka',
-  },
-];
+// 信源配置已抽到 targets.js（纯数据，语料库与覆盖度测试要 require 它）。
+const TARGETS = require('./targets');
 
 function initFirebase() {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);

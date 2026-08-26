@@ -1,0 +1,164 @@
+{
+  "note": "真实信源快照的出处记录。sha256 用于溯源（这份语料是哪一版），不用于告警 —— 新闻 feed 每小时都在变，字节比对天天报警等于没有报警。告警看 shape。",
+  "waived": {
+    "ai-intel/preferred": "PFN 官网自 2026-07-31 起就没有 feed：/ja/news/feed/ 308 跳转后仍 404，首页也没有 <link rel=alternate>。2026-08-26 复查依旧。采不到，等换源或删源。"
+  },
+  "snapshots": {
+    "ai-intel/robotstart": {
+      "url": "https://robotstart.info/rss20/index.rdf",
+      "label": "ロボスタ",
+      "file": "ai-intel/robotstart.xml",
+      "fetched_at": "2026-08-26T07:55:55.631Z",
+      "http_status": 200,
+      "content_type": "application/xml; charset=utf-8",
+      "bytes": 57982,
+      "sha256": "762e2ec55b8faaedad86b650a0b3cd39e78191782e267c07b594a30e70d636b5",
+      "shape": {
+        "kind": "feed",
+        "items": 50,
+        "pct_title": 100,
+        "pct_url": 100,
+        "pct_date": 100,
+        "pct_raw": 100
+      }
+    },
+    "ai-intel/prtimes": {
+      "url": "https://prtimes.jp/index.rdf",
+      "label": "PR TIMES",
+      "file": "ai-intel/prtimes.xml",
+      "fetched_at": "2026-08-26T07:55:56.004Z",
+      "http_status": 200,
+      "content_type": "application/xml",
+      "bytes": 181347,
+      "sha256": "c85c993ba81f232d135e361ad499900b24667536970d1098affc3f243e699efc",
+      "shape": {
+        "kind": "feed",
+        "items": 200,
+        "pct_title": 100,
+        "pct_url": 100,
+        "pct_date": 100,
+        "pct_raw": 100
+      }
+    },
+    "ai-intel/itmedia": {
+      "url": "https://rss.itmedia.co.jp/rss/2.0/aiplus.xml",
+      "label": "ITmedia AI+",
+      "file": "ai-intel/itmedia.xml",
+      "fetched_at": "2026-08-26T07:55:57.492Z",
+      "http_status": 200,
+      "content_type": "application/xml",
+      "bytes": 11683,
+      "sha256": "74fb805a03687e0bb3551a6526414425eb4e45038ab982deebe815a0e8380cde",
+      "shape": {
+        "kind": "feed",
+        "items": 20,
+        "pct_title": 100,
+        "pct_url": 100,
+        "pct_date": 100,
+        "pct_raw": 100
+      }
+    },
+    "ai-intel/meti": {
+      "url": "https://www.meti.go.jp/press/index.html",
+      "label": "経産省ニュースリリース",
+      "file": "ai-intel/meti.html",
+      "fetched_at": "2026-08-26T07:55:57.686Z",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 13370,
+      "sha256": "edac1495da4fb140e1b7c907ba5f8a959d023ff724bf0e59359646c7e569c7f1",
+      "shape": {
+        "kind": "list",
+        "items": 27,
+        "pct_title": 100,
+        "pct_url": 100,
+        "pct_article": 74
+      }
+    },
+    "bids/osaka-gyomuitaku": {
+      "url": "https://www.city.osaka.lg.jp/templates/gyomuitaku_nyusatsuanken/0-Curr.html",
+      "label": "大阪市/業務委託",
+      "file": "bids/osaka-gyomuitaku.html",
+      "fetched_at": "2026-08-26T07:55:58.124Z",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 66645,
+      "sha256": "958e51ae56ebc82f2502c9d82f86b81786ab55c5dbfe858b79390d2b7c49e2e8",
+      "shape": {
+        "kind": "bid",
+        "items": 35,
+        "pct_title": 100,
+        "pct_url": 100,
+        "pct_deadline": 100
+      }
+    },
+    "bids/osaka-buppin": {
+      "url": "https://www.city.osaka.lg.jp/templates/buppin_nyusatsuanken/0-Curr.html",
+      "label": "大阪市/物品供給",
+      "file": "bids/osaka-buppin.html",
+      "fetched_at": "2026-08-26T07:55:58.482Z",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 34380,
+      "sha256": "a8f183e22d8e9d6aba88beb754a81ff2fc16586faa59fbf24d3458bc95dadceb",
+      "shape": {
+        "kind": "bid",
+        "items": 5,
+        "pct_title": 100,
+        "pct_url": 100,
+        "pct_deadline": 100
+      }
+    },
+    "bids/suita-gyomuitaku": {
+      "url": "https://www.city.suita.osaka.jp/sangyo/1017983/1017993/1042102/index.html",
+      "label": "吹田市/業務委託",
+      "file": "bids/suita-gyomuitaku.html",
+      "fetched_at": "2026-08-26T07:55:59.363Z",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 64941,
+      "sha256": "a1a94f63c2f6c6480d05e8f7eb9574a7118cc981895bed85236e41368cf639cc",
+      "shape": {
+        "kind": "bid",
+        "items": 7,
+        "pct_title": 100,
+        "pct_url": 100,
+        "pct_deadline": 100
+      }
+    },
+    "bids/suita-buppin": {
+      "url": "https://www.city.suita.osaka.jp/sangyo/1017983/1017993/1042103/index.html",
+      "label": "吹田市/物品購入",
+      "file": "bids/suita-buppin.html",
+      "fetched_at": "2026-08-26T07:56:03.278Z",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 45809,
+      "sha256": "0972486a653bca1002c7f03f4e8ff33bbca053a3586360cd1dc19d7d4fe7fa68",
+      "shape": {
+        "kind": "bid",
+        "items": 7,
+        "pct_title": 100,
+        "pct_url": 100,
+        "pct_deadline": 100
+      }
+    },
+    "bids/toyonaka": {
+      "url": "https://www.city.toyonaka.osaka.jp/jigyosya/keiyaku/kokokutanto/index.html",
+      "label": "豊中市/全部",
+      "file": "bids/toyonaka.html",
+      "fetched_at": "2026-08-26T07:56:03.596Z",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 34439,
+      "sha256": "034723c40625c2b184b019c7923cc53d5fbb5e9b3df219e38adbe03702cc0a58",
+      "shape": {
+        "kind": "bid",
+        "items": 4,
+        "pct_title": 100,
+        "pct_url": 100,
+        "pct_deadline": 0
+      }
+    }
+  }
+}
