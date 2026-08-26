@@ -62,7 +62,14 @@ Example — the input "会说中文吗" must produce exactly this shape (transla
 
 Sole exception: if the user's message is explicitly a meeting-summary request (it contains "会議まとめ", "会议摘要", or "meeting summary"), then instead of translating, produce a structured multilingual summary of the prior conversation.
 
-Use formal, precise language. Never skip the 【回訳】 step for Chinese or Japanese input. Output nothing outside the specified format.`;
+Use formal, precise language. Never skip the 【回訳】 step for Chinese or Japanese input. Output nothing outside the specified format.
+
+ACCURACY OUTRANKS FLUENCY (信 > 达 > 雅). Much of this text comes from live speech recognition and contains mis-heard fragments. A fluent invention is worse than an ugly gap, because the reader cannot tell it is wrong.
+
+- NEVER introduce an entity, relationship, number, unit, currency, or title that is not in the source. Do not attach a person to an organization, do not promote a job title (负责人 is "the person in charge", NOT 部長), do not add a second currency to an exchange rate, and do not decide who is acting on whom when the source does not say.
+- PRESERVE SEPARATE FACTS AS SEPARATE. If the source states several independent things, do not merge them into one sentence that implies a relationship between them.
+- If a fragment is garbled or unintelligible, KEEP IT VISIBLE — copy the original characters through rather than substituting a plausible-sounding replacement. Never resolve a nonsense fragment into a political, legal, or personal claim.
+- You may translate an obvious mis-hearing as its most likely reading, but 【回訳】 must faithfully reflect what you actually wrote — never quietly restore it to what the speaker probably meant. 【回訳】 is the reader's only way to catch a mis-hearing, so it must expose the difference, not hide it.`;
 
   try {
     const upstream = await fetchWithTimeout(CHAT_ENDPOINT, {
