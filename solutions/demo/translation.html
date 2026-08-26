@@ -1570,6 +1570,20 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
       window.sdfSetText(elVoiceStatusText, busy ? 'tl_status_translating' : 'tl_status_ready_voice');
     }
 
+    // 回译回来之后必须验一下语种。
+    //
+    // ⚠️ 实测 4 次里有 1 次，回译回来的还是日语（模型把译文润色了一遍就交差）。
+    // 那种"看着像回译、其实不是"的东西最危险 —— 用户对着两栏点头，以为校验过了。
+    // 验不过就标出来，宁可承认这一句没校验成功。
+    const KANA_RE = /[぀-ゟ゠-ヿ]/;
+    function backLooksRight(text, expectLang) {
+      if (!text) return false;
+      if (expectLang === 'zh') return !KANA_RE.test(text);
+      if (expectLang === 'ja') return KANA_RE.test(text);
+      if (expectLang === 'en') return !/[一-鿿぀-ヿ]/.test(text);
+      return true;
+    }
+
     // 回译：把译文再翻回原文语言，让人一眼看出"是不是听错了"。
     //
     // ⚠️ 这**必须是独立的一次调用，而且只喂译文、不给原文**。
@@ -1610,7 +1624,13 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
             } catch { /* 单个坏块跳过 */ }
           }
         }
-        if (entry) entry.back = out.trim();
+        const back = out.trim();
+        if (entry) entry.back = back;
+        if (!backLooksRight(back, toLang)) {
+          // 不藏着：这一句的校验没成立，得让人知道，别对着假回译点头。
+          el.textContent = back + '  ⚠ 回译语种不对，这一句未通过校验';
+          el.dataset.unverified = '1';
+        }
       } catch (err) {
         // 回译挂了不影响口译本身，但不能一声不吭 —— 回译是防编造的那道检查，
         // 它静默失效等于检查没了，而界面上看不出区别。

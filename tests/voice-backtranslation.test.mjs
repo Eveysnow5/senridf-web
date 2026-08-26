@@ -112,3 +112,39 @@ test('回译有独立的展示位，且默认隐藏（没回来之前不占地�
   );
   assert.match(css, /font-size:\s*0\./, '回译的字号没有小于译文');
 });
+
+// ── 回译回来之后还得验语种 ──────────────────────────────────────────────────
+// 实测 4 次里有 1 次，回译回来的还是日语（模型把译文润色一遍就交差）。
+// 那种"看着像回译、其实不是"的东西最危险：用户对着两栏点头，以为校验过了。
+// 这正是今天反复出现的那类失败 —— 护栏只验存在、不验功能。
+test('★ 回译语种校验：日语冒充中文回译必须被抓到', () => {
+  const kana = PAGE.match(/const KANA_RE = \/\[[^\]]*\]\/;/);
+  assert.ok(kana, '找不到 KANA_RE');
+  const body = PAGE.match(/function backLooksRight\([\s\S]*?\n {4}\}/);
+  assert.ok(body, '找不到 backLooksRight —— 回译的语种校验没了');
+  const backLooksRight = new Function(`${kana[0]} ${body[0]}; return backLooksRight;`)();
+
+  assert.equal(
+    backLooksRight('本次预算为3,200万日元，较去年增长15%。', 'zh'),
+    true,
+    '正常中文回译被误判',
+  );
+  assert.equal(
+    backLooksRight('今回の予算は3,200万円で、昨年比15％増です。', 'zh'),
+    false,
+    '★ 日语冒充中文回译没被抓到 —— 这正是实测中出现过的那一次',
+  );
+  assert.equal(backLooksRight('', 'zh'), false, '空回译该判不合格');
+  // 反向对照：ja 方向不能一律判不合格，否则"永远返回 false"也能让上面全绿
+  assert.equal(
+    backLooksRight('今回の予算は3,200万円です。', 'ja'),
+    true,
+    'ja 方向的正常回译被误判',
+  );
+  assert.equal(backLooksRight('本次预算为3200万日元。', 'ja'), false, '中文冒充日语回译没被抓到');
+});
+
+test('★ 校验没通过要标出来，不能藏着', () => {
+  assert.match(PAGE, /未通过校验/, '回译语种不对时界面上没有任何提示 —— 用户会对着一段假回译点头');
+  assert.match(PAGE, /dataset\.unverified/, '没有给未通过校验的回译打标记');
+});
