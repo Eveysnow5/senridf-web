@@ -108,3 +108,30 @@ test('★ splitBack：标记被切在两个流块之间时，译文末尾不能�
   // 反向对照：正文里本来就有的「【」不该被吞掉，否则"一律删掉左括号"也能全绿
   assert.equal(splitBack('【重要】お知らせ').tl, '【重要】お知らせ', '正文里的方括号被误删了');
 });
+
+// 光验"有没有回訳"是不够的 —— 2026-08-26 实测：模型把译文原样抄进了 回訳 栏，
+// 两栏一字不差。**这样的检查等于没有检查，而且更糟：它给假安心。**
+// 我的探针当时只查了"回訳 在不在"，没查"它是不是真的在回译" —— 护栏只验存在
+// 不验功能，同类毛病当天第九次。
+// 根因是提示词顺序：方向说明排在后面、写着 Target language: Japanese，
+// 模型就把回訳也写成了日语。修法是在方向说明里把回訳的语言写死。
+test('★ 每个翻译方向都必须钉死【回訳】用哪种语言', () => {
+  const dirs = ['ja-zh', 'zh-ja', 'en-zh', 'en-ja', 'zh-en', 'ja-en'];
+  const missing = dirs.filter((d) => {
+    const i = STREAM.indexOf(`'${d}':`);
+    if (i === -1) return true;
+    // 取这一项到下一项之间的文本
+    const rest = STREAM.slice(i, i + 400);
+    return !/【回訳】 line MUST be written in/.test(rest);
+  });
+  assert.deepEqual(
+    missing,
+    [],
+    `这些方向没有钉死回訳的语言，模型会把译文原样抄一遍：${missing.join(', ')}`,
+  );
+  // 反向对照：不能靠"到处贴同一句"糊弄 —— 每个方向指定的语言必须各不相同地
+  // 对应它自己的输入语言
+  assert.match(STREAM, /'zh-ja':[\s\S]{0,300}?written in Simplified Chinese/);
+  assert.match(STREAM, /'ja-zh':[\s\S]{0,300}?written in Japanese/);
+  assert.match(STREAM, /'en-ja':[\s\S]{0,300}?written in English/);
+});

@@ -61,13 +61,31 @@ export async function onRequest(context) {
     ' then a line beginning with 【回訳】 containing a literal back-translation of YOUR OWN translation into the source language.' +
     ' The 【回訳】 must faithfully mirror what you actually wrote — never quietly restore it to what the speaker probably meant. It exists so the listener can catch a mis-hearing, so it must expose the difference, not hide it.';
 
+  // 回訳 的语言必须在**方向说明里**再讲一遍。
+  //
+  // 2026-08-26 实测：只在 ciBase 里说"back-translation into the source language"
+  // 不够 —— 方向说明排在后面、又写着 "Target language: Japanese"，模型就把
+  // 回訳 也用日语写了，两栏一字不差。**那样的检查等于没有检查，而且更糟：
+  // 它给假安心。** 所以这里把回訳的目标语言写死，且排在最后。
   const dirMap = {
-    'ja-zh': ' Input language: Japanese. Target language: Simplified Chinese.',
-    'zh-ja': ' Input language: Simplified Chinese. Target language: Japanese.',
-    'en-zh': ' Input language: English. Target language: Simplified Chinese.',
-    'en-ja': ' Input language: English. Target language: Japanese.',
-    'zh-en': ' Input language: Simplified Chinese. Target language: English.',
-    'ja-en': ' Input language: Japanese. Target language: English.',
+    'ja-zh':
+      ' Input language: Japanese. Target language: Simplified Chinese.' +
+      ' The 【回訳】 line MUST be written in Japanese (the input language), never in Chinese.',
+    'zh-ja':
+      ' Input language: Simplified Chinese. Target language: Japanese.' +
+      ' The 【回訳】 line MUST be written in Simplified Chinese (the input language), never in Japanese.',
+    'en-zh':
+      ' Input language: English. Target language: Simplified Chinese.' +
+      ' The 【回訳】 line MUST be written in English (the input language), never in Chinese.',
+    'en-ja':
+      ' Input language: English. Target language: Japanese.' +
+      ' The 【回訳】 line MUST be written in English (the input language), never in Japanese.',
+    'zh-en':
+      ' Input language: Simplified Chinese. Target language: English.' +
+      ' The 【回訳】 line MUST be written in Simplified Chinese (the input language), never in English.',
+    'ja-en':
+      ' Input language: Japanese. Target language: English.' +
+      ' The 【回訳】 line MUST be written in Japanese (the input language), never in English.',
   };
   const systemPrompt =
     ciBase +
