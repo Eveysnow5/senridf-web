@@ -606,52 +606,27 @@ updateTableHeight();
 window.addEventListener('resize', updateTableHeight);
 </script>
 
+<!-- 访问统计走 tracking.js：它用**具名 app**（'tracking'）做匿名登录，会话与默认 app 隔离。 -->
+<script type="module" src="/js/tracking.js"></script>
 <script type="module">
 import { auth, db } from '/js/shared/firebase-init.js';
 import { initErrorReporting } from '/js/shared/report-error.js';
-import {
-  onAuthStateChanged,
-  signInAnonymously,
-  signOut,
-} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js';
-import { createVisitDuration } from '/js/shared/visit-duration.js';
+import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 
 initErrorReporting({ db });
 
-// 这个页面**不设登录门槛**（2026-08-26 取消）：动词活用表和小测试全在浏览器里算，
-// 一次 /api/ 都不调，没有额度可烧。挡着只会把想用的人挡在外面。
+// 这个页面不设登录门槛（2026-08-26）：活用表和小测试全在浏览器里算，一次 /api/* 都不调。
 //
-// 但仍然需要匿名登录 —— visits / errors 两个集合的写入规则是 isSignedIn()，
-// 匿名身份也算数。不登录的话统计和错误上报会**一声不吭地**全部失败。
+// 这段脚本对默认 app 的会话是**只读**的 —— 只用来判断"要不要显示邮箱和退出按钮"，
+// 从不创建会话。
 //
-// ⚠️ 匿名登录必须只在**没有会话时**做。对已登录用户调 signInAnonymously 会把他的
-//    会话顶掉，等于把人踢下线 —— 所以它放在 onAuthStateChanged 的 user 为空分支里，
-//    而不是模块顶层。
-const visitDuration = createVisitDuration();
-let visitDocId = null;
-
-function anonId() {
-  let id = localStorage.getItem('sdf_anon_id');
-  if (!id) {
-    id = 'anon_' + Math.random().toString(36).slice(2, 9);
-    localStorage.setItem('sdf_anon_id', id);
-  }
-  return id;
-}
-
+// ⚠️⚠️ 绝对不要在默认 app 上调 signInAnonymously。
+// 2026-08-26 线上事故就是这么来的：同源所有页面共用默认 app 的会话，匿名会话一建立，
+// 别的（有门控的）工具页拿到的 user 就是个 truthy 的匿名对象 —— 门控不跳登录页，
+// 直接去读 users/{uid}，被规则拒掉、抛错、渲染成"出错了"，**而且再也回不到登录页**。
+// 访问统计需要的匿名身份由 tracking.js 在具名 app 上建，两者互不影响。
 onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    signInAnonymously(auth).catch((err) => {
-      // 不影响页面使用，但不能一声不吭：匿名登录持续失败时后台统计会静静归零，
-      // 而"没人访问"和"统计坏了"在图表上长得一模一样。
-      console.warn('匿名登录失败，本次访问不会计入统计：', err);
-    });
-    return;
-  }
-
-  // 真实登录的用户才显示邮箱和退出按钮；匿名访客看不到这一块。
-  const email = user.isAnonymous ? null : user.email;
+  const email = user && !user.isAnonymous ? user.email : null;
   const uarea = document.getElementById('uarea');
   if (email) {
     uarea.style.display = 'flex';
@@ -659,34 +634,12 @@ onAuthStateChanged(auth, (user) => {
   } else {
     uarea.style.display = 'none';
   }
-
-  if (visitDocId) return; // 登录态会多次回调，统计只记一次
-  visitDocId = trackVisit({
-    db,
-    email,
-    anonId: anonId(),
-    page: 'japanese_learner',
-    device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
-  });
 });
 
-function finishVisit() {
-  if (!visitDocId) return;
-  const duration = visitDuration.hide();
-  if (duration === null) return; // 这一段没有新增秒数，跳过写入
-  updateVisitDuration({ db, docId: visitDocId, duration });
-}
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') finishVisit();
-  else visitDuration.show();
-});
-// hidden 在部分浏览器的「直接关闭标签页」路径上不保证触发，补一个 pagehide。
-window.addEventListener('pagehide', finishVisit);
-
-// 退出后不跳走：会话变空 → 上面的分支会转成匿名身份，人留在页面上继续用。
+// 退出后不跳走，人留在页面上继续用。
+// 清 sdf_user_email 是必须的：tracking.js 靠它判断访客身份，不清的话退出之后的
+// 匿名访问还会一直算到这个邮箱头上。
 document.getElementById('logoutBtn').onclick = () => {
-  // 这一行不能省：sdf_user_email 是别的页面（js/tracking.js）判断访客身份的依据，
-  // 不清掉的话，退出之后的匿名访问还会一直算到这个邮箱头上。
   localStorage.removeItem('sdf_user_email');
   signOut(auth);
 };

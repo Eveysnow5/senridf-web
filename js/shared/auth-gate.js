@@ -26,7 +26,14 @@ export function mountAuthGate({ auth, db, gateElId = 'auth-gate', onApproved, on
   return onAuthStateChanged(auth, async (user) => {
     const gate = document.getElementById(gateElId);
     try {
-      if (!user) {
+      // 先判定，再决定要不要读 Firestore。
+      //
+      // 顺序很重要：原来是「user 非空 → 直接读 users/{uid}」，匿名身份也会走到那一步，
+      // 而 users 的读规则要 isMember()，于是抛 PERMISSION_DENIED、渲染成"出错了"。
+      // 见 auth-gate-state.js 里那段事故说明。
+      if (resolveGateState({ user }) === 'guest') {
+        // 匿名会话不该留着：留着的话下一个页面又会看到一个 truthy 的 user。
+        localStorage.removeItem('sdf_user_email');
         window.location.replace('/account.html');
         return;
       }
