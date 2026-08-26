@@ -1,0 +1,8 @@
+# 真实信源快照：它的全部价值就在于**和线上抓下来的一字不差**。
+#
+# core.autocrlf=true 会在 Windows 上检出时把 LF 换成 CRLF —— 于是同一个 commit，
+# Windows 上的文件和 Linux CI 上的文件字节不同，MANIFEST.json 里记的 sha256 和
+# bytes 两边都对不上，而"内容指纹"这东西一旦对不上就等于没有。
+#
+# -text = 完全不做换行转换，进来什么样出去什么样。
+tests/corpus/** -text

@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { activeTargets, WAIVED } = require('../scripts/corpus/targets');
 const { compareShape, METI_PRESS_PATH } = require('../scripts/corpus/shape');
 
@@ -183,8 +184,19 @@ test('MANIFEST 每条都有出处：URL、采集时间、状态码、字节数',
     assert.equal(m.http_status, 200, `${id} 存的是非 200 的响应`);
     assert.ok(m.bytes > 1000, `${id} 只有 ${m.bytes} 字节 —— 存的多半是错误页而不是真内容`);
     assert.match(m.sha256, /^[0-9a-f]{64}$/, `${id} 没有内容指纹`);
-    const actual = fs.statSync(path.join(CORPUS, m.file)).size;
-    assert.ok(actual > 1000, `${id} 的文件只有 ${actual} 字节`);
+
+    // 只验指纹**格式**等于没验。指纹要真的对得上，否则它证明不了任何事。
+    // 这条同时钉住 .gitattributes 里的 `tests/corpus/** -text`：
+    // 少了那一行，Windows 上检出会把 LF 换成 CRLF，字节数和 sha256 立刻全对不上。
+    const raw = fs.readFileSync(path.join(CORPUS, m.file));
+    assert.equal(
+      crypto.createHash('sha256').update(raw).digest('hex'),
+      m.sha256,
+      `${id} 的内容和 MANIFEST 记的指纹对不上 —— 文件被改过，或者换行被 git 转换了` +
+        `（检查 .gitattributes 里的 tests/corpus/** -text）`,
+    );
+    assert.equal(raw.length, m.bytes, `${id} 的字节数和 MANIFEST 记的对不上`);
+    assert.ok(m.bytes > 1000, `${id} 只有 ${m.bytes} 字节`);
   }
 });
 
