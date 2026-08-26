@@ -177,7 +177,12 @@ async function main() {
           citation_ok: ok,
           unknown_urls: unknownUrls,
         });
-      console.log(`  ✓ ${week} 已重建（${items.length} 条，引用校验 ${ok ? '通过' : '未通过'}）\n`);
+      console.log(`  ✓ ${week} 已重建（${items.length} 条，引用校验 ${ok ? '通过' : '未通过'}）`);
+      // 只说"未通过"而不说是**哪些**链接，等于把唯一的诊断线索吞掉：
+      // 2026-08-25 两周都报未通过，而无从判断是模型编造还是校验器误报
+      // （实际是后者：中文标点被卷进了 URL）。
+      if (!ok) console.log(`    可疑链接（不在本周素材里）：${unknownUrls.join(' | ')}`);
+      console.log('');
       rebuilt++;
     } catch (err) {
       console.error(`  ✗ ${week} 重建失败：${describeCallError(err)}\n`);

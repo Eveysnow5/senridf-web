@@ -300,6 +300,8 @@ async function main() {
           });
         digestOk = ok;
         console.log(`Digest written for ${week} (${digestItems.length} items, citation_ok=${ok})`);
+        // 同 rebuild-digest.js：不列出可疑链接，就无法区分"模型编造"和"校验器误报"
+        if (!ok) console.log(`  可疑链接：${unknownUrls.join(' | ')}`);
       } catch (err) {
         console.error(`Digest failed: ${describeCallError(err)}`);
       }
