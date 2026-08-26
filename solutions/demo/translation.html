@@ -353,6 +353,25 @@
       font-size: 0.875rem;
       font-weight: 300;
     }
+    /* 回訳（回译）—— 读者发现"听错了"的唯一手段，所以要显示，但排版上要弱于译文 */
+    .cue-back {
+      margin-top: 6px;
+      padding-left: 10px;
+      border-left: 2px solid var(--c-border, #e5e5e5);
+      font-family: var(--f-sans);
+      font-size: 0.8125rem;
+      font-weight: 300;
+      color: var(--c-text-3);
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .cue-back::before {
+      content: '回訳 ';
+      font-family: var(--f-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.14em;
+      opacity: 0.7;
+    }
     .cue-error { color: #b04040; font-size: 0.875rem; }
     .cue-entry--summary {
       background: var(--c-accent-light);
@@ -1496,6 +1515,7 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
         const decoder = new TextDecoder();
         let fullText = '';
         const tlEl = item.querySelector('.cue-tl');
+        const backEl = item.querySelector('.cue-back');
         tlEl.classList.remove('cue-tl--pending');
         tlEl.textContent = '';
         let buf = '';
@@ -1514,19 +1534,27 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
               const token = chunk.choices?.[0]?.delta?.content || '';
               if (token) {
                 fullText += token;
-                tlEl.textContent = fullText;
+                const part = splitBack(fullText);
+                tlEl.textContent = part.tl;
+                if (part.back) {
+                  backEl.textContent = part.back;
+                  backEl.hidden = false;
+                }
               }
             } catch { /* skip malformed chunk */ }
           }
         }
         item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        speakText(fullText, speakerLang[tgtSpk]);
+        const finalPart = splitBack(fullText);
+        // 朗读只念译文 —— 把回訳一起念出来，在会议现场是灾难。
+        speakText(finalPart.tl, speakerLang[tgtSpk]);
         voiceHistory.push({
           marker: currentMarker,        // 发言人标记（"我说"/"对方说"）
           srcLang: speakerLang[spk],    // 实际源语言（ja/zh/en）
           tgtLang: speakerLang[tgtSpk], // 实际目标语言
           src: text,                    // 源转录
-          tgt: fullText,                // 译文
+          tgt: finalPart.tl,            // 译文（不含回訳，导出用的也是这个）
+          back: finalPart.back,         // 回訳：供人核对有没有听错
         });
         if (voiceHistory.length > 100) {
           voiceHistory.shift();
@@ -1545,6 +1573,24 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
       window.sdfSetText(elVoiceStatusText, busy ? 'tl_status_translating' : 'tl_status_ready_voice');
     }
 
+    // 译文与回訳共用一条流。模型先吐译文，再吐一行以 【回訳】 开头的回译。
+    // 边流边拆：标记还没到就整段当译文，到了就把后面的分到回訳栏。
+    const BACK_MARK = '【回訳】';
+    function splitBack(raw) {
+      const i = raw.indexOf(BACK_MARK);
+      if (i !== -1) {
+        return { tl: raw.slice(0, i).trim(), back: raw.slice(i + BACK_MARK.length).trim() };
+      }
+      // 标记可能正好被切在两个流块之间（这一块只到「【回」，下一块才来「訳」）。
+      // 不处理的话译文末尾会闪出半个标记 —— 现场看着像出了故障。
+      for (let k = BACK_MARK.length - 1; k > 0; k--) {
+        if (raw.endsWith(BACK_MARK.slice(0, k))) {
+          return { tl: raw.slice(0, raw.length - k).trim(), back: '' };
+        }
+      }
+      return { tl: raw, back: '' };
+    }
+
     function appendStreamItem(src, spk, dir) {
       const srcLang = speakerLang[spk];
       const avatarCls = { ja: '', zh: ' cue-avatar--zh', en: ' cue-avatar--en' }[srcLang] || '';
@@ -1560,6 +1606,7 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
             <div class="tl-spinner"></div>
             <span>翻訳中…</span>
           </div>
+          <div class="cue-back" hidden></div>
         </div>`;
       elVoiceStream.appendChild(el);
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
