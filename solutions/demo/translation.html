@@ -1534,28 +1534,25 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
               const token = chunk.choices?.[0]?.delta?.content || '';
               if (token) {
                 fullText += token;
-                const part = splitBack(fullText);
-                tlEl.textContent = part.tl;
-                if (part.back) {
-                  backEl.textContent = part.back;
-                  backEl.hidden = false;
-                }
+                tlEl.textContent = fullText;
               }
             } catch { /* skip malformed chunk */ }
           }
         }
         item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        const finalPart = splitBack(fullText);
-        // 朗读只念译文 —— 把回訳一起念出来，在会议现场是灾难。
-        speakText(finalPart.tl, speakerLang[tgtSpk]);
-        voiceHistory.push({
+        // 朗读只念译文 —— 把回译一起念出来，在会议现场是灾难。
+        speakText(fullText, speakerLang[tgtSpk]);
+        const entry = {
           marker: currentMarker,        // 发言人标记（"我说"/"对方说"）
           srcLang: speakerLang[spk],    // 实际源语言（ja/zh/en）
           tgtLang: speakerLang[tgtSpk], // 实际目标语言
           src: text,                    // 源转录
-          tgt: finalPart.tl,            // 译文（不含回訳，导出用的也是这个）
-          back: finalPart.back,         // 回訳：供人核对有没有听错
-        });
+          tgt: fullText,                // 译文（导出用的是这个，不含回译）
+          back: '',                     // 回译，下面那次调用回来后填
+        };
+        voiceHistory.push(entry);
+        // 不 await：口译不等回译，回译晚一拍出现在译文下方
+        requestBackTranslation(fullText, speakerLang[tgtSpk], speakerLang[spk], backEl, entry);
         if (voiceHistory.length > 100) {
           voiceHistory.shift();
           elVoiceStream.firstElementChild?.remove();
@@ -1573,22 +1570,52 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
       window.sdfSetText(elVoiceStatusText, busy ? 'tl_status_translating' : 'tl_status_ready_voice');
     }
 
-    // 译文与回訳共用一条流。模型先吐译文，再吐一行以 【回訳】 开头的回译。
-    // 边流边拆：标记还没到就整段当译文，到了就把后面的分到回訳栏。
-    const BACK_MARK = '【回訳】';
-    function splitBack(raw) {
-      const i = raw.indexOf(BACK_MARK);
-      if (i !== -1) {
-        return { tl: raw.slice(0, i).trim(), back: raw.slice(i + BACK_MARK.length).trim() };
-      }
-      // 标记可能正好被切在两个流块之间（这一块只到「【回」，下一块才来「訳」）。
-      // 不处理的话译文末尾会闪出半个标记 —— 现场看着像出了故障。
-      for (let k = BACK_MARK.length - 1; k > 0; k--) {
-        if (raw.endsWith(BACK_MARK.slice(0, k))) {
-          return { tl: raw.slice(0, raw.length - k).trim(), back: '' };
+    // 回译：把译文再翻回原文语言，让人一眼看出"是不是听错了"。
+    //
+    // ⚠️ 这**必须是独立的一次调用，而且只喂译文、不给原文**。
+    // 2026-08-26 试过让主调用顺带输出回译，两版都坏：
+    //   第一版它把译文原样抄进回訳栏（两栏一字不差）；
+    //   第二版改用中文之后，它改抄输入原文。
+    // 两种都等于没有检查，而且更糟 —— 给假安心。原因很简单：
+    // **原文就摆在它眼前，它没有理由真去回译。** 结构上不给它看原文，它就抄不了。
+    async function requestBackTranslation(translated, fromLang, toLang, el, entry) {
+      if (!translated) return;
+      try {
+        const res = await requestTranslate('/api/translate-stream', {
+          messages: [{ role: 'user', content: translated }],
+          direction: `${fromLang}-${toLang}`,
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let out = '';
+        let buf = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split('\n');
+          buf = lines.pop();
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const raw = line.slice(6).trim();
+            if (raw === '[DONE]') continue;
+            try {
+              const token = JSON.parse(raw).choices?.[0]?.delta?.content || '';
+              if (token) {
+                out += token;
+                el.textContent = out;
+                el.hidden = false;
+              }
+            } catch { /* 单个坏块跳过 */ }
+          }
         }
+        if (entry) entry.back = out.trim();
+      } catch (err) {
+        // 回译挂了不影响口译本身，但不能一声不吭 —— 回译是防编造的那道检查，
+        // 它静默失效等于检查没了，而界面上看不出区别。
+        console.warn('回译失败，这一句没有校验：', err);
       }
-      return { tl: raw, back: '' };
     }
 
     function appendStreamItem(src, spk, dir) {

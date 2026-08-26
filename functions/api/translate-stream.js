@@ -45,9 +45,15 @@ export async function onRequest(context) {
   //      「日要」编出「円・ドル為替レート」（原文根本没有美元）、
   //      「党招」编成「相手の党組織に連絡」、「负责人」升格成「部長」、
   //      三件独立的事被合并成一句、凭空造出佐藤与経済産業省的从属关系。
-  //   2. 原文写着 "Output ONLY the translation" —— 于是没有回译。
-  //      而回译是读者**唯一**能发现"听错了"的手段：回译成中文一看
-  //      "日元兑美元汇率"、"跟对方党组织联系"，错处一目了然。
+  //   2. 没有回译，而回译是听众发现"听错了"的唯一手段。
+  //      ⚠️ 回译**不在这一次调用里做**。试过两版提示词，两版都坏：
+  //      第一版它把译文原样抄进回訳栏（两栏一字不差），第二版改用中文之后
+  //      它改抄输入原文 —— 都等于没有检查，而且给假安心。
+  //      原因很简单：**原文就摆在它眼前，它没有理由真去回译**。
+  //      所以回译改成前端发的**第二次调用**，那一次只喂日文译文、
+  //      不给原文，结构上就抄不了。见 translation.html 的 requestBackTranslation。
+  //      回译能一眼看穿编造：回译成中文一看"日元兑美元汇率"、
+  //      "跟对方党组织联系"，错处一目了然 —— 前提是它真的在回译。
   //
   // 作者定的取舍：**信 > 达 > 雅**。编造是红线。
   const ciBase =
@@ -56,36 +62,14 @@ export async function onRequest(context) {
     ' NEVER introduce an entity, relationship, number, unit, currency, or job title that is not in the source. Do not attach a person to an organization, do not promote a title, do not add a second currency to an exchange rate, and do not decide who is acting on whom when the source does not say.' +
     ' Keep separate facts separate: if the source states several independent things, do not merge them into one sentence that implies a relationship between them.' +
     ' If a fragment is garbled, copy the original characters through instead of substituting a plausible-sounding replacement, and do NOT offer an interpretation of it — especially never resolve a nonsense fragment into a political, legal, or personal claim.' +
-    ' OUTPUT FORMAT — exactly two parts and nothing else:' +
-    ' first line(s): the translation only, with no label;' +
-    ' then a line beginning with 【回訳】 containing a literal back-translation of YOUR OWN translation into the source language.' +
-    ' The 【回訳】 must faithfully mirror what you actually wrote — never quietly restore it to what the speaker probably meant. It exists so the listener can catch a mis-hearing, so it must expose the difference, not hide it.';
-
-  // 回訳 的语言必须在**方向说明里**再讲一遍。
-  //
-  // 2026-08-26 实测：只在 ciBase 里说"back-translation into the source language"
-  // 不够 —— 方向说明排在后面、又写着 "Target language: Japanese"，模型就把
-  // 回訳 也用日语写了，两栏一字不差。**那样的检查等于没有检查，而且更糟：
-  // 它给假安心。** 所以这里把回訳的目标语言写死，且排在最后。
+    ' Output ONLY the translation itself — no labels, no original text, no explanations.';
   const dirMap = {
-    'ja-zh':
-      ' Input language: Japanese. Target language: Simplified Chinese.' +
-      ' The 【回訳】 line MUST be written in Japanese (the input language), never in Chinese.',
-    'zh-ja':
-      ' Input language: Simplified Chinese. Target language: Japanese.' +
-      ' The 【回訳】 line MUST be written in Simplified Chinese (the input language), never in Japanese.',
-    'en-zh':
-      ' Input language: English. Target language: Simplified Chinese.' +
-      ' The 【回訳】 line MUST be written in English (the input language), never in Chinese.',
-    'en-ja':
-      ' Input language: English. Target language: Japanese.' +
-      ' The 【回訳】 line MUST be written in English (the input language), never in Japanese.',
-    'zh-en':
-      ' Input language: Simplified Chinese. Target language: English.' +
-      ' The 【回訳】 line MUST be written in Simplified Chinese (the input language), never in English.',
-    'ja-en':
-      ' Input language: Japanese. Target language: English.' +
-      ' The 【回訳】 line MUST be written in Japanese (the input language), never in English.',
+    'ja-zh': ' Input language: Japanese. Target language: Simplified Chinese.',
+    'zh-ja': ' Input language: Simplified Chinese. Target language: Japanese.',
+    'en-zh': ' Input language: English. Target language: Simplified Chinese.',
+    'en-ja': ' Input language: English. Target language: Japanese.',
+    'zh-en': ' Input language: Simplified Chinese. Target language: English.',
+    'ja-en': ' Input language: Japanese. Target language: English.',
   };
   const systemPrompt =
     ciBase +
@@ -108,7 +92,7 @@ export async function onRequest(context) {
           },
           ...messages,
         ],
-        max_tokens: 800, // 回訳 大致让输出翻倍（2026-08-26 加）
+        max_tokens: 400,
         temperature: 0.1,
         stream: true,
         // Qwen3 models default to hybrid thinking mode on DashScope. With it on,
