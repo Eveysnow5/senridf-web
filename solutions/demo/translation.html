@@ -1360,7 +1360,12 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
         const lang = LANG_DG[speakerLang[spk]] || 'ja';
         const endpointing = LANG_ENDPT[speakerLang[spk]] || '600';
         const params = new URLSearchParams({
-          model: 'nova-2', language: lang,
+          // nova-3：2026-08-27 用作者的真人录音实测选定，见 docs/tools/01-translation.md。
+          // nova-2 -> nova-3：关键词命中 11/18 -> 14/18，字错率 15.7% -> 11.8%。
+          // 「吹田市」「経済産業省」「可行性」在 nova-2 上三轮真人测试 0/3，nova-3 全中。
+          // ⚠️ 同时实测过 keywords 加权，**反而更差**（19.1%）：被加权的词会被硬塞进
+          //    不该出现的位置（「中间」->「调价」、「心里」->「吹田市」）。所以不加。
+          model: 'nova-3', language: lang,
           punctuate: 'true', smart_format: 'true',
           interim_results: 'true', endpointing
         });
