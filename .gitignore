@@ -36,3 +36,8 @@ FINAL_VERIFICATION.md
 # 它会镜像到同事的仓库并公开部署到 senridf.com。
 # 录音留在本地，路径写在 docs/tools 里；探针脚本按路径读取。
 测试音频/
+
+# 渲染验证用的本地探针/预览页。必须挡住 —— 仓库会公开部署到 senridf.com，
+# 漏一个就是把内部调试页挂到线上（2026-08-27 差点发生）。
+__preview_*.html
+_probe_*.html
