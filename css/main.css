@@ -759,57 +759,172 @@ main { padding-top: var(--nav-h); }
   white-space: pre-line;
 }
 
-/* === DEMO CARDS === */
-.demo-section-intro {
-  margin-top: 48px;
-  margin-bottom: 72px;
+/* === TOOL CARDS（/solutions/demo 工具目录） =================================
+   分类不按 toB/toC，按功能标签：一个工具可以同时是「音声認識」和「翻訳」。
+   纵向节奏比营销页紧——作者的要求是六个工具尽量一屏看完，所以这一节用
+   .section--tight（去掉 128px 的上内边距）配 .page-header--tool。
+   ========================================================================= */
+.tools-section {
+  padding-top: 28px;
 }
-.demo-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+
+/* ── 功能标签筛选 ── */
+.tool-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
 }
-.demo-card {
+.tool-filter__chip {
+  font-family: var(--f-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  color: var(--c-text-3);
+  background: none;
   border: 1px solid var(--c-border);
-  padding: 52px 48px;
-  transition: border-color 300ms var(--ease), background 300ms var(--ease);
-  cursor: default;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition:
+    color 250ms var(--ease),
+    border-color 250ms var(--ease),
+    background 250ms var(--ease);
 }
-.demo-card:hover {
+.tool-filter__chip:hover {
+  color: var(--c-text-2);
+  border-color: var(--c-accent-mid);
+}
+.tool-filter__chip.is-on {
+  color: var(--c-accent);
   border-color: var(--c-accent-mid);
   background: var(--c-accent-light);
 }
-.demo-card__icon {
-  font-size: 1.5rem;
-  color: var(--c-text-3);
-  margin-bottom: 28px;
-  line-height: 1;
-}
-.demo-card__title {
-  font-family: var(--f-serif);
-  font-size: 1.25rem;
-  font-weight: 300;
-  letter-spacing: 0.1em;
-  color: var(--c-text);
-  margin-bottom: 14px;
-}
-.demo-card__desc {
+.tool-empty {
   font-family: var(--f-sans);
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   font-weight: 300;
-  line-height: 1.9;
-  color: var(--c-text-2);
-  margin-bottom: 28px;
+  color: var(--c-text-3);
+  padding: 32px 0;
 }
-.demo-card__status {
+
+/* ── 卡片网格：宽屏 3 列 / 中屏 2 列 / 手机 1 列（断点在文件末尾） ── */
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.tool-card {
+  display: flex;
+  gap: 18px;
+  align-items: stretch; /* body を高さいっぱいに。CTA の margin-top:auto はこれが前提 */
+  border: 1px solid var(--c-border);
+  padding: 26px 26px 24px;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 300ms var(--ease),
+    background 300ms var(--ease);
+}
+.tool-card:hover {
+  border-color: var(--c-accent-mid);
+  background: var(--c-accent-light);
+}
+.tool-card__icon {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  width: 28px;
+  font-size: 1.375rem;
+  line-height: 1.2;
+  color: var(--c-text-3);
+  text-align: center;
+  transition: color 300ms var(--ease);
+}
+.tool-card:hover .tool-card__icon {
+  color: var(--c-accent-mid);
+}
+.tool-card__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.tool-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 9px;
+}
+/* 功能标签：卡片上是展示用的，点选在上面那排 chip 里 */
+.tool-card__tag {
   font-family: var(--f-mono);
-  font-size: 0.5625rem;
-  letter-spacing: 0.28em;
+  font-size: 0.5rem;
+  letter-spacing: 0.18em;
+  color: var(--c-accent-mid);
+  text-transform: uppercase;
+}
+.tool-card__tag + .tool-card__tag::before {
+  content: '·';
+  margin-right: 6px;
+  color: var(--c-text-3);
+}
+.tool-card__badge {
+  font-family: var(--f-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.18em;
   color: var(--c-text-3);
   text-transform: uppercase;
-  padding: 6px 12px;
+  padding: 3px 8px;
   border: 1px solid var(--c-border);
-  display: inline-block;
+}
+.tool-card__name {
+  font-family: var(--f-serif);
+  font-size: 1.0625rem;
+  font-weight: 300;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  color: var(--c-text);
+  margin-bottom: 8px;
+}
+.tool-card__desc {
+  font-family: var(--f-sans);
+  font-size: 0.8125rem;
+  font-weight: 300;
+  line-height: 1.8;
+  color: var(--c-text-2);
+  margin: 0 0 14px;
+}
+.tool-card__cta {
+  font-family: var(--f-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  color: var(--c-accent);
+  margin-top: auto;
+}
+
+/* ── 開発中：同じカード形。入口が無いので反応もCTAも無し ── */
+.tool-wip-title {
+  font-family: var(--f-serif);
+  font-size: 1.125rem;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  color: var(--c-text-2);
+  margin: 56px 0 20px;
+}
+.tool-grid--wip {
+  opacity: 0.72;
+}
+.tool-card--wip {
+  cursor: default;
+}
+.tool-card--wip:hover {
+  border-color: var(--c-border);
+  background: none;
+}
+.tool-card--wip:hover .tool-card__icon {
+  color: var(--c-text-3);
+}
+.tool-card--wip .tool-card__desc {
+  margin-bottom: 0;
 }
 
 /* === BLOG === */
@@ -1065,7 +1180,7 @@ main { padding-top: var(--nav-h); }
 
   .team-grid { grid-template-columns: 1fr; gap: 64px; max-width: 480px; }
   .products-grid { grid-template-columns: 1fr; max-width: 560px; }
-  .demo-grid { grid-template-columns: 1fr; max-width: 560px; }
+  .tool-grid { grid-template-columns: repeat(2, 1fr); }
   .footer__top { grid-template-columns: 1fr; gap: 48px; }
 
   .section { padding: 96px var(--page-px); }
@@ -1078,6 +1193,13 @@ main { padding-top: var(--nav-h); }
     --nav-h: 60px;
     --page-px: 24px;
   }
+  .tool-grid { grid-template-columns: 1fr; }
+  .tool-card { padding: 22px 18px 20px; gap: 14px; }
+  .tool-card__icon { width: 24px; font-size: 1.125rem; }
+  .tool-filter { gap: 6px; margin-bottom: 22px; }
+  .tool-filter__chip { padding: 6px 11px; letter-spacing: 0.1em; }
+  .tools-section { padding-top: 32px; }
+  .tool-wip-title { margin: 40px 0 16px; }
 
   .hero__name { letter-spacing: 0.18em; }
   .hero__scroll { bottom: 32px; }

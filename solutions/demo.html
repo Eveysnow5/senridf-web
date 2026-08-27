@@ -10,129 +10,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&family=Noto+Serif+JP:wght@300;400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <base href="../">
   <link rel="stylesheet" href="css/main.css">
-  <style>
-    /* Demo-specific styles */
-    .demo-live {
-      border: 1px solid var(--c-border);
-      padding: 64px 48px;
-      margin-top: 72px;
-      background: var(--c-surface);
-    }
-    .demo-live__header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 32px;
-    }
-    .demo-live__dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--c-accent-mid);
-    }
-    .demo-live__label {
-      font-family: var(--f-mono);
-      font-size: 0.625rem;
-      letter-spacing: 0.28em;
-      color: var(--c-text-3);
-      text-transform: uppercase;
-    }
-    .demo-live__title {
-      font-family: var(--f-serif);
-      font-size: 1.375rem;
-      font-weight: 300;
-      letter-spacing: 0.1em;
-      color: var(--c-text);
-      margin-bottom: 16px;
-    }
-    .demo-live__desc {
-      font-family: var(--f-sans);
-      font-size: 0.9375rem;
-      font-weight: 300;
-      line-height: 2;
-      color: var(--c-text-2);
-      max-width: 560px;
-      margin-bottom: 40px;
-    }
-    /* Chat UI placeholder */
-    .demo-chat {
-      border: 1px solid var(--c-border);
-      background: var(--c-bg);
-      min-height: 400px;
-      display: flex;
-      flex-direction: column;
-    }
-    .demo-chat__messages {
-      flex: 1;
-      padding: 32px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-    .demo-chat__bubble {
-      max-width: 420px;
-      padding: 16px 20px;
-      font-family: var(--f-sans);
-      font-size: 0.9375rem;
-      font-weight: 300;
-      line-height: 1.8;
-      letter-spacing: 0.02em;
-    }
-    .demo-chat__bubble--ai {
-      background: var(--c-bg-alt);
-      border: 1px solid var(--c-border);
-      color: var(--c-text-2);
-      align-self: flex-start;
-    }
-    .demo-chat__bubble--user {
-      background: var(--c-accent);
-      color: rgba(255,255,255,0.9);
-      align-self: flex-end;
-    }
-    .demo-chat__input-row {
-      border-top: 1px solid var(--c-border);
-      padding: 16px 24px;
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
-    .demo-chat__input {
-      flex: 1;
-      background: none;
-      border: none;
-      outline: none;
-      font-family: var(--f-sans);
-      font-size: 0.9375rem;
-      font-weight: 300;
-      letter-spacing: 0.02em;
-      color: var(--c-text);
-    }
-    .demo-chat__input::placeholder { color: var(--c-text-3); }
-    .demo-chat__send {
-      font-family: var(--f-mono);
-      font-size: 0.6875rem;
-      letter-spacing: 0.2em;
-      color: var(--c-accent);
-      cursor: not-allowed;
-      opacity: 0.5;
-      text-transform: uppercase;
-    }
-    .demo-coming-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-family: var(--f-mono);
-      font-size: 0.5625rem;
-      letter-spacing: 0.28em;
-      color: var(--c-text-3);
-      text-transform: uppercase;
-      padding: 8px 16px;
-      border: 1px solid var(--c-border);
-      margin-top: 20px;
-    }
-    .demo-live + .demo-live { margin-top: 32px; }
-    .demo-live .cta-link { margin-top: 8px; }
-    .demo-live ~ .demo-grid { margin-top: 32px; }
-  </style>
 </head>
 <body data-page-title="demo_page_title">
 
@@ -140,8 +17,8 @@
 
   <main>
 
-    <!-- Page Header -->
-    <div class="page-header">
+    <!-- 页头用 --tool 变体：这是工具目录，不是品牌页，纵向留白按工具页的节奏 -->
+    <div class="page-header page-header--tool">
       <div class="page-header__container">
         <div data-animate>
           <span class="section__eyebrow" data-i18n="demo_eyebrow">オンラインデモ</span>
@@ -153,123 +30,185 @@
       </div>
     </div>
 
-    <section class="section">
+    <section class="section section--tight tools-section">
 
-      <!-- Live Demo: Translation Tool -->
-      <div class="demo-live" data-animate>
-        <div class="demo-live__header">
-          <div class="demo-live__dot"></div>
-          <span class="demo-live__label">Live</span>
-        </div>
-        <h2 class="demo-live__title" data-i18n="tl_title">中日翻訳 + 回訳検証</h2>
-        <p class="demo-live__desc" data-i18n="tl_lead">中国語・日本語を相互翻訳し、回訳で精度を確認。会議の議事録作成にも対応。</p>
-        <a href="solutions/demo/translation.html" class="cta-link">
-          <span data-i18n="tl_cta">翻訳ツールを開く</span>
-          <span class="cta-link__arrow">→</span>
+      <!-- 功能标签筛选。默认「全部」，六个工具一屏内都看得见 -->
+      <div class="tool-filter" data-tool-filter role="group" aria-label="Filter tools by function">
+        <button type="button" class="tool-filter__chip is-on" data-tag="" aria-pressed="true">
+          <span data-i18n="tag_all">すべて</span>
+        </button>
+        <button type="button" class="tool-filter__chip" data-tag="speech" aria-pressed="false">
+          <span data-i18n="tag_speech">音声認識</span>
+        </button>
+        <button type="button" class="tool-filter__chip" data-tag="translate" aria-pressed="false">
+          <span data-i18n="tag_translate">翻訳</span>
+        </button>
+        <button type="button" class="tool-filter__chip" data-tag="docs" aria-pressed="false">
+          <span data-i18n="tag_docs">文書解析</span>
+        </button>
+        <button type="button" class="tool-filter__chip" data-tag="generate" aria-pressed="false">
+          <span data-i18n="tag_generate">テキスト生成</span>
+        </button>
+        <button type="button" class="tool-filter__chip" data-tag="verify" aria-pressed="false">
+          <span data-i18n="tag_verify">校正・検証</span>
+        </button>
+        <button type="button" class="tool-filter__chip" data-tag="scrape" aria-pressed="false">
+          <span data-i18n="tag_scrape">自動収集</span>
+        </button>
+        <button type="button" class="tool-filter__chip" data-tag="dict" aria-pressed="false">
+          <span data-i18n="tag_dict">辞書・活用</span>
+        </button>
+      </div>
+
+      <div class="tool-grid" data-tool-grid>
+
+        <a
+          href="solutions/demo/translation.html"
+          class="tool-card"
+          data-tags="speech translate verify"
+        >
+          <span class="tool-card__icon" aria-hidden="true">⇄</span>
+          <span class="tool-card__body">
+            <span class="tool-card__meta">
+              <span class="tool-card__tag" data-i18n="tag_speech">音声認識</span>
+              <span class="tool-card__tag" data-i18n="tag_translate">翻訳</span>
+              <span class="tool-card__tag" data-i18n="tag_verify">校正・検証</span>
+              <span class="tool-card__badge" data-i18n="demo_member_badge">会員限定</span>
+            </span>
+            <h3 class="tool-card__name" data-i18n="tl_title">中日翻訳 · 音声通訳</h3>
+            <p class="tool-card__desc" data-i18n="tl_one"></p>
+            <span class="tool-card__cta"
+              ><span data-i18n="tl_cta">翻訳ツールを開く</span> →</span
+            >
+          </span>
         </a>
-      </div>
 
-      <!-- Live Demo: Analysis Tool -->
-      <div class="demo-live" data-animate>
-        <div class="demo-live__header">
-          <div class="demo-live__dot"></div>
-          <span class="demo-live__label">Live</span>
-        </div>
-        <h2 class="demo-live__title" data-i18n="analysis_title"></h2>
-        <p class="demo-live__desc" data-i18n="analysis_desc"></p>
-        <a href="solutions/demo/analysis.html" class="cta-link">
-          <span data-i18n="analysis_cta"></span>
-          <span class="cta-link__arrow">→</span>
+        <a href="solutions/demo/analysis.html" class="tool-card" data-tags="docs generate">
+          <span class="tool-card__icon" aria-hidden="true">⊞</span>
+          <span class="tool-card__body">
+            <span class="tool-card__meta">
+              <span class="tool-card__tag" data-i18n="tag_docs">文書解析</span>
+              <span class="tool-card__tag" data-i18n="tag_generate">テキスト生成</span>
+              <span class="tool-card__badge" data-i18n="demo_member_badge">会員限定</span>
+            </span>
+            <h3 class="tool-card__name" data-i18n="analysis_title">文書分析 · 比較レポート</h3>
+            <p class="tool-card__desc" data-i18n="analysis_one"></p>
+            <span class="tool-card__cta"
+              ><span data-i18n="analysis_cta">分析ツールを開く</span> →</span
+            >
+          </span>
         </a>
-      </div>
 
-      <!-- Live Demo: Life Story Tool -->
-      <div class="demo-live" data-animate>
-        <div class="demo-live__header">
-          <div class="demo-live__dot"></div>
-          <span class="demo-live__label">Live</span>
-        </div>
-        <h2 class="demo-live__title" data-i18n="lifestory_title"></h2>
-        <p class="demo-live__desc" data-i18n="lifestory_desc"></p>
-        <a href="solutions/demo/lifestory.html" class="cta-link">
-          <span data-i18n="lifestory_cta"></span>
-          <span class="cta-link__arrow">→</span>
+        <a href="solutions/demo/proofreader.html" class="tool-card" data-tags="docs verify">
+          <span class="tool-card__icon" aria-hidden="true">◐</span>
+          <span class="tool-card__body">
+            <span class="tool-card__meta">
+              <span class="tool-card__tag" data-i18n="tag_docs">文書解析</span>
+              <span class="tool-card__tag" data-i18n="tag_verify">校正・検証</span>
+              <span class="tool-card__badge" data-i18n="demo_member_badge">会員限定</span>
+            </span>
+            <h3 class="tool-card__name" data-i18n="proofreader_title">
+              中国語原稿 校正アシスタント
+            </h3>
+            <p class="tool-card__desc" data-i18n="proofreader_one"></p>
+            <span class="tool-card__cta"
+              ><span data-i18n="proofreader_cta">校正を始める</span> →</span
+            >
+          </span>
         </a>
-      </div>
 
-      <!-- Live Demo: Japanese Learner -->
-      <div class="demo-live" data-animate>
-        <div class="demo-live__header">
-          <div class="demo-live__dot"></div>
-          <span class="demo-live__label" data-i18n="demo_label_frontend">Live · 純フロントエンド</span>
-        </div>
-        <h2 class="demo-live__title" data-i18n="japanese_title"></h2>
-        <p class="demo-live__desc" data-i18n="japanese_desc"></p>
-        <a href="solutions/demo/japanese_learner.html" class="cta-link">
-          <span data-i18n="japanese_cta"></span>
-          <span class="cta-link__arrow">→</span>
+        <a href="/bids/" class="tool-card" data-tags="scrape generate">
+          <span class="tool-card__icon" aria-hidden="true">◉</span>
+          <span class="tool-card__body">
+            <span class="tool-card__meta">
+              <span class="tool-card__tag" data-i18n="tag_scrape">自動収集</span>
+              <span class="tool-card__tag" data-i18n="tag_generate">テキスト生成</span>
+              <span class="tool-card__badge" data-i18n="badge_internal">Internal</span>
+            </span>
+            <h3 class="tool-card__name" data-i18n="bids_title">大阪市 入札情報モニタリング</h3>
+            <p class="tool-card__desc" data-i18n="bids_one"></p>
+            <span class="tool-card__cta"
+              ><span data-i18n="bids_cta">入札情報を見る</span> →</span
+            >
+          </span>
         </a>
-      </div>
 
-      <!-- Live Demo: Proofreader -->
-      <div class="demo-live" data-animate>
-        <div class="demo-live__header">
-          <div class="demo-live__dot"></div>
-          <span class="demo-live__label" data-i18n="proofreader_label">Live · 会員限定</span>
-        </div>
-        <h2 class="demo-live__title" data-i18n="proofreader_title">中文文稿校对助手</h2>
-        <p class="demo-live__desc" data-i18n="proofreader_desc">上传 Word 或粘贴文本，自动检查错别字、重复句、编辑指令残留及前后逻辑冲突，输出分类校对报告。</p>
-        <a href="solutions/demo/proofreader.html" class="cta-link">
-          <span data-i18n="proofreader_cta">开始校对</span>
-          <span class="cta-link__arrow">→</span>
+        <a href="solutions/demo/lifestory.html" class="tool-card" data-tags="speech generate">
+          <span class="tool-card__icon" aria-hidden="true">❖</span>
+          <span class="tool-card__body">
+            <span class="tool-card__meta">
+              <span class="tool-card__tag" data-i18n="tag_speech">音声認識</span>
+              <span class="tool-card__tag" data-i18n="tag_generate">テキスト生成</span>
+              <span class="tool-card__badge" data-i18n="demo_member_badge">会員限定</span>
+            </span>
+            <h3 class="tool-card__name" data-i18n="lifestory_title">生平故事 · 人生インタビュー</h3>
+            <p class="tool-card__desc" data-i18n="lifestory_one"></p>
+            <span class="tool-card__cta"
+              ><span data-i18n="lifestory_cta">記録を始める</span> →</span
+            >
+          </span>
         </a>
-      </div>
 
-      <!-- Internal Tool: Bid Monitor -->
-      <div class="demo-live" data-animate>
-        <div class="demo-live__header">
-          <div class="demo-live__dot"></div>
-          <span class="demo-live__label" data-i18n="bids_label">Internal · 会員限定</span>
-        </div>
-        <h2 class="demo-live__title" data-i18n="bids_title">大阪市招标信息监控</h2>
-        <p class="demo-live__desc" data-i18n="bids_desc">每日自动抓取大阪市政府发布的業務委託与物品供給招标公告，提供中文摘要，便于快速筛选适合小型企业的项目。</p>
-        <a href="/bids/" class="cta-link">
-          <span data-i18n="bids_cta">查看招标信息</span>
-          <span class="cta-link__arrow">→</span>
+        <a href="solutions/demo/japanese_learner.html" class="tool-card" data-tags="dict">
+          <span class="tool-card__icon" aria-hidden="true">▤</span>
+          <span class="tool-card__body">
+            <span class="tool-card__meta">
+              <span class="tool-card__tag" data-i18n="tag_dict">辞書・活用</span>
+              <span class="tool-card__badge" data-i18n="badge_open">誰でも利用可</span>
+            </span>
+            <h3 class="tool-card__name" data-i18n="japanese_title">日本語基礎学習ツール</h3>
+            <p class="tool-card__desc" data-i18n="japanese_one"></p>
+            <span class="tool-card__cta"
+              ><span data-i18n="japanese_cta">学習を始める</span> →</span
+            >
+          </span>
         </a>
-      </div>
-
-      <!-- Demo Cards (other features) -->
-      <div class="demo-grid">
-
-        <div class="demo-card" data-animate data-animate-delay="1">
-          <div class="demo-card__icon">⬡</div>
-          <h3 class="demo-card__title" data-i18n="demo1_title">画像認識デモ</h3>
-          <p class="demo-card__desc" data-i18n="demo1_desc">
-            カメラで撮影した画像、または画像ファイルをAIがリアルタイムで分析・識別します。
-          </p>
-          <span class="demo-card__status" data-i18n="demo_coming">近日公開</span>
-        </div>
-
-        <div class="demo-card" data-animate data-animate-delay="2">
-          <div class="demo-card__icon">◎</div>
-          <h3 class="demo-card__title" data-i18n="demo3_title">音声インターフェース デモ</h3>
-          <p class="demo-card__desc" data-i18n="demo3_desc">
-            音声コマンドでデバイスを操作するインターフェースのデモです。
-          </p>
-          <span class="demo-card__status" data-i18n="demo_coming">近日公開</span>
-        </div>
-
-        <div class="demo-card" data-animate data-animate-delay="3">
-          <div class="demo-card__icon">○</div>
-          <h3 class="demo-card__title" data-i18n="demo4_title">感情認識 デモ</h3>
-          <p class="demo-card__desc" data-i18n="demo4_desc">
-            表情や音声から感情を認識するAIモデルのデモです。
-          </p>
-          <span class="demo-card__status" data-i18n="demo_coming">近日公開</span>
-        </div>
 
       </div>
+
+      <p class="tool-empty" data-tool-empty hidden data-i18n="tag_empty">
+        該当するツールはありません。
+      </p>
+
+      <!-- 開発中：同じカード形だが入口が無いので薄く -->
+      <h2 class="tool-wip-title" data-i18n="tools_wip_title">開発中</h2>
+      <div class="tool-grid tool-grid--wip">
+
+        <div class="tool-card tool-card--wip">
+          <span class="tool-card__icon" aria-hidden="true">⬡</span>
+          <span class="tool-card__body">
+            <span class="tool-card__meta">
+              <span class="tool-card__badge" data-i18n="demo_coming">近日公開</span>
+            </span>
+            <h3 class="tool-card__name" data-i18n="demo1_title">画像認識デモ</h3>
+            <p class="tool-card__desc" data-i18n="demo1_desc"></p>
+          </span>
+        </div>
+
+        <div class="tool-card tool-card--wip">
+          <span class="tool-card__icon" aria-hidden="true">○</span>
+          <span class="tool-card__body">
+            <span class="tool-card__meta">
+              <span class="tool-card__badge" data-i18n="demo_coming">近日公開</span>
+            </span>
+            <h3 class="tool-card__name" data-i18n="demo3_title">音声インターフェース デモ</h3>
+            <p class="tool-card__desc" data-i18n="demo3_desc"></p>
+          </span>
+        </div>
+
+        <div class="tool-card tool-card--wip">
+          <span class="tool-card__icon" aria-hidden="true">◇</span>
+          <span class="tool-card__body">
+            <span class="tool-card__meta">
+              <span class="tool-card__badge" data-i18n="demo_coming">近日公開</span>
+            </span>
+            <h3 class="tool-card__name" data-i18n="demo4_title">感情認識 デモ</h3>
+            <p class="tool-card__desc" data-i18n="demo4_desc"></p>
+          </span>
+        </div>
+
+      </div>
+
     </section>
 
   </main>
@@ -277,6 +216,7 @@
   <div id="footer-placeholder"></div>
 
   <script src="js/main.js"></script>
+  <script src="js/tool-filter.js" defer></script>
   <script type="module" src="js/tracking.js"></script>
 </body>
 </html>

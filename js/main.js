@@ -53,8 +53,8 @@ const T = {
 
     nav_member: 'メンバー',
     demo_tools_eyebrow: 'オンラインツール',
-    demo_tools_title: '会員専用ツール',
-    demo_tools_body: 'ログイン後にご利用いただけます。',
+    demo_tools_title: 'オンラインツール',
+    demo_tools_body: '翻訳・分析・校正・学習など、ブラウザ上で使えるツールを公開しています。',
     demo_member_badge: '会員限定',
 
     /* Footer */
@@ -161,11 +161,28 @@ const T = {
       '大阪市が公表する業務委託・物品供給の入札公告を毎日自動取得し、中国語要約を提供。小規模事業者向けの案件を素早く絞り込めます。',
     bids_cta: '入札情報を見る',
 
-    cat_translation: '翻訳',
-    cat_analysis: '分析',
-    cat_story: '記録',
-    cat_learning: '学習',
     demo_label_frontend: 'Live · 純フロントエンド',
+    /* 機能タグ（toB/toC ではなく機能で分類。1ツールが複数タグを持つ） */
+    tag_all: 'すべて',
+    tag_speech: '音声認識',
+    tag_translate: '翻訳',
+    tag_docs: '文書解析',
+    tag_generate: 'テキスト生成',
+    tag_verify: '校正・検証',
+    tag_scrape: '自動収集',
+    tag_dict: '辞書・活用',
+    tag_empty: '該当するツールはありません。',
+    tools_wip_title: '開発中',
+    badge_open: '誰でも利用可',
+    badge_internal: 'Internal',
+    /* カード用の一行説明（長文は各ツールのページ側に置く） */
+    tl_one: '中国語と日本語を相互翻訳。回訳を並べて誤訳を確認できます。',
+    analysis_one: '複数のPDF・Word・Excelを横断分析し、比較レポートを生成。',
+    proofreader_one: '誤字・重複・前後の矛盾をまとめて点検し、分類レポートに。',
+    lifestory_one: '約100の質問に答えると、AIがあなたの半生を一冊にまとめます。',
+    japanese_one: '214語の動詞活用を自動生成。ログイン不要でそのまま使えます。',
+    bids_one: '大阪市の入札公告を毎日収集し、中国語の要約を付けて一覧に。',
+    demo_tools_cta: 'ツール一覧を見る',
 
     /* Blog page */
     blog_page_title: '千里同風株式会社 — ブログ',
@@ -484,8 +501,8 @@ const T = {
 
     nav_member: '会员',
     demo_tools_eyebrow: '在线工具',
-    demo_tools_title: '会员专属工具',
-    demo_tools_body: '以下工具需登录后方可使用。',
+    demo_tools_title: '在线工具',
+    demo_tools_body: '翻译、分析、校对、学习，均可在浏览器中直接使用。',
     demo_member_badge: '会员专属',
 
     footer_tagline: '人类对AI陪伴的一切渴望，不过是对灵魂共鸣的向往。',
@@ -581,11 +598,28 @@ const T = {
       '每日自动抓取大阪市政府发布的業務委託与物品供給招标公告，提供中文摘要，便于快速筛选适合小型企业的项目。',
     bids_cta: '查看招标信息',
 
-    cat_translation: '翻译',
-    cat_analysis: '分析',
-    cat_story: '记录',
-    cat_learning: '学习',
     demo_label_frontend: 'Live · 纯前端',
+    /* 功能标签（不按 toB/toC，按功能分；一个工具可带多个标签） */
+    tag_all: '全部',
+    tag_speech: '语音识别',
+    tag_translate: '翻译',
+    tag_docs: '文档解析',
+    tag_generate: '文本生成',
+    tag_verify: '校对·检验',
+    tag_scrape: '自动采集',
+    tag_dict: '词表·活用',
+    tag_empty: '没有符合的工具。',
+    tools_wip_title: '开发中',
+    badge_open: '无需登录',
+    badge_internal: '内部使用',
+    /* 卡片上的一句话（长说明留在各工具页里） */
+    tl_one: '中日互译，并列显示回译，便于核对有没有译错。',
+    analysis_one: '上传多份 PDF、Word、Excel，跨文件分析并生成对比报告。',
+    proofreader_one: '错别字、重复句、前后矛盾一次查清，输出分类报告。',
+    lifestory_one: '回答约 100 个问题，AI 为你写成一本完整的人生传记。',
+    japanese_one: '214 个常用动词活用自动生成，无需登录，打开即用。',
+    bids_one: '每日抓取大阪市招标公告，附中文摘要，便于快速筛选。',
+    demo_tools_cta: '查看全部工具',
 
     blog_page_title: '千里同風株式会社 — 博客',
     blog_eyebrow: '博客',
@@ -892,8 +926,8 @@ const T = {
 
     nav_member: 'Member',
     demo_tools_eyebrow: 'Online Tools',
-    demo_tools_title: 'Member-Only Tools',
-    demo_tools_body: 'Available after logging in.',
+    demo_tools_title: 'Online Tools',
+    demo_tools_body: 'Translation, analysis, proofreading and learning, all in the browser.',
     demo_member_badge: 'Members Only',
 
     footer_tagline:
@@ -1001,11 +1035,28 @@ const T = {
       'Automatically scrapes daily service and goods-procurement notices published by Osaka City, with Chinese summaries to quickly filter projects suited to small businesses.',
     bids_cta: 'View Bids',
 
-    cat_translation: 'Translation',
-    cat_analysis: 'Analysis',
-    cat_story: 'Story',
-    cat_learning: 'Learning',
     demo_label_frontend: 'Live · Pure Frontend',
+    /* Function tags (classified by capability, not by B2B/B2C; tools carry several) */
+    tag_all: 'All',
+    tag_speech: 'Speech',
+    tag_translate: 'Translation',
+    tag_docs: 'Documents',
+    tag_generate: 'Generation',
+    tag_verify: 'Verification',
+    tag_scrape: 'Scraping',
+    tag_dict: 'Dictionary',
+    tag_empty: 'No tools match that tag.',
+    tools_wip_title: 'In Development',
+    badge_open: 'Open to All',
+    badge_internal: 'Internal',
+    /* One-liners for the cards; the long copy lives on each tool page */
+    tl_one: 'Chinese and Japanese both ways, with back-translation shown for checking.',
+    analysis_one: 'Cross-analyze multiple PDF, Word and Excel files into one report.',
+    proofreader_one: 'Finds typos, repeated sentences and internal contradictions.',
+    lifestory_one: 'Answer about 100 questions; AI writes your life story as a book.',
+    japanese_one: '214 common verbs with auto-generated conjugations. No login needed.',
+    bids_one: 'Daily Osaka City tender notices, each summarized in Chinese.',
+    demo_tools_cta: 'See all tools',
 
     blog_page_title: 'Senridoufuu — Blog',
     blog_eyebrow: 'Blog',
