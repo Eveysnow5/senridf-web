@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PAGE = readFileSync(path.join(ROOT, 'solutions', 'demo.html'), 'utf8');
 const FILTER = readFileSync(path.join(ROOT, 'js', 'tool-filter.js'), 'utf8');
+const CSS = readFileSync(path.join(ROOT, 'css', 'main.css'), 'utf8');
 
 // ── 背景 ────────────────────────────────────────────────────────────────────
 // 2026-08-27：工具目录从 toB/toC 二分改成**功能标签**分类。一个工具可以同时
@@ -102,4 +103,32 @@ test('★ 筛选脚本必须给出就绪标记 —— 渲染验证要靠它，�
 
 test('★ 再次点击同一个标签要能取消筛选，不然用户会被困在一个标签里', () => {
   assert.match(FILTER, /is-on'\)\s*\?\s*''\s*:/, '没有"再点一次回到全部"的分支');
+});
+
+// ── 2026-08-27 线上事故：chip 高亮了，卡片一张没少 ──────────────────────────
+// tool-filter.js 设的是 card.hidden = true。浏览器内置的 [hidden] { display: none }
+// 是**标签选择器**，优先级低于 .tool-card { display: flex } —— 属性设上了，
+// 元素照样占位显示。筛选看起来完全失效，而 JS 没有任何报错。
+//
+// 更要命的是：当时的渲染夹具读的是 `c.hidden` 这个**属性**，属性确实是 true，
+// 于是夹具全绿、我报了"筛选行为已实测"。**护栏测的是"标记设上了"，
+// 不是"东西真的不见了"。** 作者打开线上一点就发现了。
+test('★ .tool-card 必须有 [hidden] 的 display:none —— 否则 hidden 属性会被 display:flex 盖掉', () => {
+  // 先确认前提仍成立：.tool-card 确实用类选择器设了 display
+  assert.match(
+    CSS,
+    /\.tool-card \{[^}]*display:\s*flex/,
+    '.tool-card 不再用 display:flex 了？那这条断言的前提要重新想',
+  );
+  assert.match(
+    CSS,
+    /\.tool-card\[hidden\][^{]*\{[^}]*display:\s*none/,
+    '缺少 .tool-card[hidden] { display: none } —— 筛选会"看起来生效、其实没动"',
+  );
+});
+
+test('★ 筛选靠的是 hidden 属性，所以这两件事必须成对存在', () => {
+  // 哪天改成加 class 来隐藏，上面那条 CSS 断言就该跟着改；
+  // 这条把"实现方式"钉住，免得 CSS 和 JS 各改各的、又对不上。
+  assert.match(FILTER, /card\.hidden\s*=/, 'tool-filter.js 不再用 card.hidden 隐藏卡片了');
 });

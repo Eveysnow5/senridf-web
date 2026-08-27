@@ -812,6 +812,14 @@ main { padding-top: var(--nav-h); }
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
+/* ⚠️ 这条不能删。浏览器内置的 [hidden] { display: none } 是标签选择器，
+   优先级低于下面 .tool-card 的 display: flex —— 没有这条，筛选脚本把
+   card.hidden 设成 true 也不会让卡片消失。2026-08-27 线上就是这么坏的：
+   chip 高亮了、属性也设上了，卡片一张没少。 */
+.tool-card[hidden],
+.tool-empty[hidden] {
+  display: none;
+}
 .tool-card {
   display: flex;
   gap: 18px;
