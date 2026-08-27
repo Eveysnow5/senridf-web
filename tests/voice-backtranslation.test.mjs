@@ -22,11 +22,22 @@ const STREAM = stripComments(
 const PAGE_RAW = readFileSync(path.join(ROOT, 'solutions', 'demo', 'translation.html'), 'utf8');
 const PAGE = stripComments(PAGE_RAW);
 
+function fnBody(name) {
+  const m = PAGE.match(new RegExp(`async function ${name}\\([^)]*\\)\\s*\\{[\\s\\S]*?\\n {4}\\}`));
+  assert.ok(m, `找不到 ${name}`);
+  return m[0];
+}
+
 // ── 背景 ────────────────────────────────────────────────────────────────────
 // 2026-08-26 语音口译实测：Deepgram 中文听写四段错七处，而翻译层把坏输入
 // 「修」成了流畅、笃定、看不出问题的假话 —— 编出原文没有的美元、把听错的
 // 「党招」解成政治组织、把「负责人」升成「部長」、把三件独立的事合并成一句
-// 并凭空造出从属关系。作者定的取舍：**信 > 达 > 雅**，编造是红线。
+// 并凭空造出从属关系。
+//
+// 作者定的取舍（2026-08-27 原话）：**信 > 达 > 雅**；
+// 「搞出一个无法识别的错误编造对我来说会有更大的问题，宁可说这句话看着不对，
+//   我重新说一遍都更好。」
+// 这条决定了下面所有断言的方向：**可见的失败优于隐形的编造。**
 
 test('★ 同传提示词必须是"准确优先"，不是"通顺优先"', () => {
   assert.ok(
@@ -46,10 +57,8 @@ test('★ 同传提示词必须是"准确优先"，不是"通顺优先"', () => 
 });
 
 // ── 回译必须是独立的一次调用 ────────────────────────────────────────────────
-// 试过让主调用顺带输出【回訳】，两版都坏：
-//   第一版把译文原样抄进回訳栏（两栏一字不差）；
-//   第二版改用中文之后，它改抄输入原文。
-// 两种都等于没有检查，而且更糟 —— 给假安心。
+// 试过让主调用顺带输出【回訳】，两版都坏：第一版把译文原样抄进回訳栏；
+// 第二版改用中文之后，它改抄输入原文。两种都等于没有检查，而且更糟 —— 给假安心。
 // 原因很简单：**原文就摆在它眼前，它没有理由真去回译。**
 test('★ 主调用不许再顺带产出回译 —— 那条路试过两次，两次都变成抄写', () => {
   assert.ok(
@@ -64,30 +73,34 @@ test('★ 主调用不许再顺带产出回译 —— 那条路试过两次，�
 });
 
 test('★ 回译调用只能看到译文，绝不能看到原文', () => {
-  const m = PAGE.match(/async function requestBackTranslation\([^)]*\)\s*\{[\s\S]*?\n {4}\}/);
-  assert.ok(m, '找不到 requestBackTranslation —— 回译的独立调用没了');
-  const fn = m[0];
-
-  assert.match(fn, /requestTranslate\(\s*'\/api\/translate-stream'/, '回译没有走翻译接口');
+  const read = fnBody('readBackStream');
+  assert.match(read, /requestTranslate\(\s*'\/api\/translate-stream'/, '回译没有走翻译接口');
   assert.match(
-    fn,
-    /content:\s*translated/,
+    read,
+    /content: translated/,
     '回译喂进去的不是译文参数 —— 只要原文能进到这次调用里，它就会抄原文',
   );
-  // ★ 关键：这个函数体里不能出现源文本。它的入参里根本没有 text/src，
+  assert.match(read, /direction:\s*`\$\{fromLang\}-\$\{toLang\}`/, '回译没有用反过来的方向');
+
+  // ★ 关键：两个函数里都不能出现源文本。它们的入参里根本没有 text/src，
   //   有的话说明有人把原文传进来了，回译就又能作弊了。
-  for (const bad of ['text', 'src']) {
-    assert.ok(
-      !new RegExp(`content:\\s*${bad}\\b`).test(fn),
-      `回译调用里出现了 content: ${bad} —— 原文进来了，它就会抄原文而不是真回译`,
-    );
+  for (const name of ['readBackStream', 'requestBackTranslation']) {
+    const body = fnBody(name);
+    for (const bad of ['text', 'src']) {
+      assert.ok(
+        !new RegExp(`content:\\s*${bad}\\b`).test(body),
+        `${name} 里出现了 content: ${bad} —— 原文进来了，它就会抄原文而不是真回译`,
+      );
+    }
   }
-  assert.match(fn, /direction:\s*`\$\{fromLang\}-\$\{toLang\}`/, '回译没有用反过来的方向');
 });
 
 test('★ 回译失败不许静默 —— 它是防编造的那道检查，静默失效等于检查没了', () => {
-  const m = PAGE.match(/async function requestBackTranslation[\s\S]*?\n {4}\}/);
-  assert.match(m[0], /catch \(err\)[\s\S]*console\.warn/, '回译的 catch 是静默的');
+  assert.match(
+    fnBody('requestBackTranslation'),
+    /catch \(err\)[\s\S]*console\.warn/,
+    '回译的 catch 是静默的',
+  );
 });
 
 test('★ 口译不等回译 —— 不许 await，否则现场每句都要多等一次往返', () => {
@@ -98,25 +111,19 @@ test('★ 口译不等回译 —— 不许 await，否则现场每句都要多�
 test('★ 朗读只念译文，导出/历史也不含回译', () => {
   assert.match(PAGE, /speakText\(fullText,\s*speakerLang\[tgtSpk\]\)/, '朗读没有念译文');
   assert.match(PAGE, /tgt:\s*fullText,/, '历史记录存的不是译文');
-  // back 由回译回来后填，初始必须是空 —— 不能拿译文顶替
   assert.match(PAGE, /back:\s*'',/, 'back 字段初始值不是空串（可能被译文顶替了）');
 });
 
 test('回译有独立的展示位，且默认隐藏（没回来之前不占地方）', () => {
   assert.match(PAGE_RAW, /class="cue-back" hidden/, '缺少 .cue-back 展示位或它默认不是隐藏的');
   assert.match(PAGE_RAW, /\.cue-back\s*\{/, '缺少 .cue-back 的样式');
-  // 排版要弱于译文，否则会跟正式译文抢注意力
-  const css = PAGE_RAW.slice(
-    PAGE_RAW.indexOf('.cue-back {'),
-    PAGE_RAW.indexOf('.cue-back {') + 400,
-  );
-  assert.match(css, /font-size:\s*0\./, '回译的字号没有小于译文');
+  const at = PAGE_RAW.indexOf('.cue-back {');
+  assert.match(PAGE_RAW.slice(at, at + 400), /font-size:\s*0\./, '回译的字号没有小于译文');
 });
 
 // ── 回译回来之后还得验语种 ──────────────────────────────────────────────────
-// 实测 4 次里有 1 次，回译回来的还是日语（模型把译文润色一遍就交差）。
+// 实测 12 次里有 2 次，回译回来的还是日语（模型把译文润色一遍就交差）。
 // 那种"看着像回译、其实不是"的东西最危险：用户对着两栏点头，以为校验过了。
-// 这正是今天反复出现的那类失败 —— 护栏只验存在、不验功能。
 test('★ 回译语种校验：日语冒充中文回译必须被抓到', () => {
   const kana = PAGE.match(/const KANA_RE = \/\[[^\]]*\]\/;/);
   assert.ok(kana, '找不到 KANA_RE');
@@ -132,7 +139,7 @@ test('★ 回译语种校验：日语冒充中文回译必须被抓到', () => {
   assert.equal(
     backLooksRight('今回の予算は3,200万円で、昨年比15％増です。', 'zh'),
     false,
-    '★ 日语冒充中文回译没被抓到 —— 这正是实测中出现过的那一次',
+    '★ 日语冒充中文回译没被抓到 —— 这正是实测中出现过的那两次',
   );
   assert.equal(backLooksRight('', 'zh'), false, '空回译该判不合格');
   // 反向对照：ja 方向不能一律判不合格，否则"永远返回 false"也能让上面全绿
@@ -144,7 +151,24 @@ test('★ 回译语种校验：日语冒充中文回译必须被抓到', () => {
   assert.equal(backLooksRight('本次预算为3200万日元。', 'ja'), false, '中文冒充日语回译没被抓到');
 });
 
-test('★ 校验没通过要标出来，不能藏着', () => {
-  assert.match(PAGE, /未通过校验/, '回译语种不对时界面上没有任何提示 —— 用户会对着一段假回译点头');
-  assert.match(PAGE, /dataset\.unverified/, '没有给未通过校验的回译打标记');
+// ── 失败要可见，且要给出"重说一遍"的出路 ──────────────────────────────────
+// 作者的取舍：宁可这句看着不对、重新说一遍，也不要一个识别不出的编造。
+// 所以回译挂掉时不能藏 —— 藏了人就连"看着不对"的机会都没有。
+test('★ 回译语种不对时必须重试一次', () => {
+  const fn = fnBody('requestBackTranslation');
+  assert.match(
+    fn,
+    /if \(!backLooksRight\(back, toLang\)\)[\s\S]{0,300}?readBackStream\(translated,/,
+    '语种不对时没有重试 —— 一次失败就永远失败',
+  );
+  // 只重试一次：现场口译等不起，而且模型要是稳定不听话，重试多少次都一样
+  const calls = (fn.match(/readBackStream\(/g) || []).length;
+  assert.equal(calls, 2, `readBackStream 调了 ${calls} 次，应该是"首次 + 重试一次"共 2 次`);
+});
+
+test('★ 重试也没救回来时，要明说这句未经校验、建议重说', () => {
+  assert.match(PAGE, /回译没成功/, '没有说明回译失败了');
+  assert.match(PAGE, /未经校验/, '没有说明这句没被校验');
+  assert.match(PAGE, /建议重说/, '没有给出"重说一遍"的指引 —— 那正是作者要的处理方式');
+  assert.match(PAGE, /delete el\.dataset\.unverified/, '重试成功后没有清掉未校验标记');
 });

@@ -1597,44 +1597,67 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
     //   第二版改用中文之后，它改抄输入原文。
     // 两种都等于没有检查，而且更糟 —— 给假安心。原因很简单：
     // **原文就摆在它眼前，它没有理由真去回译。** 结构上不给它看原文，它就抄不了。
+    // 发一次回译请求并把流读完。抽出来是为了失败时能原样重试一次。
+    async function readBackStream(translated, fromLang, toLang, el) {
+      const res = await requestTranslate('/api/translate-stream', {
+        messages: [{ role: 'user', content: translated }],
+        direction: `${fromLang}-${toLang}`,
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let out = '';
+      let buf = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const raw = line.slice(6).trim();
+          if (raw === '[DONE]') continue;
+          try {
+            const token = JSON.parse(raw).choices?.[0]?.delta?.content || '';
+            if (token) {
+              out += token;
+              el.textContent = out;
+              el.hidden = false;
+            }
+          } catch { /* 单个坏块跳过 */ }
+        }
+      }
+      return out.trim();
+    }
+
     async function requestBackTranslation(translated, fromLang, toLang, el, entry) {
       if (!translated) return;
       try {
-        const res = await requestTranslate('/api/translate-stream', {
-          messages: [{ role: 'user', content: translated }],
-          direction: `${fromLang}-${toLang}`,
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let out = '';
-        let buf = '';
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buf += decoder.decode(value, { stream: true });
-          const lines = buf.split('\n');
-          buf = lines.pop();
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const raw = line.slice(6).trim();
-            if (raw === '[DONE]') continue;
-            try {
-              const token = JSON.parse(raw).choices?.[0]?.delta?.content || '';
-              if (token) {
-                out += token;
-                el.textContent = out;
-                el.hidden = false;
-              }
-            } catch { /* 单个坏块跳过 */ }
-          }
-        }
-        const back = out.trim();
-        if (entry) entry.back = back;
+        const out = await readBackStream(translated, fromLang, toLang, el);
+        let back = out.trim();
+
+        // 语种不对就重试一次。
+        //
+        // 实测 12 次里有 2 次回来的是日语（模型把译文抄了一遍就交差）。
+        // 这 1/6 的失效率不能忍：**回译挂了，人就连"看着不对"的机会都没有**，
+        // 而作者的取舍恰恰是"宁可这句看着不对、我重说一遍，也不要一个识别不出的编造"。
+        // 失效是随机的，重试一次就能把大部分捞回来。只重试一次，不无限重试 ——
+        // 现场口译等不起，而且模型要是稳定地不听话，重试多少次都一样。
         if (!backLooksRight(back, toLang)) {
-          // 不藏着：这一句的校验没成立，得让人知道，别对着假回译点头。
-          el.textContent = back + '  ⚠ 回译语种不对，这一句未通过校验';
+          const retry = await readBackStream(translated, fromLang, toLang, el);
+          if (backLooksRight(retry, toLang)) back = retry;
+        }
+
+        if (entry) entry.back = back;
+        el.textContent = back;
+        el.hidden = false;
+        if (!backLooksRight(back, toLang)) {
+          // 重试也没救回来，就不藏着：明说这一句没校验成，别让人对着假回译点头。
+          el.textContent = back + '  ⚠ 回译没成功，这一句未经校验，建议重说一遍';
           el.dataset.unverified = '1';
+        } else {
+          delete el.dataset.unverified;
         }
       } catch (err) {
         // 回译挂了不影响口译本身，但不能一声不吭 —— 回译是防编造的那道检查，
