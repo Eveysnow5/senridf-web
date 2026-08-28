@@ -36,6 +36,45 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
 .ag-btn-noperm { padding:10px 24px;background:#f3f4f6;color:#374151;border:none;border-radius:8px;font-size:14px;cursor:pointer; }
 #dashboard { display:none; }
 .tbl-scroll { overflow-x:auto; }
+
+/* ── 頭部の窄屏対応（2026-08-28）─────────────────────────────────────────
+   元は h-14 固定高 + flex 不換行。窄屏では左のタイトルと右の 5 個のボタンが
+   同じ一行に押し込まれ、中国語は一文字ずつ折り返せるので**ボタンの文字が
+   縦組みになる**（作者のスマホ実機で発生）。しかも h-14 を超えた分が
+   下のカードに被る。
+   方針：ボタンは絶対に縮ませない（flex:0 0 auto + nowrap）、頭部は
+   高さ自動で折り返させる、タイトルだけが縮んで足りなければ省略記号。 */
+/* ⚠️ セレクタは header.h-14。Tailwind の .h-14 は**クラス**なので、
+   ただの header では height:3.5rem に負けて auto が効かない。
+   効かないと折り返した分が 56px の箱からはみ出し、下のカードに被る
+   ―― まさに作者のスマホで起きていた重なりの正体。 */
+header.h-14 {
+  flex-wrap: wrap;
+  height: auto;
+  min-height: 3.5rem;
+  row-gap: 8px;
+  /* 折り返した時に中身が箱の下辺を越えないための余白。単行の時は
+     min-height:3.5rem が勝つので、広い画面での見た目は変わらない。 */
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+/* 左側は縮んでよい（溢れたら省略記号）。縮ませないのは**ボタンだけ** ——
+   #lastRefresh を縮まない設定にしたら左枠を突き破って右のボタンに
+   重なった（768px で実測）。縮まない要素を増やすほど壊れ方が増える。 */
+/* flex-basis:auto が肝。元の flex-1 は basis:0 なので「絶対に折り返さず、
+   ただ縮む」＝タイトルが「千… 管理… 更…」まで潰れる。auto にすると
+   一行に収まらない時点で**ブロックごと次の行へ**落ちる。 */
+header > div:first-child { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+header > div:first-child > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 容器は縮んでよい（縮むから中で折り返せる）。縮ませないのはボタン自身だけ。
+   容器の側を縮まなくすると折り返さずに切れる ―― 360px で実測。 */
+header > div:last-child { flex-wrap: wrap; min-width: 0; }
+header > div:last-child a, header > div:last-child button { flex: 0 0 auto; white-space: nowrap; }
+@media (max-width: 640px) {
+  header { padding-left: 16px; padding-right: 16px; }
+  /* 「更新于 hh:mm:ss」は窄屏では場所を食うだけ。データ自体はカード側にもある */
+  header #lastRefresh { display: none; }
+}
 </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
