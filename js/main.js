@@ -52,9 +52,9 @@ const T = {
     about_teaser_cta: 'チームを見る',
 
     nav_member: 'メンバー',
-    demo_tools_eyebrow: 'オンラインツール',
-    demo_tools_title: 'オンラインツール',
-    demo_tools_body: '翻訳・分析・校正・学習など、ブラウザ上で使えるツールを公開しています。',
+    demo_tools_eyebrow: 'オンラインデモ',
+    demo_tools_title: 'AI機能デモ',
+    demo_tools_body: '当社が開発しているAI技術を、ブラウザ上で実際に触ってお確かめいただけます。',
     demo_member_badge: '会員限定',
 
     /* Footer */
@@ -125,7 +125,8 @@ const T = {
     demo_page_title: '千里同風株式会社 — オンラインデモ',
     demo_eyebrow: 'オンラインデモ',
     demo_title: '機能を体験する',
-    demo_intro: '開発中の機能をブラウザ上でご体験いただけます。各デモは随時アップデートされます。',
+    demo_intro:
+      '当社が開発しているAI機能を、ブラウザ上で実際にお試しいただけます。各デモは随時アップデートされます。',
     demo1_title: '画像認識デモ',
     demo1_desc: 'カメラで撮影した画像、または画像ファイルをAIがリアルタイムで分析・識別します。',
     demo3_title: '音声インターフェース デモ',
@@ -144,7 +145,7 @@ const T = {
       '約100問のインタビューに答えると、AIがあなたの生涯を一冊の物語に。毎回数問ずつ、約一ヶ月で完成。',
     lifestory_cta: '記録を始める',
 
-    japanese_title: '日本語基礎学習ツール',
+    japanese_title: '日本語 動詞活用ツール',
     japanese_desc:
       '214語の常用動詞を内蔵。五段・一段・不規則動詞の活用を自動生成し、中英双解付き。一覧・フラッシュカード・小テストの3モード対応。',
     japanese_cta: '学習を始める',
@@ -160,7 +161,6 @@ const T = {
       '大阪市が公表する業務委託・物品供給の入札公告を毎日自動取得し、中国語要約を提供。小規模事業者向けの案件を素早く絞り込めます。',
     bids_cta: '入札情報を見る',
 
-    demo_label_frontend: 'Live · 純フロントエンド',
     /* 機能タグ（toB/toC ではなく機能で分類。1ツールが複数タグを持つ） */
     tag_all: 'すべて',
     tag_speech: '音声認識',
@@ -173,7 +173,7 @@ const T = {
     tag_empty: '該当するツールはありません。',
     tag_status: '{total} 件中 {n} 件を表示中。',
     tools_wip_title: '開発中',
-    badge_open: '誰でも利用可',
+    badge_open: 'ログイン不要',
     /* カード用の一行説明（長文は各ツールのページ側に置く） */
     tl_one: '中国語と日本語を相互翻訳。回訳を並べて誤訳を確認できます。',
     analysis_one: '複数のPDF・Word・Excelを横断分析し、比較レポートを生成。',
@@ -181,7 +181,7 @@ const T = {
     lifestory_one: '約100の質問に答えると、AIがあなたの半生を一冊にまとめます。',
     japanese_one: '214語の動詞活用を自動生成。ログイン不要でそのまま使えます。',
     bids_one: '大阪市の入札公告を毎日収集し、中国語の要約を付けて一覧に。',
-    demo_tools_cta: 'ツール一覧を見る',
+    demo_tools_cta: 'デモを見る',
 
     /* Blog page */
     blog_page_title: '千里同風株式会社 — ブログ',
@@ -499,9 +499,9 @@ const T = {
     about_teaser_cta: '了解团队',
 
     nav_member: '会员',
-    demo_tools_eyebrow: '在线工具',
-    demo_tools_title: '在线工具',
-    demo_tools_body: '翻译、分析、校对、学习，均可在浏览器中直接使用。',
+    demo_tools_eyebrow: '在线演示',
+    demo_tools_title: 'AI 功能演示',
+    demo_tools_body: '我们开发的 AI 技术，可以在浏览器中直接上手确认。',
     demo_member_badge: '会员专属',
 
     footer_tagline: '人类对AI陪伴的一切渴望，不过是对灵魂共鸣的向往。',
@@ -561,7 +561,7 @@ const T = {
     demo_page_title: '千里同風株式会社 — 在线演示',
     demo_eyebrow: '在线演示',
     demo_title: '体验功能',
-    demo_intro: '您可以在浏览器中直接体验我们正在开发的功能。各演示将持续更新。',
+    demo_intro: '我们开发的 AI 功能，可以在浏览器中直接试用。各演示将持续更新。',
     demo1_title: '图像识别演示',
     demo1_desc: 'AI实时分析识别您的摄像头画面或上传的图片文件。',
     demo3_title: '语音界面演示',
@@ -580,7 +580,7 @@ const T = {
       '约 100 个精心设计的问题，以文字或语音作答，AI 为你撰写完整的人生传记。每次几题，大约一个月完成。',
     lifestory_cta: '开始记录',
 
-    japanese_title: '日语基础学习工具',
+    japanese_title: '日语动词变位工具',
     japanese_desc:
       '内置 214 个常用动词词库，自动生成五段・一段・不规则动词变形，含中英双语释义。支持查表、翻牌练习、随机小测试三种模式。',
     japanese_cta: '开始学习',
@@ -596,17 +596,16 @@ const T = {
       '每日自动抓取大阪市政府发布的業務委託与物品供給招标公告，提供中文摘要，便于快速筛选适合小型企业的项目。',
     bids_cta: '查看招标信息',
 
-    demo_label_frontend: 'Live · 纯前端',
     /* 功能标签（不按 toB/toC，按功能分；一个工具可带多个标签） */
     tag_all: '全部',
     tag_speech: '语音识别',
     tag_translate: '翻译',
     tag_docs: '文档解析',
     tag_generate: '文本生成',
-    tag_verify: '校对·检验',
+    tag_verify: '校对·校验',
     tag_scrape: '自动采集',
-    tag_dict: '词表·活用',
-    tag_empty: '没有符合的工具。',
+    tag_dict: '词表·变位',
+    tag_empty: '没有匹配的工具。',
     tag_status: '共 {total} 个工具，当前显示 {n} 个。',
     tools_wip_title: '开发中',
     badge_open: '无需登录',
@@ -615,9 +614,9 @@ const T = {
     analysis_one: '上传多份 PDF、Word、Excel，跨文件分析并生成对比报告。',
     proofreader_one: '错别字、重复句、前后矛盾一次查清，输出分类报告。',
     lifestory_one: '回答约 100 个问题，AI 为你写成一本完整的人生传记。',
-    japanese_one: '214 个常用动词活用自动生成，无需登录，打开即用。',
+    japanese_one: '214 个常用动词变位自动生成，无需登录，打开即用。',
     bids_one: '每日抓取大阪市招标公告，附中文摘要，便于快速筛选。',
-    demo_tools_cta: '查看全部工具',
+    demo_tools_cta: '查看演示',
 
     blog_page_title: '千里同風株式会社 — 博客',
     blog_eyebrow: '博客',
@@ -923,9 +922,9 @@ const T = {
     about_teaser_cta: 'Meet the team',
 
     nav_member: 'Member',
-    demo_tools_eyebrow: 'Online Tools',
-    demo_tools_title: 'Online Tools',
-    demo_tools_body: 'Translation, analysis, proofreading and learning, all in the browser.',
+    demo_tools_eyebrow: 'Online Demo',
+    demo_tools_title: 'AI Feature Demos',
+    demo_tools_body: 'See and try the AI technology we build, right in your browser.',
     demo_member_badge: 'Members Only',
 
     footer_tagline:
@@ -933,7 +932,7 @@ const T = {
     footer_nav_heading: 'Navigation',
     footer_contact_heading: 'Contact',
     footer_copy: '© 2024 Senridoufuu Co., Ltd.',
-    addr_street: '3-chome, Nishimikuni, Yodogawa-ku',
+    addr_street: '4-9-7, Nishimikuni 4-chome, Yodogawa-ku',
     addr_city: 'Osaka, Japan',
 
     team_page_title: 'Senridoufuu — Team',
@@ -996,7 +995,7 @@ const T = {
     demo_eyebrow: 'Online Demo',
     demo_title: 'Experience Our Features',
     demo_intro:
-      'Try our features in development directly in your browser. All demos are updated regularly.',
+      'Try the AI capabilities we are building, right in your browser. Demos are updated as we go.',
     demo1_title: 'Image Recognition Demo',
     demo1_desc:
       'AI analyzes and identifies images from your camera or uploaded files in real time.',
@@ -1032,12 +1031,11 @@ const T = {
       'Automatically scrapes daily service and goods-procurement notices published by Osaka City, with Chinese summaries to quickly filter projects suited to small businesses.',
     bids_cta: 'View Bids',
 
-    demo_label_frontend: 'Live · Pure Frontend',
     /* Function tags (classified by capability, not by B2B/B2C; tools carry several) */
     tag_all: 'All',
-    tag_speech: 'Speech',
+    tag_speech: 'Speech Input',
     tag_translate: 'Translation',
-    tag_docs: 'Documents',
+    tag_docs: 'Document Parsing',
     tag_generate: 'Generation',
     tag_verify: 'Verification',
     tag_scrape: 'Scraping',
@@ -1045,15 +1043,16 @@ const T = {
     tag_empty: 'No tools match that tag.',
     tag_status: 'Showing {n} of {total} tools.',
     tools_wip_title: 'In Development',
-    badge_open: 'Open to All',
+    badge_open: 'No Login',
     /* One-liners for the cards; the long copy lives on each tool page */
     tl_one: 'Chinese and Japanese both ways, with back-translation shown for checking.',
     analysis_one: 'Cross-analyze multiple PDF, Word and Excel files into one report.',
-    proofreader_one: 'Finds typos, repeated sentences and internal contradictions.',
+    proofreader_one:
+      'Finds typos, repeated sentences and internal contradictions, reported by category.',
     lifestory_one: 'Answer about 100 questions; AI writes your life story as a book.',
     japanese_one: '214 common verbs with auto-generated conjugations. No login needed.',
     bids_one: 'Daily Osaka City tender notices, each summarized in Chinese.',
-    demo_tools_cta: 'See all tools',
+    demo_tools_cta: 'See the demos',
 
     blog_page_title: 'Senridoufuu — Blog',
     blog_eyebrow: 'Blog',
