@@ -1,0 +1,78 @@
+/* ===========================================================================
+   后台各页顶栏的窄屏修正（2026-08-28）
+
+   起因：作者手机上打开后台，顶栏按钮的文字被压成**竖排**，「退出」被切掉，
+   溢出的部分还盖住下面的卡片。
+
+   原因：顶栏都是「固定高 + flex 不换行」。窄屏时左边标题和右边一排按钮被塞进
+   同一行，而中文可以逐字折行，于是按钮被压成一列一个字。
+
+   为什么单独一个文件：这套顶栏在站里有**两种实现、五个页面**，其中
+   `.top-bar` 的 CSS 还在三个页面里各内联了一份。改一页不等于改好了 ——
+   2026-08-28 我就先只修了 solutions/demo/admin.html，作者打开 ai-intel
+   一看还是坏的。同一份定义散在多处，必然走散。
+
+   ⚠️ 这个文件要在各页自己的 <style> **之后**引入。
+   `.top-bar` 的基础样式写在页面内联 style 里，同样是 0-1-0 的优先级，
+   靠"后来者胜"才压得住。位置换了就失效，而且失效是静默的。
+   =========================================================================== */
+
+/* ── 实现 A：Tailwind 的 h-14 顶栏（solutions/demo/admin.html, ai-intel.html） ──
+   选择器必须是 header.h-14。Tailwind 的 .h-14 是**类**选择器，
+   光写 header 的 height:auto 压不过它 —— 压不过就等于换行的内容溢出
+   56px 的盒子、盖住下方内容。 */
+header.h-14,
+.top-bar {
+  flex-wrap: wrap;
+  height: auto;
+  min-height: 3.5rem;
+  row-gap: 8px;
+  /* 折行后内容不贴着盒子下沿。单行时 min-height 主导，宽屏观感不变。 */
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+/* 左侧（标题/导航）：可以收缩，放不下就整块换行，实在不够就省略号。
+   ⚠️ 这里用 flex-basis:auto。Tailwind 的 flex-1 是 basis:0，含义是
+   「永不换行、只会一直缩」，标题会被压成「千… 管理… 更…」。 */
+header.h-14 > div:first-child,
+.top-bar__left {
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+header.h-14 > div:first-child > * {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 右侧（按钮组）：容器**必须允许收缩**，缩了才会在内部换行。
+   给容器设成不可收缩反而不换行、直接被切掉 —— 360px 实测过。 */
+header.h-14 > div:last-child,
+.top-bar__right,
+.top-bar__nav {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* 不允许被压缩的只有**按钮/链接本身**。压不扁，就不会出现竖排文字。 */
+header.h-14 a,
+header.h-14 button,
+.top-bar a,
+.top-bar button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* 窄屏把只是"顺带一提"的信息藏掉：它们不可收缩时会撑破左框、盖到按钮上
+   （给 #lastRefresh 设不可收缩，768px 下实测重叠过）。
+   这些值在页面内容区都另有显示，藏掉不丢信息。 */
+@media (max-width: 640px) {
+  #lastRefresh,
+  #adminEmail,
+  .top-bar__email {
+    display: none;
+  }
+}
