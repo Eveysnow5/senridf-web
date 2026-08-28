@@ -155,7 +155,6 @@ const T = {
       'Wordをアップロードまたはテキストを貼り付けると、誤字・重複文・編集指示の残留・前後の論理矛盾を自動チェックし、分類された校正レポートを出力します。',
     proofreader_cta: '校正を始める',
 
-    bids_label: 'Internal · 会員限定',
     bids_title: '大阪市 入札情報モニタリング',
     bids_desc:
       '大阪市が公表する業務委託・物品供給の入札公告を毎日自動取得し、中国語要約を提供。小規模事業者向けの案件を素早く絞り込めます。',
@@ -172,9 +171,9 @@ const T = {
     tag_scrape: '自動収集',
     tag_dict: '辞書・活用',
     tag_empty: '該当するツールはありません。',
+    tag_status: '{total} 件中 {n} 件を表示中。',
     tools_wip_title: '開発中',
     badge_open: '誰でも利用可',
-    badge_internal: 'Internal',
     /* カード用の一行説明（長文は各ツールのページ側に置く） */
     tl_one: '中国語と日本語を相互翻訳。回訳を並べて誤訳を確認できます。',
     analysis_one: '複数のPDF・Word・Excelを横断分析し、比較レポートを生成。',
@@ -592,7 +591,6 @@ const T = {
       '上传 Word 或粘贴文本，自动检查错别字、重复句、编辑指令残留及前后逻辑冲突，输出分类校对报告。',
     proofreader_cta: '开始校对',
 
-    bids_label: 'Internal · 会员限定',
     bids_title: '大阪市招标信息监控',
     bids_desc:
       '每日自动抓取大阪市政府发布的業務委託与物品供給招标公告，提供中文摘要，便于快速筛选适合小型企业的项目。',
@@ -609,9 +607,9 @@ const T = {
     tag_scrape: '自动采集',
     tag_dict: '词表·活用',
     tag_empty: '没有符合的工具。',
+    tag_status: '共 {total} 个工具，当前显示 {n} 个。',
     tools_wip_title: '开发中',
     badge_open: '无需登录',
-    badge_internal: '内部使用',
     /* 卡片上的一句话（长说明留在各工具页里） */
     tl_one: '中日互译，并列显示回译，便于核对有没有译错。',
     analysis_one: '上传多份 PDF、Word、Excel，跨文件分析并生成对比报告。',
@@ -1029,7 +1027,6 @@ const T = {
       'Upload a Word file or paste text. Automatically detects typos, duplicate sentences, leftover editing marks, and front-to-back logical inconsistencies, then outputs a categorized proofreading report.',
     proofreader_cta: 'Start Proofreading',
 
-    bids_label: 'Internal · Members',
     bids_title: 'Osaka City Bid Monitor',
     bids_desc:
       'Automatically scrapes daily service and goods-procurement notices published by Osaka City, with Chinese summaries to quickly filter projects suited to small businesses.',
@@ -1046,9 +1043,9 @@ const T = {
     tag_scrape: 'Scraping',
     tag_dict: 'Dictionary',
     tag_empty: 'No tools match that tag.',
+    tag_status: 'Showing {n} of {total} tools.',
     tools_wip_title: 'In Development',
     badge_open: 'Open to All',
-    badge_internal: 'Internal',
     /* One-liners for the cards; the long copy lives on each tool page */
     tl_one: 'Chinese and Japanese both ways, with back-translation shown for checking.',
     analysis_one: 'Cross-analyze multiple PDF, Word and Excel files into one report.',

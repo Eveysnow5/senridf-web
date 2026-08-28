@@ -6,8 +6,19 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PAGE = readFileSync(path.join(ROOT, 'solutions', 'demo.html'), 'utf8');
-const FILTER = readFileSync(path.join(ROOT, 'js', 'tool-filter.js'), 'utf8');
 const CSS = readFileSync(path.join(ROOT, 'css', 'main.css'), 'utf8');
+
+// ⚠️ 扫源码的护栏，负向断言一律先剥注释。
+// 「不许出现 pushState」这条，被我自己写在文件头解释取舍的那句
+// 「用 replaceState 不用 pushState」绊红了 —— 断言被自己的注释证伪。
+// 同一个坑在 voice-backtranslation.test.mjs 上踩过一次（2026-08-26）。
+function stripComments(src) {
+  return src
+    .split(/\r?\n/)
+    .filter((line) => !/^\s*(\/\/|\*|\/\*)/.test(line))
+    .join('\n');
+}
+const FILTER = stripComments(readFileSync(path.join(ROOT, 'js', 'tool-filter.js'), 'utf8'));
 
 // ── 背景 ────────────────────────────────────────────────────────────────────
 // 2026-08-27：工具目录从 toB/toC 二分改成**功能标签**分类。一个工具可以同时
@@ -131,4 +142,47 @@ test('★ 筛选靠的是 hidden 属性，所以这两件事必须成对存在',
   // 哪天改成加 class 来隐藏，上面那条 CSS 断言就该跟着改；
   // 这条把"实现方式"钉住，免得 CSS 和 JS 各改各的、又对不上。
   assert.match(FILTER, /card\.hidden\s*=/, 'tool-filter.js 不再用 card.hidden 隐藏卡片了');
+});
+
+// ── 筛选是纯视觉变化，读屏软件不会自己播报 ───────────────────────────────────
+// 没有状态行，用读屏的人点完标签得不到任何反馈：按钮"按下去了"，然后什么也没发生。
+// 状态行刻意做成不可见（.sr-only）：作者的硬要求是六个工具一屏放得下，
+// 多一行可见文字要吃掉二十几 px。
+test('★ 筛选要有 aria-live 状态行，且不占版面', () => {
+  assert.match(PAGE, /data-tool-status/, '缺少状态行容器');
+  assert.match(PAGE, /aria-live="polite"/, '状态行没有 aria-live');
+  assert.match(PAGE, /class="sr-only"[^>]*data-tool-status/, '状态行不是 .sr-only —— 会挤掉版面');
+  assert.match(CSS, /\.sr-only\s*\{[^}]*clip-path/, '.sr-only 没有用 clip-path 的标准实现');
+  // display:none / visibility:hidden 会把读屏软件一起挡掉，等于白写
+  const at = CSS.indexOf('.sr-only {');
+  const block = CSS.slice(at, CSS.indexOf('}', at));
+  assert.ok(!/display:\s*none|visibility:\s*hidden/.test(block), '.sr-only 用了会屏蔽读屏的写法');
+  assert.match(FILTER, /sdfSetText\([^)]*'tag_status'/, '状态行没有走 i18n —— 切语言时不会更新');
+});
+
+// ── 筛选状态要能分享 ────────────────────────────────────────────────────────
+// 工具库的自然需求：「你看下语音相关的这几个」应该能直接发链接。
+test('★ 筛选状态写进 URL，且只动 tag 这一个参数', () => {
+  assert.match(FILTER, /searchParams\.set\('tag'/, '筛选没写进 URL');
+  assert.match(FILTER, /searchParams\.delete\('tag'/, '取消筛选没把 tag 从 URL 去掉');
+  // ⚠️ 上面两条只证明「函数体里写了」。突变验证当场发现：把调用点删掉、
+  //    函数留着不调，这两条照样绿。**存在 ≠ 被调用**，所以要单独钉住调用点。
+  assert.match(
+    FILTER,
+    /^\s*if \(!opts \|\| opts\.url !== false\) syncUrl\(tag\);/m,
+    'syncUrl 定义了却没被调用 —— URL 不会变',
+  );
+  // ⚠️ 别写成 /replaceState/ 就完事：守卫行 `!window.history.replaceState` 里也有这个词，
+  //    把调用改成 pushState 照样能过。突变验证当场抓到了这个逃脱（2026-08-27）。
+  assert.match(FILTER, /history\.replaceState\(/, '不是在调用 replaceState');
+  assert.ok(!/pushState/.test(FILTER), '用了 pushState —— 筛选会往浏览历史里塞一堆条目');
+  // ?lang= 是站点自己的参数，绝不能被筛选顺手清掉
+  assert.ok(
+    !/location\.search\s*=/.test(FILTER) && !/new URLSearchParams\(\)/.test(FILTER),
+    '整体重写了查询串 —— ?lang= 会被清掉',
+  );
+});
+
+test('★ URL 里认不出的 tag 要倒回「全部」，不能给人一张空白页', () => {
+  assert.match(FILTER, /KNOWN\.has\(wanted\)/, '没有校验 URL 传进来的 tag');
 });

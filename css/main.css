@@ -759,6 +759,21 @@ main { padding-top: var(--nav-h); }
   white-space: pre-line;
 }
 
+/* 只给读屏软件的文字：不占版面、不可见，但会被念出来。
+   clip-path + 1px 尺寸是这类实现的标准写法；用 display:none 或
+   visibility:hidden 会连读屏软件一起挡掉，那就等于没写。 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* === TOOL CARDS（/solutions/demo 工具目录） =================================
    分类不按 toB/toC，按功能标签：一个工具可以同时是「音声認識」和「翻訳」。
    纵向节奏比营销页紧——作者的要求是六个工具尽量一屏看完，所以这一节用
