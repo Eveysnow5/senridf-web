@@ -21,10 +21,26 @@ const STREAM = stripComments(
 );
 const PAGE_RAW = readFileSync(path.join(ROOT, 'solutions', 'demo', 'translation.html'), 'utf8');
 const PAGE = stripComments(PAGE_RAW);
+const SUMMARY = stripComments(
+  readFileSync(path.join(ROOT, 'functions', 'api', 'summary.js'), 'utf8'),
+);
+const MAIN = readFileSync(path.join(ROOT, 'js', 'main.js'), 'utf8');
 
 function fnBody(name) {
   const m = PAGE.match(new RegExp(`async function ${name}\\([^)]*\\)\\s*\\{[\\s\\S]*?\\n {4}\\}`));
   assert.ok(m, `找不到 ${name}`);
+  return m[0];
+}
+
+function syncFnBody(name) {
+  const m = PAGE.match(new RegExp(`\\n {4}function ${name}\\([^)]*\\)\\s*\\{[\\s\\S]*?\\n {4}\\}`));
+  assert.ok(m, `找不到 ${name}`);
+  return m[0];
+}
+
+function decl(re, what) {
+  const m = PAGE.match(re);
+  assert.ok(m, `找不到 ${what}`);
   return m[0];
 }
 
@@ -151,24 +167,123 @@ test('★ 回译语种校验：日语冒充中文回译必须被抓到', () => {
   assert.equal(backLooksRight('本次预算为3200万日元。', 'ja'), false, '中文冒充日语回译没被抓到');
 });
 
+// ── 抄写闸门 ────────────────────────────────────────────────────────────────
+// 语种闸门有个结构性漏洞：**日语可以整句不含假名**（「会議室変更」「担当者確認中」），
+// 抄回来的这种日语会被判成"合格的中文回译"。抄写闸门补的是这个。
+//
+// 2026-09-04 走生产路径实测（同端点 / 同模型 qwen3.7-flash / 同提示词 / 同温度），
+// 22 条 × 3 遍 = 66 个真实往返，覆盖普通会议句 / 短全汉字句 / 听写坏掉的片段：
+//     真回译的相似度  普通句 max 0.26 全汉字句 max 0.18
+//     抄写的相似度    0.71 和 1.00
+// 阈值 0.5 落在这条空档正中，66 个样本零误伤。下面的样例就是那次实测里的真数据。
+test('★ 抄写闸门：真回译与抄写之间要留得住那条缝', () => {
+  const sim = new Function(
+    decl(/const BACK_PUNCT_RE = [^\n]*\n/, 'BACK_PUNCT_RE') +
+      syncFnBody('backNorm') +
+      syncFnBody('backSimilarity') +
+      decl(/const BACK_COPY_MAX = [^\n]*\n/, 'BACK_COPY_MAX') +
+      syncFnBody('backLooksCopied') +
+      '; return { backSimilarity, backLooksCopied, BACK_COPY_MAX };',
+  )();
+
+  // 抄写：实测里模型对「党招」这种听写垃圾回译不动，就把译文原样抄了回来
+  assert.equal(
+    sim.backLooksCopied(
+      '相手側の党招と連絡を取ればよいです。',
+      '相手側の党招と連絡を取ればよいです。',
+    ),
+    true,
+    '★ 一字不差的抄写没被抓到',
+  );
+  // 抄写的另一种形态：润色一遍。这一条实测相似度 0.71
+  assert.equal(
+    sim.backLooksCopied(
+      '相手の党の招へいと連絡を取ればよいです。',
+      '相手側の党招と連絡を取ればよいです。',
+    ),
+    true,
+    '★ "润色一遍就交差"没被抓到 —— 那正是实测中出现过的形态',
+  );
+  // 真回译不能被误伤。下面三条都是实测数据，相似度分别是 0.26 / 0.10 / 0.00
+  for (const [back, tl, what] of [
+    [
+      '本次预算为3,200万日元，同比增长15%。',
+      '今回の予算は3,200万円で、前年比15％増です。',
+      '数字多的句子',
+    ],
+    ['明天上午10点开始。', '明日の午前10時に開始します。', '短·全汉字句'],
+    ['正在确认负责人。', '責任者の確認中です。', '短句'],
+  ]) {
+    assert.equal(sim.backLooksCopied(back, tl), false, `真回译被误伤：${what}`);
+  }
+  // 护栏自身有效：阈值必须落在实测那条缝里，挪出去这套断言就白写了
+  assert.ok(
+    sim.BACK_COPY_MAX > 0.26 && sim.BACK_COPY_MAX < 0.71,
+    `阈值 ${sim.BACK_COPY_MAX} 已经不在实测的 0.26↔0.71 空档里`,
+  );
+});
+
 // ── 失败要可见，且要给出"重说一遍"的出路 ──────────────────────────────────
 // 作者的取舍：宁可这句看着不对、重新说一遍，也不要一个识别不出的编造。
 // 所以回译挂掉时不能藏 —— 藏了人就连"看着不对"的机会都没有。
-test('★ 回译语种不对时必须重试一次', () => {
+test('★ 回译不合格时必须重试一次', () => {
   const fn = fnBody('requestBackTranslation');
   assert.match(
     fn,
-    /if \(!backLooksRight\(back, toLang\)\)[\s\S]{0,300}?readBackStream\(translated,/,
-    '语种不对时没有重试 —— 一次失败就永远失败',
+    /if \(why\)[\s\S]{0,300}?readBackStream\(translated,/,
+    '不合格时没有重试 —— 一次失败就永远失败',
   );
   // 只重试一次：现场口译等不起，而且模型要是稳定不听话，重试多少次都一样
   const calls = (fn.match(/readBackStream\(/g) || []).length;
   assert.equal(calls, 2, `readBackStream 调了 ${calls} 次，应该是"首次 + 重试一次"共 2 次`);
 });
 
+test('★ 判定的默认值必须站在"未校验"那边', () => {
+  const fn = fnBody('requestBackTranslation');
+  assert.match(
+    fn,
+    /let why = 'error';/,
+    "why 的初值不是 'error' —— 中途抛异常时这一句会被当成校验通过，护栏等于没有",
+  );
+  // 网络挂了也要标出来。原来这条路只有 console.warn，界面上一片空白，
+  // 而"回译没出现"和"这句没校验"在界面上长得一模一样。
+  const at = fn.indexOf('catch (err)');
+  assert.ok(at > 0, 'requestBackTranslation 没有 catch');
+  assert.ok(
+    fn.indexOf('markBackResult(') > at,
+    '★ catch 之后没有走 markBackResult —— 网络失败时界面上看不出这句没校验过',
+  );
+});
+
 test('★ 重试也没救回来时，要明说这句未经校验、建议重说', () => {
-  assert.match(PAGE, /回译没成功/, '没有说明回译失败了');
-  assert.match(PAGE, /未经校验/, '没有说明这句没被校验');
-  assert.match(PAGE, /建议重说/, '没有给出"重说一遍"的指引 —— 那正是作者要的处理方式');
+  assert.match(PAGE, /window\.sdfT\('tl_back_unverified'\)/, '警告文案没走 i18n');
+  assert.match(
+    MAIN,
+    /tl_back_unverified: '⚠ 回译没成功，这一句未经校验，建议重说一遍'/,
+    '中文文案不对',
+  );
+  // 三语对齐由 i18n-keys.test.mjs 保证，这里只确认这个键三个语种块里都有
+  const hits = (MAIN.match(/tl_back_unverified:/g) || []).length;
+  assert.equal(hits, 3, `tl_back_unverified 只在 ${hits} 个语种块里，应该是 3 个`);
   assert.match(PAGE, /delete el\.dataset\.unverified/, '重试成功后没有清掉未校验标记');
+});
+
+// ── 标记必须活到纪要里 ──────────────────────────────────────────────────────
+// ⚠ 只写进 DOM 的话，导出的 docx 和会议纪要拿不到它 —— 而纪要才是留下来、
+// 被当成事实引用的那一份。最可疑的那一句反而在纪要里显得和别的一样确凿。
+test('★ 未校验标记要落到历史记录，不能只在界面上', () => {
+  assert.match(PAGE, /unverified: '',/, 'voiceHistory 的条目里没有 unverified 字段');
+  const fn = syncFnBody('markBackResult');
+  assert.match(fn, /entry\.unverified = why/, '判定结果没有写回历史记录条目');
+  assert.match(fn, /entry\.back = back/, '回译没有写回历史记录条目');
+});
+
+test('★ 会议纪要必须知道哪一句没校验过', () => {
+  assert.match(SUMMARY, /d\.unverified/, '纪要接口没有读 unverified —— 标记在这里断了');
+  assert.match(SUMMARY, /※未校验/, '纪要的输入里没有把未校验的发言标出来');
+  assert.match(
+    SUMMARY,
+    /不要用它作为行动项、数字、金额或承诺的唯一依据/,
+    '提示词里没有说明未校验的发言该怎么处理',
+  );
 });

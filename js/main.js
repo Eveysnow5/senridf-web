@@ -229,6 +229,10 @@ const T = {
 
     /* Translation tool — 実行時に書き換わる文言も含む（2026-08-17） */
     tl_error_prefix: 'エラー',
+    // 逆翻訳が検証を通らなかった一文につく警告。**隠さない**のが方針
+    //（作者の判断：見て分かる失敗のほうが、見抜けない捏造よりましである）
+    tl_back_unverified:
+      '⚠ 逆翻訳の検証に失敗しました。この一文は未検証です。言い直しをおすすめします',
     tl_tab_voice: '音声通訳',
     tl_tab_text: 'テキスト翻訳',
     tl_status_ready: '準備完了',
@@ -658,6 +662,7 @@ const T = {
 
     /* Translation tool — 含运行时改写的文案（2026-08-17） */
     tl_error_prefix: '错误',
+    tl_back_unverified: '⚠ 回译没成功，这一句未经校验，建议重说一遍',
     tl_tab_voice: '语音口译',
     tl_tab_text: '文字翻译',
     tl_status_ready: '准备就绪',
@@ -1096,6 +1101,8 @@ const T = {
 
     /* Translation tool — includes strings written at runtime (2026-08-17) */
     tl_error_prefix: 'Error',
+    tl_back_unverified:
+      '⚠ Back-translation check failed — this line is unverified; please say it again',
     tl_tab_voice: 'Live Interpretation',
     tl_tab_text: 'Text Translation',
     tl_status_ready: 'Ready',

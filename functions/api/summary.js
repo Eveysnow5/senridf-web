@@ -19,6 +19,12 @@ const SYS_SUMMARY =
   '  - 格式：{ "actor": "我们" 或 "客户", "task": "具体任务", "deadline": "时间" }\n' +
   '  - 没有明确时间则写 "待定"\n' +
   '· 禁止编造、推断或猜测，只提取对话中明确说出的内容\n' +
+  // 未校验的那一句最可能是编造出来的（回译校验没通过 = 译文可能已经偏离原话）。
+  // 纪要是会留下来、会被当成事实引用的那一份，所以它必须继承这个标记，
+  // 而不是把校验过的和没校验过的一起铺平成同样可信的句子。
+  '· 标记了「※未校验」的发言，其回译校验没有通过，内容可能已经失真：\n' +
+  '  不要用它作为行动项、数字、金额或承诺的唯一依据；\n' +
+  '  若确实要写进纪要，请在那一条末尾加上「（未校验）」\n' +
   '· 如果没有相关内容，返回空数组 []';
 
 export async function onRequest(context) {
@@ -64,7 +70,10 @@ export async function onRequest(context) {
       const tgt = d.tgt ?? d.ja;
       const srcLabel = LANG[d.srcLang] || '原文';
       const tgtLabel = LANG[d.tgtLang] || '译文';
-      return `【${speaker}】\n${srcLabel}：${src}\n${tgtLabel}：${tgt}`;
+      // 回译校验没过的那一句，标记要一路带到这里。见 translation.html 的 markBackResult：
+      // ⚠ 只写进 DOM 的话，纪要拿不到它，最可疑的那句反而在纪要里显得和别的一样确凿。
+      const flag = d.unverified ? '（※未校验）' : '';
+      return `【${speaker}】${flag}\n${srcLabel}：${src}\n${tgtLabel}：${tgt}`;
     })
     .join('\n\n');
 

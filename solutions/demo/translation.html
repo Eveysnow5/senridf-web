@@ -1554,6 +1554,10 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
           src: text,                    // 源转录
           tgt: fullText,                // 译文（导出用的是这个，不含回译）
           back: '',                     // 回译，下面那次调用回来后填
+          // 回译没通过校验时填失败原因（lang/copy/empty/error）。
+          // ⚠️ 这个字段要跟着记录一路走到 /api/summary —— 校验没过的那句最可能是编造，
+          // 而纪要是留下来的那份东西，不能让它看起来和校验过的一样可信。
+          unverified: '',
         };
         voiceHistory.push(entry);
         // 不 await：口译不等回译，回译晚一拍出现在译文下方
@@ -1575,11 +1579,26 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
       window.sdfSetText(elVoiceStatusText, busy ? 'tl_status_translating' : 'tl_status_ready_voice');
     }
 
-    // 回译回来之后必须验一下语种。
+    // 回译回来之后必须验一下。两道闸门，都不问模型、都是确定性的：
     //
-    // ⚠️ 实测 4 次里有 1 次，回译回来的还是日语（模型把译文润色了一遍就交差）。
-    // 那种"看着像回译、其实不是"的东西最危险 —— 用户对着两栏点头，以为校验过了。
-    // 验不过就标出来，宁可承认这一句没校验成功。
+    //   ① 语种闸门 backLooksRight —— 回来的还是译文那个语种，就判不合格。
+    //      作者 2026-08 实测 4 次里 1 次、12 次里 2 次栽在这儿（模型把译文润色一遍就交差）。
+    //      那种"看着像回译、其实不是"的东西最危险 —— 用户对着两栏点头，以为校验过了。
+    //   ② 抄写闸门 backLooksCopied —— 回来的和译文太像，就判不合格。
+    //      语种闸门有个结构性漏洞：**日语可以整句不含假名**（「会議室変更」「担当者確認中」），
+    //      抄回来的这种日语会被当成合格的中文回译放行。抄写闸门不依赖"日语一定有假名"。
+    //
+    // ⚠️ 0.5 这个阈值不是拍的。2026-09-04 走**生产路径**量了一次（同端点、同模型
+    // qwen3.7-flash、同提示词、同温度），22 条 × 3 遍 = 66 个真实往返，
+    // 覆盖普通会议句 / 短全汉字句 / 听写坏掉的片段：
+    //      真回译的相似度   普通句 max 0.26　全汉字句 max 0.18
+    //      抄写的相似度     0.71 和 1.00（同一条：「党招」这种听写垃圾，模型回译不动就原样抄回）
+    // 0.26 到 0.71 中间是一条空档，0.5 落在正中，66 个样本零误伤。见 docs/tools/。
+    //
+    // ⚠️ 同一次测量**否掉了我自己的假设**：我原以为全汉字中文会被译成无假名的日语、
+    // 从而漏过语种闸门；实测 9/9 都带助词假名（「会議室の変更。」「責任者の確認中です。」）。
+    // 那个洞比我想的窄，语种闸门也比我想的稳（2/2 的实测失效都被它拦住了）。
+    // 抄写闸门留着，是因为它免费、确定，且不靠那条经验假设活着。
     const KANA_RE = /[぀-ゟ゠-ヿ]/;
     function backLooksRight(text, expectLang) {
       if (!text) return false;
@@ -1587,6 +1606,61 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
       if (expectLang === 'ja') return KANA_RE.test(text);
       if (expectLang === 'en') return !/[一-鿿぀-ヿ]/.test(text);
       return true;
+    }
+
+    // 比相似度之前先归一：去空白标点、全角数字→半角。不归一的话，
+    // 「3,200万円」和「3,200万日元」之间的标点差会把分数压下去。
+    const BACK_PUNCT_RE = /[\s、。，,.．・「」『』（）()【】[\]!！?？:：;；"'~〜ー…—-]/g;
+    function backNorm(s) {
+      return (s || '')
+        .replace(BACK_PUNCT_RE, '')
+        .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+        .toLowerCase();
+    }
+    // 字符二元组的 Dice 系数。用二元组而不是编辑距离：「润色一遍」改的正是语序和助词，
+    // 要的就是对语序不敏感、对用词敏感。
+    function backSimilarity(a, b) {
+      a = backNorm(a);
+      b = backNorm(b);
+      if (a.length < 2 || b.length < 2) return a && a === b ? 1 : 0;
+      const A = new Set();
+      const B = new Set();
+      for (let i = 0; i < a.length - 1; i++) A.add(a.slice(i, i + 2));
+      for (let i = 0; i < b.length - 1; i++) B.add(b.slice(i, i + 2));
+      let hit = 0;
+      for (const g of A) if (B.has(g)) hit++;
+      return (2 * hit) / (A.size + B.size);
+    }
+    const BACK_COPY_MAX = 0.5;
+    function backLooksCopied(back, translated) {
+      return backSimilarity(back, translated) >= BACK_COPY_MAX;
+    }
+
+    /** 回译判定。返回**失败原因**，空串表示通过。
+     *  界面、历史记录、会议纪要三处用的是同一个判定，不各判各的。 */
+    function backVerdict(back, translated, expectLang) {
+      if (!back) return 'empty';
+      if (!backLooksRight(back, expectLang)) return 'lang';
+      if (backLooksCopied(back, translated)) return 'copy';
+      return '';
+    }
+
+    /** 把判定结果同时落到**界面**和**历史记录**上。
+     *  ⚠️ 必须一起写。⚠ 标记只存在于 DOM 的话，导出的 docx 和会议纪要就拿不到它 ——
+     *  而纪要恰恰是会留下来、会被当成事实引用的那一份。 */
+    function markBackResult(el, entry, back, why) {
+      if (entry) {
+        entry.back = back;
+        entry.unverified = why || '';
+      }
+      el.hidden = false;
+      if (why) {
+        el.textContent = (back ? back + '  ' : '') + window.sdfT('tl_back_unverified');
+        el.dataset.unverified = why;
+      } else {
+        el.textContent = back;
+        delete el.dataset.unverified;
+      }
     }
 
     // 回译：把译文再翻回原文语言，让人一眼看出"是不是听错了"。
@@ -1633,37 +1707,36 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
 
     async function requestBackTranslation(translated, fromLang, toLang, el, entry) {
       if (!translated) return;
+      let back = '';
+      // ⚠️ 初值是 'error' 而不是 ''：万一下面任何一步抛了，这一句就是**没校验过**的，
+      // 默认必须是"未校验"，不能是"通过"。默认值站错边，护栏就等于没有。
+      let why = 'error';
       try {
-        const out = await readBackStream(translated, fromLang, toLang, el);
-        let back = out.trim();
+        back = (await readBackStream(translated, fromLang, toLang, el)).trim();
+        why = backVerdict(back, translated, toLang);
 
-        // 语种不对就重试一次。
+        // 不合格就重试一次。
         //
         // 实测 12 次里有 2 次回来的是日语（模型把译文抄了一遍就交差）。
         // 这 1/6 的失效率不能忍：**回译挂了，人就连"看着不对"的机会都没有**，
         // 而作者的取舍恰恰是"宁可这句看着不对、我重说一遍，也不要一个识别不出的编造"。
         // 失效是随机的，重试一次就能把大部分捞回来。只重试一次，不无限重试 ——
         // 现场口译等不起，而且模型要是稳定地不听话，重试多少次都一样。
-        if (!backLooksRight(back, toLang)) {
-          const retry = await readBackStream(translated, fromLang, toLang, el);
-          if (backLooksRight(retry, toLang)) back = retry;
-        }
-
-        if (entry) entry.back = back;
-        el.textContent = back;
-        el.hidden = false;
-        if (!backLooksRight(back, toLang)) {
-          // 重试也没救回来，就不藏着：明说这一句没校验成，别让人对着假回译点头。
-          el.textContent = back + '  ⚠ 回译没成功，这一句未经校验，建议重说一遍';
-          el.dataset.unverified = '1';
-        } else {
-          delete el.dataset.unverified;
+        if (why) {
+          const retry = (await readBackStream(translated, fromLang, toLang, el)).trim();
+          const retryWhy = backVerdict(retry, translated, toLang);
+          if (!retryWhy) {
+            back = retry;
+            why = '';
+          }
         }
       } catch (err) {
-        // 回译挂了不影响口译本身，但不能一声不吭 —— 回译是防编造的那道检查，
-        // 它静默失效等于检查没了，而界面上看不出区别。
+        // 回译挂了不影响口译本身，但**不能只写 console**。回译是防编造的那道检查，
+        // 它静默失效等于检查没了，而界面上看不出区别 —— 人连"看着不对"的机会都没有。
+        // 所以下面照样走 markBackResult，把"这句没校验"摆到界面和记录里。
         console.warn('回译失败，这一句没有校验：', err);
       }
+      markBackResult(el, entry, back, why);
     }
 
     function appendStreamItem(src, spk, dir) {
