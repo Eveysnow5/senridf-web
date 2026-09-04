@@ -86,6 +86,11 @@ td,th{border:1px solid #e5e7eb}
       <button type="button" onclick="setLang('zh')" id="lbzh" class="lang-on px-2 py-1 rounded text-xs bg-gray-100 text-gray-500 transition-colors">中</button>
       <button type="button" onclick="setLang('en')" id="lben" class="px-2 py-1 rounded text-xs bg-gray-100 text-gray-500 transition-colors">EN</button>
     </div>
+    <!-- 真题演练入口：**只有管理员看得见**（JLPT 真题版权属 JEES，不对外开放）。
+         文案由 applyLang() 填，所以这里没有字；title 也在那里设，避免 axe 报「链接无名字」。 -->
+    <a id="drillLink" href="https://claude.ai/code/artifact/e7aea4bc-c182-41b8-bde5-952176c40393"
+       target="_blank" rel="noopener"
+       class="hidden px-2.5 py-1 rounded border border-indigo-300 text-xs text-indigo-600 hover:bg-indigo-50 shrink-0 transition-colors"></a>
     <div id="uarea" class="hidden items-center gap-2 shrink-0">
       <span id="uemail" class="text-xs text-gray-400 max-w-[120px] truncate hidden sm:block"></span>
       <button type="button" id="logoutBtn" title="退出" class="text-xs px-2 py-1 rounded border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors"></button>
@@ -153,6 +158,7 @@ const T = {
     g1:'一类', g2:'二类', g3:'三类', gAll:'全部',
     practOn:'遮盖练习', practOff:'显示全部',
     quiz:'小测试', colSettings:'列设置', logout:'退出',
+    drill:'真题演练', drillTitle:'JLPT N2/N3 真题自检（管理员）',
     scrollHint:'← 左右滑动查看所有活用形 →',
     quizSetTitle:'选择测试的变形',
     selAll:'全选', selNone:'取消全选',
@@ -179,6 +185,7 @@ const T = {
     g1:'一グループ', g2:'二グループ', g3:'三グループ', gAll:'全部',
     practOn:'隠して練習', practOff:'全て表示',
     quiz:'クイズ', colSettings:'列設定', logout:'ログアウト',
+    drill:'過去問ドリル', drillTitle:'JLPT N2/N3 過去問ドリル（管理者限定）',
     scrollHint:'← 横にスクロールできます →',
     quizSetTitle:'テストする活用形を選択',
     selAll:'全選択', selNone:'全解除',
@@ -205,6 +212,7 @@ const T = {
     g1:'Group 1', g2:'Group 2', g3:'Group 3', gAll:'All',
     practOn:'Cover Mode', practOff:'Show All',
     quiz:'Quiz', colSettings:'Columns', logout:'Log out',
+    drill:'Past-paper drill', drillTitle:'JLPT N2/N3 past-paper drill (admins only)',
     scrollHint:'← Scroll horizontally →',
     quizSetTitle:'Select forms to test',
     selAll:'Select all', selNone:'Deselect all',
@@ -256,6 +264,9 @@ function applyLang() {
   document.getElementById('quizBtn').textContent = t.quiz;
   document.getElementById('colSettingsBtn').textContent = t.colSettings;
   document.getElementById('logoutBtn').textContent = t.logout;
+  const dl = document.getElementById('drillLink');
+  dl.textContent = t.drill;
+  dl.title = t.drillTitle;
   document.getElementById('scrollHint').textContent = t.scrollHint;
   document.getElementById('quizSetTitle').textContent = t.quizSetTitle;
   document.getElementById('selAllBtn').textContent = t.selAll;
@@ -610,6 +621,7 @@ window.addEventListener('resize', updateTableHeight);
 <script type="module" src="/js/tracking.js"></script>
 <script type="module">
 import { auth, db } from '/js/shared/firebase-init.js';
+import { isAdmin } from '/js/shared/admins.js';
 import { initErrorReporting } from '/js/shared/report-error.js';
 import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 
@@ -634,6 +646,11 @@ onAuthStateChanged(auth, (user) => {
   } else {
     uarea.style.display = 'none';
   }
+  // 真题演练入口只给管理员。**匿名会话也必须判掉** —— 2026-08-26 的事故就是
+  // "user 非空＝真用户"这个假设在判定层不成立；isAdmin 比对的是邮箱，匿名对象没有
+  // email，天然过不了，但这里仍显式走 email 而不是 user，让判据自己说清楚。
+  document.getElementById('drillLink').style.display =
+    isAdmin({ email }) ? 'inline-flex' : 'none';
 });
 
 // 退出后不跳走，人留在页面上继续用。
