@@ -166,6 +166,23 @@ export const TIERS = {
 // 排除项不变：*-ocr / qwen-vl-*（视觉，另有独立桶）、*-thinking（推理，延迟不可接受）、
 // qwen-math-*、*-code。
 
+// 免费额度的**到期日**。这里是机器可读的那一份 —— 上面注释里也写着这些日期，
+// 但注释救不了人：2026-08-24 qwen3.8-max 桶用尽，翻译/纪要/分析/校对/人生故事/
+// 招标摘要/AI 情报/后台同步**全部 403**，而 GitHub Actions 连报四周 success，
+// 最后是作者发现 AI 情报页停在 W31 才知道的。**没有人会去读注释里的日期。**
+//
+// 悬崖和"模型还能不能答"是两件事：桶空了模型照样存在，探针照样绿。
+// 所以 probe-model.js 会读这张表，在到期前 21 天开始报警（`.github/workflows/probe-model.yml`
+// 每周跑一次，失败就开 issue）。**改 TIERS 的时候必须同时改这里**，
+// `tests/probe-model.test.js` 有一条断言盯着：TIERS 里的每个模型都得在这张表里。
+//
+// ⚠️ 这些日期来自百炼控制台「我的试用」，是**人工抄下来的**，没有接口可以核。
+// 抄错或桶被提前用尽，这张表都不会知道 —— 它防的是"忘了这回事"，不是"额度用完"。
+export const TIER_EXPIRY = {
+  'qwen3.8-27b': '2026-11-18', // 2026-08-25 抄，当时 100%
+  'qwen3.7-flash': '2026-10-23', // 2026-08-10 抄；⚠️ 余量一直未核实
+};
+
 // Which tier each task needs, and why. This is the durable record of intent:
 // tiers may collapse onto one model when quota forces it, but these
 // assignments must survive that, so a later split restores the right shape.

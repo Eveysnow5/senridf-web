@@ -13,17 +13,37 @@
 // 根本问题不是判断力，是**没有一条便宜的验证路径**：所有假设都只能走生产链路，
 // 于是每个假设都要花掉作者一次点击。这个脚本就是那条便宜的路径。
 //
+// ── 第二个用途：定时哨兵（2026-09-04 加）────────────────────────────────────
+// 上面说的是"换模型时先探一下"。加上 `--from-tiers` 之后它还兼一件事：
+// **每周替我们盯着额度悬崖**（`.github/workflows/probe-model.yml` 的 schedule）。
+//
+// 为什么需要：2026-08-24 qwen3.8-max 的免费桶用尽，全站八个功能同时 403，
+// 而 **GitHub Actions 连报四周 success**（简报失败被设计成"不中断整轮"），
+// 403 的响应体也没被记录。最后是作者发现 AI 情报页停在 W31 才知道的。
+//
+// 哨兵查两件独立的事，缺一不可：
+//   ① 模型还能不能答（退役、参数被拒、限流）—— 一次真实调用
+//   ② 免费额度还剩几天（`TIER_EXPIRY`）—— **桶空了模型照样存在，①永远是绿的**
+//
+// ⚠️ 它**证明不了线上没事**。这里用的是仓库的 `QWEN_API_KEY`，而 Pages Functions
+// 读的是同事 Cloudflare 项目里的那一份，我们改不了也看不到。两者是不是同一个账号
+// 没有核实过。绿灯的意思是"我们这份 key 打得通这个模型"，不是"senridf.com 正常"。
+//
 // 用法：
 //   node probe-model.js --model qwen3.8-27b
 //   node probe-model.js --model qwen3.8-27b --no-thinking-off   # 不传那个参数
 //   node probe-model.js --model a --model b                     # 一次比几个
+//   node probe-model.js --from-tiers                            # 探 TIERS 里的全部 + 查到期
 
 const PROMPT = '用一句话说明：为什么冗余的备份策略比单一备份更可靠？';
 const TIMEOUT_MS = 90000;
+// 到期前多少天开始报警。三周：够走完"翻控制台找替代模型 → 验参数 → 改 TIERS →
+// push → 镜像 → 同事那边部署"这条链，而这条链上有一段不由我们控制。
+const EXPIRY_WARN_DAYS = 21;
 
 /** 解析参数。纯函数，可单测。 */
 function parseArgs(argv) {
-  const out = { models: [], thinkingOff: true };
+  const out = { models: [], thinkingOff: true, fromTiers: false };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--model') {
       const v = argv[++i];
@@ -31,10 +51,40 @@ function parseArgs(argv) {
       out.models.push(v);
     } else if (argv[i] === '--no-thinking-off') {
       out.thinkingOff = false;
+    } else if (argv[i] === '--from-tiers') {
+      // ⚠️ 模型名**不写进 workflow**。写进去的话，改 TIERS 时哨兵还在探老模型 ——
+      // 它会一直绿着，而绿的是一个已经没人用的模型。
+      out.fromTiers = true;
     }
   }
-  if (!out.models.length) return { ...out, error: '必须指定至少一个 --model' };
+  if (!out.models.length && !out.fromTiers) {
+    return { ...out, error: '必须指定至少一个 --model，或用 --from-tiers' };
+  }
   return out;
+}
+
+/**
+ * 免费额度到期检查。纯函数，可单测。
+ *
+ * ⚠️ 这查的是**日历**，不是余量。桶被提前用尽它不会知道（没有接口可以问）。
+ * 它防的是另一件事：**日期只写在注释里，没有人会去读**。
+ */
+function expiryVerdict(model, dateStr, now = new Date(), warnDays = EXPIRY_WARN_DAYS) {
+  if (!dateStr) {
+    // 缺一条比记错一条更危险：TIERS 换了模型却忘了登记到期日，
+    // 哨兵会安安静静地不报警。所以缺失本身就要报。
+    return { kind: 'unknown', days: null, note: `${model} 没有登记到期日（TIER_EXPIRY 里缺）` };
+  }
+  const end = Date.parse(`${dateStr}T00:00:00Z`);
+  if (Number.isNaN(end)) {
+    return { kind: 'unknown', days: null, note: `${model} 的到期日 ${dateStr} 解析不了` };
+  }
+  const days = Math.floor((end - now.getTime()) / 86400000);
+  if (days < 0) return { kind: 'expired', days, note: `${model} 的免费额度已于 ${dateStr} 到期` };
+  if (days <= warnDays) {
+    return { kind: 'soon', days, note: `${model} 的免费额度 ${dateStr} 到期，只剩 ${days} 天` };
+  }
+  return { kind: 'ok', days, note: `${model} 到期 ${dateStr}（还有 ${days} 天）` };
 }
 
 /**
@@ -67,7 +117,7 @@ function verdict({ status, providerMessage, usage, thinkingOff }) {
   return { kind: 'ok', note: `推理占比 ${(ratio * 100).toFixed(0)}%` };
 }
 
-module.exports = { parseArgs, verdict, PROMPT, TIMEOUT_MS };
+module.exports = { parseArgs, verdict, expiryVerdict, PROMPT, TIMEOUT_MS, EXPIRY_WARN_DAYS };
 
 if (require.main === module) {
   main().catch((err) => {
@@ -87,13 +137,19 @@ async function main() {
     console.error('用法：node probe-model.js --model qwen3.8-27b [--no-thinking-off]');
     process.exit(1);
   }
-  const { CHAT_ENDPOINT } = await loadModelConfig();
+  const { CHAT_ENDPOINT, TIERS, TIER_EXPIRY } = await loadModelConfig();
+  // --from-tiers：模型名从 TIERS 现取，去重。四个档位现在指向两个模型，
+  // 不去重就会白探两次。
+  const models = args.fromTiers ? [...new Set(Object.values(TIERS))] : args.models;
+  if (args.fromTiers) {
+    console.log(`档位 ${Object.keys(TIERS).join('/')} → 去重后 ${models.length} 个模型\n`);
+  }
   console.log(
-    `探测 ${args.models.length} 个模型，${args.thinkingOff ? '传' : '不传'} enable_thinking:false\n`,
+    `探测 ${models.length} 个模型，${args.thinkingOff ? '传' : '不传'} enable_thinking:false\n`,
   );
 
   let bad = 0;
-  for (const model of args.models) {
+  for (const model of models) {
     const body = { model, messages: [{ role: 'user', content: PROMPT }], max_tokens: 200 };
     if (args.thinkingOff) body.enable_thinking = false;
 
@@ -131,5 +187,23 @@ async function main() {
   }
 
   console.log(bad === 0 ? '全部可用' : `${bad} 个不可用`);
+
+  // ── 额度悬崖 ──────────────────────────────────────────────────────────────
+  // ⚠️ 这一段和上面那些调用**互不替代**：模型能答不代表桶里还有量，
+  // 桶空了模型照样在，上面永远是绿的。2026-08-24 就是这么静默了四周。
+  if (args.fromTiers) {
+    console.log('\n免费额度到期检查（查的是日历，不是余量 —— 提前用尽它看不见）：');
+    for (const model of models) {
+      const e = expiryVerdict(model, TIER_EXPIRY?.[model]);
+      const mark = e.kind === 'ok' ? '✓' : '✗';
+      console.log(`${mark} ${e.note}`);
+      if (e.kind !== 'ok') bad++;
+    }
+    console.log(
+      '\n⚠️ 绿灯只说明"仓库这份 key 打得通这个模型"。Pages Functions 用的是同事' +
+        ' Cloudflare 项目里的那份 key，我们看不到，两者是不是同一个账号没核实过。',
+    );
+  }
+
   if (bad > 0) process.exit(1);
 }
