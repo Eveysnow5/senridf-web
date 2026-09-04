@@ -115,6 +115,20 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
     </div>
   </div>
 
+  <!-- LLM 用量：数据从 2026-08-19 起写进 Firestore llm_usage/{日期}，此前一直没有界面读它 -->
+  <div class="card mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <div class="text-sm font-medium text-gray-700">大模型用量</div>
+      <div class="flex items-center gap-2">
+        <span id="usageWhen" class="text-xs text-gray-400"></span>
+        <button onclick="loadUsage()" type="button" class="text-xs px-3 py-1.5 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">↻ 刷新</button>
+      </div>
+    </div>
+    <div id="usageReport">
+      <div class="text-gray-400 text-xs py-2">加载中…</div>
+    </div>
+  </div>
+
   <!-- Error Log -->
   <div class="card mb-6">
     <div class="flex items-center justify-between mb-4">
@@ -274,6 +288,7 @@ onAuthStateChanged(auth, async u => {
     document.getElementById('adminEmail').textContent = u.email;
     loadUsers();
     loadScrapeStatus();
+    loadUsage();
     loadErrors();
     loadGlossary();
     await loadData();
@@ -564,6 +579,123 @@ window.setUserStatus = async function(uid, status) {
 
 // ── Scrape Status (招标抓取监控) ────────────────────────────────────────────────
 const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// 大模型用量。数据自 2026-08-19 起写进 llm_usage/{YYYY-MM-DD}，但一直没有界面读它。
+//
+// ⚠️ 这张卡最要紧的一件事：**把"没量到"和"量到 0"分开显示**。
+// 两个流式端点（analyze / translateStream）原样透传 upstream.body，函数不读流，
+// 所以只有调用次数、没有 token 数（当初的取舍：插 TransformStream 会把逐字节工作
+// 压回 Workers 免费档 10ms CPU，2026-08-12 的 502 就是那么来的）。
+// 如果把它们的 0 直接画出来，看板会告诉你"文书分析不花钱"——那是最坏的一种错。
+// 所以未量到的调用单独一列，并在顶部明说。
+const TASK_LABEL = {
+  translate: '翻译（文字）',
+  translateStream: '口译（逐句流式）',
+  summary: '会议纪要',
+  proofread: '校对',
+  analyze: '文书分析（流式）',
+  lifestory: '人生故事',
+};
+
+window.loadUsage = async function() {
+  const el = document.getElementById('usageReport');
+  const whenEl = document.getElementById('usageWhen');
+  if (!el) return;
+  el.innerHTML = '<div class="text-gray-400 text-xs py-2">加载中…</div>';
+  try {
+    const snap = await getDocs(collection(db, 'llm_usage'));
+    const days = [];
+    snap.forEach((d) => days.push({ day: d.id, ...d.data() }));
+    days.sort((a, b) => (a.day < b.day ? 1 : -1));   // 文档 id 就是日期，倒序
+    if (!days.length) {
+      whenEl.textContent = '';
+      el.innerHTML = '<div class="text-gray-400 text-xs py-2">还没有用量记录</div>';
+      return;
+    }
+
+    const n = (v) => (typeof v === 'number' ? v : 0);
+    const tot = { calls: 0, total_tokens: 0, reasoning_tokens: 0, missing_usage: 0 };
+    const byTask = {};
+    for (const d of days) {
+      for (const k of Object.keys(tot)) tot[k] += n(d[k]);
+      const bt = d.by_task || {};
+      for (const [t, v] of Object.entries(bt)) {
+        const a = (byTask[t] = byTask[t] || { calls: 0, total_tokens: 0, reasoning_tokens: 0, missing_usage: 0 });
+        a.calls += n(v.calls);
+        a.total_tokens += n(v.total_tokens);
+        a.reasoning_tokens += n(v.reasoning_tokens);
+        a.missing_usage += n(v.missing_usage);
+      }
+    }
+    whenEl.textContent = days[days.length - 1].day + ' ～ ' + days[0].day + '（' + days.length + ' 天）';
+
+    const kfmt = (v) => (v >= 1e6 ? (v / 1e6).toFixed(2) + 'M' : v >= 1000 ? Math.round(v / 1000) + 'K' : String(v));
+    const stat = (label, val, color) =>
+      '<div class="text-center"><div class="text-xl font-semibold ' + (color || 'text-gray-800') + '">' + val +
+      '</div><div class="text-xs text-gray-400 mt-0.5">' + label + '</div></div>';
+
+    const measured = tot.calls - tot.missing_usage;
+    const head = '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">' +
+      stat('调用', tot.calls) +
+      stat('tokens', kfmt(tot.total_tokens)) +
+      stat('其中 reasoning', kfmt(tot.reasoning_tokens), tot.reasoning_tokens ? 'text-orange-500' : 'text-gray-400') +
+      stat('未量到 token 的调用', tot.missing_usage, tot.missing_usage ? 'text-orange-500' : 'text-gray-400') +
+      '</div>';
+
+    const caveat = tot.missing_usage
+      ? '<div class="text-xs text-orange-600 bg-orange-50 rounded px-3 py-2 mb-3">⚠ 有 ' +
+        tot.missing_usage + ' 次调用只记了次数、没记 token（流式端点原样透传，函数读不到 usage）。' +
+        '<b>这些端点的 token 数偏低，不能当成"消耗少"来读。</b></div>'
+      : '';
+    const reasonNote = tot.reasoning_tokens
+      ? '<div class="text-xs text-gray-500 mb-3">reasoning 占 completion 的部分是<b>计费但被丢弃</b>的思考过程。' +
+        '占比高就说明该端点该关思考模式（<code>enable_thinking:false</code>）。</div>'
+      : '';
+
+    const rows = Object.entries(byTask).sort((a, b) => b[1].total_tokens - a[1].total_tokens).map(([t, v]) => {
+      const avg = v.calls - v.missing_usage > 0 ? Math.round(v.total_tokens / (v.calls - v.missing_usage)) : null;
+      return '<tr class="border-b border-gray-50 last:border-0">' +
+        '<td class="py-2 pr-4 text-gray-700">' + esc(TASK_LABEL[t] || t) + '</td>' +
+        '<td class="py-2 pr-4 text-right text-gray-600">' + v.calls + '</td>' +
+        // 全部调用都没量到时显示 —— 而不是 0。**"没量到"和"量到 0"必须长得不一样**，
+        // 否则这一格会告诉你"文书分析不花钱"，那是这张卡最不该犯的错。
+        '<td class="py-2 pr-4 text-right ' + (v.total_tokens ? 'text-gray-800' : 'text-gray-300') + '">' +
+          (v.total_tokens ? kfmt(v.total_tokens) : '—') + '</td>' +
+        '<td class="py-2 pr-4 text-right ' + (v.reasoning_tokens ? 'text-orange-500' : 'text-gray-300') + '">' +
+          (v.reasoning_tokens ? kfmt(v.reasoning_tokens) : '—') + '</td>' +
+        '<td class="py-2 pr-4 text-right text-gray-500">' + (avg === null ? '—' : kfmt(avg)) + '</td>' +
+        '<td class="py-2 text-right ' + (v.missing_usage ? 'text-orange-600' : 'text-gray-300') + '">' +
+          (v.missing_usage ? v.missing_usage + ' 次未量到' : '—') + '</td>' +
+      '</tr>';
+    }).join('');
+
+    const table = '<div class="tbl-scroll"><table class="w-full text-xs"><thead class="text-gray-400 border-b border-gray-100"><tr>' +
+      '<th class="text-left py-2 pr-4 font-normal">端点</th>' +
+      '<th class="text-right py-2 pr-4 font-normal">调用</th>' +
+      '<th class="text-right py-2 pr-4 font-normal">tokens</th>' +
+      '<th class="text-right py-2 pr-4 font-normal">其中 reasoning</th>' +
+      '<th class="text-right py-2 pr-4 font-normal">每次均值</th>' +
+      '<th class="text-right py-2 font-normal">观测盲区</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+
+    // 每日柱状：看趋势，也用来发现"某天突然没数据"（那多半是记录坏了，不是没人用）
+    const max = Math.max(...days.map((d) => n(d.total_tokens)), 1);
+    const bars = days.slice(0, 30).reverse().map((d) => {
+      const h = Math.max(2, Math.round((n(d.total_tokens) / max) * 44));
+      return '<div class="flex flex-col items-center justify-end" style="height:52px" ' +
+        'title="' + d.day + '：' + kfmt(n(d.total_tokens)) + ' tokens / ' + n(d.calls) + ' 次">' +
+        '<div style="width:9px;height:' + h + 'px;background:#94a3b8;border-radius:2px"></div></div>';
+    }).join('');
+    const chart = '<div class="mt-4"><div class="text-xs text-gray-400 mb-1">每日 tokens（最近 ' +
+      Math.min(days.length, 30) + ' 天）</div><div class="flex items-end gap-1">' + bars + '</div></div>';
+
+    el.innerHTML = head + caveat + reasonNote + table + chart;
+  } catch (err) {
+    whenEl.textContent = '';
+    el.innerHTML = '<div class="text-red-400 text-xs py-2">读取失败：' + esc(err.message) +
+      '（需要 Firestore 规则允许管理员读 llm_usage）</div>';
+  }
+};
 
 window.loadScrapeStatus = async function() {
   const el = document.getElementById('scrapeReport');
