@@ -120,7 +120,7 @@
       "sha256": "a1a94f63c2f6c6480d05e8f7eb9574a7118cc981895bed85236e41368cf639cc",
       "shape": {
         "kind": "bid",
-        "items": 7,
+        "items": 35,
         "pct_title": 100,
         "pct_url": 100,
         "pct_deadline": 100
@@ -137,7 +137,7 @@
       "sha256": "0972486a653bca1002c7f03f4e8ff33bbca053a3586360cd1dc19d7d4fe7fa68",
       "shape": {
         "kind": "bid",
-        "items": 7,
+        "items": 8,
         "pct_title": 100,
         "pct_url": 100,
         "pct_deadline": 100

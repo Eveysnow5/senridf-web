@@ -63,7 +63,16 @@ function bidCorpusTargets() {
       label: `${t.city}/${t.categoryLabel || '全部'}`,
       // 豊中市那支返回的是链接列表（还没有 deadline），形状按 list 之外的
       // bid 口径算即可 —— 它同样有 title/source_url。
-      shapeOf: (text) => bidShape(parse(text, t)),
+      //
+      // ⚠️ `includeExpired`：体检要量的是**信源的结构**，不是我们过滤后剩下什么。
+      // 吹田那支的解析器会丢掉截止超过 7 天的标 —— 那是业务逻辑，而且**跟当前时间挂钩**。
+      // 用它的输出跟半个月前的快照比，条数必然衰减：08-26 记 7 条、09-07 只剩 2 条，
+      // 而页面上一直有 35 行。体检因此报"少了一半"，是误报，而且会一直报。
+      //
+      // ⚠️ 但这个数**一年会合法地掉一次**：吹田那页是「令和N年度〜一覧」，
+      // 整个年度累加，到 4 月换年度时清空重来。那时体检会报"少了一半"，
+      // 那次**不是误报也不是改版** —— 确认页面确实换了年度之后，用 --apply 重采即可。
+      shapeOf: (text) => bidShape(parse(text, t, { includeExpired: true })),
     };
   });
 }

@@ -68,10 +68,16 @@ function parseOsakaBids(html, target) {
 }
 
 // ── Suita City ──────────────────────────────────────────────────────────────
-function parseSuitaBids(html, target) {
+// opts.includeExpired: 不做「过期就丢」的过滤，把页面上的招标行全部返回。
+// 抓取时**不要**用它 —— 那会把早就截止的标推到网站上。
+// 它是给语料库体检用的：体检要量的是**信源的结构**，而这里的过期过滤是我们自己的
+// 业务逻辑，且**依赖当前时间**。用过滤后的条数跟半个月前的快照比，数字必然衰减
+// （吹田 08-26 记 7 条，09-07 只剩 2 条，页面其实一直有 35 行），
+// 于是体检天天报"少了一半"。**天天报警 = 没有报警**，这个教训这个文件开头就写着。
+function parseSuitaBids(html, target, opts = {}) {
   const $ = cheerio.load(html);
   const bids = [];
-  const graceCutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const graceCutoff = opts.includeExpired ? null : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   $('table').each((_, table) => {
     // 「入札結果」表列的是已经决标的历史结果（開札日，不是募集期间），不是招标公告，跳过——
@@ -106,7 +112,7 @@ function parseSuitaBids(html, target) {
         const announcedDate = parseJpDate(parts[0] || '');
 
         // Skip bids whose deadline is more than 7 days past.
-        if (deadlineDate && deadlineDate < graceCutoff) return;
+        if (graceCutoff && deadlineDate && deadlineDate < graceCutoff) return;
 
         const fmt = (d) => (d ? `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日` : '');
 

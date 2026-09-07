@@ -200,6 +200,46 @@ test('MANIFEST 每条都有出处：URL、采集时间、状态码、字节数',
   }
 });
 
+// ── 体检量的是信源的结构，不是我们过滤后剩下什么 ──────────────────────────
+// 2026-09-07 的误报：吹田的解析器会丢掉截止超过 7 天的标（业务逻辑，**依赖当前时间**）。
+// 用它的输出跟半个月前的快照比，条数必然衰减 —— 08-26 记 7 条、09-07 只剩 2 条，
+// 而页面上一直有 35 行。体检报「少了一半」，是误报，而且会天天报。
+// **天天报警 = 没有报警**，shape.js 开头就写着这个教训，只是当时说的是 hash。
+test('★ 招标体检不受「标过期了」影响 —— 它量结构，不量库存', () => {
+  const { parseSuitaBids } = require('../scripts/bid-scraper/parse');
+  const target = { url: 'https://www.city.suita.osaka.jp/x/', city: '吹田市' };
+  const html = readCorpus('bids/suita-gyomuitaku.html');
+
+  const kept = parseSuitaBids(html, target).length;
+  const all = parseSuitaBids(html, target, { includeExpired: true }).length;
+
+  assert.ok(all > kept, `includeExpired 没起作用（都是 ${all} 条）—— 过期过滤没被跳过`);
+  assert.ok(all >= 20, `页面上应该有几十行招标，只数到 ${all} 行`);
+
+  // 体检用的形状必须是**不过滤**的那个数，否则它会随时间衰减。
+  const t = activeTargets().find((x) => x.id === 'bids/suita-gyomuitaku');
+  assert.equal(
+    t.shapeOf(html).items,
+    all,
+    '体检的 shapeOf 用了过滤后的条数 —— 那个数会随时间掉，早晚天天报警',
+  );
+});
+
+// 反过来：**抓取**绝不能带 includeExpired，否则早就截止的标会被推到网站上。
+test('★ 抓取仍然丢掉过期的标（includeExpired 只给体检用）', () => {
+  const { parseSuitaBids } = require('../scripts/bid-scraper/parse');
+  const target = { url: 'https://www.city.suita.osaka.jp/x/', city: '吹田市' };
+  const html = readCorpus('bids/suita-gyomuitaku.html');
+  const bids = parseSuitaBids(html, target);
+  const cutoff = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+  for (const b of bids) {
+    const m = /(\d+)年(\d+)月(\d+)日/.exec(b.deadline || '');
+    if (!m) continue;
+    const d = new Date(+m[1], +m[2] - 1, +m[3]);
+    assert.ok(d >= cutoff, `截止 ${b.deadline} 的标不该还留着：${b.title}`);
+  }
+});
+
 // 语料必须比原来的合成夹具**大得多**。这条是这整件事的立意：
 // 合成夹具永远比现实更短、更干净、更规整，而 bug 就藏在现实的脏东西里。
 test('语料是真东西：没有 example.com 这类合成痕迹', () => {
