@@ -555,7 +555,36 @@ function migrateCats(s) {
 }
 
 function loadState()  { try { return migrateCats(JSON.parse(localStorage.getItem(SK))) || defState(); } catch (err) { console.warn('存档读取失败，从空白开始：', err); return defState(); } }
-function saveState()  { localStorage.setItem(SK, JSON.stringify(state)); }
+function saveState()  {
+  state.updatedAt = Date.now();
+  localStorage.setItem(SK, JSON.stringify(state));
+  // 服务端同步是**增量**能力：没登录、规则没配、网络断，这里都不做事也不报错，
+  // 工具行为与以前完全一致。localStorage 永远是先写的那一份。
+  try { window.sdfLifestoryPush && window.sdfLifestoryPush(state); }
+  catch (err) { console.warn('存档同步跳过：', err); }
+}
+
+// 供底部 module 在远端存档回来之后调用。放在这里是因为 state / saveState
+// 都是本段普通 script 的作用域，module 够不着。
+// ⚠️ 两种情形要分开处理，合成一种就会出事：
+//   ① 本地空白（清了缓存、换了设备）→ 这是**恢复**，直接采用并重载，界面从头正常起。
+//   ② 本地有内容 → 用户可能正在答题，**绝不能重载**。只把并集补进去，
+//      再 saveState() 把合并结果推回服务端 —— 否则本地这份会把远端更全的那份覆盖掉。
+window.sdfLifestoryApplyRemote = function (merged, localWasBlank) {
+  if (!merged || typeof merged !== 'object') return;
+  if (localWasBlank) {
+    localStorage.setItem(SK, JSON.stringify(merged));
+    return true; // 交给调用方去 reload
+  }
+  for (const k of ['answers', 'usedIds', 'anchorsDone', 'tags']) {
+    if (Array.isArray(merged[k])) state[k] = merged[k];
+  }
+  state.historicalUsed = merged.historicalUsed;
+  if (merged.lastStory && !state.lastStory) state.lastStory = merged.lastStory;
+  saveState();
+  try { updateHdr(); } catch { /* 头部还没渲染出来就算了 */ }
+  return false;
+};
 
 // ══════════════════════════════════════════════════════════════════════════════
 // 路由引擎 — 决定下一道题
@@ -1009,9 +1038,16 @@ function importData(event) {
   event.target.value = '';
 }
 
-function resetAll() {
+async function resetAll() {
   if (!confirm(t('ls_confirm_reset'))) return;
+  // ⚠️ 只删 localStorage 是不够的：服务端还留着一份，重载时会被原样拉回来，
+  //    表现是「点了重置，结果什么都没变」。服务端那份必须一起清掉。
+  //    先清远端再清本地——顺序反过来的话，中间失败会留下一个本地空、
+  //    远端有的状态，下次进来又被恢复，用户第二次点重置还是没反应。
+  try { await window.sdfLifestoryClearRemote?.(); }
+  catch (err) { console.warn('远端存档清除失败：', err); }
   localStorage.removeItem(SK);
+  sessionStorage.removeItem('ls_restored');
   location.reload();
 }
 
@@ -1201,11 +1237,63 @@ const _start=Date.now();let _docId=null,_logged=false;
 function _anonId(){let i=localStorage.getItem('sdf_anon_id');if(!i){i='anon_'+Math.random().toString(36).slice(2,9);localStorage.setItem('sdf_anon_id',i);}return i;}
 function _track(e){if(_logged)return;_logged=true;_docId=trackVisit({db,email:e,anonId:_anonId(),page:'lifestory',device:/Mobi|Android/i.test(navigator.userAgent)?'mobile':'desktop'});}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&_docId){updateVisitDuration({db,docId:_docId,duration:Math.round((Date.now()-_start)/1000)});_docId=null;}});
+// ── 访谈存档的服务端同步 ────────────────────────────────────────────────────
+// 在此之前，整场访谈只存在 localStorage：清缓存归零、换设备归零，
+// 而且出事之后谁都救不回来。现在服务端留一份，本地仍是先写的那一份。
+//
+// ⚠️ 这段代码**在 Firestore 规则放行之前不会工作，而且不会报错**——
+//    `users/{uid}/lifestory/current` 目前没有对应规则，pull 拿到 null、push 被拒，
+//    工具行为与改动前完全一致。规则只能由项目所有者在 Firebase 控制台加，
+//    条文见 docs/FIRESTORE-RULES.md 的「待添加」一节。
+let _lsSync = null;
+async function _startLifestorySync(uid) {
+  if (_lsSync || !uid) return;
+  try {
+    const fs = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js');
+    const { createLifestorySync } = await import('/js/shared/lifestory-sync.js');
+    const { isBlank, mergeState } = await import('/js/shared/lifestory-merge.js');
+    _lsSync = createLifestorySync({
+      db,
+      uid,
+      fs: { doc: fs.doc, getDoc: fs.getDoc, setDoc: fs.setDoc, deleteDoc: fs.deleteDoc },
+    });
+    // 先把推送口子接上，之后每次 saveState 都会防抖上传。
+    window.sdfLifestoryPush = (s) => _lsSync.push(s);
+    window.sdfLifestoryClearRemote = () => _lsSync.clear();
+
+    const remote = await _lsSync.pull();
+    let local = null;
+    try { local = JSON.parse(localStorage.getItem('lifestory_v2')); } catch { local = null; }
+
+    if (remote) {
+      const wasBlank = isBlank(local);
+      const merged = mergeState(remote, local);
+      const needReload = window.sdfLifestoryApplyRemote(merged, wasBlank);
+      // 只在"本地空白 + 远端有东西"时重载，且**每个会话最多一次**，
+      // 免得写 localStorage 失败（隐私模式）时变成无限刷新。
+      if (needReload && !sessionStorage.getItem('ls_restored')) {
+        sessionStorage.setItem('ls_restored', '1');
+        location.reload();
+        return;
+      }
+    } else if (local) {
+      // 远端还没有：把本地这份推上去，之后就有了。
+      _lsSync.pushNow(local);
+    }
+  } catch (err) {
+    console.warn('[lifestory] 存档同步未启用：', err && err.message);
+  }
+}
+// 页面要走了，把攒着的那次立刻写出去（防抖窗口里关标签页会丢最后一次）。
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && _lsSync) _lsSync.flush();
+});
+
 mountAuthGate({
   auth,
   db,
-  onApproved: (user) => _track(user.email),
-  onAdmin: (user) => _track(user.email),
+  onApproved: (user) => { _track(user.email); _startLifestorySync(user.uid); },
+  onAdmin: (user) => { _track(user.email); _startLifestorySync(user.uid); },
 });
 </script>
 </body>
