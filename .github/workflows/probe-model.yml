@@ -47,10 +47,10 @@ jobs:
     if: github.repository == 'sherlockafa007/senridoufuu-web'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Install dependencies
         working-directory: scripts/ai-intel-scraper
         run: npm install
@@ -83,7 +83,7 @@ jobs:
       # issue 会发通知、会留在列表里、关掉之前一直在。
       - name: 失败就开 issue
         if: failure()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');

@@ -24,15 +24,19 @@ on:
         required: false
         type: string
 
+permissions:
+  contents: read
+  issues: write # 失败时开 issue —— 见下面那一步
+
 jobs:
   drift:
     if: github.repository == 'sherlockafa007/senridoufuu-web'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Install dependencies
         run: npm install
       - name: 体检
@@ -40,8 +44,94 @@ jobs:
         env:
           ONLY: ${{ inputs.only }}
         run: |
+          # 输出留一份给下面开 issue 用 —— 只写"失败了"的 issue 没人能据此行动。
+          # ⚠️ 必须 set -o pipefail：管道会顶替退出码，snapshot.js 退 1 而 tee 退 0，
+          #    不加这句整条命令就是成功，这个 workflow 会永远绿。
+          set -o pipefail
           if [ -n "$ONLY" ]; then
-            node scripts/corpus/snapshot.js --only "$ONLY"
+            node scripts/corpus/snapshot.js --only "$ONLY" 2>&1 | tee "$RUNNER_TEMP/drift.log"
           else
-            node scripts/corpus/snapshot.js
+            node scripts/corpus/snapshot.js 2>&1 | tee "$RUNNER_TEMP/drift.log"
           fi
+
+      # 失败要留下一个**人会看见**的东西。
+      #
+      # 2026-09-07 的定时体检失败了，三天没人知道 —— 因为这一步当时不存在，
+      # 失败就只是 job 变红，而没人会去翻 Actions 列表。**体检的全部价值就是
+      # 在信源改版时通知到人，通知不到就等于没做。**
+      # （那次是误报：判据量的是我们过滤后剩下的条数，不是信源的条数。已在 ea9d9d9 修掉。
+      #   但误报和真报警走的是同一条通路，坏的是通路。）
+      - name: 失败就开 issue
+        if: failure()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            let log = '(没拿到日志)';
+            try {
+              log = fs.readFileSync(process.env.RUNNER_TEMP + '/drift.log', 'utf8');
+            } catch (e) {
+              log = '(读日志失败：' + e.message + ')';
+            }
+            const TITLE = '🔴 信源体检报警';
+            const body = [
+              '`' + context.workflow + '` 在 ' + new Date().toISOString().slice(0, 16) + 'Z 失败。',
+              '',
+              '两种失败，处理方式不同（看下面日志里的行首符号）：',
+              '',
+              '- `⚠ 退化` —— 抓到了也解析出来了，但形状比基线差。信源改版、选择器打空、字段换名。',
+              '- `✗ 失败` —— 抓都没抓到：HTTP 不是 200、超时，或解析器直接抛错。信源多半换了地址或下线了。',
+              '',
+              '**排查顺序（别跳步）**：',
+              '',
+              '1. **判据量的对象对不对** —— 这一步至今 3/3 都是判据自己的问题，不是信源变了。',
+              '   典型：解析器带业务过滤（吹田会丢掉截止超 7 天的标），拿过滤后的条数跟半个月前的',
+              '   快照比，数字必然衰减，会一直报。体检要量的是**信源的结构**，不是我们留下什么。',
+              '2. **判据是不是太紧** —— 新闻 feed 条数天然浮动，别拿绝对数当红线。',
+              '3. **才轮到"信源真改版了"** —— 到这一步才去读页面、改解析器。',
+              '',
+              '确认信源确实改版、且解析器已跟上之后，**在本地**跑重采（这一步故意不放在 CI，',
+              '因为重采会覆盖语料，得有人看着 git diff）：',
+              '',
+              '```',
+              'node scripts/corpus/snapshot.js --apply',
+              '```',
+              '',
+              '<details><summary>体检输出</summary>',
+              '',
+              '```',
+              log.slice(0, 5000),
+              '```',
+              '',
+              '</details>',
+              '',
+              '[这次运行](' + context.serverUrl + '/' + context.repo.owner + '/' +
+                context.repo.repo + '/actions/runs/' + context.runId + ')',
+            ].join('\n');
+
+            // 已经有一个开着的就追评论，不要每周堆一个新 issue ——
+            // 告警疲劳会让这套东西在真正出事那周被忽略掉。
+            const open = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'corpus-drift',
+              per_page: 20,
+            });
+            const found = open.data.find((i) => i.title === TITLE);
+            if (found) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: found.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: TITLE,
+                body,
+                labels: ['corpus-drift'],
+              });
+            }

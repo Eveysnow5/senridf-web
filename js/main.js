@@ -3,6 +3,16 @@
    i18n | Navigation | Scroll Animations
    ============================================================ */
 
+/* 版权年取当前年份，不写死。
+   写死的后果实测过：站上挂着「© 2024」一直挂到 2026 年 9 月才被发现，
+   而且三语各一份、account.html 还有第四份，改一处不够。
+   —— 这个数每年一月一日必然过期，是最典型的会腐烂的常量。
+
+   ⚠️ T 里的值必须是**普通字符串 + {year} 占位符**，走下面已有的 fillParams，
+   不要图省事写成模板字符串直接内插：tests/i18n-numbers.test.mjs 只认单双引号，
+   反引号会让那个键**解析不出值而被静默跳过**（护栏自检会红，我试过一次）。 */
+const COPY_YEAR = new Date().getFullYear();
+
 /* === TRANSLATION DATA === */
 const T = {
   ja: {
@@ -61,7 +71,7 @@ const T = {
     footer_tagline: '人間がAIとの寄り添いを求めるすべての願いは、魂の共鳴への渇望にほかならない。',
     footer_nav_heading: 'ナビゲーション',
     footer_contact_heading: 'お問い合わせ',
-    footer_copy: '© 2024 千里同風株式会社',
+    footer_copy: '© {year} 千里同風株式会社',
     addr_street: '大阪府大阪市淀川区西三国4丁目4-9-7',
     addr_city: '大阪市, 日本',
 
@@ -511,7 +521,7 @@ const T = {
     footer_tagline: '人类对AI陪伴的一切渴望，不过是对灵魂共鸣的向往。',
     footer_nav_heading: '导航',
     footer_contact_heading: '联系方式',
-    footer_copy: '© 2024 千里同風株式会社',
+    footer_copy: '© {year} 千里同風株式会社',
     addr_street: '大阪府大阪市淀川区西三国4丁目4-9-7',
     addr_city: '大阪市, 日本',
 
@@ -936,7 +946,7 @@ const T = {
       'Every human desire for closeness with AI is nothing but a yearning for resonance of souls.',
     footer_nav_heading: 'Navigation',
     footer_contact_heading: 'Contact',
-    footer_copy: '© 2024 Senridoufuu Co., Ltd.',
+    footer_copy: '© {year} Senridoufuu Co., Ltd.',
     addr_street: '4-9-7, Nishimikuni 4-chome, Yodogawa-ku',
     addr_city: 'Osaka, Japan',
 
@@ -1424,7 +1434,7 @@ const FOOTER_HTML = `
       </div>
     </div>
     <div class="footer__bottom">
-      <span class="footer__copy" data-i18n="footer_copy"></span>
+      <span class="footer__copy" data-i18n="footer_copy" data-i18n-params='{"year":${COPY_YEAR}}'></span>
     </div>
   </div>
 </footer>

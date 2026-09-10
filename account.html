@@ -207,7 +207,9 @@
   </div>
 </div>
 
-<footer class="foot">© 2024 千里同風株式会社</footer>
+<!-- 兜底文案里**不要写年份**：JS 跑起来之前显示的就是这一行，
+     写个年份进去就又多了一处每年一月一日过期的字面量。 -->
+<footer class="foot" data-i18n="footer_copy">千里同風株式会社</footer>
 
 <script type="module">
   import { auth, db } from '/js/shared/firebase-init.js';
@@ -219,6 +221,10 @@
     from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
   /* ── i18n ───────────────────────────────────────────────────────────── */
+  // 版权年取当前年份，不写死 —— 见 js/main.js 里同名常量的说明。
+  // 这一页有自己的 T，跟 main.js 那份不共享，所以两边都要有。
+  const COPY_YEAR = new Date().getFullYear();
+
   const T = {
     ja: {
       loading: '本人確認中…',
@@ -267,6 +273,7 @@
       pw_updated: 'パスワードを更新しました。',
       err_pw_old: '現在のパスワードが正しくありません。',
       err_pw_fail: '変更に失敗しました。しばらくしてから再度お試しください。',
+      footer_copy: `© ${COPY_YEAR} 千里同風株式会社`,
     },
     zh: {
       loading: '正在验证身份…',
@@ -315,6 +322,7 @@
       pw_updated: '密码已更新。',
       err_pw_old: '当前密码错误，请重试。',
       err_pw_fail: '修改失败，请稍后再试。',
+      footer_copy: `© ${COPY_YEAR} 千里同風株式会社`,
     },
     en: {
       loading: 'Verifying…',
@@ -363,6 +371,7 @@
       pw_updated: 'Password updated.',
       err_pw_old: 'Current password is incorrect. Please try again.',
       err_pw_fail: 'Change failed. Please try again later.',
+      footer_copy: `© ${COPY_YEAR} Senridoufuu Co., Ltd.`,
     },
   };
 

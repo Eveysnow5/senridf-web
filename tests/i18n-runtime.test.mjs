@@ -276,3 +276,57 @@ test('带占位符的文案三语都保留了占位符（丢了就永远显示 {
     assert.match(w.sdfT('ls_sum_themes'), /\{n\}/, `${lang} 的 ls_sum_themes 丢了 {n}`);
   }
 });
+
+// ── 页脚版权年 ──────────────────────────────────────────────────────────────
+// 2026-09-10：站上挂着「© 2024」，从 2026 年 5 月的初始提交起就没动过，
+// 三语各一份 + account.html 第四份。**没有任何自动检查会红**，因为
+// 「© 2024」在结构上完全合法 —— 死链没有、缺 alt 没有、三语键也对称。
+//
+// 改成运行时取当前年份之后，要防的是另一头：占位符没被填上，
+// 页面直接显示字面量「© {year} 千里同風株式会社」。那比写死的 2024 还难看。
+// 所以断言站在**渲染之后**，不站在「源码里有这个键」。
+
+/** 从 main.js 源码里取页脚版权那一行的 data-i18n-params，锚定到真模板而不是我手打的。 */
+function footerCopyParams() {
+  const m = /<span class="footer__copy"([^>]*)>/.exec(SRC);
+  assert.ok(m, '页脚模板里找不到 .footer__copy —— 这个测试已经失去了对象');
+  const p = /data-i18n-params='([^']*)'/.exec(m[1]);
+  assert.ok(p, `页脚版权没带 data-i18n-params，{year} 不会被填：${m[1].trim()}`);
+  return p[1];
+}
+
+test('★ 页脚版权年由模板传进去，不是写死在文案里', () => {
+  // 模板里必须是变量插值，写死数字的话明年一月一日就又错了。
+  assert.match(
+    footerCopyParams(),
+    /\$\{COPY_YEAR\}/,
+    '页脚的 year 被写成了固定数字 —— 它每年都会过期',
+  );
+  for (const lang of ['ja', 'zh', 'en']) {
+    const v = boot(lang).win.sdfT('footer_copy');
+    assert.match(v, /\{year\}/, `${lang} 的 footer_copy 丢了 {year} 占位符`);
+    assert.doesNotMatch(v, /\d{4}/, `${lang} 的 footer_copy 里还有写死的年份：${v}`);
+  }
+});
+
+test('★ 页脚渲染出来是当年年份，且不残留 {year}', () => {
+  const year = new Date().getFullYear();
+  // 用模板里**实际写的**那段 params，只把 ${COPY_YEAR} 换成真值 ——
+  // 手打一个 {"year":2026} 的话，测的就是我打的字，不是页面上的东西。
+  const params = footerCopyParams().replace('${COPY_YEAR}', String(year));
+
+  const expected = {
+    ja: `© ${year} 千里同風株式会社`,
+    zh: `© ${year} 千里同風株式会社`,
+    en: `© ${year} Senridoufuu Co., Ltd.`,
+  };
+
+  for (const lang of ['ja', 'zh', 'en']) {
+    const { win, els } = boot(lang);
+    const el = makeEl({ i18n: 'footer_copy', i18nParams: params });
+    els.push(el);
+    win.sdfApplyI18n();
+    assert.equal(el.textContent, expected[lang], `${lang} 的页脚版权渲染不对`);
+    assert.doesNotMatch(el.textContent, /\{year\}/, `${lang} 的页脚残留了字面量 {year}`);
+  }
+});
