@@ -1,0 +1,74 @@
+name: Security Review Reminder
+
+# 每季度开一个 issue，提醒做一次外部/对抗视角的安全复审。
+#
+# 存在的理由（复盘⑤）：**建造者自验有盲区，这是结构性的**——2026-09 那次外部审查
+# 看出来的洞，我们自己 690 个测试没看出来。所以定期找外部/对抗视角复审不是可选项，
+# 是结构必需。但「想起来才做」＝不会做，所以让它到点自己冒出来。
+#
+# 这个 workflow 不做检查，只按季度开一个带清单的 issue。做不做、找谁做由作者定；
+# 做完把 issue 关掉即可。
+
+on:
+  schedule:
+    # 每季度首月（1/4/7/10 月）1 号 22:00 UTC
+    - cron: '0 22 1 1,4,7,10 *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  remind:
+    if: github.repository == 'sherlockafa007/senridoufuu-web'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const q = 'Q' + (Math.floor(new Date().getUTCMonth() / 3) + 1);
+            const year = new Date().getUTCFullYear();
+            const TITLE = `🛡️ 季度安全复审 ${year}-${q}`;
+            const body = [
+              '到季度安全复审的时间了。**建造者自验有盲区是结构性的**——上次外部审查看出来的洞，',
+              '内部 690 个测试没看出来。找一次外部/对抗视角过一遍，重点看下面这些。做完关掉本 issue。',
+              '',
+              '### 建议找外部视角看的（哪些自动化最容易漏）',
+              '',
+              '- **鉴权边界**：拿匿名 token / pending 用户 / 过期 token 直接打 `/api/*`，能不能白嫖烧钱端点？',
+              '  （中心门在 `_middleware`，逻辑测试在 `access-control` + `api-gate-centralized`，但真实会话要人打）',
+              '- **暴露面**：`docs/exposure-surface.md` 之外有没有意料外可达的页/端点？有没有新的「孤儿」？',
+              '- **CDN 库 CVE**：`node scripts/security/scan-cdn-libs.mjs` 现在报什么？已登记的豁免还成立吗？',
+              '- **依赖**：`npm audit`（注意它看不见 CDN `<script>` 库，那半靠上一条）。',
+              '- **Firestore 规则**：`firestore.rules` 和控制台一致吗？有没有集合用了 `isSignedIn()` 而该用 `isMember()`？',
+              '- **数据流 / 隐私**：`docs/plans/2026-09-11-data-flow-inventory.md` 还准确吗？第三方保留策略有变化吗？',
+              '- **密钥 / 账号**：有没有密钥进了仓库？后端跑在合作方 Cloudflare 账号上这件事有没有进展？',
+              '',
+              '### 也顺手看一眼',
+              '',
+              '- CSP 还是 Report-Only 吗？转强制的条件（见 `00-architecture.md`）满足了没？',
+              '- `visits`/`errors` 的 TTL 策略在控制台启用了没？（写了 `expireAt` 但可能没生效）',
+              '',
+              '> 这是自动提醒，不是发现了问题。做不做、找谁做由你定。',
+            ].join('\n');
+
+            // 已有本季度的 open issue 就不重开。
+            const open = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'security-review',
+              per_page: 30,
+            });
+            if (open.data.some((i) => i.title === TITLE)) {
+              console.log('本季度提醒 issue 已存在，跳过。');
+              return;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: TITLE,
+              body,
+              labels: ['security-review'],
+            });
