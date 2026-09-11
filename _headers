@@ -30,6 +30,22 @@
 #   securitypolicyviolation 上报捞到的。两条渠道互补的一个实证。
 # 【frame-src】此前完全没声明，靠 default-src 'self' 回落 —— 能用但意图不可见。
 #   现在显式写出。站内两个 iframe（admin 的页面预览、宏观看板）都是同源，不受影响。
+# ── 不让搜索引擎收录的路径（2026-09-11）────────────────────────────────────
+# 后台、登录页、需登录才能用的工具/内部页。收录了也只是空壳或登录墙，没有 SEO 价值，
+# 还会把「内部工具」暴露在搜索结果里。Cloudflare Pages 会对所有匹配规则累加 header。
+# ⚠️ 只 noindex /solutions/demo/**下的具体工具**，不要碰 /solutions/demo（工具目录，
+#    是公开营销页，要进 sitemap）——两者路径不同，下面的 /solutions/demo/* 匹配不到前者。
+/admin/*
+  X-Robots-Tag: noindex
+/solutions/demo/*
+  X-Robots-Tag: noindex
+/bids/*
+  X-Robots-Tag: noindex
+/account
+  X-Robots-Tag: noindex
+/account.html
+  X-Robots-Tag: noindex
+
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN

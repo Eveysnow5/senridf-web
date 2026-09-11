@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 只列**公开内容页**。要登录的工具(solutions/demo/*)、内部工具(bids)、
+     后台(admin)、登录页(account)一律不进 sitemap，且在 _headers 里 X-Robots-Tag: noindex。
+     URL 用规范形式：目录页带尾斜杠(/about/)，子页无扩展名(/about/milestones)——
+     .html 会 308 跳到这些形式。
+     lastmod 取各文件的 git 最后提交日，改内容时 tests/sitemap.test.mjs 不校验日期，
+     但会校验「每个 URL 都对应真实文件」「新公开页没漏加」。 -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://www.senridf.com/</loc>
+    <lastmod>2026-06-16</lastmod>
+  </url>
+  <url>
+    <loc>https://www.senridf.com/about/</loc>
+    <lastmod>2026-07-23</lastmod>
+  </url>
+  <url>
+    <loc>https://www.senridf.com/about/milestones</loc>
+    <lastmod>2026-06-16</lastmod>
+  </url>
+  <url>
+    <loc>https://www.senridf.com/solutions/</loc>
+    <lastmod>2026-08-28</lastmod>
+  </url>
+  <url>
+    <loc>https://www.senridf.com/solutions/demo</loc>
+    <lastmod>2026-08-28</lastmod>
+  </url>
+  <url>
+    <loc>https://www.senridf.com/solutions/blog/</loc>
+    <lastmod>2026-08-19</lastmod>
+  </url>
+</urlset>
