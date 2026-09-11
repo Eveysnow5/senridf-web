@@ -32,7 +32,7 @@ service cloud.firestore {
     function isAdmin() {
       return isMember() && request.auth.token.email in [
         'sherlockafa@gmail.com',
-        'yukikokoko555@gmail.com'
+        'yuki.minami@senridf.com'
       ];
     }
 
