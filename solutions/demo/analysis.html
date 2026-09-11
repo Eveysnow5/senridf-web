@@ -531,7 +531,11 @@
   <!-- mammoth.js (Word) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" integrity="sha384-nFoSjZIoH3CCp8W639jJyQkuPHinJ2NHe7on1xvlUA7SuGfJAfvMldrsoAVm6ECz" crossorigin="anonymous"></script>
   <!-- SheetJS (Excel) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
+  <!-- SheetJS 0.20.3：修了 0.18.5 的 CVE-2023-30533（原型污染）与 CVE-2024-22363（ReDoS）。
+       ⚠️ 为什么不用 cdnjs：`xlsx` 这个包在 npm/cdnjs/jsdelivr 全冻结在 0.18.5（漏洞版），
+       修复版只在 SheetJS 官方 CDN。所以 _headers 的 CSP script-src 也加了 cdn.sheetjs.com。
+       SRI 是从实际文件字节自算的（2026-09-11），换版本必须重算。 -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
 
   <script>
     /* ── Config ── */
