@@ -1,0 +1,6 @@
+{
+  "//": "Firestore 规则的部署配置。规则真源是 firestore.rules（仓库根）。改规则改那里，push 由 deploy-firestore-rules.yml 部署到 Firebase 项目 senridfauthentication。别在控制台直接改。",
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}

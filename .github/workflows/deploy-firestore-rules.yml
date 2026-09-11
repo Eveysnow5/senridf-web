@@ -1,0 +1,57 @@
+name: Deploy Firestore Rules
+
+# 把 firestore.rules 部署到 Firebase 项目 senridfauthentication。
+#
+# 存在的理由：规则以前只活在控制台，没法 diff/review/回溯，管理员名单因此漂移过
+# （2026-09-10）。现在 firestore.rules 是唯一真源，这个 workflow 负责把它推上去。
+#
+# 🔴 现在**只有手动触发（workflow_dispatch）**，故意没有 push 自动部署。
+#    因为 firestore.rules 是从 08-19 的副本重建的，可能和控制台现行规则有出入——
+#    自动部署会用它覆盖控制台，可能抹掉本文件不知道的规则。
+#    **正确顺序**：作者先把控制台现行规则和 firestore.rules 逐条对齐（见该文件头警告）
+#    → 手动跑一次本 workflow → 确认无误 → 那时才把下面注释掉的 push 触发打开，
+#    以后改 firestore.rules push 就自动部署。
+#
+# 依赖 secret：FIREBASE_SERVICE_ACCOUNT（爬虫已在用的那份服务账号 JSON）。
+# ⚠️ 该服务账号需要有 **firebaserules.admin**（或 Editor）权限才能部署规则——
+#    它原本是给 Admin SDK 写数据用的，权限不一定够，第一次部署若报权限错就去 IAM 加。
+#    没有这个 secret 时本 workflow 优雅跳过。
+
+on:
+  workflow_dispatch:
+  # ⚠️ 对齐控制台并手动部署确认无误后，再取消下面的注释开启自动部署：
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - firestore.rules
+  #     - firebase.json
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.repository == 'sherlockafa007/senridoufuu-web'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: 部署规则
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$SA" ]; then
+            echo "没有 FIREBASE_SERVICE_ACCOUNT secret —— 跳过部署（规则未上线）。"
+            echo "配好 secret 并确认它有 firebaserules.admin 权限后，再手动触发本 workflow。"
+            exit 0
+          fi
+          # 服务账号 JSON 走 env 落盘，不插进命令文本（见 tests/workflow-injection.test.mjs）。
+          printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          npx --yes firebase-tools deploy \
+            --only firestore:rules \
+            --project senridfauthentication \
+            --non-interactive

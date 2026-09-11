@@ -1,0 +1,152 @@
+rules_version = '2';
+
+// ⚠️⚠️ 这份文件现在是 Firestore 规则的**唯一真源**（2026-09-11 起）。
+// 以前规则只活在 Firebase 控制台里——没法 diff、没法 review、改坏了回溯不了，
+// 管理员名单也因此在代码和控制台之间漂移过（见 09-10 那次）。
+// 现在：改规则改这里 → push → CI 部署（.github/workflows/deploy-firestore-rules.yml）。
+// **别再直接在控制台改规则**——下次部署会把控制台改回这份文件。
+//
+// 🔴 首次采用前必读：这份文件是从 2026-08-19 的副本重建的，可能和控制台**当前**
+//    实际规则有出入（那正是要根治的漂移）。**第一次部署前，务必把控制台里的现行规则
+//    和这份文件逐条对一遍**，确认没有本文件不知道的规则被这次部署抹掉。对齐后再部署。
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── 辅助函数 ──
+    // 注意 isSignedIn() 对匿名用户也成立：js/tracking.js 用 signInAnonymously
+    // 做全站访问统计，visits 写入依赖这一点，不能收紧成 isMember()。
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // 真实登录（邮箱密码），排除匿名
+    function isMember() {
+      return isSignedIn()
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    // 管理员名单。**必须与 js/shared/admins.js 的 ADMINS 完全一致**——
+    // 后端 _middleware 的准入检查按邮箱认管理员，两处不一致会让某个管理员
+    // 前端能进、后端被拒。tests/admins-consistency.test.mjs 钉住这份一致性。
+    function isAdmin() {
+      return isMember() && request.auth.token.email in [
+        'sherlockafa@gmail.com',
+        'yukikokoko555@gmail.com'
+      ];
+    }
+
+    // 本人 + 已通过会员审核。calendar 与 lifestory 共用同一条判据。
+    function isApprovedSelf(uid) {
+      return isMember()
+        && request.auth.uid == uid
+        && get(
+          /databases/$(database)/documents/users/$(uid)
+        ).data.status == 'approved';
+    }
+
+    // 保留旧名字、只是转调 —— 现有 calendar 两条规则不用改。
+    function isApprovedCalendarUser(uid) {
+      return isApprovedSelf(uid);
+    }
+
+    // ── 用户与审核 ──
+    // 注册时本人创建自己的文档，但只能建成 pending；改状态只有管理员能做，
+    // 否则用户可以自助把 status 写成 approved 绕过审核。
+    match /users/{uid} {
+      allow read: if isAdmin() || (isMember() && request.auth.uid == uid);
+
+      allow create: if isMember()
+                    && request.auth.uid == uid
+                    && request.resource.data.status == 'pending';
+
+      allow update, delete: if isAdmin();
+
+      // ── AI Calendar：重复日程 ──
+      match /calendarRules/{ruleId} {
+        allow read, write: if isApprovedCalendarUser(uid);
+      }
+
+      // ── AI Calendar：放假、停课等例外日期 ──
+      match /calendarExceptions/{exceptionId} {
+        allow read, write: if isApprovedCalendarUser(uid);
+      }
+
+      // ── 人生故事访谈存档：users/{uid}/lifestory/current（2026-09-10）──
+      // 内容是受访者的私人回忆，只有本人能读写。write 含 delete——页面「重置」
+      // 要能真删服务端那份，否则重载又被拉回来。见 solutions/demo/lifestory.html。
+      match /lifestory/{docId} {
+        allow read, write: if isApprovedSelf(uid);
+      }
+    }
+
+    // ── 访问统计（匿名也要能写，全站 beacon）──
+    match /visits/{doc} {
+      allow create, update: if isSignedIn();
+      allow read: if isAdmin();
+    }
+
+    // ── API 限流桶：rate_limits/{uid}_{YYYYMMDDHHmm} ──
+    // functions/api/_lib/rateLimiter.js 用「用户自己的 ID token」走 REST 原子自增，
+    // 所以受规则约束。只允许写自己 uid 开头的桶。
+    match /rate_limits/{doc} {
+      allow write: if isMember()
+                   && doc.split('_')[0] == request.auth.uid;
+    }
+
+    // ── LLM 用量记录：llm_usage/{YYYY-MM-DD} ──
+    // functions/api/_lib/usageRecorder.js 用「调用者自己的 ID token」走 REST 原子自增，
+    // 与 rate_limits 同一套授权方式，所以受规则约束。
+    //
+    // 必须是 isMember() 不能是 isSignedIn()：后者对匿名用户成立，而 js/tracking.js
+    // 给每个访客都做了匿名登录 —— 用 isSignedIn() 等于让任何路人都能往用量数据里写，
+    // 而这份数据是拿来做额度决策的，被污染比没有更糟。
+    //
+    // 文档 ID 是日期、全体共用，没法像 rate_limits 那样按 uid 收紧。
+    // 只给 create/update 不给 delete：端点只做累加，从不删。
+    match /llm_usage/{day} {
+      allow create, update: if isMember();
+      allow read: if isAdmin();
+    }
+
+    // ── 招标数据（爬虫用 Admin SDK 写，绕过规则，这里只给读）──
+    match /bids/{doc} {
+      allow read: if isMember();
+    }
+
+    // ── 爬虫运行报告 meta/scrape_status、meta/ai_intel_status ──
+    match /meta/{doc} {
+      allow read: if isAdmin();
+    }
+
+    // ── 前端错误上报 ──
+    match /errors/{doc} {
+      allow create, update: if isSignedIn();
+      allow read: if isAdmin();
+    }
+
+    // ── 翻译术语表 ──
+    match /glossary/{doc} {
+      allow read: if isMember();
+      allow write: if isAdmin();
+    }
+
+    // ── AI 情报监控（爬虫 Admin SDK 写，前端只读）──
+    match /ai_intel/{doc} {
+      allow read: if isAdmin();
+    }
+
+    match /ai_intel_digest/{doc} {
+      allow read: if isAdmin();
+    }
+
+    match /ai_intel_rejected/{doc} {
+      allow read: if isAdmin();
+    }
+
+    // ── Blog 草稿 ──
+    match /blog_drafts/{doc} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

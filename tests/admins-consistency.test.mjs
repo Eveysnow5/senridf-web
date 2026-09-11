@@ -6,24 +6,25 @@ import { fileURLToPath } from 'node:url';
 
 // ── 为什么有这条 ────────────────────────────────────────────────────────────
 // 2026-09-04 把 minami 的管理员邮箱换成她实际登录用的 Gmail，**只改了
-// js/shared/admins.js**。Firestore 规则里的同一份名单没动，而
-// docs/FIRESTORE-RULES.md 自己写着「名单与 js/shared/admins.js 保持一致，
-// 加管理员两处都要改」——**那句话没有任何强制力，三周内就被违反了。**
+// js/shared/admins.js**。Firestore 规则里的同一份名单没跟着改——后端 _middleware
+// 的准入按邮箱认管理员，两处不一致就会「前端放行、后端拒绝」（她能进界面，
+// 但每次 Firestore 读写被规则拒，含「通过新会员审核」）。
 //
-// 后果不是报错，是**前端放行、后端拒绝**：她能看见后台界面（客户端
-// ADMINS.includes 通过），但面板上每一次 Firestore 读写都被规则拒掉，
-// 其中包括「通过新会员审核」。
-//
-// ⚠️ **这条断言只能定罪，不能免罪。**
-// 它比的是「代码」和「规则副本」。副本不是生效来源，**控制台才是**。
-// 两边一致**不代表**控制台也一致；两边不一致则一定有问题。
-// 想真正确认，只能人去 Firebase 控制台看，见 FIRESTORE-RULES.md 的核对流程。
+// 2026-09-11 起规则进了仓库（firestore.rules，唯一真源，由 deploy workflow 上线），
+// 所以这条测试现在比的是**代码 vs 真正会部署的规则文件**——不再是一份会漂移的副本。
+// 链条：code == firestore.rules（本测试保证）→ firestore.rules == 控制台（部署保证）。
+// 两段都有机制，漂移根治。
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-/** docs/ 是另一个私有仓库（主仓库 .gitignore 里排除），CI 上不存在。 */
-const RULES_COPY = path.join(ROOT, 'docs', 'FIRESTORE-RULES.md');
-const ARCH_DOC = path.join(ROOT, 'docs', 'tools', '00-architecture.md');
+const RULES_FILE = path.join(ROOT, 'firestore.rules'); // 真源，主仓库、CI 里都有
+const ARCH_DOC = path.join(ROOT, 'docs', 'tools', '00-architecture.md'); // docs 是另一个私有仓库，CI 上没有
+
+function adminsFrom(src, whatFailed) {
+  const m = /request\.auth\.token\.email in \[([^\]]*)\]/.exec(src);
+  assert.ok(m, whatFailed);
+  return new Set([...m[1].matchAll(/['"]([^'"]+@[^'"]+)['"]/g)].map((x) => x[1]));
+}
 
 function codeAdmins() {
   const src = readFileSync(path.join(ROOT, 'js', 'shared', 'admins.js'), 'utf8');
@@ -32,53 +33,20 @@ function codeAdmins() {
   return new Set([...m[1].matchAll(/['"]([^'"]+@[^'"]+)['"]/g)].map((x) => x[1]));
 }
 
-/** 从规则副本的 isAdmin() 里取邮箱名单。 */
 function rulesAdmins() {
-  const src = readFileSync(RULES_COPY, 'utf8');
-  const m = /request\.auth\.token\.email in \[([^\]]*)\]/.exec(src);
-  assert.ok(m, '规则副本里找不到 isAdmin 的邮箱名单 —— 副本格式变了，这条要跟着改');
-  return new Set([...m[1].matchAll(/['"]([^'"]+@[^'"]+)['"]/g)].map((x) => x[1]));
+  const src = readFileSync(RULES_FILE, 'utf8');
+  return adminsFrom(src, 'firestore.rules 里找不到 isAdmin 的邮箱名单 —— 格式变了，这条要跟着改');
 }
 
-const haveDocs = existsSync(RULES_COPY);
-
-// ── 已登记的漂移（2026-09-10）────────────────────────────────────────────────
-// 现状：代码是 yukikokoko555@gmail.com（09-04 改的，正确），
-//       规则副本是 yuki.minami@senridf.com（08-19 同步，之后没动过）。
-//
-// **不把副本直接改成和代码一致来"修绿"**：那等于断言控制台里是新邮箱，
-// 而这一点在本机无法验证（没有 firebase CLI / gcloud 登录态）。
-// 把看得见的漂移改成假绿灯，比红着更坏。
-//
-// 只有作者能去 Firebase 控制台确认并修，所以先登记、不阻塞推送。
-// ⚠️ **带到期日**：过期之后这条会自己红起来。
-//    无限期的豁免就是绿灯，[[corpus MANIFEST 的 waived]] 也该照这个改。
-const WAIVER = {
-  until: '2026-09-24',
-  why: '控制台真实名单未知，只有作者能看；见 docs/FIRESTORE-RULES.md 的核对流程',
-};
-const waived = new Date() < new Date(WAIVER.until + 'T23:59:59Z');
-
-test('豁免必须有到期日，且不能已经过期还挂着', () => {
-  assert.match(WAIVER.until, /^\d{4}-\d{2}-\d{2}$/, '豁免没写到期日');
-  assert.ok(
-    waived,
-    `管理员名单的漂移豁免已于 ${WAIVER.until} 到期，而问题还没解决。\n` +
-      '要么去 Firebase 控制台把名单对齐并同步副本，要么明确延期（改 WAIVER.until 并写明理由）。',
-  );
+test('护栏自身有效：代码和规则文件都解析出非空名单', () => {
+  // 退化输入检查：任一边解析成空集合，下面的"一致"会自动成立而什么都没测到。
+  assert.ok(codeAdmins().size > 0, 'ADMINS 解析出来是空的');
+  assert.ok(rulesAdmins().size > 0, 'firestore.rules 的名单解析出来是空的');
 });
 
-test('护栏自身有效：能从代码里解析出非空的管理员名单', () => {
-  const a = codeAdmins();
-  // ⚠️ 退化输入检查：两边都解析成空集合的话，下面的"一致"会自动成立而什么都没测到。
-  assert.ok(a.size > 0, 'ADMINS 解析出来是空的 —— 一致性判据会被空集架空');
-});
-
-test('★ 管理员名单：代码与 Firestore 规则副本必须一致', { skip: !haveDocs || waived }, () => {
+test('★ 管理员名单：js/shared/admins.js 与 firestore.rules 必须一致', () => {
   const code = codeAdmins();
   const rules = rulesAdmins();
-  assert.ok(rules.size > 0, '规则副本里的名单解析出来是空的');
-
   const onlyCode = [...code].filter((e) => !rules.has(e));
   const onlyRules = [...rules].filter((e) => !code.has(e));
 
@@ -88,33 +56,32 @@ test('★ 管理员名单：代码与 Firestore 规则副本必须一致', { ski
     [
       '管理员名单在两处不一致：',
       `  只在 js/shared/admins.js：${onlyCode.join(', ') || '（无）'}`,
-      `  只在 docs/FIRESTORE-RULES.md：${onlyRules.join(', ') || '（无）'}`,
+      `  只在 firestore.rules：${onlyRules.join(', ') || '（无）'}`,
       '',
-      '症状是**前端放行、后端拒绝**：本人能看见后台界面，但每一次 Firestore',
-      '读写都被规则拒掉（含「通过新会员审核」）。',
-      '',
-      '⚠️ 改规则只能在 Firebase 控制台改，改完回来同步副本并更新同步日期。',
-      '   本条断言比的是副本，副本不是生效来源。',
+      '不一致的后果：某管理员前端能进、后端每次 Firestore 读写被规则拒（含通过审核）。',
+      '两处改一处就会这样——改一处务必改另一处。',
     ].join('\n'),
   );
 });
 
-test('★ 架构文档里的管理员名单也要跟着改', { skip: !haveDocs || waived }, () => {
+// docs/ 是另一个私有仓库，CI 上没有——有才查，且跳过要说出来。
+const haveArchDoc = existsSync(ARCH_DOC);
+
+test('★ 架构文档里的管理员名单也要跟着改', { skip: !haveArchDoc }, () => {
   const doc = readFileSync(ARCH_DOC, 'utf8');
   const line = doc.split('\n').find((l) => l.includes('管理员（硬编码）'));
   assert.ok(line, '00-architecture.md 里找不到「管理员（硬编码）」那一行');
   for (const email of codeAdmins()) {
     assert.ok(
       line.includes(email),
-      `架构文档那一行没有 ${email}：\n  ${line.trim()}\n（同一份名单散在三处，改一处不够）`,
+      `架构文档那一行没有 ${email}：\n  ${line.trim()}\n（同一份名单散在多处，改一处不够）`,
     );
   }
 });
 
-if (!haveDocs) {
-  // 跳过要**说出来**。静默跳过的护栏和不存在的护栏是一回事。
+if (!haveArchDoc) {
   console.log(
-    '[admins-consistency] docs/ 不存在（CI 环境：docs 是另一个私有仓库），' +
-      '名单一致性只在本地 npm run check 时生效。',
+    '[admins-consistency] docs/ 不存在（CI：docs 是另一个私有仓库），' +
+      '架构文档那条只在本地 npm run check 时生效；代码 vs firestore.rules 那条始终生效。',
   );
 }
