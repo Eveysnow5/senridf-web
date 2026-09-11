@@ -2,8 +2,12 @@
 // Pure Web Crypto (RS256) — no npm dependencies, runs on the Workers runtime.
 //
 // Verifies signature against Google's public keys and checks the standard
-// Firebase claims (aud / iss / exp). Returns { uid, email } on success,
+// Firebase claims (aud / iss / exp). Returns { uid, email, provider } on success,
 // throws on any failure.
+//
+// `provider` = firebase.sign_in_provider。匿名访客是 'anonymous'。
+// _middleware 靠它把匿名 token 挡在 /api/* 外——站点给每个访客都做了匿名登录，
+// 那张匿名 token 就在浏览器里，不看登录方式的话任何人都能直接调烧钱的 AI 端点。
 
 const PROJECT_ID = 'senridfauthentication';
 const ISSUER = `https://securetoken.google.com/${PROJECT_ID}`;
@@ -73,5 +77,9 @@ export async function verifyFirebaseToken(idToken) {
   if (payload.iss !== ISSUER) throw new Error('wrong issuer');
   if (!payload.sub) throw new Error('no subject');
 
-  return { uid: payload.sub, email: payload.email || null };
+  return {
+    uid: payload.sub,
+    email: payload.email || null,
+    provider: payload.firebase?.sign_in_provider ?? null,
+  };
 }

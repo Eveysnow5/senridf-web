@@ -682,7 +682,7 @@
     async function extractPDF(buf, store) {
       if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js not loaded');
       // pdf.js 会消费掉传入的 buffer，后面渲染要用，先留一份副本
-      const pdf = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+      const pdf = await pdfjsLib.getDocument({ data: buf.slice(0), isEvalSupported: false }).promise;
       const pageTexts = [];
       for (let i = 1; i <= pdf.numPages; i++) {
         const page    = await pdf.getPage(i);
@@ -732,7 +732,7 @@
     // 5 份，后两份被挤掉。所以多轮的调用方只在"本轮还一页都没渲染出来"时才给 true——
     // 保住"不静默变空"的原意，同时让全局预算重新成为硬约束。
     async function renderPagesToImages(buf, rankedPages, byteBudget, forceFirst = true) {
-      const pdf = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+      const pdf = await pdfjsLib.getDocument({ data: buf.slice(0), isEvalSupported: false }).promise;
       const out = [];
       let used = 0;
       // rankedPages 是**优先级顺序**（稀有词覆盖在前）。预算不够时从后往前丢，

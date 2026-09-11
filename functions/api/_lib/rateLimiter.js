@@ -1,7 +1,12 @@
 // Rate limiting via Firestore REST API.
 // Uses atomic field increment so concurrent requests don't race.
 // Documents are bucketed per user per minute: rate_limits/{uid}_{YYYYMMDDHHmm}
-// Fails open: if Firestore is unreachable, requests are allowed through.
+//
+// ⚠️ **Fails CLOSED（2026-09-11 从 fail-open 改过来）**：限流器自己出故障时，
+// 拦，不放行。它护的是**钱**——放行＝无上限烧 Qwen/Deepgram 的额度。
+// 2026-07~08 这里 fail-open 加上一个静默 bug，导致限流六周形同虚设无人察觉。
+// fail-close 把「静默漏钱」换成「响亮的宕机」：真坏了用户立刻看到 429，会被马上修，
+// 而不是月底看账单才发现。可用性代价（Firestore 抖动时的短暂 429）是有意接受的。
 
 // 120/min: voice interpretation calls /api/translate-stream once per utterance,
 // so keep generous headroom for busy meetings (function-first). Still stops abuse.
@@ -23,9 +28,9 @@ export function rateLimitDocName(uid, now = new Date()) {
   return `${DOC_BASE}/rate_limits/${uid}_${minute}`;
 }
 
-export async function checkRateLimit(uid, idToken) {
+export async function checkRateLimit(uid, idToken, fetchImpl = fetch) {
   try {
-    const res = await fetch(COMMIT_URL, {
+    const res = await fetchImpl(COMMIT_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -49,13 +54,13 @@ export async function checkRateLimit(uid, idToken) {
     });
 
     if (!res.ok) {
-      // 仍然放行（可用性优先），但**不再静默**——静默正是上面那个 bug 藏六周的原因。
+      // fail-close：限流器坏了就拦（护钱）。不静默——静默正是上个 bug 藏六周的原因。
       console.error(
-        '[rateLimiter] Firestore commit failed:',
+        '[rateLimiter] Firestore commit failed → 拦截（fail-close）:',
         res.status,
         await res.text().catch(() => ''),
       );
-      return false;
+      return true;
     }
 
     const data = await res.json();
@@ -66,7 +71,7 @@ export async function checkRateLimit(uid, idToken) {
 
     return newCount > RATE_LIMIT; // true = blocked
   } catch (err) {
-    console.error('[rateLimiter] threw:', err?.message || err);
-    return false; // fail open
+    console.error('[rateLimiter] threw → 拦截（fail-close）:', err?.message || err);
+    return true; // fail closed —— 护钱优先，见文件头
   }
 }
