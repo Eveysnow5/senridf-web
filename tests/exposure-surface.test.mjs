@@ -47,6 +47,11 @@ const PAGES = {
   'admin/blog/index.html': 'admin',
   'admin/macro.html': 'admin',
   'admin/macro-dashboard.html': 'iframe', // 被 admin/macro.html 内嵌；只显示公开宏观数据
+  // 自动化结账の入口。⚠️ 意図的に**財務数字を一切載せない**静的説明ページ。
+  // /admin/* は前端遮罩 + noindex だけで、URL を知っていれば読めてしまう。
+  // 実データ（標準報酬月額・給与・残高）を載せるなら /api/* 経由（_middleware の
+  // サーバ側トークン検証）が必須で、ここに静的ファイルとして置いてはいけない。
+  'admin/accounting.html': 'admin',
   'solutions/demo/admin.html': 'admin', // 会员审核后台
   'solutions/demo/ai-intel.html': 'internal',
 

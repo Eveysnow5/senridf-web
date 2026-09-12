@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自动化结账 · 千里同風</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #faf9f7; --paper: #fff; --border: #e8e2da;
+      --text: #1f1c17; --text2: #6b6359; --text3: #9ca3af;
+      --accent: #2563eb; --green: #10b981; --amber: #f59e0b; --red: #ef4444;
+    }
+    body {
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.6;
+      display: flex; flex-direction: column; min-height: 100vh;
+    }
+
+    /* ── 顶栏：与 /admin/ 保持一致 ── */
+    .top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px; background: var(--paper);
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .top-bar__left { display: flex; align-items: center; gap: 18px; }
+    .top-bar__right { display: flex; align-items: center; gap: 10px; }
+    .top-bar__logo { font-weight: 700; letter-spacing: .08em; color: var(--text); text-decoration: none; }
+    .top-bar__nav { display: flex; gap: 14px; font-size: 13px; flex-wrap: wrap; }
+    .top-bar__nav-current { color: var(--accent); border-bottom: 2px solid var(--accent); padding: 4px 0; }
+    .top-bar__nav-link { color: var(--text2); text-decoration: none; }
+    .top-bar__nav-link:hover { color: var(--text); }
+    .top-bar__email { font-size: 12px; color: var(--text3); }
+    .top-bar__btn {
+      font-size: 12px; color: var(--text2); background: none;
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 4px 10px; cursor: pointer; font-family: inherit;
+    }
+    .top-bar__btn:hover { background: var(--bg); }
+
+    .strip {
+      padding: 10px 24px; font-size: 12.5px; color: var(--text2);
+      background: #fffdf6; border-bottom: 1px solid var(--border);
+    }
+    .strip b { color: var(--text); }
+
+    main { flex: 1; padding: 24px; max-width: 1040px; width: 100%; margin: 0 auto; }
+    h2 { font-size: 16px; font-weight: 500; margin: 26px 0 10px; }
+    h2:first-child { margin-top: 0; }
+    p { font-size: 13.5px; color: var(--text2); margin-bottom: 10px; }
+
+    .card {
+      background: var(--paper); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 18px; margin-bottom: 14px;
+    }
+    .card__title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+    .card__desc { font-size: 12.5px; color: var(--text2); margin-bottom: 10px; }
+
+    pre {
+      background: #1f2430; color: #e6e6e6; border-radius: 8px;
+      padding: 11px 13px; font-size: 12px; overflow-x: auto;
+      font-family: 'SFMono-Regular', Consolas, monospace; line-height: 1.7;
+    }
+    code { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; }
+    .inline-code {
+      background: #f3f0ea; border: 1px solid var(--border);
+      border-radius: 4px; padding: 1px 5px;
+    }
+
+    .phase { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+    .pill {
+      font-size: 11px; padding: 2px 9px; border-radius: 999px;
+      flex-shrink: 0; margin-top: 3px; font-weight: 500;
+    }
+    .pill--done { background: #d1fae5; color: #065f46; }
+    .pill--wip { background: #fef3c7; color: #92400e; }
+    .pill--todo { background: #f3f4f6; color: #6b7280; }
+
+    ul { margin: 6px 0 0 18px; font-size: 13px; color: var(--text2); }
+    li { margin-bottom: 4px; }
+
+    .warn {
+      background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;
+      padding: 13px 15px; font-size: 13px; color: #7f1d1d; margin-bottom: 14px;
+    }
+    .warn b { color: #991b1b; }
+    .note {
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
+      padding: 13px 15px; font-size: 13px; color: #1e3a5f; margin-bottom: 14px;
+    }
+    .path {
+      font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px;
+      background: #f3f0ea; border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 6px; word-break: break-all;
+    }
+    @media (max-width: 640px) {
+      main { padding: 16px; }
+      .top-bar { padding: 12px 14px; }
+    }
+  </style>
+  <link rel="stylesheet" href="/css/admin-header.css">
+</head>
+<body>
+
+<!-- 未登录 -->
+<div id="gate" class="ag-overlay">
+  <div class="ag-box">
+    <div class="ag-logo">千里同風</div>
+    <div class="ag-sub">管理员登录</div>
+    <input id="ge" type="email" class="ag-input" placeholder="邮箱地址" autocomplete="email">
+    <input id="gp" type="password" class="ag-input" placeholder="密码" autocomplete="current-password">
+    <div id="gm" class="ag-error"></div>
+    <button id="glogin" type="button" class="ag-btn-login">登录</button>
+  </div>
+</div>
+
+<!-- 无权限 -->
+<div id="noPerm" class="ag-overlay">
+  <div class="ag-box ag-box--noperm">
+    <div class="ag-icon">🚫</div>
+    <h2 class="ag-title ag-title--noperm">无访问权限</h2>
+    <p class="ag-desc ag-desc--noperm">此页面仅限管理员查看。</p>
+    <button id="noPermLogout" type="button" class="ag-btn-noperm">退出登录</button>
+  </div>
+</div>
+
+<header class="top-bar">
+  <div class="top-bar__left">
+    <a href="/" class="top-bar__logo" title="返回网站主页">千里同風</a>
+    <nav class="top-bar__nav">
+      <a href="/admin/" class="top-bar__nav-link">网站内容</a>
+      <a href="/admin/blog/" class="top-bar__nav-link">Blog</a>
+      <a href="/solutions/demo/admin.html" class="top-bar__nav-link">运行监控</a>
+      <a href="/solutions/demo/ai-intel.html" class="top-bar__nav-link">AI 情报</a>
+      <a href="/admin/macro.html" class="top-bar__nav-link">宏观对表</a>
+      <span class="top-bar__nav-current">自动化结账</span>
+    </nav>
+  </div>
+  <div class="top-bar__right">
+    <span id="adminEmail" class="top-bar__email"></span>
+    <button id="logout" type="button" class="top-bar__btn">退出</button>
+  </div>
+</header>
+
+<div class="strip">
+  <b>原始凭证 → 记账凭证 → 序时账 → 試算表</b> 的自动化管线 ·
+  引擎在本地，本页只是入口与操作手册 · 未对外展示
+</div>
+
+<main>
+
+  <div class="warn">
+    <b>⚠️ 本页不含任何财务数字，这是刻意的。</b><br>
+    <code>/admin/*</code> 下的静态页只有前端遮罩 + <code>X-Robots-Tag: noindex</code>，
+    <b>知道 URL 的人仍可直接打开</b>（<code>admin/macro.html</code> 里也写了这一点）。
+    宏观看板放的是公开统计数据所以可以接受；<b>会计数据不行</b>——里面有標準報酬月額、給与、
+    法人番号、银行余额。<br>
+    要把数据搬上线，必须走 <code>/api/*</code>（那里有 <code>_middleware.js</code> 的
+    Firebase token 验证 + admin 白名单，是真正的服务端门），不能当静态文件放这里。
+  </div>
+
+  <h2>本地引擎</h2>
+  <p>全部计算在本机完成，产物不出本机。目录：</p>
+  <p><span class="path">C:\Users\sherl\Desktop\Claude Code\自动化结账工具</span></p>
+
+  <div class="card">
+    <div class="card__title">① 社保年間カレンダー（不需要任何扫描件）</div>
+    <div class="card__desc">
+      只从「標準報酬月額 + 都道府県 + 年度」推出全年 12 个月的納付書各栏、給与控除、納期限。
+      収到実物の納入告知書時，拿这张表逐栏对——这是会计软件不做的事。
+    </div>
+    <pre>python tools/phase1_social_insurance.py</pre>
+  </div>
+
+  <div class="card">
+    <div class="card__title">② 全流程 → 工作底稿</div>
+    <div class="card__desc">
+      主数据溯源 → 社保推导 → 銀行対账 → 历史凭证校验 → beancount 账簿 → 断言 → 底稿 Excel。
+      有银行 CSV 就加 <code>--bank-csv</code>，没有才回退截图 OCR。
+    </div>
+    <pre>python run.py --bank-csv &lt;明細.csv&gt;
+python run.py                      # 回退 OCR 路径</pre>
+  </div>
+
+  <div class="card">
+    <div class="card__title">③ 扫描件前处理 + OCR 对比</div>
+    <div class="card__desc">
+      <b>摆正这一步不能省</b>：实测 10 张凭证的 EXIF Orientation 全是 6（需顺时针90°），
+      不处理的话逐字格里的金额会<b>少读一位</b>（万位变千位，差 10 倍），而且不报错。
+    </div>
+    <pre>python tools/prep_images.py        # EXIF 摆正
+python tools/ocr_bench.py          # 引擎对比打分</pre>
+  </div>
+
+  <h2>进度</h2>
+
+  <div class="phase">
+    <span class="pill pill--done">已完成</span>
+    <div>
+      <b>Phase 1 · 社保推导</b>
+      <ul>
+        <li>从「標準報酬月額」一个数推出給与明細 + 納付書全部 8 个数字，<b>0 日元误差</b></li>
+        <li>納期限规则含休日繰越（税・社保往后顺延；払込票的取扱期限日往前提前，方向相反）</li>
+        <li>年間カレンダー带照合列，納付書到了逐栏对</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="phase">
+    <span class="pill pill--done">已完成</span>
+    <div>
+      <b>Phase 2 · 銀行明細 CSV</b>
+      <ul>
+        <li>Shift_JIS(cp932) 自动识别；乱码必须大声失败，不静默通过</li>
+        <li>行序方向不写死，两个方向都试、取余额链闭合的那个</li>
+        <li>实测：CSV 经路与 OCR 经路得出完全相同的 11 笔交易</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="phase">
+    <span class="pill pill--wip">进行中</span>
+    <div>
+      <b>工作底稿</b> — 14 张凭证已跑通，試算表平衡。断言 12 条里 11 条通过，
+      1 条故意亮红（預り金出现借方余额，因为給与凭证只有 1 张而社保納付有 3 个月）。
+    </div>
+  </div>
+
+  <div class="phase">
+    <span class="pill pill--todo">未开始</span>
+    <div>
+      <b>Phase 3 · 抽取层</b> — 票种模板 + 版式指纹断言。<br>
+      <b>自制凭证</b> — 折旧・工资这类没有纸质原始凭证的，正确做法是
+      <b>系统生成计算表，表本身就是凭证</b>，不是去读一张不存在的票。
+      折旧还缺固定資産台帳的数据。
+    </div>
+  </div>
+
+  <h2>作业注意事项</h2>
+  <div class="note">
+    <b>拍照时把票摆正。</b>软件侧有 EXIF 兜底，但手机截图没有 EXIF，只能靠拍摄。<br><br>
+    <b>正面只写凭证号，别写数字。</b>府民税那张的手写推算给 OCR 注入了 4 个票面不存在的金额，
+    其中最大的那个正好会被「偏好大额」的打分函数选中。<br><br>
+    <b>但支付信息要写</b>——「7月14日 已付 paypay」这类票面上没有的信息，
+    直接决定贷方科目和記帳日，非写不可。写在背面。<br><br>
+    <b>銀行明細用 CSV 下载，别截图。</b>网银明细属于電子取引，2024年1月起必须电子保存；
+    而且 CSV 是结构化数据，精度 100%，能让整段 OCR 解析代码退休。<br><br>
+    <b>纸按凭证号顺序贴，不按类型。</b>税務調査是从帳簿查証憑，
+    序时账 M 列「附件编号」就是那个 key。
+  </div>
+
+  <h2>产出位置</h2>
+  <p>都在本地 <span class="path">自动化结账工具\out\</span>，不上传：</p>
+  <ul>
+    <li><code>千里同風_工作底稿_2026.xlsx</code> — 序时账 / 試算表 / 未計上・要確認 / 询问队列 / 断言报告</li>
+    <li><code>社保カレンダー_2026.xlsx</code> — 年間カレンダー / 使い方 / 询问队列</li>
+    <li><code>ledger.beancount</code> — 账簿源文件（可 git diff）</li>
+  </ul>
+
+</main>
+
+<script type="module">
+  import { auth } from '/js/shared/firebase-init.js';
+  import { ADMINS } from '/js/shared/admins.js';
+  import { onAuthStateChanged, signInWithEmailAndPassword, signOut }
+    from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+
+  const $ = id => document.getElementById(id);
+
+  // 本页是纯静态说明页，鉴权只挡误入。真正的保护来自「页面里没有财务数据」——
+  // 数据上线要走 /api/*（_middleware.js 有服务端 token 验证），不是靠这个遮罩。
+  onAuthStateChanged(auth, u => {
+    if (!u) {
+      $('gate').style.display = 'flex';
+      $('noPerm').style.display = 'none';
+      return;
+    }
+    if (!ADMINS.includes(u.email)) {
+      $('gate').style.display = 'none';
+      $('noPerm').style.display = 'flex';
+      return;
+    }
+    $('gate').style.display = 'none';
+    $('noPerm').style.display = 'none';
+    $('adminEmail').textContent = u.email;
+  });
+
+  async function doLogin() {
+    const btn = $('glogin');
+    $('gm').textContent = '';
+    btn.disabled = true;
+    try {
+      await signInWithEmailAndPassword(auth, $('ge').value.trim(), $('gp').value);
+    } catch (e) {
+      $('gm').textContent = '邮箱或密码不正确';
+      console.error('[auth]', e);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  $('glogin').addEventListener('click', doLogin);
+  $('gp').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  $('logout').addEventListener('click', () => signOut(auth));
+  $('noPermLogout').addEventListener('click', () => signOut(auth));
+</script>
+</body>
+</html>
