@@ -13,8 +13,13 @@ name: Deploy Firestore Rules
 #    以后改 firestore.rules push 就自动部署。
 #
 # 依赖 secret：FIREBASE_SERVICE_ACCOUNT（爬虫已在用的那份服务账号 JSON）。
-# ⚠️ 该服务账号需要有 **firebaserules.admin**（或 Editor）权限才能部署规则——
-#    它原本是给 Admin SDK 写数据用的，权限不一定够，第一次部署若报权限错就去 IAM 加。
+# ⚠️ 该服务账号需要**两个**角色才能部署规则（2026-09-12 首次部署实测确认）：
+#    ① Firebase Rules Admin（roles/firebaserules.admin）—— 编译/发布规则；
+#    ② Service Usage Consumer（roles/serviceusage.serviceUsageConsumer）—— 部署前
+#       firebase-tools 会预检 firestore.googleapis.com 是否启用，缺它会先报
+#       "Permission denied to get service" 而根本到不了规则那步。
+#    它原本是给 Admin SDK 写数据用的，默认两个都没有，去 GCP IAM 给这个账号加。
+#    IAM 加完要等一两分钟传播，太快重试仍会 403 —— 等等再触发。
 #    没有这个 secret 时本 workflow 优雅跳过。
 
 on:
