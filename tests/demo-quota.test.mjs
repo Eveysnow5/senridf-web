@@ -107,6 +107,34 @@ test('★ 全站日次上限 500：500 許可、501 拒否', () => {
   assert.equal(d.error, 'global_daily');
 });
 
+test('★ globalDailyCap 上書き：共有キー fallback 中は 50/日に絞れる', () => {
+  // 省略時は既定 500。端点が共有 QWEN キーに fallback 中は 50 を渡して桶を守る。
+  assert.equal(
+    quotaDecision({
+      provider: 'anonymous',
+      uidCount: 1,
+      ipCount: 1,
+      globalCount: 50,
+      globalDailyCap: 50,
+    }).ok,
+    true,
+  );
+  const d = quotaDecision({
+    provider: 'anonymous',
+    uidCount: 1,
+    ipCount: 1,
+    globalCount: 51,
+    globalDailyCap: 50,
+  });
+  assert.equal(d.ok, false);
+  assert.equal(d.error, 'global_daily');
+  // 省略時は 500 のまま（51 は通る）
+  assert.equal(
+    quotaDecision({ provider: 'anonymous', uidCount: 1, ipCount: 1, globalCount: 51 }).ok,
+    true,
+  );
+});
+
 test('★ IP 日次上限 5：5 許可、6 拒否', () => {
   assert.equal(
     quotaDecision({ provider: 'password', uidCount: 1, ipCount: 5, globalCount: 1 }).ok,

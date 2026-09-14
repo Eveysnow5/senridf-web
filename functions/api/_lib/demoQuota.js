@@ -47,11 +47,15 @@ export function checkInputSize({ provider, text, pageCount } = {}) {
 // カウント意味論：先にインクリメントしてから「> 上限」で判定する。
 //   匿名 lifetimeUses=1 → 1回目 count=1（1>1 偽＝許可）、2回目 count=2（2>1 真＝拒否）＝ちょうど1回。
 //   会員=3 → 1..3 許可、4回目で拒否＝ちょうど3回。全站=500 → 500 許可、501 で拒否。
-export function quotaDecision({ provider, uidCount, ipCount, globalCount } = {}) {
+// globalDailyCap は全站日次上限の上書き（省略時は DEMO_LIMITS.globalDaily=500）。
+// 専用キー（SiliconFlow 予充值）なら 500、共有 QWEN キーに fallback 中は低めにして
+// 本番ツールの無料桶を守る、という運用のため端点から差し込めるようにしている。
+export function quotaDecision({ provider, uidCount, ipCount, globalCount, globalDailyCap } = {}) {
   if (uidCount == null || ipCount == null || globalCount == null) {
     return { ok: false, code: 503, error: 'counter_unavailable' };
   }
-  if (globalCount > DEMO_LIMITS.globalDaily) {
+  const gCap = Number.isFinite(globalDailyCap) ? globalDailyCap : DEMO_LIMITS.globalDaily;
+  if (globalCount > gCap) {
     return { ok: false, code: 429, error: 'global_daily' };
   }
   if (ipCount > DEMO_LIMITS.ipDaily) {

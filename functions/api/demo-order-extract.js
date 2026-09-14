@@ -51,10 +51,15 @@ export async function onRequest(context) {
   const { request, env, data } = context;
   if (request.method !== 'POST') return json(405, { error: 'Method Not Allowed' });
 
-  // DEMO_API_KEY 未設定 → デモ無効（準備中）。フロントは「近日公開」を表示する。
-  // これにより「コードを建てる」と「公開する」を分離：公開の可否＝この鍵の有無。
-  const apiKey = env.DEMO_API_KEY;
+  // 鍵の解決（A+B 両対応、2026-09-14）：
+  //   B（本命）: DEMO_API_KEY（SiliconFlow 予充值など、専用・隔離。残高がハード天井）。
+  //   A（暫定）: 無ければ既存の QWEN_API_KEY に fallback ＝ 同事の env 変更を待たず今すぐ動く。
+  // 専用キーがあるときは 500/日、共有キーに fallback 中は 50/日に絞って本番ツールの
+  // 無料桶を守る（08-24 の枯渇事故の教訓）。SiliconFlow キーを入れれば自動で 500 に戻る。
+  const onDedicatedKey = !!env.DEMO_API_KEY;
+  const apiKey = env.DEMO_API_KEY || env.QWEN_API_KEY;
   if (!apiKey) return json(503, { disabled: true, error: 'demo_disabled' });
+  const globalDailyCap = onDedicatedKey ? undefined : 50; // undefined＝既定 500
 
   const user = data?.user;
   const idToken = data?.idToken;
@@ -85,6 +90,7 @@ export async function onRequest(context) {
     uidCount: counts.uid,
     ipCount: counts.ip,
     globalCount: counts.global,
+    globalDailyCap,
   });
   if (!q.ok) return json(q.code, { error: q.error });
 
