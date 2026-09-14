@@ -318,4 +318,17 @@
       XLSX.writeFile(wb, 'juchu-daicho.xlsx');
     });
   }
+
+  // 「無料で試す」CTA をデモ欄までスクロール。
+  // ⚠️ このページは <base href="../"> なので、素の href="#demo" は根（トップページ）の
+  //    #demo に飛んでしまう（base 基準で解決されるため）。JS で同ページ内スクロールする。
+  var demoSection = document.getElementById('demo');
+  var toDemoLinks = document.querySelectorAll('.o2l-to-demo');
+  for (var d = 0; d < toDemoLinks.length; d++) {
+    toDemoLinks[d].addEventListener('click', function (e) {
+      if (!demoSection) return;
+      e.preventDefault();
+      demoSection.scrollIntoView({ behavior: 'smooth' });
+    });
+  }
 })();
