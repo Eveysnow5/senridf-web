@@ -143,7 +143,15 @@ const T = {
       '注文書（PDF・Excel）をアップロードすると、受注台帳の形に変換します。ファイルはブラウザ内で処理され、サーバーには送信されません。',
     o2l_drop_text:
       '帳票（注文書・給与明細など）を PDF・Excel・CSV でドロップ、またはクリックして選択（最大10ファイル）',
-    o2l_drop_hint: 'ファイルはお使いのブラウザ内で処理され、アップロードされません。',
+    o2l_drop_hint:
+      '文字PDF・Excel・CSVはブラウザ内で処理（非送信）。スキャン・画像は読み取りに画像を送信します（送信前に確認）。',
+    o2l_file_image: '画像',
+    o2l_ai_cancelled: '画像の送信をキャンセルしました。',
+    o2l_cf_title: '画像として読み取りますか？',
+    o2l_cf_body:
+      'このファイルには文字情報が無いため、画像として読み取ります。この場合、画像は当社サーバー経由で通義千問（Qwen）の視覚モデルに送信されます。（文字PDF・Excel・CSVはブラウザ内で処理され、送信されません。）',
+    o2l_cf_ok: '送信して読み取る',
+    o2l_cf_cancel: 'キャンセル',
     o2l_status_parsing: '読み取り中…',
     o2l_err_toobig: 'ファイルが大きすぎます（5MBまで）。',
     o2l_err_type: '対応していないファイル形式です（PDF・Excel・CSV）。',
@@ -179,7 +187,7 @@ const T = {
     o2l_trust_eyebrow: '安心してお使いいただくために',
     o2l_trust_title: 'データの取り扱い',
     o2l_trust1:
-      'アップロードされたファイルは、お使いのブラウザ内で処理されます。当社サーバーには送信されません。',
+      '文字PDF・Excel・CSVは、お使いのブラウザ内で処理し、当社サーバーには送信しません。（スキャン・画像のみ、読み取りのため画像を送信します＝送信前に確認します。）',
     o2l_trust2: '抽出した内容は保存しません。処理が終わればすぐに破棄されます。',
     o2l_trust3: '通信はすべて暗号化されています（HTTPS / AES-256）。',
     o2l_trust_privacy: '詳しい取り扱いは、プライバシーポリシーをご覧ください（準備中）。',
@@ -669,7 +677,15 @@ const T = {
       '上传订单（PDF / Excel），就会转成受注台账的样子。文件在浏览器内处理，不上传服务器。',
     o2l_drop_text:
       '把帳票（订单 / 工资单等）以 PDF / Excel / CSV 拖到这里，或点击选择（最多 10 个）',
-    o2l_drop_hint: '文件在你的浏览器内处理，不会上传。',
+    o2l_drop_hint:
+      '文字 PDF / Excel / CSV 在浏览器内处理（不上传）。扫描件 / 图片会把图片发送识别（发送前会确认）。',
+    o2l_file_image: '图片',
+    o2l_ai_cancelled: '已取消发送图片。',
+    o2l_cf_title: '要作为图片识别吗？',
+    o2l_cf_body:
+      '这个文件没有文字信息，需要作为图片识别。此时图片会经由我们的服务器发送到通义千问（Qwen）视觉模型。（文字 PDF / Excel / CSV 在浏览器内处理，不会发送。）',
+    o2l_cf_ok: '发送并识别',
+    o2l_cf_cancel: '取消',
     o2l_status_parsing: '读取中…',
     o2l_err_toobig: '文件太大（最多 5MB）。',
     o2l_err_type: '不支持的文件格式（PDF / Excel / CSV）。',
@@ -703,7 +719,8 @@ const T = {
     o2l_price_maint: '维护改进 每月 5,000 日元起（可选）。',
     o2l_trust_eyebrow: '为了让你放心使用',
     o2l_trust_title: '数据怎么处理',
-    o2l_trust1: '上传的文件在你的浏览器内处理，不会发送到我们的服务器。',
+    o2l_trust1:
+      '文字 PDF / Excel / CSV 在你的浏览器内处理，不发送到我们的服务器。（只有扫描件 / 图片，为了识别会发送图片，发送前会确认。）',
     o2l_trust2: '抽取的内容不保存，处理完立即丢弃。',
     o2l_trust3: '所有通信都经过加密（HTTPS / AES-256）。',
     o2l_trust_privacy: '更详细的处理方式请见隐私政策（准备中）。',
@@ -1178,7 +1195,15 @@ const T = {
       'Upload an order form (PDF or Excel) and it is converted into ledger form. Files are processed in your browser and never sent to our servers.',
     o2l_drop_text:
       'Drop your documents (orders, pay slips, etc.) as PDF / Excel / CSV, or click to choose (up to 10)',
-    o2l_drop_hint: 'Files are processed in your browser and never uploaded.',
+    o2l_drop_hint:
+      'Text PDF / Excel / CSV are processed in your browser (not uploaded). Scans / images are sent for reading (we ask first).',
+    o2l_file_image: 'image',
+    o2l_ai_cancelled: 'Image sending was cancelled.',
+    o2l_cf_title: 'Read this as an image?',
+    o2l_cf_body:
+      'This file has no text, so it will be read as an image. The image is then sent via our server to the Tongyi Qianwen (Qwen) vision model. (Text PDF / Excel / CSV are processed in your browser and are not sent.)',
+    o2l_cf_ok: 'Send and read',
+    o2l_cf_cancel: 'Cancel',
     o2l_status_parsing: 'Reading…',
     o2l_err_toobig: 'File is too large (up to 5MB).',
     o2l_err_type: 'Unsupported file type (PDF / Excel / CSV).',
@@ -1214,7 +1239,8 @@ const T = {
     o2l_price_maint: 'Maintenance and improvements from ¥5,000/month (optional).',
     o2l_trust_eyebrow: 'So you can use it with confidence',
     o2l_trust_title: 'How your data is handled',
-    o2l_trust1: 'Uploaded files are processed in your browser and are never sent to our servers.',
+    o2l_trust1:
+      'Text PDF / Excel / CSV are processed in your browser and never sent to our servers. (Only scans / images are sent, for reading — and we ask first.)',
     o2l_trust2: 'Extracted content is not stored — it is discarded as soon as processing finishes.',
     o2l_trust3: 'All communication is encrypted (HTTPS / AES-256).',
     o2l_trust_privacy: 'See our Privacy Policy for full details (coming soon).',

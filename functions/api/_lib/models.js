@@ -149,6 +149,11 @@ export const TIERS = {
   balanced: 'qwen3.8-27b', // 同上，共桶
   fast: 'qwen3.7-flash', // 余量未核实，见下方待办
   batch: 'qwen3.8-27b', // 同上。原为 a95b，因无法关闭思考而换掉
+  // 受発注デモの画像OCR用の視覚モデル（独立バケット、テキストとは別系統）。
+  // デモは付費/予充值 key で回すので免費桶の悬崖は無い。SiliconFlow 等へは
+  // ENV_KEY の DEMO_VISION_MODEL で上書きする。⚠️ この視覚モデルが
+  // enable_thinking:false を受けるかは初回のスモークテストで要確認。
+  vision: 'qwen-vl-plus',
 };
 
 // ⚠️ **batch 与 strong 共桶是妥协，不是设计。** 上面写着"batch 单独一个模型是
@@ -181,6 +186,9 @@ export const TIERS = {
 export const TIER_EXPIRY = {
   'qwen3.8-27b': '2026-11-18', // 2026-08-25 抄，当时 100%
   'qwen3.7-flash': '2026-10-23', // 2026-08-10 抄；⚠️ 余量一直未核实
+  // 視覚モデルは付費/予充值 key 運用で免費桶の悬崖が無いため、遠期のプレースホルダ日付
+  // （probe-model の誤報を避ける）。実運用の課金は残高で頭打ち。
+  'qwen-vl-plus': '2027-12-31',
 };
 
 // Which tier each task needs, and why. This is the durable record of intent:
@@ -206,6 +214,8 @@ export const TASK_TIER = {
   // 鍵は DEMO_API_KEY、エンドポイントは DEMO_CHAT_ENDPOINT、モデル id は下の
   // ENV_KEY 経由の DEMO_MODEL で上書きする（共有の QWEN 桶とは分離してコスト隔離）。
   demoExtract: 'fast',
+  // 受発注デモの画像OCR（スキャン/画像 → 視覚モデル）。functions/api/_lib/demoVision.js。
+  demoVision: 'vision',
 };
 
 // Per-task env override, e.g. QWEN_MODEL_TRANSLATE_STREAM=qwen-turbo.
@@ -223,6 +233,7 @@ const ENV_KEY = {
   adminTranslate: 'QWEN_MODEL_ADMIN_TRANSLATE',
   // デモは別プロバイダに載せ替える前提なので、モデル id は DEMO_MODEL で上書きする。
   demoExtract: 'DEMO_MODEL',
+  demoVision: 'DEMO_VISION_MODEL',
 };
 
 /**

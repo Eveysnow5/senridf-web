@@ -16,6 +16,7 @@ import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
 import { checkInputSize, quotaDecision, limitsFor, DEMO_LIMITS } from './_lib/demoQuota.js';
 import { bumpDemoCounters } from './_lib/demoCounters.js';
 import { buildDemoOrderPrompt } from './_lib/buildDemoOrderPrompt.js';
+import { visionExtract, MAX_IMAGE_CHARS } from './_lib/demoVision.js';
 
 function json(status, body) {
   return new Response(JSON.stringify(body), {
@@ -122,28 +123,35 @@ export async function onRequest(context) {
     return json(400, { error: 'Invalid JSON' });
   }
 
-  // items: [{name, text, pageCount}]（1〜maxFiles 件）。後方互換で単一 {text} も 1 件扱い。
+  // items: [{name, text?|image?, pageCount}]（1〜maxFiles 件）。text はブラウザ内解析済み、
+  // image は data:URL（スキャン/画像＝視覚モデル送信）。後方互換で単一 {text} も 1 件扱い。
   const rawItems = Array.isArray(body.items)
     ? body.items
     : typeof body.text === 'string'
       ? [{ name: '', text: body.text, pageCount: body.pageCount }]
       : [];
   const items = rawItems
-    .filter((it) => it && typeof it.text === 'string')
+    .filter((it) => it && (typeof it.text === 'string' || typeof it.image === 'string'))
     .map((it) => ({
       name: String(it.name || '').slice(0, 120),
-      text: it.text.trim(),
+      text: typeof it.text === 'string' ? it.text.trim() : '',
+      image: typeof it.image === 'string' ? it.image : '',
       pageCount: Number(it.pageCount),
     }))
-    .filter((it) => it.text);
+    .filter((it) => it.text || it.image);
 
   if (!items.length) return json(400, { error: 'empty' });
   if (items.length > DEMO_LIMITS.maxFiles) return json(413, { error: 'too_many_files' });
 
-  // 1) 入力サイズ（ハード）: 各ファイルごとに。1 つでも超えたらバッチごと拒否。
+  // 1) 入力サイズ（ハード）: ファイルごとに。1 つでも超えたらバッチごと拒否。
+  //    画像は dataURL 長で、テキストは文字数で判定。
   for (const it of items) {
-    const sz = checkInputSize({ provider, text: it.text, pageCount: it.pageCount });
-    if (!sz.ok) return json(sz.code, { error: sz.error });
+    if (it.image) {
+      if (it.image.length > MAX_IMAGE_CHARS) return json(413, { error: 'too_long' });
+    } else {
+      const sz = checkInputSize({ provider, text: it.text, pageCount: it.pageCount });
+      if (!sz.ok) return json(sz.code, { error: sz.error });
+    }
   }
 
   // 2) 配額（ソフト、fail-close）。uid/ip は「使用回数(バッチ=1)」で +1、global は
@@ -169,16 +177,23 @@ export async function onRequest(context) {
   const endpoint = env.DEMO_CHAT_ENDPOINT || CHAT_ENDPOINT;
   const lim = limitsFor(provider);
   const settled = await Promise.allSettled(
-    items.map((it) =>
-      extractOne({
+    items.map((it) => {
+      if (it.image) {
+        // 画像＝視覚モデル（通義千問VL）。フロントで同意ダイアログを取ってから送られてくる。
+        return visionExtract({ env, dataUrl: it.image, idToken, context }).then((content) => ({
+          name: it.name,
+          rows: parseLedger(content),
+        }));
+      }
+      return extractOne({
         endpoint,
         apiKey,
         env,
         text: it.text.slice(0, lim.maxChars),
         idToken,
         context,
-      }).then((rows) => ({ name: it.name, rows })),
-    ),
+      }).then((rows) => ({ name: it.name, rows }));
+    }),
   );
   const perFile = settled.filter((r) => r.status === 'fulfilled').map((r) => r.value);
   if (!perFile.length) return json(502, { error: 'unavailable' });

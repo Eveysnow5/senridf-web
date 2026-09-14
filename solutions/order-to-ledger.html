@@ -88,6 +88,14 @@
     .o2l-files { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
     .o2l-files li { font-size: 12px; color: #4a4a4a; background: #f0ede7; border-radius: 4px; padding: 4px 10px; }
     .o2l-files__skip { margin: 10px 0 0; font-size: 12px; color: #b0663a; }
+    .o2l-files__img { font-size: 10px; color: #b0663a; border: 1px solid #d9b8a6; border-radius: 3px; padding: 1px 5px; margin-left: 6px; }
+    /* 同意ダイアログ。display は :not([hidden]) 側に置く（hidden 属性を効かせるため）。 */
+    .o2l-modal { position: fixed; inset: 0; background: rgba(20, 18, 15, 0.5); z-index: 1000; padding: 20px; }
+    .o2l-modal:not([hidden]) { display: flex; align-items: center; justify-content: center; }
+    .o2l-modal__box { background: #fff; border-radius: 10px; max-width: 460px; width: 100%; padding: 32px 28px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); }
+    .o2l-modal__title { font-size: 17px; font-weight: 600; margin: 0 0 14px; color: #1f2937; }
+    .o2l-modal__body { font-size: 13px; line-height: 1.8; color: #555; margin: 0 0 24px; }
+    .o2l-modal__actions { display: flex; justify-content: flex-end; gap: 12px; }
     .o2l-ai { margin-top: 18px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
     .o2l-ai__status { font-size: 13px; color: #6b6b6b; }
     .o2l-ledger { margin-top: 20px; }
@@ -190,7 +198,13 @@
       </div>
       <div class="o2l-demo" data-animate>
         <div id="o2lDrop" class="o2l-drop" role="button" tabindex="0" title="ファイルを選択">
-          <input type="file" id="o2lFile" accept=".pdf,.xlsx,.xls,.csv" multiple hidden />
+          <input
+            type="file"
+            id="o2lFile"
+            accept=".pdf,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.webp"
+            multiple
+            hidden
+          />
           <div class="o2l-drop__icon" aria-hidden="true">📄</div>
           <p class="o2l-drop__text" data-i18n="o2l_drop_text">
             注文書（PDF・Excel・CSV）をここにドロップ、またはクリックして選択
@@ -230,6 +244,7 @@
               <span data-msg="toobig" data-i18n="o2l_ai_toobig" hidden></span>
               <span data-msg="error" data-i18n="o2l_ai_error" hidden></span>
               <span data-msg="login" data-i18n="o2l_ai_login" hidden></span>
+              <span data-msg="cancelled" data-i18n="o2l_ai_cancelled" hidden></span>
             </span>
           </div>
 
@@ -251,6 +266,32 @@
           <p class="o2l-result__note" data-i18n="o2l_result_note">
             ※ 上は読み取り結果です。「AIで受注台帳に整形」で、品名・数量・単価・金額に構造化します。
           </p>
+
+          <!-- 画像送信の同意ダイアログ（スキャン/画像のときだけ表示。文言は data-i18n で流し込む）-->
+          <div id="o2lConfirm" class="o2l-modal" hidden>
+            <div class="o2l-modal__box" role="dialog" aria-modal="true">
+              <h3 class="o2l-modal__title" data-i18n="o2l_cf_title">画像として読み取りますか？</h3>
+              <p class="o2l-modal__body" data-i18n="o2l_cf_body"></p>
+              <div class="o2l-modal__actions">
+                <button
+                  id="o2lConfirmCancel"
+                  type="button"
+                  class="o2l-btn o2l-btn--sm o2l-btn--ghost"
+                  data-i18n="o2l_cf_cancel"
+                >
+                  キャンセル
+                </button>
+                <button
+                  id="o2lConfirmOk"
+                  type="button"
+                  class="o2l-btn o2l-btn--sm"
+                  data-i18n="o2l_cf_ok"
+                >
+                  送信して読み取る
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -351,6 +392,6 @@
 
   <!-- ?v= はキャッシュバスター。JS は max-age=14400（4h）で配信されるため、
        中身を変えたらここを上げないと、最近訪れた人は最大4時間 古い JS を掴む。 -->
-  <script src="js/order-to-ledger-demo.js?v=20260914d"></script>
+  <script src="js/order-to-ledger-demo.js?v=20260914e"></script>
 </body>
 </html>
