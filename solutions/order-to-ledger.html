@@ -84,6 +84,10 @@
     .o2l-table td { border: 1px solid #ece9e3; padding: 6px 10px; white-space: nowrap; color: #3a3a3a; }
     .o2l-table tr:nth-child(odd) td { background: #faf9f6; }
     .o2l-result__note { margin-top: 12px; font-size: 12px; color: #9a9a9a; }
+    .o2l-filelist { margin-top: 4px; }
+    .o2l-files { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+    .o2l-files li { font-size: 12px; color: #4a4a4a; background: #f0ede7; border-radius: 4px; padding: 4px 10px; }
+    .o2l-files__skip { margin: 10px 0 0; font-size: 12px; color: #b0663a; }
     .o2l-ai { margin-top: 18px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
     .o2l-ai__status { font-size: 13px; color: #6b6b6b; }
     .o2l-ledger { margin-top: 20px; }
@@ -186,7 +190,7 @@
       </div>
       <div class="o2l-demo" data-animate>
         <div id="o2lDrop" class="o2l-drop" role="button" tabindex="0" title="ファイルを選択">
-          <input type="file" id="o2lFile" accept=".pdf,.xlsx,.xls,.csv" hidden />
+          <input type="file" id="o2lFile" accept=".pdf,.xlsx,.xls,.csv" multiple hidden />
           <div class="o2l-drop__icon" aria-hidden="true">📄</div>
           <p class="o2l-drop__text" data-i18n="o2l_drop_text">
             注文書（PDF・Excel・CSV）をここにドロップ、またはクリックして選択
@@ -207,16 +211,8 @@
         <div id="o2lResult" class="o2l-result" hidden>
           <div class="o2l-result__bar">
             <span class="o2l-badge" data-i18n="o2l_badge_local">✓ すべてお使いのブラウザ内で処理しました</span>
-            <button
-              id="o2lDownload"
-              type="button"
-              class="o2l-btn o2l-btn--sm o2l-btn--ghost"
-              data-i18n="o2l_download"
-            >
-              Excelでダウンロード
-            </button>
           </div>
-          <div id="o2lTableWrap" class="o2l-tablewrap"></div>
+          <div id="o2lFileList" class="o2l-filelist"></div>
 
           <!-- Stage C：AI で受注台帳（品名・数量・単価・金額）に整形 -->
           <div class="o2l-ai">
@@ -355,6 +351,6 @@
 
   <!-- ?v= はキャッシュバスター。JS は max-age=14400（4h）で配信されるため、
        中身を変えたらここを上げないと、最近訪れた人は最大4時間 古い JS を掴む。 -->
-  <script src="js/order-to-ledger-demo.js?v=20260914c"></script>
+  <script src="js/order-to-ledger-demo.js?v=20260914d"></script>
 </body>
 </html>

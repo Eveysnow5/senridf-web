@@ -141,7 +141,8 @@ const T = {
     o2l_demo_title: 'お手元の注文書で、実際に変換',
     o2l_demo_lead:
       '注文書（PDF・Excel）をアップロードすると、受注台帳の形に変換します。ファイルはブラウザ内で処理され、サーバーには送信されません。',
-    o2l_drop_text: '注文書（PDF・Excel・CSV）をここにドロップ、またはクリックして選択',
+    o2l_drop_text:
+      '帳票（注文書・給与明細など）を PDF・Excel・CSV でドロップ、またはクリックして選択（最大10ファイル）',
     o2l_drop_hint: 'ファイルはお使いのブラウザ内で処理され、アップロードされません。',
     o2l_status_parsing: '読み取り中…',
     o2l_err_toobig: 'ファイルが大きすぎます（5MBまで）。',
@@ -152,8 +153,9 @@ const T = {
     o2l_badge_local: '✓ すべてお使いのブラウザ内で処理しました',
     o2l_download: 'Excelでダウンロード',
     o2l_result_note:
-      '※ 上は読み取り結果です。「AIで受注台帳に整形」で、品名・数量・単価・金額に構造化します。',
-    o2l_ai_btn: 'AIで受注台帳に整形する（無料）',
+      '※ 上は読み取ったファイル。「AIで台帳に整形」で各ファイルを構造化し、1 枚の表に合并してダウンロードできます。',
+    o2l_files_skipped: '読み取れず除外:',
+    o2l_ai_btn: 'AIで台帳に整形する（無料）',
     o2l_ai_working: 'AIが整形中…',
     o2l_ai_disabled: 'AI整形は近日公開です。読み取り結果は上の表からダウンロードできます。',
     o2l_ai_anon_used: '無料お試し（1回）を使い切りました。登録すると3回までご利用いただけます。',
@@ -162,8 +164,8 @@ const T = {
     o2l_ai_toobig: 'ファイルが大きいため、無料体験では先頭部分のみ処理しました。',
     o2l_ai_error: '整形に失敗しました。しばらくして再度お試しください。',
     o2l_ai_login: '準備中です。ページを再読み込みしてお試しください。',
-    o2l_ledger_done: '✓ AIが受注台帳に整形しました',
-    o2l_ledger_download: '受注台帳をExcelでダウンロード',
+    o2l_ledger_done: '✓ AIが台帳に整形しました',
+    o2l_ledger_download: '台帳をExcelでダウンロード',
     o2l_price_eyebrow: '料金',
     o2l_price_title: '小さく始めて、必要な分だけ',
     o2l_price_free_title: 'まずは無料体験',
@@ -665,7 +667,8 @@ const T = {
     o2l_demo_title: '用你手边的订单，当场转换',
     o2l_demo_lead:
       '上传订单（PDF / Excel），就会转成受注台账的样子。文件在浏览器内处理，不上传服务器。',
-    o2l_drop_text: '把订单（PDF / Excel / CSV）拖到这里，或点击选择',
+    o2l_drop_text:
+      '把帳票（订单 / 工资单等）以 PDF / Excel / CSV 拖到这里，或点击选择（最多 10 个）',
     o2l_drop_hint: '文件在你的浏览器内处理，不会上传。',
     o2l_status_parsing: '读取中…',
     o2l_err_toobig: '文件太大（最多 5MB）。',
@@ -675,8 +678,10 @@ const T = {
       '这个 PDF 好像没有文字层（扫描件 / 图片）。目前只能读有文字的 PDF、Excel、CSV（扫描件识别即将支持）。',
     o2l_badge_local: '✓ 全部在你的浏览器内完成',
     o2l_download: '导出 Excel',
-    o2l_result_note: '※ 上面是读取结果。点「AI 整形成受注台账」，结构化成 品名・数量・单价・金额。',
-    o2l_ai_btn: '用 AI 整形成受注台账（免费）',
+    o2l_result_note:
+      '※ 上面是读到的文件。点「AI 整形成台账」把每个文件结构化，合并成一张表并下载。',
+    o2l_files_skipped: '未能读取、已跳过:',
+    o2l_ai_btn: '用 AI 整形成台账（免费）',
     o2l_ai_working: 'AI 整形中…',
     o2l_ai_disabled: 'AI 整形即将上线。读取结果可从上面的表格下载。',
     o2l_ai_anon_used: '免费体验（1 次）已用完。注册后可用 3 次。',
@@ -685,8 +690,8 @@ const T = {
     o2l_ai_toobig: '文件较大，免费体验只处理了开头部分。',
     o2l_ai_error: '整形失败，请稍后重试。',
     o2l_ai_login: '准备中，请刷新页面后再试。',
-    o2l_ledger_done: '✓ AI 已整形成受注台账',
-    o2l_ledger_download: '导出受注台账 Excel',
+    o2l_ledger_done: '✓ AI 已整形成台账',
+    o2l_ledger_download: '导出台账 Excel',
     o2l_price_eyebrow: '价格',
     o2l_price_title: '小步开始，用多少算多少',
     o2l_price_free_title: '先免费体验',
@@ -1171,7 +1176,8 @@ const T = {
     o2l_demo_title: 'Convert your own order form, live',
     o2l_demo_lead:
       'Upload an order form (PDF or Excel) and it is converted into ledger form. Files are processed in your browser and never sent to our servers.',
-    o2l_drop_text: 'Drop your order form (PDF / Excel / CSV) here, or click to choose',
+    o2l_drop_text:
+      'Drop your documents (orders, pay slips, etc.) as PDF / Excel / CSV, or click to choose (up to 10)',
     o2l_drop_hint: 'Files are processed in your browser and never uploaded.',
     o2l_status_parsing: 'Reading…',
     o2l_err_toobig: 'File is too large (up to 5MB).',
@@ -1182,7 +1188,8 @@ const T = {
     o2l_badge_local: '✓ Processed entirely in your browser',
     o2l_download: 'Download as Excel',
     o2l_result_note:
-      'Above is the raw reading. “Structure with AI” turns it into item / quantity / unit price / amount.',
+      'Above are the files read. “Structure with AI” structures each and merges them into one downloadable table.',
+    o2l_files_skipped: 'Skipped (unreadable):',
     o2l_ai_btn: 'Structure into a ledger with AI (free)',
     o2l_ai_working: 'AI is structuring…',
     o2l_ai_disabled:

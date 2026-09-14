@@ -1,15 +1,17 @@
-/* 受発注ランディングのデモ（Stage B）：ファイルをブラウザ内で解析して表に起こし、
-   Excel で書き出す。ここでは LLM を呼ばない —— 原本ファイルはサーバーに送らない、を
-   実装で担保するのが目的（信頼文案の裏付け）。AI による受注台帳への整形は Stage C。
+/* 受発注ランディングのデモ（バッチ対応）：複数ファイルをブラウザ内で解析してテキスト化し、
+   /api/demo-order-extract に送って AI が各ファイルを構造化 → 1 枚に合并 → Excel で書き出す。
+   原本ファイルはサーバーに送らない（抽出したテキストのみ送る＝信頼文案の裏付け）。
+   トークンは window.sdfDemoToken（会員=会員トークン、未ログイン=匿名）。
 
    pdf.js / XLSX はグローバル（UMD）。このスクリプトより前に <script> で読み込む。 */
 /* global pdfjsLib, XLSX */
 (function () {
   'use strict';
 
-  var MAX_BYTES = 5 * 1024 * 1024; // 5MB
-  var MAX_PDF_PAGES = 5; // Stage C でプラン別に再制限（匿名1ページ等）
-  var MAX_ROWS_SHOWN = 100; // 表示だけ間引く（ダウンロードは全行）
+  var MAX_BYTES = 5 * 1024 * 1024; // 1 ファイル 5MB
+  var MAX_PDF_PAGES = 5; // 1 ファイル 先頭 5 ページのみ読む（数百ページ対策）
+  var MAX_FILES = 10; // 1 バッチ最大 10 ファイル
+  var MAX_ROWS_SHOWN = 200; // 表示だけ間引く（ダウンロードは全行）
 
   var drop = document.getElementById('o2lDrop');
   var fileInput = document.getElementById('o2lFile');
@@ -17,25 +19,49 @@
 
   var statusEl = document.getElementById('o2lStatus');
   var resultEl = document.getElementById('o2lResult');
-  var tableWrap = document.getElementById('o2lTableWrap');
-  var downloadBtn = document.getElementById('o2lDownload');
-  var lastRows = null;
+  var fileListEl = document.getElementById('o2lFileList');
+  var extractBtn = document.getElementById('o2lExtract');
+  var aiStatusEl = document.getElementById('o2lAiStatus');
+  var ledgerEl = document.getElementById('o2lLedger');
+  var ledgerWrap = document.getElementById('o2lLedgerWrap');
+  var ledgerDownloadBtn = document.getElementById('o2lLedgerDownload');
+
+  var lastFiles = []; // [{name, text, pageCount}]
+  var lastMerged = null; // {columns, rows}
 
   if (typeof pdfjsLib !== 'undefined') {
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   }
 
-  // 文言は DOM 内の data-i18n 済み要素を出し分ける（JS に文言をハードコードしない）。
+  // ── 文言表示（DOM 内の data-i18n 済み要素を出し分け。JS に文言をハードコードしない）──
   function showStatus(key) {
-    if (!statusEl) return;
-    var msgs = statusEl.querySelectorAll('[data-msg]');
+    toggleMsgs(statusEl, key);
+  }
+  function showAiStatus(key) {
+    toggleMsgs(aiStatusEl, key);
+  }
+  function toggleMsgs(host, key) {
+    if (!host) return;
+    var msgs = host.querySelectorAll('[data-msg]');
     for (var i = 0; i < msgs.length; i++) {
       msgs[i].hidden = msgs[i].getAttribute('data-msg') !== key;
     }
-    statusEl.hidden = !key;
+    host.hidden = !key;
   }
 
+  function escapeHtml(s) {
+    return s.replace(/[&<>"]/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch];
+    });
+  }
+
+  function ext(name) {
+    var m = /\.([^.]+)$/.exec(name.toLowerCase());
+    return m ? m[1] : '';
+  }
+
+  // ── ドラッグ&ドロップ / 選択 ────────────────────────────────────────────────
   drop.addEventListener('click', function () {
     fileInput.click();
   });
@@ -55,56 +81,15 @@
   drop.addEventListener('drop', function (e) {
     e.preventDefault();
     drop.classList.remove('is-over');
-    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+      handleFiles(e.dataTransfer.files);
     }
   });
   fileInput.addEventListener('change', function () {
-    if (fileInput.files && fileInput.files[0]) handleFile(fileInput.files[0]);
+    if (fileInput.files && fileInput.files.length) handleFiles(fileInput.files);
   });
 
-  function ext(name) {
-    var m = /\.([^.]+)$/.exec(name.toLowerCase());
-    return m ? m[1] : '';
-  }
-
-  function handleFile(file) {
-    resultEl.hidden = true;
-    if (typeof resetAi === 'function') resetAi(); // 新しいファイルなら AI 整形結果もリセット
-    if (file.size > MAX_BYTES) {
-      showStatus('toobig');
-      return;
-    }
-    var e = ext(file.name);
-    if (['xlsx', 'xls', 'csv', 'pdf'].indexOf(e) === -1) {
-      showStatus('type');
-      return;
-    }
-    showStatus('parsing');
-    file
-      .arrayBuffer()
-      .then(function (buf) {
-        return e === 'pdf' ? parsePdf(buf) : parseSheet(buf);
-      })
-      .then(function (rows) {
-        if (!rows || !rows.length) {
-          // PDF なのに 1 行も取れない＝文字レイヤーが無い（スキャン画像/写真）可能性大。
-          // 「読み取り失敗」ではなく専用メッセージで案内する（v1 は文字 PDF のみ対応）。
-          showStatus(e === 'pdf' ? 'scanned' : 'parse');
-          return;
-        }
-        lastRows = rows;
-        renderTable(rows);
-        showStatus(null);
-        resultEl.hidden = false;
-      })
-      .catch(function (err) {
-        // 本当のエラーを握り潰さない：コンソールに出して原因を追えるようにする。
-        console.error('[order-to-ledger] 解析失败:', err);
-        showStatus('parse');
-      });
-  }
-
+  // ── 解析 ────────────────────────────────────────────────────────────────────
   function parseSheet(buf) {
     var wb = XLSX.read(buf, { type: 'array' });
     var sheet = wb.Sheets[wb.SheetNames[0]];
@@ -128,7 +113,6 @@
               return page.getTextContent();
             })
             .then(function (content) {
-              // 同じ y 座標のアイテムを 1 行にまとめる簡易テーブル化。
               var lines = {};
               content.items.forEach(function (it) {
                 if (!it.str) return;
@@ -147,81 +131,9 @@
         };
         for (var p = 1; p <= n; p++) _loop(p);
         return chain.then(function () {
-          return out;
+          return { rows: out, pageCount: n };
         });
       });
-  }
-
-  function escapeHtml(s) {
-    return s.replace(/[&<>"]/g, function (ch) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch];
-    });
-  }
-
-  function renderTable(rows) {
-    var shown = rows.slice(0, MAX_ROWS_SHOWN);
-    var maxCols = 0;
-    shown.forEach(function (r) {
-      if (r.length > maxCols) maxCols = r.length;
-    });
-    var html = '<table class="o2l-table"><tbody>';
-    shown.forEach(function (r) {
-      html += '<tr>';
-      for (var c = 0; c < maxCols; c++) {
-        html += '<td>' + escapeHtml(r[c] == null ? '' : String(r[c])) + '</td>';
-      }
-      html += '</tr>';
-    });
-    html += '</tbody></table>';
-    tableWrap.innerHTML = html;
-  }
-
-  downloadBtn.addEventListener('click', function () {
-    if (!lastRows) return;
-    var ws = XLSX.utils.aoa_to_sheet(lastRows);
-    var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-    XLSX.writeFile(wb, 'order-to-ledger.xlsx');
-  });
-
-  // ── Stage C：AIで受注台帳（品名・数量・単価・金額）に整形 ──────────────────
-  // ブラウザ内で解析した「テキスト」だけを /api/demo-order-extract に送る（原本ファイルは送らない）。
-  // トークンは window.sdfDemoToken（ページ末尾の module が設定：会員=会員トークン、未ログイン=匿名）。
-  var extractBtn = document.getElementById('o2lExtract');
-  var aiStatusEl = document.getElementById('o2lAiStatus');
-  var ledgerEl = document.getElementById('o2lLedger');
-  var ledgerWrap = document.getElementById('o2lLedgerWrap');
-  var ledgerDownloadBtn = document.getElementById('o2lLedgerDownload');
-  var LEDGER_COLS = ['品名', '数量', '単価', '金額'];
-  var lastLedger = null;
-
-  function showAiStatus(key) {
-    if (!aiStatusEl) return;
-    var msgs = aiStatusEl.querySelectorAll('[data-msg]');
-    for (var i = 0; i < msgs.length; i++) {
-      msgs[i].hidden = msgs[i].getAttribute('data-msg') !== key;
-    }
-    aiStatusEl.hidden = !key;
-  }
-
-  // 新しいファイルを読み込んだら AI 整形結果はリセット（handleFile から呼ぶ）。
-  function resetAi() {
-    if (ledgerEl) ledgerEl.hidden = true;
-    lastLedger = null;
-    showAiStatus(null);
-    if (extractBtn) extractBtn.disabled = false;
-  }
-
-  // サーバのエラーコード → 表示メッセージのキー。
-  function aiStatusKeyFor(status, code) {
-    if (status === 503 || code === 'demo_disabled') return 'disabled';
-    if (code === 'anon_used_up') return 'anon_used_up';
-    if (code === 'member_used_up') return 'member_used_up';
-    if (code === 'global_daily' || code === 'ip_daily' || code === 'counter_unavailable')
-      return 'daily';
-    if (code === 'too_long' || code === 'too_many_pages' || code === 'empty') return 'toobig';
-    if (status === 401) return 'login';
-    return 'error';
   }
 
   function rowsToText(rows) {
@@ -236,16 +148,117 @@
       .join('\n');
   }
 
-  function renderLedger(rows) {
+  // 1 ファイルをブラウザ内で解析 → {name, text, pageCount} または null（読めない/空）。
+  function parseFile(file) {
+    var e = ext(file.name);
+    if (file.size > MAX_BYTES) return Promise.resolve({ skip: 'toobig', name: file.name });
+    if (['xlsx', 'xls', 'csv', 'pdf'].indexOf(e) === -1)
+      return Promise.resolve({ skip: 'type', name: file.name });
+    return file
+      .arrayBuffer()
+      .then(function (buf) {
+        return e === 'pdf'
+          ? parsePdf(buf)
+          : Promise.resolve({ rows: parseSheet(buf), pageCount: 0 });
+      })
+      .then(function (r) {
+        var rows = r.rows;
+        if (!rows || !rows.length)
+          return { skip: e === 'pdf' ? 'scanned' : 'parse', name: file.name };
+        return {
+          name: file.name,
+          text: rowsToText(rows),
+          pageCount: r.pageCount,
+          rowCount: rows.length,
+        };
+      })
+      .catch(function (err) {
+        console.error('[order-to-ledger] 解析失败:', file.name, err);
+        return { skip: 'parse', name: file.name };
+      });
+  }
+
+  function handleFiles(fileList) {
+    resetAi();
+    resultEl.hidden = true;
+    var files = Array.prototype.slice.call(fileList, 0, MAX_FILES);
+    showStatus('parsing');
+    Promise.all(files.map(parseFile))
+      .then(function (results) {
+        var ok = results.filter(function (r) {
+          return r && r.text;
+        });
+        lastFiles = ok;
+        if (!ok.length) {
+          // すべて読めなかった：PDF スキャンが多ければ scanned、それ以外は parse。
+          var anyScanned = results.some(function (r) {
+            return r && r.skip === 'scanned';
+          });
+          showStatus(anyScanned ? 'scanned' : 'parse');
+          return;
+        }
+        renderFileList(ok, results.length - ok.length);
+        showStatus(null);
+        resultEl.hidden = false;
+      })
+      .catch(function (err) {
+        console.error('[order-to-ledger] バッチ解析失败:', err);
+        showStatus('parse');
+      });
+  }
+
+  function renderFileList(files, skipped) {
+    var html = '<ul class="o2l-files">';
+    files.forEach(function (f) {
+      html += '<li>' + escapeHtml(f.name || 'file') + '</li>';
+    });
+    html += '</ul>';
+    if (skipped > 0) {
+      // 読めなかった数だけ小さく添える（文言は data-i18n、数字だけ差し込む）。
+      html +=
+        '<p class="o2l-files__skip"><span data-i18n="o2l_files_skipped"></span> ' +
+        skipped +
+        '</p>';
+    }
+    fileListEl.innerHTML = html;
+    if (window.sdfApplyI18n) window.sdfApplyI18n(); // 差し込んだ data-i18n を翻訳
+  }
+
+  // ── AI 整形（バッチ → 合并）──────────────────────────────────────────────────
+  function resetAi() {
+    if (ledgerEl) ledgerEl.hidden = true;
+    lastMerged = null;
+    showAiStatus(null);
+    if (extractBtn) extractBtn.disabled = false;
+  }
+
+  function aiStatusKeyFor(status, code) {
+    if (status === 503 || code === 'demo_disabled') return 'disabled';
+    if (code === 'anon_used_up') return 'anon_used_up';
+    if (code === 'member_used_up') return 'member_used_up';
+    if (code === 'global_daily' || code === 'ip_daily' || code === 'counter_unavailable')
+      return 'daily';
+    if (
+      code === 'too_long' ||
+      code === 'too_many_pages' ||
+      code === 'too_many_files' ||
+      code === 'empty'
+    )
+      return 'toobig';
+    if (status === 401) return 'login';
+    return 'error';
+  }
+
+  function renderMerged(columns, rows) {
     var html = '<table class="o2l-table"><thead><tr>';
-    LEDGER_COLS.forEach(function (c) {
+    columns.forEach(function (c) {
       html += '<th>' + escapeHtml(c) + '</th>';
     });
     html += '</tr></thead><tbody>';
-    rows.forEach(function (row) {
+    rows.slice(0, MAX_ROWS_SHOWN).forEach(function (row) {
       html += '<tr>';
-      LEDGER_COLS.forEach(function (c) {
-        html += '<td>' + escapeHtml(row && row[c] != null ? String(row[c]) : '') + '</td>';
+      columns.forEach(function (c) {
+        html += '<td>' + escapeHtml(row[c] != null ? String(row[c]) : '') + '</td>';
       });
       html += '</tr>';
     });
@@ -255,16 +268,18 @@
 
   if (extractBtn) {
     extractBtn.addEventListener('click', function () {
-      if (!lastRows || !lastRows.length) return;
+      if (!lastFiles.length) return;
       if (typeof window.sdfDemoToken !== 'function') {
         showAiStatus('login');
         return;
       }
       var isMember = typeof window.sdfDemoIsMember === 'function' && window.sdfDemoIsMember();
       var cap = isMember ? 10000 : 3000;
-      var text = rowsToText(lastRows);
-      var truncated = text.length > cap;
-      if (truncated) text = text.slice(0, cap);
+      var truncated = false;
+      var items = lastFiles.map(function (f) {
+        if (f.text.length > cap) truncated = true;
+        return { name: f.name, text: f.text.slice(0, cap) };
+      });
 
       extractBtn.disabled = true;
       showAiStatus('working');
@@ -274,12 +289,12 @@
           return fetch('/api/demo-order-extract', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-            body: JSON.stringify({ text: text }),
+            body: JSON.stringify({ items: items }),
           });
         })
         .then(function (res) {
-          return res.json().then(function (body) {
-            return { status: res.status, ok: res.ok, body: body };
+          return res.json().then(function (b) {
+            return { status: res.status, ok: res.ok, body: b };
           });
         })
         .then(function (r) {
@@ -288,13 +303,14 @@
             showAiStatus(aiStatusKeyFor(r.status, r.body && r.body.error));
             return;
           }
-          var rows = (r.body && r.body.ledger) || [];
+          var columns = (r.body && r.body.columns) || [];
+          var rows = (r.body && r.body.rows) || [];
           if (!rows.length) {
             showAiStatus('error');
             return;
           }
-          lastLedger = rows;
-          renderLedger(rows);
+          lastMerged = { columns: columns, rows: rows };
+          renderMerged(columns, rows);
           if (ledgerEl) ledgerEl.hidden = false;
           showAiStatus(truncated ? 'toobig' : null);
         })
@@ -307,19 +323,20 @@
 
   if (ledgerDownloadBtn) {
     ledgerDownloadBtn.addEventListener('click', function () {
-      if (!lastLedger) return;
-      var aoa = [LEDGER_COLS.slice()];
-      lastLedger.forEach(function (row) {
+      if (!lastMerged) return;
+      var cols = lastMerged.columns;
+      var aoa = [cols.slice()];
+      lastMerged.rows.forEach(function (row) {
         aoa.push(
-          LEDGER_COLS.map(function (c) {
-            return row && row[c] != null ? row[c] : '';
+          cols.map(function (c) {
+            return row[c] != null ? row[c] : '';
           }),
         );
       });
       var ws = XLSX.utils.aoa_to_sheet(aoa);
       var wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, '受注台帳');
-      XLSX.writeFile(wb, 'juchu-daicho.xlsx');
+      XLSX.utils.book_append_sheet(wb, ws, '台帳');
+      XLSX.writeFile(wb, 'daicho.xlsx');
     });
   }
 

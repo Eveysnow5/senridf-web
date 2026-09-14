@@ -13,7 +13,7 @@
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
 import { recordUsage } from './_lib/usageRecorder.js';
 import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
-import { checkInputSize, quotaDecision, limitsFor } from './_lib/demoQuota.js';
+import { checkInputSize, quotaDecision, limitsFor, DEMO_LIMITS } from './_lib/demoQuota.js';
 import { bumpDemoCounters } from './_lib/demoCounters.js';
 import { buildDemoOrderPrompt } from './_lib/buildDemoOrderPrompt.js';
 
@@ -47,6 +47,55 @@ export function parseLedger(content) {
   return [];
 }
 
+// 1 ファイル分のテキストを LLM で構造化して行配列にする。
+async function extractOne({ endpoint, apiKey, env, text, idToken, context }) {
+  const res = await fetchWithTimeout(endpoint, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      // model と enable_thinking は同一オブジェクト内に（tests/enable-thinking が固定）。
+      model: modelFor('demoExtract', env),
+      messages: [{ role: 'user', content: buildDemoOrderPrompt(text) }],
+      max_tokens: 2000,
+      // 推理モードは読み捨てになるので切る（proofread.js と同じ理由）。
+      enable_thinking: false,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(() => '');
+    throw new Error('AI: ' + err);
+  }
+  const dataR = await res.json();
+  recordUsage({
+    task: 'demoExtract',
+    usage: dataR.usage,
+    idToken,
+    waitUntil: context.waitUntil?.bind(context),
+  });
+  return parseLedger(dataR.choices?.[0]?.message?.content ?? '');
+}
+
+// 複数ファイルの行を 1 枚に合并：列は union（初出順）＋先頭に「ファイル」列。
+export function mergeRows(perFile) {
+  const columns = ['ファイル'];
+  const seen = new Set(columns);
+  const rows = [];
+  for (const f of perFile) {
+    for (const row of f.rows) {
+      const out = { ファイル: f.name };
+      for (const k of Object.keys(row)) {
+        if (!seen.has(k)) {
+          seen.add(k);
+          columns.push(k);
+        }
+        out[k] = row[k] == null ? '' : String(row[k]);
+      }
+      rows.push(out);
+    }
+  }
+  return { columns, rows };
+}
+
 export async function onRequest(context) {
   const { request, env, data } = context;
   if (request.method !== 'POST') return json(405, { error: 'Method Not Allowed' });
@@ -72,18 +121,38 @@ export async function onRequest(context) {
   } catch {
     return json(400, { error: 'Invalid JSON' });
   }
-  const text = typeof body.text === 'string' ? body.text.trim() : '';
-  const pageCount = Number(body.pageCount);
 
-  // 1) 入力サイズ（ハード）
-  const sz = checkInputSize({ provider, text, pageCount });
-  if (!sz.ok) return json(sz.code, { error: sz.error });
+  // items: [{name, text, pageCount}]（1〜maxFiles 件）。後方互換で単一 {text} も 1 件扱い。
+  const rawItems = Array.isArray(body.items)
+    ? body.items
+    : typeof body.text === 'string'
+      ? [{ name: '', text: body.text, pageCount: body.pageCount }]
+      : [];
+  const items = rawItems
+    .filter((it) => it && typeof it.text === 'string')
+    .map((it) => ({
+      name: String(it.name || '').slice(0, 120),
+      text: it.text.trim(),
+      pageCount: Number(it.pageCount),
+    }))
+    .filter((it) => it.text);
 
-  // 2) 配額（ソフト、fail-close）。先にカウンタを増やしてから判定。
+  if (!items.length) return json(400, { error: 'empty' });
+  if (items.length > DEMO_LIMITS.maxFiles) return json(413, { error: 'too_many_files' });
+
+  // 1) 入力サイズ（ハード）: 各ファイルごとに。1 つでも超えたらバッチごと拒否。
+  for (const it of items) {
+    const sz = checkInputSize({ provider, text: it.text, pageCount: it.pageCount });
+    if (!sz.ok) return json(sz.code, { error: sz.error });
+  }
+
+  // 2) 配額（ソフト、fail-close）。uid/ip は「使用回数(バッチ=1)」で +1、global は
+  //    実 AI 呼び出し数 = ファイル数で +N（コスト＝呼び出し数）。先に増やしてから判定。
   const counts = await bumpDemoCounters({
     uid: user.uid,
     ip: request.headers.get('CF-Connecting-IP'),
     idToken,
+    globalInc: items.length,
   });
   const q = quotaDecision({
     provider,
@@ -94,40 +163,31 @@ export async function onRequest(context) {
   });
   if (!q.ok) return json(q.code, { error: q.error });
 
-  // 3) LLM 呼び出し（固定プロンプト）。独立プロバイダ対応：エンドポイント/モデルは
+  // 3) 各ファイルを並列で LLM 構造化 → 合并。独立プロバイダ対応：エンドポイント/モデルは
   //    DEMO_CHAT_ENDPOINT / DEMO_MODEL(=modelFor の env 上書き) で差し替え可能。
+  //    1 件が失敗しても他は返す（allSettled）。全滅なら 502。
   const endpoint = env.DEMO_CHAT_ENDPOINT || CHAT_ENDPOINT;
   const lim = limitsFor(provider);
-  const input = text.slice(0, lim.maxChars);
+  const settled = await Promise.allSettled(
+    items.map((it) =>
+      extractOne({
+        endpoint,
+        apiKey,
+        env,
+        text: it.text.slice(0, lim.maxChars),
+        idToken,
+        context,
+      }).then((rows) => ({ name: it.name, rows })),
+    ),
+  );
+  const perFile = settled.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+  if (!perFile.length) return json(502, { error: 'unavailable' });
 
-  try {
-    const res = await fetchWithTimeout(endpoint, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        // model と enable_thinking は同一オブジェクト内に（tests/enable-thinking が固定）。
-        model: modelFor('demoExtract', env),
-        messages: [{ role: 'user', content: buildDemoOrderPrompt(input) }],
-        max_tokens: 2000,
-        // 推理モードは読み捨てになるので切る（proofread.js と同じ理由）。
-        enable_thinking: false,
-      }),
-    });
-    if (!res.ok) {
-      const err = await res.text().catch(() => '');
-      return json(502, { error: `AI: ${err}` });
-    }
-    const dataR = await res.json();
-    recordUsage({
-      task: 'demoExtract',
-      usage: dataR.usage,
-      idToken,
-      waitUntil: context.waitUntil?.bind(context),
-    });
-    const content = dataR.choices?.[0]?.message?.content ?? '';
-    const ledger = parseLedger(content);
-    return json(200, { ledger });
-  } catch (err) {
-    return json(502, { error: err.name === 'AbortError' ? 'timeout' : 'unavailable' });
-  }
+  const merged = mergeRows(perFile);
+  return json(200, {
+    columns: merged.columns,
+    rows: merged.rows,
+    files: perFile.length,
+    failed: items.length - perFile.length,
+  });
 }

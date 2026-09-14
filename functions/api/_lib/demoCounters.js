@@ -40,11 +40,20 @@ export function demoDayDoc(now = new Date()) {
  * 3 つのカウンタ（uid 通算 / IP・日 / 全站・日）を 1 コミットでインクリメントし、
  * 増加後の値を返す。失敗時は {uid:null, ip:null, global:null}（fail-close は呼び出し側）。
  */
-export async function bumpDemoCounters({ uid, ip, idToken, fetchImpl = fetch, now = new Date() }) {
-  const inc = (document) => ({
+export async function bumpDemoCounters({
+  uid,
+  ip,
+  idToken,
+  fetchImpl = fetch,
+  now = new Date(),
+  globalInc = 1,
+}) {
+  // uid/ip は「使用回数（バッチ=1回）」で +1、global は「実 AI 呼び出し数」で +N
+  // （バッチのファイル数）。コスト＝AI 呼び出し数なので global だけ N で数える。
+  const inc = (document, n) => ({
     transform: {
       document,
-      fieldTransforms: [{ fieldPath: 'count', increment: { integerValue: '1' } }],
+      fieldTransforms: [{ fieldPath: 'count', increment: { integerValue: String(n) } }],
     },
   });
   try {
@@ -52,7 +61,11 @@ export async function bumpDemoCounters({ uid, ip, idToken, fetchImpl = fetch, no
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
       body: JSON.stringify({
-        writes: [inc(demoUidDoc(uid)), inc(demoIpDoc(ip, now)), inc(demoDayDoc(now))],
+        writes: [
+          inc(demoUidDoc(uid), 1),
+          inc(demoIpDoc(ip, now), 1),
+          inc(demoDayDoc(now), globalInc),
+        ],
       }),
     });
     if (!res.ok) {

@@ -16,6 +16,7 @@ export const DEMO_LIMITS = {
   member: { maxChars: 10000, maxPages: 5, lifetimeUses: 3 },
   ipDaily: 5, // 1 IP / 1 日
   globalDaily: 500, // 全站 / 1 日（作者が 2026-09-13 に決定）
+  maxFiles: 10, // 1 回のバッチで処理できるファイル数（2026-09-14）
 };
 
 export function isMemberProvider(provider) {
