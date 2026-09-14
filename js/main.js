@@ -107,6 +107,10 @@ const T = {
     solutions_title: '製品・サービス',
     // ── 受発注→受注台帳 ランディング（lead-gen Stage A, 2026-09-13）──
     o2l_page_title: '受発注の自動化',
+    o2l_card_title: '受発注 · Excel自動化',
+    o2l_card_desc:
+      '注文書（PDF・Excel）をアップロードすると、AIが受注台帳に整形。まずは無料でお試し。',
+    o2l_card_cta: '試してみる',
     o2l_eyebrow: '受発注の自動化',
     o2l_hero_title: '注文書、まだ手入力していませんか？',
     o2l_hero_lead:
@@ -627,6 +631,9 @@ const T = {
     solutions_title: '产品与服务',
     // ── 受発注→受注台帳 落地页（lead-gen Stage A）──
     o2l_page_title: '受发注自动化',
+    o2l_card_title: '受发注 · Excel 自动化',
+    o2l_card_desc: '上传订单（PDF / Excel），AI 整形成受注台账。先免费试用。',
+    o2l_card_cta: '试试看',
     o2l_eyebrow: '受发注自动化',
     o2l_hero_title: '订单还在手工录入吗？',
     o2l_hero_lead: 'PDF、Excel 的订单，AI 自动转成受注台账。省掉每天的转记和核对。',
@@ -1125,6 +1132,10 @@ const T = {
     solutions_title: 'Products & Services',
     // ── Order-form → sales ledger landing (lead-gen Stage A) ──
     o2l_page_title: 'Order Automation',
+    o2l_card_title: 'Orders · Excel automation',
+    o2l_card_desc:
+      'Upload an order form (PDF / Excel) and AI structures it into a ledger. Try it free.',
+    o2l_card_cta: 'Try it',
     o2l_eyebrow: 'Order Automation',
     o2l_hero_title: 'Still typing order forms by hand?',
     o2l_hero_lead:

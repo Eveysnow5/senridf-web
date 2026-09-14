@@ -426,6 +426,15 @@
   }
 
   onAuthStateChanged(auth, async user => {
+    // 既定 app に匿名セッションが居座ると（例：コンソールで signInAnonymously を実行後、
+    // ログインし直さなかった等）、下の if(user) が匿名を「会員」と誤認し、
+    // users/{uid} の読取が権限拒否＝「アカウント状態の読み込みに失敗」になり、
+    // localStorage の sdf_user_email が "null" になって nav も「● null」と出る。
+    // 匿名は既定 app に置かない方針（匿名会話は tracking.js の具名 app のみ）なので掃き出す。
+    if (user && user.isAnonymous) {
+      await signOut(auth);
+      return;
+    }
     if (user) {
       localStorage.setItem('sdf_user_email', user.email);
       document.getElementById('member-email').textContent = user.email;
