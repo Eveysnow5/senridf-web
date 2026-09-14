@@ -147,6 +147,8 @@ const T = {
     o2l_err_toobig: 'ファイルが大きすぎます（5MBまで）。',
     o2l_err_type: '対応していないファイル形式です（PDF・Excel・CSV）。',
     o2l_err_parse: '読み取れませんでした。別のファイルでお試しください。',
+    o2l_err_scanned:
+      'この PDF は文字レイヤーが無いようです（スキャン画像・写真）。今は文字テキストのある PDF・Excel・CSV のみ対応です（スキャンの読み取りは近日）。',
     o2l_badge_local: '✓ すべてお使いのブラウザ内で処理しました',
     o2l_download: 'Excelでダウンロード',
     o2l_result_note:
@@ -669,6 +671,8 @@ const T = {
     o2l_err_toobig: '文件太大（最多 5MB）。',
     o2l_err_type: '不支持的文件格式（PDF / Excel / CSV）。',
     o2l_err_parse: '读取失败，请换个文件试试。',
+    o2l_err_scanned:
+      '这个 PDF 好像没有文字层（扫描件 / 图片）。目前只能读有文字的 PDF、Excel、CSV（扫描件识别即将支持）。',
     o2l_badge_local: '✓ 全部在你的浏览器内完成',
     o2l_download: '导出 Excel',
     o2l_result_note: '※ 上面是读取结果。点「AI 整形成受注台账」，结构化成 品名・数量・单价・金额。',
@@ -1173,6 +1177,8 @@ const T = {
     o2l_err_toobig: 'File is too large (up to 5MB).',
     o2l_err_type: 'Unsupported file type (PDF / Excel / CSV).',
     o2l_err_parse: 'Could not read the file. Please try another.',
+    o2l_err_scanned:
+      'This PDF has no text layer (looks like a scan or photo). For now only text-based PDF / Excel / CSV are supported (scanned support coming soon).',
     o2l_badge_local: '✓ Processed entirely in your browser',
     o2l_download: 'Download as Excel',
     o2l_result_note:

@@ -88,7 +88,9 @@
       })
       .then(function (rows) {
         if (!rows || !rows.length) {
-          showStatus('parse');
+          // PDF なのに 1 行も取れない＝文字レイヤーが無い（スキャン画像/写真）可能性大。
+          // 「読み取り失敗」ではなく専用メッセージで案内する（v1 は文字 PDF のみ対応）。
+          showStatus(e === 'pdf' ? 'scanned' : 'parse');
           return;
         }
         lastRows = rows;
@@ -96,7 +98,9 @@
         showStatus(null);
         resultEl.hidden = false;
       })
-      .catch(function () {
+      .catch(function (err) {
+        // 本当のエラーを握り潰さない：コンソールに出して原因を追えるようにする。
+        console.error('[order-to-ledger] 解析失败:', err);
         showStatus('parse');
       });
   }
