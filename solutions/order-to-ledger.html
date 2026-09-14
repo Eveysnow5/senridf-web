@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>千里同風株式会社 — 受発注の自動化</title>
+  <meta name="description" content="PDF・Excelの注文書を、AIが自動で受注台帳に変換。毎日の転記とチェックをなくす、小さな業務自動化。登録なしで1回、無料でお試しいただけます。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&family=Noto+Serif+JP:wght@300;400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <base href="../">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    /* 受発注ランディング専用の軽微なスタイル。配色は本文の落ち着いたトーンに合わせ、
+       濃色/淡色どちらでも破綻しないよう currentColor と控えめな枠線で組む。 */
+    .o2l-btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 14px 30px; border-radius: 6px; text-decoration: none;
+      font-size: 15px; font-weight: 500; line-height: 1;
+      background: #2b2b2b; color: #fff; border: 1px solid #2b2b2b;
+      transition: opacity .2s ease;
+    }
+    .o2l-btn:hover { opacity: .85; }
+    .o2l-btn--ghost { background: transparent; color: #2b2b2b; }
+    .o2l-btn__note { display: block; margin-top: 12px; font-size: 12px; color: #8a8a8a; }
+    .o2l-btn-row { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 28px; align-items: center; }
+
+    /* 現状 vs 自動化後 */
+    .o2l-flow { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 48px; }
+    .o2l-flow-col { border: 1px solid #e5e2dc; border-radius: 8px; padding: 32px 28px; }
+    .o2l-flow-col--after { border-color: #c9c2b4; background: #faf9f6; }
+    .o2l-flow-col__label { font-size: 13px; font-weight: 500; letter-spacing: .04em; margin-bottom: 20px; }
+    .o2l-flow-col--before .o2l-flow-col__label { color: #b0663a; }
+    .o2l-flow-col--after .o2l-flow-col__label { color: #6b7d55; }
+    .o2l-steps { list-style: none; padding: 0; margin: 0; counter-reset: step; }
+    .o2l-steps li {
+      position: relative; padding: 10px 0 10px 34px; font-size: 14px; line-height: 1.7;
+      counter-increment: step; border-top: 1px dashed #ece9e3;
+    }
+    .o2l-steps li:first-child { border-top: none; }
+    .o2l-steps li::before {
+      content: counter(step); position: absolute; left: 0; top: 10px;
+      width: 22px; height: 22px; border-radius: 50%; font-size: 11px;
+      display: flex; align-items: center; justify-content: center;
+      background: #efece6; color: #6b6b6b;
+    }
+
+    /* デモ準備中プレースホルダ */
+    .o2l-demo-box {
+      margin-top: 40px; border: 1px dashed #cfc9bd; border-radius: 8px;
+      padding: 56px 28px; text-align: center; color: #8a8a8a; background: #faf9f6;
+    }
+
+    /* 料金 */
+    .o2l-price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 48px; }
+    .o2l-price-card { border: 1px solid #e5e2dc; border-radius: 8px; padding: 32px 28px; }
+    .o2l-price-card__title { font-size: 15px; font-weight: 500; margin-bottom: 10px; }
+    .o2l-price-card__price { font-size: 26px; font-weight: 700; margin-bottom: 12px; font-family: 'Noto Serif JP', serif; }
+    .o2l-price-card__desc { font-size: 13px; color: #6b6b6b; line-height: 1.7; }
+    .o2l-price-maint { margin-top: 24px; font-size: 13px; color: #8a8a8a; }
+
+    /* 信頼（データの取り扱い） */
+    .o2l-trust { margin-top: 40px; border: 1px solid #e5e2dc; border-radius: 8px; padding: 36px 32px; }
+    .o2l-trust ul { list-style: none; padding: 0; margin: 0; }
+    .o2l-trust li { position: relative; padding: 12px 0 12px 30px; font-size: 14px; line-height: 1.8; border-top: 1px solid #f0ede7; }
+    .o2l-trust li:first-child { border-top: none; }
+    .o2l-trust li::before { content: '✓'; position: absolute; left: 0; top: 12px; color: #6b7d55; font-weight: 700; }
+    .o2l-trust__note { margin-top: 20px; font-size: 12px; color: #9a9a9a; }
+
+    /* デモ・ウィジェット（Stage B：ブラウザ内解析）*/
+    .o2l-demo { margin-top: 40px; }
+    .o2l-drop { border: 2px dashed #cfc9bd; border-radius: 8px; padding: 48px 24px; text-align: center; cursor: pointer; background: #faf9f6; transition: border-color .2s ease, background .2s ease; }
+    .o2l-drop:hover, .o2l-drop.is-over { border-color: #b0663a; background: #f5f1ea; }
+    .o2l-drop__icon { font-size: 2rem; margin-bottom: 12px; }
+    .o2l-drop__text { font-size: 14px; color: #4a4a4a; margin: 0 0 6px; }
+    .o2l-drop__hint { font-size: 12px; color: #9a9a9a; margin: 0; }
+    .o2l-status { margin-top: 16px; font-size: 13px; color: #6b6b6b; }
+    .o2l-result { margin-top: 24px; }
+    .o2l-result__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .o2l-badge { font-size: 12px; color: #6b7d55; }
+    .o2l-btn--sm { padding: 10px 18px; font-size: 13px; }
+    .o2l-tablewrap { overflow-x: auto; border: 1px solid #e5e2dc; border-radius: 6px; max-height: 480px; overflow-y: auto; }
+    .o2l-table { border-collapse: collapse; width: 100%; font-size: 13px; }
+    .o2l-table td { border: 1px solid #ece9e3; padding: 6px 10px; white-space: nowrap; color: #3a3a3a; }
+    .o2l-table tr:nth-child(odd) td { background: #faf9f6; }
+    .o2l-result__note { margin-top: 12px; font-size: 12px; color: #9a9a9a; }
+    .o2l-ai { margin-top: 18px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+    .o2l-ai__status { font-size: 13px; color: #6b6b6b; }
+    .o2l-ledger { margin-top: 20px; }
+
+    @media (max-width: 760px) {
+      .o2l-flow, .o2l-price-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body data-page-title="o2l_page_title">
+
+  <div id="nav-placeholder"></div>
+
+  <main>
+
+    <!-- Hero -->
+    <div class="page-header">
+      <div class="page-header__container">
+        <div data-animate>
+          <span class="section__eyebrow" data-i18n="o2l_eyebrow">受発注の自動化</span>
+          <h1 class="section__title" data-i18n="o2l_hero_title">注文書、まだ手入力していませんか？</h1>
+          <p class="section__lead" data-i18n="o2l_hero_lead">
+            PDF・Excelの注文書を、AIが自動で受注台帳に。毎日の転記とチェックを、なくします。
+          </p>
+          <div class="o2l-btn-row">
+            <a href="#demo" class="o2l-btn" data-i18n="o2l_hero_cta">無料で試す</a>
+          </div>
+          <span class="o2l-btn__note" data-i18n="o2l_hero_cta_note">登録なしで1回、登録で3回まで無料。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 現状 vs 自動化後 -->
+    <section class="section">
+      <div data-animate>
+        <span class="section__eyebrow" data-i18n="o2l_flow_eyebrow">こんな作業、ありませんか？</span>
+        <h2 class="section__title" data-i18n="o2l_flow_title">注文書を、手で台帳に写す毎日</h2>
+      </div>
+      <div class="o2l-flow" data-animate>
+        <div class="o2l-flow-col o2l-flow-col--before">
+          <div class="o2l-flow-col__label" data-i18n="o2l_before_label">今のやり方</div>
+          <ol class="o2l-steps">
+            <li data-i18n="o2l_before_1">取引先からPDF・Excelの注文書が届く</li>
+            <li data-i18n="o2l_before_2">内容を目視で確認する</li>
+            <li data-i18n="o2l_before_3">受注台帳に1行ずつ手入力する</li>
+            <li data-i18n="o2l_before_4">入力ミスがないか照合する</li>
+          </ol>
+        </div>
+        <div class="o2l-flow-col o2l-flow-col--after">
+          <div class="o2l-flow-col__label" data-i18n="o2l_after_label">自動化すると</div>
+          <ol class="o2l-steps">
+            <li data-i18n="o2l_after_1">注文書をアップロードする</li>
+            <li data-i18n="o2l_after_2">AIが内容を読み取る</li>
+            <li data-i18n="o2l_after_3">受注台帳が自動でできあがる</li>
+            <li data-i18n="o2l_after_4">人は確認して、Excelでダウンロード</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- 痛点 -->
+    <section class="section">
+      <div data-animate>
+        <span class="section__eyebrow" data-i18n="o2l_pain_eyebrow">よくあるお悩み</span>
+        <h2 class="section__title" data-i18n="o2l_pain_title">その手作業、こんな負担になっていませんか</h2>
+      </div>
+      <div class="values-grid">
+        <div class="value-card" data-animate data-animate-delay="1">
+          <div class="value-card__number">01</div>
+          <h3 class="value-card__name" data-i18n="o2l_pain1_title">毎日の転記に時間</h3>
+          <p class="value-card__desc" data-i18n="o2l_pain1_desc">
+            注文が多い日は、台帳への入力だけで数時間。本来の仕事に手が回りません。
+          </p>
+        </div>
+        <div class="value-card" data-animate data-animate-delay="2">
+          <div class="value-card__number">02</div>
+          <h3 class="value-card__name" data-i18n="o2l_pain2_title">入力ミスと照合の手間</h3>
+          <p class="value-card__desc" data-i18n="o2l_pain2_desc">
+            手入力は数量や単価の打ち間違いが起きやすく、あとの照合作業も欠かせません。
+          </p>
+        </div>
+        <div class="value-card" data-animate data-animate-delay="3">
+          <div class="value-card__number">03</div>
+          <h3 class="value-card__name" data-i18n="o2l_pain3_title">取引先ごとに書式がバラバラ</h3>
+          <p class="value-card__desc" data-i18n="o2l_pain3_desc">
+            テンプレートでは対応しきれない書式の違いも、AIなら文脈から読み取れます。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- デモ（Stage B で中身を実装。今は準備中プレースホルダ）-->
+    <section class="section" id="demo">
+      <div data-animate>
+        <span class="section__eyebrow" data-i18n="o2l_demo_eyebrow">試してみる</span>
+        <h2 class="section__title" data-i18n="o2l_demo_title">お手元の注文書で、実際に変換</h2>
+        <p class="section__lead" data-i18n="o2l_demo_lead">
+          注文書（PDF・Excel）をアップロードすると、受注台帳の形に変換します。ファイルはブラウザ内で処理され、サーバーには送信されません。
+        </p>
+      </div>
+      <div class="o2l-demo" data-animate>
+        <div id="o2lDrop" class="o2l-drop" role="button" tabindex="0" title="ファイルを選択">
+          <input type="file" id="o2lFile" accept=".pdf,.xlsx,.xls,.csv" hidden />
+          <div class="o2l-drop__icon" aria-hidden="true">📄</div>
+          <p class="o2l-drop__text" data-i18n="o2l_drop_text">
+            注文書（PDF・Excel・CSV）をここにドロップ、またはクリックして選択
+          </p>
+          <p class="o2l-drop__hint" data-i18n="o2l_drop_hint">
+            ファイルはお使いのブラウザ内で処理され、アップロードされません。
+          </p>
+        </div>
+
+        <div id="o2lStatus" class="o2l-status" hidden>
+          <span data-msg="parsing" data-i18n="o2l_status_parsing" hidden>読み取り中…</span>
+          <span data-msg="toobig" data-i18n="o2l_err_toobig" hidden>ファイルが大きすぎます（5MBまで）。</span>
+          <span data-msg="type" data-i18n="o2l_err_type" hidden>対応していないファイル形式です（PDF・Excel・CSV）。</span>
+          <span data-msg="parse" data-i18n="o2l_err_parse" hidden>読み取れませんでした。別のファイルでお試しください。</span>
+        </div>
+
+        <div id="o2lResult" class="o2l-result" hidden>
+          <div class="o2l-result__bar">
+            <span class="o2l-badge" data-i18n="o2l_badge_local">✓ すべてお使いのブラウザ内で処理しました</span>
+            <button
+              id="o2lDownload"
+              type="button"
+              class="o2l-btn o2l-btn--sm o2l-btn--ghost"
+              data-i18n="o2l_download"
+            >
+              Excelでダウンロード
+            </button>
+          </div>
+          <div id="o2lTableWrap" class="o2l-tablewrap"></div>
+
+          <!-- Stage C：AI で受注台帳（品名・数量・単価・金額）に整形 -->
+          <div class="o2l-ai">
+            <button id="o2lExtract" type="button" class="o2l-btn o2l-btn--sm" data-i18n="o2l_ai_btn">
+              AIで受注台帳に整形する（無料）
+            </button>
+            <!-- テキストは data-i18n が流し込む（空にしておく：長文を入れると prettier が
+                 </span> を改行し、含子元素の誤検知になる）。表示はデモ実行後・JS 前提。 -->
+            <span id="o2lAiStatus" class="o2l-ai__status" hidden>
+              <span data-msg="working" data-i18n="o2l_ai_working" hidden></span>
+              <span data-msg="disabled" data-i18n="o2l_ai_disabled" hidden></span>
+              <span data-msg="anon_used_up" data-i18n="o2l_ai_anon_used" hidden></span>
+              <span data-msg="member_used_up" data-i18n="o2l_ai_member_used" hidden></span>
+              <span data-msg="daily" data-i18n="o2l_ai_daily" hidden></span>
+              <span data-msg="toobig" data-i18n="o2l_ai_toobig" hidden></span>
+              <span data-msg="error" data-i18n="o2l_ai_error" hidden></span>
+              <span data-msg="login" data-i18n="o2l_ai_login" hidden></span>
+            </span>
+          </div>
+
+          <div id="o2lLedger" class="o2l-ledger" hidden>
+            <div class="o2l-result__bar">
+              <span class="o2l-badge" data-i18n="o2l_ledger_done">✓ AIが受注台帳に整形しました</span>
+              <button
+                id="o2lLedgerDownload"
+                type="button"
+                class="o2l-btn o2l-btn--sm"
+                data-i18n="o2l_ledger_download"
+              >
+                受注台帳をExcelでダウンロード
+              </button>
+            </div>
+            <div id="o2lLedgerWrap" class="o2l-tablewrap"></div>
+          </div>
+
+          <p class="o2l-result__note" data-i18n="o2l_result_note">
+            ※ 上は読み取り結果です。「AIで受注台帳に整形」で、品名・数量・単価・金額に構造化します。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 料金 -->
+    <section class="section">
+      <div data-animate>
+        <span class="section__eyebrow" data-i18n="o2l_price_eyebrow">料金</span>
+        <h2 class="section__title" data-i18n="o2l_price_title">小さく始めて、必要な分だけ</h2>
+      </div>
+      <div class="o2l-price-grid" data-animate>
+        <div class="o2l-price-card">
+          <div class="o2l-price-card__title" data-i18n="o2l_price_free_title">まずは無料体験</div>
+          <div class="o2l-price-card__price" data-i18n="o2l_price_free_price">¥0</div>
+          <p class="o2l-price-card__desc" data-i18n="o2l_price_free_desc">
+            登録なしで1回、登録すると3回まで無料でお試しいただけます。
+          </p>
+        </div>
+        <div class="o2l-price-card">
+          <div class="o2l-price-card__title" data-i18n="o2l_price_paid_title">小規模自動化</div>
+          <div class="o2l-price-card__price" data-i18n="o2l_price_paid_price">5万円〜</div>
+          <p class="o2l-price-card__desc" data-i18n="o2l_price_paid_desc">
+            御社の注文書・台帳の形式に合わせて個別に構築します。まずは無料でご相談ください。
+          </p>
+        </div>
+      </div>
+      <p class="o2l-price-maint" data-i18n="o2l_price_maint">保守・改善は月5,000円〜（任意）。</p>
+    </section>
+
+    <!-- 信頼：データの取り扱い -->
+    <section class="section">
+      <div data-animate>
+        <span class="section__eyebrow" data-i18n="o2l_trust_eyebrow">安心してお使いいただくために</span>
+        <h2 class="section__title" data-i18n="o2l_trust_title">データの取り扱い</h2>
+      </div>
+      <div class="o2l-trust" data-animate>
+        <ul>
+          <li data-i18n="o2l_trust1">アップロードされたファイルは、お使いのブラウザ内で処理されます。当社サーバーには送信されません。</li>
+          <li data-i18n="o2l_trust2">抽出した内容は保存しません。処理が終わればすぐに破棄されます。</li>
+          <li data-i18n="o2l_trust3">通信はすべて暗号化されています（HTTPS / AES-256）。</li>
+        </ul>
+        <p class="o2l-trust__note" data-i18n="o2l_trust_privacy">
+          詳しい取り扱いは、プライバシーポリシーをご覧ください（準備中）。
+        </p>
+      </div>
+    </section>
+
+    <!-- 最終CTA -->
+    <section class="section">
+      <div data-animate>
+        <h2 class="section__title" data-i18n="o2l_cta_title">まずは、今の作業を教えてください。</h2>
+        <p class="section__lead" data-i18n="o2l_cta_lead">
+          無料でお試しいただくか、御社の業務に合わせた自動化をご相談ください。
+        </p>
+        <div class="o2l-btn-row">
+          <a href="#demo" class="o2l-btn" data-i18n="o2l_cta_try">無料で試す</a>
+          <a href="account.html" class="o2l-btn o2l-btn--ghost" data-i18n="o2l_cta_consult">無料で相談する</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="footer-placeholder"></div>
+
+  <!-- ブラウザ内解析ライブラリ（analysis.html と同版・同SRI。CSP は cdnjs / cdn.sheetjs.com を許可済み）-->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
+    integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"
+    crossorigin="anonymous"
+  ></script>
+  <script
+    src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"
+    integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT"
+    crossorigin="anonymous"
+  ></script>
+
+  <script src="js/main.js"></script>
+  <script type="module" src="js/tracking.js"></script>
+
+  <!-- デモ送信用トークン：会員（既定 app にログイン済み）ならその ID トークン、
+       未ログインなら tracking.js（具名 app）が作った匿名セッションのトークン。
+       ここでは signInAnonymously を呼ばない —— 匿名会話の生成は tracking.js に一本化
+       （既定 app で匿名会話を作ると門控ページが「出错了」で固まる。tests/auth-gate-state 参照）。 -->
+  <script type="module">
+    import { auth as memberAuth } from '/js/shared/firebase-init.js';
+    window.sdfDemoIsMember = () =>
+      !!memberAuth.currentUser && !memberAuth.currentUser.isAnonymous;
+    window.sdfDemoToken = () => {
+      if (memberAuth.currentUser && !memberAuth.currentUser.isAnonymous) {
+        return memberAuth.currentUser.getIdToken();
+      }
+      return typeof window.sdfAnonToken === 'function'
+        ? Promise.resolve(window.sdfAnonToken())
+        : Promise.resolve(null);
+    };
+  </script>
+
+  <script src="js/order-to-ledger-demo.js"></script>
+</body>
+</html>

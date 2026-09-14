@@ -22,6 +22,11 @@ const app = initializeApp(
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// 受発注デモ用：匿名セッションの ID トークンを渡す getter。
+// 匿名会話の生成はこの具名 app に一本化しているので（既定 app で作ると門控が固まる）、
+// デモが匿名トークンを要るときはここから取る。会員判定は既定 app 側で別途行う。
+window.sdfAnonToken = () => (auth.currentUser ? auth.currentUser.getIdToken() : null);
+
 function getPageName() {
   const p = location.pathname;
   if (p.includes('japanese_learner')) return 'japanese_learner';

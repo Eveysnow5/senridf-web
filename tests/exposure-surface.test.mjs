@@ -37,6 +37,7 @@ const PAGES = {
   'about/index.html': 'public',
   'about/milestones.html': 'public',
   'solutions/index.html': 'public',
+  'solutions/order-to-ledger.html': 'public', // 受発注→台帳 ランディング（lead-gen）。/solutions/demo/ 配下でないので noindex 対象外＝可索引
   'solutions/blog/index.html': 'public',
   'solutions/demo.html': 'public', // 工具目录（营销页），卡片上标「会員限定」但目录本身公开
 

@@ -85,3 +85,26 @@ test('★ 拒绝顺序：匿名判断在调用 context.next() 之前（不能先
   assert.ok(nextIdx > 0, '找不到 context.next()');
   assert.ok(anonIdx < nextIdx, '匿名判断跑在 context.next() 之后 —— 等于先放行再检查');
 });
+
+test('★ demo 受控例外：只对 /api/demo-order-extract 一条路由，拒匿名/审核都受它门控', () => {
+  // Stage C 给受発注デモ开了一道「匿名也能调」的口子。**必须严格限定在这一条路由**，
+  // 不能悄悄扩大——否则等于把我们刚堵的匿名主洞重新打开。这里钉住三件事：
+  //   ① 例外路由是精确字符串（不是前缀/包含匹配，那会误开 /api/demo-* 一大片）
+  assert.match(
+    mwCode,
+    /pathname\s*===\s*['"]\/api\/demo-order-extract['"]/,
+    'demo 例外不再精确匹配 /api/demo-order-extract —— 口子可能被扩大',
+  );
+  //   ② 匿名拒绝仍在，且被 !isDemoRoute 门控（例外成立但仅限 demo）
+  assert.match(
+    mwCode,
+    /!\s*isDemoRoute\s*&&[\s\S]{0,80}provider\s*===\s*['"]anonymous['"]/,
+    '匿名拒绝不再受 isDemoRoute 门控 —— 例外写法变了或匿名拦截被无差别绕过',
+  );
+  //   ③ 审核状态检查被 isDemoRoute 门控（demo 跳过审核，其他路由仍查）
+  assert.match(
+    mwCode,
+    /isDemoRoute[\s\S]{0,200}getUserStatus\s*\(/,
+    'getUserStatus 不再受 isDemoRoute 门控 —— demo 例外的范围变了',
+  );
+});

@@ -94,6 +94,20 @@ service cloud.firestore {
                    && doc.split('_')[0] == request.auth.uid;
     }
 
+    // ── 受発注デモの配額カウンタ（匿名も書ける＝isSignedIn）──
+    // functions/api/demo-order-extract.js が呼び出し者トークンで原子インクリメントする。
+    // rate_limits と同じくソフト（改ざん可）。真のハード底は DEMO_API_KEY の残高。
+    // uid 別（通算回数）は本人のみ。IP別/全站は日付キーで全体共有なので isSignedIn に開く。
+    match /demo_quota/{uid} {
+      allow write: if isSignedIn() && uid == request.auth.uid;
+    }
+    match /demo_quota_ip/{doc} {
+      allow write: if isSignedIn();
+    }
+    match /demo_quota_day/{doc} {
+      allow write: if isSignedIn();
+    }
+
     // ── LLM 用量记录：llm_usage/{YYYY-MM-DD} ──
     // functions/api/_lib/usageRecorder.js 用「调用者自己的 ID token」走 REST 原子自增，
     // 与 rate_limits 同一套授权方式，所以受规则约束。
