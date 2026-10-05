@@ -249,7 +249,7 @@ test('renderArticleHtml 包含三语数据、正确转义标题、marked/DOMPuri
     cover: null,
   });
   assert.ok(html.includes('marked@12.0.2'));
-  assert.ok(html.includes('dompurify@3.4.12'));
+  assert.ok(html.includes('dompurify@3.4.16'));
   assert.ok(html.includes('&lt;script&gt;')); // <title> 标签里转义
   assert.ok(!html.includes('</script><script>')); // 不能因标题里的 <script> 提前截断
   assert.ok(html.includes('"zh":{"title":"中文标题"'));

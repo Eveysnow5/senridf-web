@@ -138,9 +138,20 @@ async function main() {
     process.exit(1);
   }
   const { CHAT_ENDPOINT, TIERS, TIER_EXPIRY } = await loadModelConfig();
-  // --from-tiers：模型名从 TIERS 现取，去重。四个档位现在指向两个模型，
-  // 不去重就会白探两次。
-  const models = args.fromTiers ? [...new Set(Object.values(TIERS))] : args.models;
+  // --from-tiers：模型名从 TIERS 现取，去重。多个档位可能指向同一模型，
+  // 不去重就会白探几次。
+  //
+  // ⚠️ vision 档（受発注デモの画像OCR）是**例外，不探**：它刻意跑在独立付費キー
+  //    （DEMO_API_KEY / SiliconFlow 予充值）上做成本隔离，而这个哨兵只有共享的
+  //    QWEN_API_KEY。用共享 key 探视觉模型必然 403「Free quota exhausted」
+  //    （2026-10-05 实测），那是个**错误信号**：不是"视觉坏了"，是"这把 key 本来就
+  //    没有视觉额度"。让它每周红一次只会训练出"忽略这个哨兵"的习惯（告警疲劳），
+  //    真出事时反而漏掉。视觉功能已在服务端门控为「準備中」，不是线上依赖；
+  //    等 DEMO key 就位后要监控视觉，得把那把 key 单独喂给哨兵，而不是混进这里。
+  const fromTiers = Object.entries(TIERS)
+    .filter(([tier]) => tier !== 'vision')
+    .map(([, model]) => model);
+  const models = args.fromTiers ? [...new Set(fromTiers)] : args.models;
   if (args.fromTiers) {
     console.log(`档位 ${Object.keys(TIERS).join('/')} → 去重后 ${models.length} 个模型\n`);
   }

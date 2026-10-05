@@ -370,14 +370,16 @@
         }
         var columns = (r.body && r.body.columns) || [];
         var rows = (r.body && r.body.rows) || [];
+        // 専用付費キーが無い間、画像は「準備中」としてサーバ側で外される（回数は消費しない）。
+        var visionPending = (r.body && r.body.visionPending) || 0;
         if (!rows.length) {
-          showAiStatus('error');
+          showAiStatus(visionPending ? 'vision_pending' : 'error');
           return;
         }
         lastMerged = { columns: columns, rows: rows };
         renderMerged(columns, rows);
         if (ledgerEl) ledgerEl.hidden = false;
-        showAiStatus(truncated ? 'toobig' : null);
+        showAiStatus(visionPending ? 'vision_pending' : truncated ? 'toobig' : null);
       })
       .catch(function (e) {
         extractBtn.disabled = false;

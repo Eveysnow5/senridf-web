@@ -147,6 +147,8 @@ const T = {
       '文字PDF・Excel・CSVはブラウザ内で処理（非送信）。スキャン・画像は読み取りに画像を送信します（送信前に確認）。',
     o2l_file_image: '画像',
     o2l_ai_cancelled: '画像の送信をキャンセルしました。',
+    o2l_ai_vision_pending:
+      '画像・スキャンのOCRは現在準備中です。文字情報入りのPDF・Excel・CSVはそのままご利用いただけます。',
     o2l_cf_title: '画像として読み取りますか？',
     o2l_cf_body:
       'このファイルには文字情報が無いため、画像として読み取ります。この場合、画像は当社サーバー経由で通義千問（Qwen）の視覚モデルに送信されます。（文字PDF・Excel・CSVはブラウザ内で処理され、送信されません。）',
@@ -681,6 +683,8 @@ const T = {
       '文字 PDF / Excel / CSV 在浏览器内处理（不上传）。扫描件 / 图片会把图片发送识别（发送前会确认）。',
     o2l_file_image: '图片',
     o2l_ai_cancelled: '已取消发送图片。',
+    o2l_ai_vision_pending:
+      '图片/扫描件的 OCR 正在准备中。含文字信息的 PDF、Excel、CSV 可照常使用。',
     o2l_cf_title: '要作为图片识别吗？',
     o2l_cf_body:
       '这个文件没有文字信息，需要作为图片识别。此时图片会经由我们的服务器发送到通义千问（Qwen）视觉模型。（文字 PDF / Excel / CSV 在浏览器内处理，不会发送。）',
@@ -1199,6 +1203,8 @@ const T = {
       'Text PDF / Excel / CSV are processed in your browser (not uploaded). Scans / images are sent for reading (we ask first).',
     o2l_file_image: 'image',
     o2l_ai_cancelled: 'Image sending was cancelled.',
+    o2l_ai_vision_pending:
+      'OCR for images / scans is being set up. Text-based PDF, Excel, and CSV files work as usual.',
     o2l_cf_title: 'Read this as an image?',
     o2l_cf_body:
       'This file has no text, so it will be read as an image. The image is then sent via our server to the Tongyi Qianwen (Qwen) vision model. (Text PDF / Excel / CSV are processed in your browser and are not sent.)',

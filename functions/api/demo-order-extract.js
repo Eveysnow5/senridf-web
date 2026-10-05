@@ -143,9 +143,24 @@ export async function onRequest(context) {
   if (!items.length) return json(400, { error: 'empty' });
   if (items.length > DEMO_LIMITS.maxFiles) return json(413, { error: 'too_many_files' });
 
+  // 0) 視覚OCR（画像）は専用付費キー（DEMO_API_KEY）運用時のみ。
+  //    共有の無料桶には視覚の無料枠が無い（2026-10-05 probe で qwen-vl-plus=403
+  //    「Free quota exhausted」を確認）。専用キーが無い間に画像を視覚モデルへ送れば
+  //    必ずエラーになり、しかも bumpDemoCounters が先に走るので**ユーザーの無料回数を
+  //    無駄に消費する**。そこで専用キーが無い間は画像を「準備中」として受理前に外し、
+  //    回数も消費しない。DEMO_API_KEY を入れれば自動で画像も処理対象に戻る。
+  const servedItems = onDedicatedKey ? items : items.filter((it) => !it.image);
+  const visionPending = items.length - servedItems.length;
+  if (!servedItems.length) {
+    // 全部が画像で専用キーが無い → 回数を消費せず「準備中」を返す（200・空）。
+    if (visionPending)
+      return json(200, { columns: [], rows: [], files: 0, failed: 0, visionPending });
+    return json(400, { error: 'empty' });
+  }
+
   // 1) 入力サイズ（ハード）: ファイルごとに。1 つでも超えたらバッチごと拒否。
   //    画像は dataURL 長で、テキストは文字数で判定。
-  for (const it of items) {
+  for (const it of servedItems) {
     if (it.image) {
       if (it.image.length > MAX_IMAGE_CHARS) return json(413, { error: 'too_long' });
     } else {
@@ -160,7 +175,7 @@ export async function onRequest(context) {
     uid: user.uid,
     ip: request.headers.get('CF-Connecting-IP'),
     idToken,
-    globalInc: items.length,
+    globalInc: servedItems.length,
   });
   const q = quotaDecision({
     provider,
@@ -177,7 +192,7 @@ export async function onRequest(context) {
   const endpoint = env.DEMO_CHAT_ENDPOINT || CHAT_ENDPOINT;
   const lim = limitsFor(provider);
   const settled = await Promise.allSettled(
-    items.map((it) => {
+    servedItems.map((it) => {
       if (it.image) {
         // 画像＝視覚モデル（通義千問VL）。フロントで同意ダイアログを取ってから送られてくる。
         return visionExtract({ env, dataUrl: it.image, idToken, context }).then((content) => ({
@@ -203,6 +218,7 @@ export async function onRequest(context) {
     columns: merged.columns,
     rows: merged.rows,
     files: perFile.length,
-    failed: items.length - perFile.length,
+    failed: servedItems.length - perFile.length,
+    visionPending, // 専用キーが無く「準備中」として外した画像の件数（0 のことが多い）
   });
 }
