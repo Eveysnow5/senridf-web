@@ -229,13 +229,6 @@ const T = {
     demo_title: '機能を体験する',
     demo_intro:
       '当社が開発しているAI機能を、ブラウザ上で実際にお試しいただけます。各デモは随時アップデートされます。',
-    demo1_title: '画像認識デモ',
-    demo1_desc: 'カメラで撮影した画像、または画像ファイルをAIがリアルタイムで分析・識別します。',
-    demo3_title: '音声インターフェース デモ',
-    demo3_desc: '音声コマンドでデバイスを操作するインターフェースのデモです。',
-    demo4_title: '感情認識 デモ',
-    demo4_desc: '表情や音声から感情を認識するAIモデルのデモです。',
-    demo_coming: '近日公開',
 
     analysis_title: '文書分析 · 比較レポート',
     analysis_desc:
@@ -274,7 +267,6 @@ const T = {
     tag_dict: '辞書・活用',
     tag_empty: '該当するツールはありません。',
     tag_status: '{total} 件中 {n} 件を表示中。',
-    tools_wip_title: '開発中',
     badge_open: 'ログイン不要',
     /* カード用の一行説明（長文は各ツールのページ側に置く） */
     tl_one: '中国語と日本語を相互翻訳。回訳を並べて誤訳を確認できます。',
@@ -757,13 +749,6 @@ const T = {
     demo_eyebrow: '在线演示',
     demo_title: '体验功能',
     demo_intro: '我们开发的 AI 功能，可以在浏览器中直接试用。各演示将持续更新。',
-    demo1_title: '图像识别演示',
-    demo1_desc: 'AI实时分析识别您的摄像头画面或上传的图片文件。',
-    demo3_title: '语音界面演示',
-    demo3_desc: '演示通过语音命令控制设备的交互界面。',
-    demo4_title: '情感识别演示',
-    demo4_desc: '演示从面部表情与声音中识别情感的AI模型。',
-    demo_coming: '即将发布',
 
     analysis_title: '文件分析 · 对比报告',
     analysis_desc:
@@ -802,7 +787,6 @@ const T = {
     tag_dict: '词表·变位',
     tag_empty: '没有匹配的工具。',
     tag_status: '共 {total} 个工具，当前显示 {n} 个。',
-    tools_wip_title: '开发中',
     badge_open: '无需登录',
     /* 卡片上的一句话（长说明留在各工具页里） */
     tl_one: '中日互译，并列显示回译，便于核对有没有译错。',
@@ -1286,14 +1270,6 @@ const T = {
     demo_title: 'Experience Our Features',
     demo_intro:
       'Try the AI capabilities we are building, right in your browser. Demos are updated as we go.',
-    demo1_title: 'Image Recognition Demo',
-    demo1_desc:
-      'AI analyzes and identifies images from your camera or uploaded files in real time.',
-    demo3_title: 'Voice Interface Demo',
-    demo3_desc: 'Demo of an interface that controls devices via voice commands.',
-    demo4_title: 'Emotion Recognition Demo',
-    demo4_desc: 'Demo of an AI model that recognizes emotions from facial expressions and voice.',
-    demo_coming: 'Coming Soon',
 
     analysis_title: 'Document Analysis · Comparison Report',
     analysis_desc:
@@ -1332,7 +1308,6 @@ const T = {
     tag_dict: 'Dictionary',
     tag_empty: 'No tools match that tag.',
     tag_status: 'Showing {n} of {total} tools.',
-    tools_wip_title: 'In Development',
     badge_open: 'No Login',
     /* One-liners for the cards; the long copy lives on each tool page */
     tl_one: 'Chinese and Japanese both ways, with back-translation shown for checking.',

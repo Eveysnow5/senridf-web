@@ -96,16 +96,6 @@ test('页面确实加载了筛选脚本，否则标签栏只是一排点不动�
   assert.match(PAGE, /data-tool-grid/, '缺少 data-tool-grid 容器');
 });
 
-test('★「開発中」的卡片不带 data-tags —— 它们没有入口，不该参与筛选', () => {
-  const wip = [...PAGE.matchAll(/<div\s[^>]*class="tool-card tool-card--wip"[^>]*>/g)].map(
-    (m) => m[0],
-  );
-  assert.ok(wip.length >= 3, `只找到 ${wip.length} 张開発中卡片`);
-  for (const w of wip) {
-    assert.ok(!/data-tags/.test(w), `開発中卡片带了 data-tags：${w}`);
-  }
-});
-
 test('★ 筛选脚本必须给出就绪标记 —— 渲染验证要靠它，不能靠"元素出现了"', () => {
   // 第一版渲染探针等的是「卡片元素出现」，那时 CSS 还没应用、defer 脚本还没跑，
   // 于是量到 grid-template-columns: none，报出假的"布局坏了"。

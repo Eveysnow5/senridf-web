@@ -1,0 +1,8 @@
+# 千里同風株式会社 — senridf.com
+# 公開ページはクロール可。ログインが要るツール（/solutions/demo/*）や内部ページは
+# _headers の X-Robots-Tag: noindex で個別に除外している。ここでは Disallow しない
+# ——noindex を認識させるにはクロール自体を許可する必要があるため。
+User-agent: *
+Allow: /
+
+Sitemap: https://www.senridf.com/sitemap.xml
