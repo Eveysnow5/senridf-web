@@ -129,6 +129,35 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
     </div>
   </div>
 
+  <!-- 相談リード（受発注LP Stage D）-->
+  <div class="card mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <div class="text-sm font-medium text-gray-700">相談リード</div>
+      <div class="flex items-center gap-2">
+        <span id="leadCount" class="text-xs text-gray-400"></span>
+        <button onclick="loadLeads()" type="button" class="text-xs px-3 py-1.5 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">↻ 刷新</button>
+      </div>
+    </div>
+    <div class="tbl-scroll">
+      <table class="w-full text-xs">
+        <thead class="text-gray-400 border-b border-gray-100">
+          <tr>
+            <th class="text-left py-2 pr-4 font-normal">时间</th>
+            <th class="text-left py-2 pr-4 font-normal">称呼</th>
+            <th class="text-left py-2 pr-4 font-normal">公司</th>
+            <th class="text-left py-2 pr-4 font-normal">邮箱</th>
+            <th class="text-left py-2 pr-4 font-normal">咨询内容</th>
+            <th class="text-left py-2 pr-4 font-normal">来源</th>
+            <th class="text-left py-2 font-normal"></th>
+          </tr>
+        </thead>
+        <tbody id="leadTable">
+          <tr><td colspan="7" class="py-4 text-center text-gray-400">加载中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Error Log -->
   <div class="card mb-6">
     <div class="flex items-center justify-between mb-4">
@@ -289,6 +318,7 @@ onAuthStateChanged(auth, async u => {
     loadUsers();
     loadScrapeStatus();
     loadUsage();
+    loadLeads();
     loadErrors();
     loadGlossary();
     await loadData();
@@ -447,6 +477,61 @@ function renderErrors(docs) {
       .join('') ||
     '<tr><td colspan="6" class="py-4 text-center text-gray-400">暂无错误记录</td></tr>';
 }
+
+// ── 相談リード (受発注LP Stage D) ────────────────────────────────────────────
+window.loadLeads = async function () {
+  const body = document.getElementById('leadTable');
+  try {
+    const q = query(collection(db, 'leads'), orderBy('createdAt', 'desc'), limit(200));
+    const snap = await getDocs(q);
+    renderLeads(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  } catch (e) {
+    console.error(e);
+    body.innerHTML =
+      '<tr><td colspan="7" class="py-4 text-center text-red-400">加载失败，请检查 Firestore 规则</td></tr>';
+  }
+};
+
+function renderLeads(docs) {
+  document.getElementById('leadCount').textContent = `共 ${docs.length} 条`;
+  document.getElementById('leadTable').innerHTML =
+    docs
+      .map((d) => {
+        const ts =
+          d.createdAt && typeof d.createdAt.toDate === 'function' ? d.createdAt.toDate() : null;
+        const timeStr = ts
+          ? ts.toLocaleString('zh-CN', {
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : '—';
+        const mail = escapeHtml(d.email || '');
+        return `<tr class="hover:bg-gray-50 align-top">
+      <td class="py-2 pr-4 text-gray-400 whitespace-nowrap">${timeStr}</td>
+      <td class="py-2 pr-4 text-gray-700 whitespace-nowrap">${escapeHtml(d.name || '')}</td>
+      <td class="py-2 pr-4 text-gray-500 whitespace-nowrap">${escapeHtml(d.company || '')}</td>
+      <td class="py-2 pr-4 text-gray-600 whitespace-nowrap"><a href="mailto:${mail}" class="text-indigo-600 hover:underline">${mail}</a></td>
+      <td class="py-2 pr-4 text-gray-700 max-w-[320px] break-words">${escapeHtml(d.message || '')}</td>
+      <td class="py-2 pr-4 text-gray-400 whitespace-nowrap">${escapeHtml(d.source || '')}</td>
+      <td class="py-2"><button type="button" onclick="deleteLead('${escapeHtml(d.id)}')" class="text-red-400 hover:text-red-600">删除</button></td>
+    </tr>`;
+      })
+      .join('') ||
+    '<tr><td colspan="7" class="py-4 text-center text-gray-400">暂无咨询</td></tr>';
+}
+
+window.deleteLead = async function (id) {
+  if (!confirm('删除这条咨询？')) return;
+  try {
+    await deleteDoc(doc(db, 'leads', id));
+    loadLeads();
+  } catch (e) {
+    console.error(e);
+    alert('删除失败，请检查 Firestore 规则');
+  }
+};
 
 // ── Glossary (术语表) ─────────────────────────────────────────────────────────
 window.loadGlossary = async function () {

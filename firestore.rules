@@ -139,6 +139,32 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
 
+    // ── 受発注LPの相談リード（Stage D）──
+    // 匿名訪問者も送信できる（＝isSignedIn。js/tracking.js の具名 app の匿名セッション）。
+    // errors / visits と同類：単なる Firestore 書き込みで単価コストが無いので、サーバ端点
+    // ではなくクライアント直書き＋ここでのフィールド検証で受ける（真のコストが無いので
+    // demo のようなサーバ強制は不要）。読み取りは管理者のみ＝後台「相談リード」一覧。
+    // create のみ：訪問者は自分の送信を書くだけ。改ざん・既読管理は管理者が update/delete。
+    match /leads/{doc} {
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasOnly(
+             ['name', 'company', 'email', 'message', 'lang', 'source', 'ua', 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 200
+        && request.resource.data.email.matches('.+@.+[.].+')
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 2000
+        && (!('company' in request.resource.data)
+            || (request.resource.data.company is string
+                && request.resource.data.company.size() <= 150))
+        && request.resource.data.createdAt == request.time;
+      allow read, update, delete: if isAdmin();
+    }
+
     // ── 翻译术语表 ──
     match /glossary/{doc} {
       allow read: if isMember();

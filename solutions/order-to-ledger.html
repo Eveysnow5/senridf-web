@@ -89,6 +89,22 @@
     .o2l-files li { font-size: 12px; color: #4a4a4a; background: #f0ede7; border-radius: 4px; padding: 4px 10px; }
     .o2l-files__skip { margin: 10px 0 0; font-size: 12px; color: #b0663a; }
     .o2l-files__img { font-size: 10px; color: #b0663a; border: 1px solid #d9b8a6; border-radius: 3px; padding: 1px 5px; margin-left: 6px; }
+    /* 相談フォーム（Stage D） */
+    .o2l-consult { max-width: 640px; }
+    .o2l-form { display: flex; flex-direction: column; gap: 16px; margin-top: 28px; }
+    .o2l-field { display: flex; flex-direction: column; gap: 6px; }
+    .o2l-field__label { font-size: 13px; color: #4a4a4a; font-weight: 500; }
+    .o2l-field input, .o2l-field textarea { font: inherit; font-size: 15px; padding: 11px 13px; border: 1px solid #d8d4cc; border-radius: 6px; background: #fff; color: #2b2b2b; width: 100%; box-sizing: border-box; }
+    .o2l-field input:focus, .o2l-field textarea:focus { outline: none; border-color: #8a8577; box-shadow: 0 0 0 3px rgba(138, 133, 119, 0.15); }
+    .o2l-field textarea { resize: vertical; min-height: 96px; }
+    .o2l-form button[type="submit"] { align-self: flex-start; }
+    .o2l-form__status { font-size: 13px; color: #4a4a4a; }
+    .o2l-form__status [data-msg="ok"] { color: #2f7d4f; }
+    .o2l-form__status [data-msg="error"], .o2l-form__status [data-msg="invalid"] { color: #c0392b; }
+    .o2l-form__privacy { margin-top: 14px; font-size: 12px; color: #9a9a9a; }
+    .o2l-form__privacy a { color: #6a6557; text-decoration: underline; }
+    /* ハニーポット：視覚・支援技術の双方から隠す（表示されず、送信もされない想定） */
+    .o2l-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
     /* 同意ダイアログ。display は :not([hidden]) 側に置く（hidden 属性を効かせるため）。 */
     .o2l-modal { position: fixed; inset: 0; background: rgba(20, 18, 15, 0.5); z-index: 1000; padding: 20px; }
     .o2l-modal:not([hidden]) { display: flex; align-items: center; justify-content: center; }
@@ -349,8 +365,54 @@
         </p>
         <div class="o2l-btn-row">
           <a href="#demo" class="o2l-btn o2l-to-demo" data-i18n="o2l_cta_try">無料で試す</a>
-          <a href="account.html" class="o2l-btn o2l-btn--ghost" data-i18n="o2l_cta_consult">無料で相談する</a>
+          <a href="#consult" class="o2l-btn o2l-btn--ghost" data-i18n="o2l_cta_consult">無料で相談する</a>
         </div>
+      </div>
+    </section>
+
+    <!-- Stage D：相談リード（送信は tracking.js の匿名セッションで Firestore leads へ直書き）-->
+    <section class="section" id="consult">
+      <div class="o2l-consult" data-animate>
+        <h2 class="section__title" data-i18n="o2l_consult_title">御社の業務に合わせてご相談ください</h2>
+        <p class="section__lead" data-i18n="o2l_consult_lead">
+          現状の作業やお困りごとをお書きください。折り返しご連絡します。費用はかかりません。
+        </p>
+        <form id="o2lLeadForm" class="o2l-form" novalidate>
+          <label class="o2l-field">
+            <span class="o2l-field__label" data-i18n="o2l_f_name">お名前</span>
+            <input type="text" name="name" required maxlength="100" autocomplete="name" />
+          </label>
+          <label class="o2l-field">
+            <span class="o2l-field__label" data-i18n="o2l_f_company">会社名（任意）</span>
+            <input type="text" name="company" maxlength="150" autocomplete="organization" />
+          </label>
+          <label class="o2l-field">
+            <span class="o2l-field__label" data-i18n="o2l_f_email">メールアドレス</span>
+            <input type="email" name="email" required maxlength="200" autocomplete="email" />
+          </label>
+          <label class="o2l-field">
+            <span class="o2l-field__label" data-i18n="o2l_f_message">ご相談内容</span>
+            <textarea name="message" required maxlength="2000" rows="4"></textarea>
+          </label>
+          <!-- ハニーポット：人間には見えない。ボットが埋めたら送信しない（CSS で隠す）。 -->
+          <div class="o2l-hp" aria-hidden="true">
+            <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+          </div>
+          <button type="submit" class="o2l-btn" id="o2lLeadSubmit" data-i18n="o2l_f_submit">
+            送信する
+          </button>
+          <span id="o2lLeadStatus" class="o2l-form__status" hidden>
+            <span data-msg="sending" data-i18n="o2l_f_sending" hidden></span>
+            <span data-msg="ok" data-i18n="o2l_f_ok" hidden></span>
+            <span data-msg="invalid" data-i18n="o2l_f_invalid" hidden></span>
+            <span data-msg="error" data-i18n="o2l_f_error" hidden></span>
+          </span>
+        </form>
+        <p class="o2l-form__privacy">
+          <span data-i18n="o2l_f_privacy_pre">送信により</span>
+          <a href="/privacy/" data-i18n="o2l_f_privacy_link">プライバシーポリシー</a>
+          <span data-i18n="o2l_f_privacy_post">に同意したものとみなします。</span>
+        </p>
       </div>
     </section>
 

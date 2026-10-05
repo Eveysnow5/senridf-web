@@ -3,7 +3,12 @@ import {
   getAuth,
   signInAnonymously,
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import {
+  getFirestore,
+  addDoc,
+  collection,
+  serverTimestamp,
+} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js';
 import { createVisitDuration } from '/js/shared/visit-duration.js';
 
@@ -26,6 +31,25 @@ const db = getFirestore(app);
 // 匿名会話の生成はこの具名 app に一本化しているので（既定 app で作ると門控が固まる）、
 // デモが匿名トークンを要るときはここから取る。会員判定は既定 app 側で別途行う。
 window.sdfAnonToken = () => (auth.currentUser ? auth.currentUser.getIdToken() : null);
+
+// 相談リード送信（受発注LPの Stage D フォーム）。errors/visits と同じく、この具名 app の
+// 匿名セッションで Firestore の leads へ直書きする（サーバ単価コストが無いので端点は不要）。
+// フィールド検証は firestore.rules 側が強制（匿名でも create 可、read は管理者のみ）。
+// 呼び出し側（js/order-to-ledger-demo.js）は値のトリムと必須チェックを済ませてから渡す。
+window.sdfSubmitLead = async (lead) => {
+  // 送信時点で匿名ログインが未完了なら待つ（track() が走っていても競合し得る）。
+  if (!auth.currentUser) await signInAnonymously(auth);
+  return addDoc(collection(db, 'leads'), {
+    name: String(lead.name || '').slice(0, 100),
+    company: String(lead.company || '').slice(0, 150),
+    email: String(lead.email || '').slice(0, 200),
+    message: String(lead.message || '').slice(0, 2000),
+    lang: String(lead.lang || '').slice(0, 8),
+    source: String(lead.source || '').slice(0, 40),
+    ua: String(navigator.userAgent || '').slice(0, 300),
+    createdAt: serverTimestamp(),
+  });
+};
 
 function getPageName() {
   const p = location.pathname;

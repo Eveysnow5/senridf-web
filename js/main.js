@@ -71,6 +71,7 @@ const T = {
     footer_tagline: '人間がAIとの寄り添いを求めるすべての願いは、魂の共鳴への渇望にほかならない。',
     footer_nav_heading: 'ナビゲーション',
     footer_contact_heading: 'お問い合わせ',
+    nav_privacy: 'プライバシーポリシー',
     footer_copy: '© {year} 千里同風株式会社',
     addr_street: '大阪府大阪市淀川区西三国4丁目4-9-7',
     addr_city: '大阪市, 日本',
@@ -192,11 +193,67 @@ const T = {
       '文字PDF・Excel・CSVは、お使いのブラウザ内で処理し、当社サーバーには送信しません。（スキャン・画像のみ、読み取りのため画像を送信します＝送信前に確認します。）',
     o2l_trust2: '抽出した内容は保存しません。処理が終わればすぐに破棄されます。',
     o2l_trust3: '通信はすべて暗号化されています（HTTPS / AES-256）。',
-    o2l_trust_privacy: '詳しい取り扱いは、プライバシーポリシーをご覧ください（準備中）。',
+    o2l_trust_privacy: '詳しい取り扱いは、プライバシーポリシーをご覧ください。',
     o2l_cta_title: 'まずは、今の作業を教えてください。',
     o2l_cta_lead: '無料でお試しいただくか、御社の業務に合わせた自動化をご相談ください。',
     o2l_cta_try: '無料で試す',
     o2l_cta_consult: '無料で相談する',
+    o2l_consult_title: '御社の業務に合わせてご相談ください',
+    o2l_consult_lead:
+      '現状の作業やお困りごとをお書きください。折り返しご連絡します。費用はかかりません。',
+    o2l_f_name: 'お名前',
+    o2l_f_company: '会社名（任意）',
+    o2l_f_email: 'メールアドレス',
+    o2l_f_message: 'ご相談内容',
+    o2l_f_submit: '送信する',
+    o2l_f_sending: '送信中…',
+    o2l_f_ok: '送信しました。折り返しご連絡します。ありがとうございます。',
+    o2l_f_invalid: 'お名前・メールアドレス・ご相談内容をご確認ください。',
+    o2l_f_error: '送信に失敗しました。時間をおいて再度お試しください。',
+    o2l_f_privacy_pre: '送信により',
+    o2l_f_privacy_link: 'プライバシーポリシー',
+    o2l_f_privacy_post: 'に同意したものとみなします。',
+    pp_eyebrow: 'プライバシー',
+    pp_title: 'プライバシーポリシー',
+    pp_updated: '制定日：2026年10月5日',
+    pp_intro:
+      '千里同風株式会社（以下「当社」）は、当社ウェブサイト（senridf.com）および各ツール・サービスにおけるお客様の個人情報を、以下の方針に基づき適切に取り扱います。',
+    pp_s1_h: '1. 取得する情報',
+    pp_s1_b:
+      '当社は次の情報を取得することがあります。(1) お問い合わせ・ご相談フォームにご入力いただいたお名前・会社名・メールアドレス・ご相談内容、(2) 会員登録をされた場合のメールアドレス、(3) サイトの利用状況（アクセス日時、閲覧ページ、おおまかな利用回数など）、(4) 各ツールに入力・アップロードされた内容（処理の範囲は第4項をご覧ください）。',
+    pp_s2_h: '2. 利用目的',
+    pp_s2_b:
+      '取得した情報は、お問い合わせへの対応、ご相談・お見積りのご連絡、サービスの提供・改善、不正利用の防止のために利用します。ご本人の同意なく、これらの目的の範囲を超えて利用することはありません。',
+    pp_s3_h: '3. 外部サービス・第三者への提供',
+    pp_s3_b:
+      '法令に基づく場合を除き、お客様の個人情報を第三者に販売・提供することはありません。ただし、サービスの提供のために次の外部サービスを利用しており、処理に必要な範囲でデータが送信されます。',
+    pp_s3_qwen:
+      '生成AI（Alibaba Cloud「通義千問」／DashScope）— 翻訳・文書整形・画像OCRなどのAI処理に利用します。画像・スキャンのOCRは、送信前に確認ダイアログで明示的にご同意いただいた場合に限り、その画像を送信します。',
+    pp_s3_google: 'Google / Firebase — ログイン認証とデータ保存（Firestore）に利用します。',
+    pp_s3_cf: 'Cloudflare — ウェブサイトの配信とアクセス解析に利用します。',
+    pp_s3_dg: 'Deepgram — 音声通訳機能をご利用の場合に、音声をテキスト化するために利用します。',
+    pp_s4_h: '4. ブラウザ内での処理について',
+    pp_s4_b:
+      '受発注デモなど一部のツールでは、テキスト情報を含むPDF・Excel・CSVファイルはお客様のブラウザ内だけで解析し、ファイルそのものは当社サーバーに送信しません。一方、画像・スキャンしたファイルのOCRは、上記のとおり確認・同意のうえで画像を外部AIに送信します。',
+    pp_s5_h: '5. 保存期間',
+    pp_s5_b:
+      'お問い合わせ・ご相談の内容は、対応および必要な記録のために保管します。アクセス解析などの統計データは一定期間ののち自動的に削除されます。保管が不要になった個人情報は、適切な方法で消去します。',
+    pp_s6_h: '6. お客様の権利',
+    pp_s6_b:
+      'お客様はご自身の個人情報について、開示・訂正・削除・利用停止を求めることができます。ご希望の場合は下記のお問い合わせ先までご連絡ください。ご本人であることを確認のうえ、法令に従って対応します。',
+    pp_s7_h: '7. Cookie・アクセス解析',
+    pp_s7_b:
+      '当社サイトでは、利便性の向上と利用状況の把握のため、Cookieや類似の技術、およびアクセス解析を利用することがあります。これらに個人を直接特定する情報は含めていません。',
+    pp_s8_h: '8. お問い合わせ・事業者情報',
+    pp_s8_b:
+      '本ポリシーに関するお問い合わせ、および個人情報の取り扱いに関するご請求は、下記までご連絡ください。',
+    pp_biz_name: '事業者名',
+    pp_biz_rep: '代表者',
+    pp_biz_addr: '所在地',
+    pp_biz_contact: '連絡先',
+    pp_s9_h: '9. 本ポリシーの改定',
+    pp_s9_b:
+      '当社は、法令の変更やサービスの改善に応じて本ポリシーを改定することがあります。重要な変更がある場合は本ページでお知らせします。',
     solutions_body:
       '生成AIとハードウェアを融合させた、新しいカテゴリの製品群。教育・IoT・エンターテインメント分野で、人とAIの新しい関係性を提案します。',
     services_eyebrow: 'サービス',
@@ -605,6 +662,7 @@ const T = {
     footer_tagline: '人类对AI陪伴的一切渴望，不过是对灵魂共鸣的向往。',
     footer_nav_heading: '导航',
     footer_contact_heading: '联系方式',
+    nav_privacy: '隐私政策',
     footer_copy: '© {year} 千里同風株式会社',
     addr_street: '大阪府大阪市淀川区西三国4丁目4-9-7',
     addr_city: '大阪市, 日本',
@@ -719,11 +777,64 @@ const T = {
       '文字 PDF / Excel / CSV 在你的浏览器内处理，不发送到我们的服务器。（只有扫描件 / 图片，为了识别会发送图片，发送前会确认。）',
     o2l_trust2: '抽取的内容不保存，处理完立即丢弃。',
     o2l_trust3: '所有通信都经过加密（HTTPS / AES-256）。',
-    o2l_trust_privacy: '更详细的处理方式请见隐私政策（准备中）。',
+    o2l_trust_privacy: '更详细的处理方式请见隐私政策。',
     o2l_cta_title: '先告诉我们，你现在是怎么做的。',
     o2l_cta_lead: '可以免费试用，也可以按贵司业务聊聊怎么自动化。',
     o2l_cta_try: '免费试用',
     o2l_cta_consult: '免费咨询',
+    o2l_consult_title: '按您的业务来聊聊需求',
+    o2l_consult_lead: '写下目前的作业流程或困扰，我们会回复您。不收费。',
+    o2l_f_name: '您的称呼',
+    o2l_f_company: '公司名称（选填）',
+    o2l_f_email: '电子邮箱',
+    o2l_f_message: '咨询内容',
+    o2l_f_submit: '提交',
+    o2l_f_sending: '提交中…',
+    o2l_f_ok: '已提交。我们会尽快回复您，谢谢。',
+    o2l_f_invalid: '请检查称呼、邮箱和咨询内容。',
+    o2l_f_error: '提交失败，请稍后再试。',
+    o2l_f_privacy_pre: '提交即表示同意我们的',
+    o2l_f_privacy_link: '隐私政策',
+    o2l_f_privacy_post: '。',
+    pp_eyebrow: '隐私',
+    pp_title: '隐私政策',
+    pp_updated: '制定日期：2026年10月5日',
+    pp_intro:
+      '千里同風株式会社（以下简称“本公司”）依据以下方针，妥善处理您在本公司网站（senridf.com）及各工具与服务中的个人信息。',
+    pp_s1_h: '1. 收集的信息',
+    pp_s1_b:
+      '本公司可能收集以下信息：(1) 您在咨询/相談表单中填写的姓名、公司名称、邮箱和咨询内容；(2) 注册会员时的邮箱；(3) 网站使用情况（访问时间、浏览页面、大致使用次数等）；(4) 您在各工具中输入或上传的内容（处理范围见第4条）。',
+    pp_s2_h: '2. 使用目的',
+    pp_s2_b:
+      '收集的信息用于回应咨询、联系相談与报价、提供与改进服务、防止滥用。未经本人同意，不会超出上述目的范围使用。',
+    pp_s3_h: '3. 外部服务与第三方提供',
+    pp_s3_b:
+      '除法律要求外，本公司不会向第三方出售或提供您的个人信息。但为提供服务，我们使用以下外部服务，并在处理所需范围内发送数据。',
+    pp_s3_qwen:
+      '生成式AI（阿里云“通义千问”／DashScope）— 用于翻译、文档整理、图像OCR等AI处理。图片/扫描件的OCR，仅在发送前经确认弹窗明确同意后，才会发送该图片。',
+    pp_s3_google: 'Google / Firebase — 用于登录认证与数据存储（Firestore）。',
+    pp_s3_cf: 'Cloudflare — 用于网站分发与访问分析。',
+    pp_s3_dg: 'Deepgram — 在您使用语音口译功能时，用于将语音转为文字。',
+    pp_s4_h: '4. 关于浏览器内处理',
+    pp_s4_b:
+      '在受発注演示等部分工具中，含文字信息的 PDF、Excel、CSV 文件仅在您的浏览器内解析，文件本身不会发送到本公司服务器。而图片/扫描件的 OCR，会如上所述在确认与同意后将图片发送给外部AI。',
+    pp_s5_h: '5. 保存期限',
+    pp_s5_b:
+      '咨询与相談内容将为处理及必要记录而保存。访问分析等统计数据会在一定期限后自动删除。不再需要保存的个人信息，将以适当方式销毁。',
+    pp_s6_h: '6. 您的权利',
+    pp_s6_b:
+      '您可就本人的个人信息要求披露、更正、删除或停止使用。如有需要，请联系下方联系方式。我们将在确认本人身份后依法处理。',
+    pp_s7_h: '7. Cookie 与访问分析',
+    pp_s7_b:
+      '为提升便利性与了解使用情况，本公司网站可能使用 Cookie 或类似技术及访问分析。其中不包含可直接识别个人身份的信息。',
+    pp_s8_h: '8. 咨询与经营者信息',
+    pp_s8_b: '关于本政策的咨询，以及个人信息处理相关的请求，请通过以下方式联系我们。',
+    pp_biz_name: '经营者名称',
+    pp_biz_rep: '代表者',
+    pp_biz_addr: '所在地',
+    pp_biz_contact: '联系方式',
+    pp_s9_h: '9. 本政策的修订',
+    pp_s9_b: '本公司可能因法律变更或服务改进而修订本政策。如有重要变更，将在本页面通知。',
     solutions_body:
       '融合生成式AI与硬件的全新产品类别。我们在教育、IoT与娱乐领域，探索人与AI的新型关系。',
     services_eyebrow: '服务',
@@ -1111,6 +1222,7 @@ const T = {
       'Every human desire for closeness with AI is nothing but a yearning for resonance of souls.',
     footer_nav_heading: 'Navigation',
     footer_contact_heading: 'Contact',
+    nav_privacy: 'Privacy Policy',
     footer_copy: '© {year} Senridoufuu Co., Ltd.',
     addr_street: '4-9-7, Nishimikuni 4-chome, Yodogawa-ku',
     addr_city: 'Osaka, Japan',
@@ -1233,11 +1345,68 @@ const T = {
       'Text PDF / Excel / CSV are processed in your browser and never sent to our servers. (Only scans / images are sent, for reading — and we ask first.)',
     o2l_trust2: 'Extracted content is not stored — it is discarded as soon as processing finishes.',
     o2l_trust3: 'All communication is encrypted (HTTPS / AES-256).',
-    o2l_trust_privacy: 'See our Privacy Policy for full details (coming soon).',
+    o2l_trust_privacy: 'See our Privacy Policy for full details.',
     o2l_cta_title: 'Tell us how you work today.',
     o2l_cta_lead: 'Try it for free, or talk to us about automation tailored to your business.',
     o2l_cta_try: 'Try it free',
     o2l_cta_consult: 'Get a free consultation',
+    o2l_consult_title: 'Tell us about your workflow',
+    o2l_consult_lead:
+      'Describe your current process or the problem you want to solve. We will get back to you. No charge.',
+    o2l_f_name: 'Your name',
+    o2l_f_company: 'Company (optional)',
+    o2l_f_email: 'Email address',
+    o2l_f_message: 'What would you like help with?',
+    o2l_f_submit: 'Send',
+    o2l_f_sending: 'Sending…',
+    o2l_f_ok: 'Sent. We will get back to you soon. Thank you.',
+    o2l_f_invalid: 'Please check your name, email, and message.',
+    o2l_f_error: 'Sending failed. Please try again later.',
+    o2l_f_privacy_pre: 'By submitting, you agree to our ',
+    o2l_f_privacy_link: 'Privacy Policy',
+    o2l_f_privacy_post: '.',
+    pp_eyebrow: 'Privacy',
+    pp_title: 'Privacy Policy',
+    pp_updated: 'Effective date: October 5, 2026',
+    pp_intro:
+      'Senridoufuu Co., Ltd. ("we", "us") handles your personal information on our website (senridf.com) and across our tools and services in accordance with the policy below.',
+    pp_s1_h: '1. Information we collect',
+    pp_s1_b:
+      'We may collect: (1) the name, company, email address, and message you enter in our inquiry/consultation form; (2) your email address if you register an account; (3) usage data (access times, pages viewed, approximate usage counts); and (4) content you enter or upload into our tools (see Section 4 for how it is processed).',
+    pp_s2_h: '2. How we use it',
+    pp_s2_b:
+      'We use this information to respond to inquiries, follow up on consultations and quotes, provide and improve our services, and prevent abuse. We do not use it beyond these purposes without your consent.',
+    pp_s3_h: '3. External services and third parties',
+    pp_s3_b:
+      'We do not sell or disclose your personal information to third parties except as required by law. However, to provide our services we use the following external services, and data is sent to them to the extent needed for processing.',
+    pp_s3_qwen:
+      'Generative AI (Alibaba Cloud "Tongyi Qianwen" / DashScope) — used for translation, document formatting, and image OCR. For image/scan OCR, the image is sent only after you explicitly agree via a confirmation dialog before sending.',
+    pp_s3_google: 'Google / Firebase — used for login authentication and data storage (Firestore).',
+    pp_s3_cf: 'Cloudflare — used for website delivery and access analytics.',
+    pp_s3_dg:
+      'Deepgram — used to transcribe speech to text when you use the voice interpretation feature.',
+    pp_s4_h: '4. In-browser processing',
+    pp_s4_b:
+      'In some tools, such as the order-to-ledger demo, PDF, Excel, and CSV files that contain text are parsed entirely within your browser, and the files themselves are not sent to our servers. OCR for images and scanned files, however, sends the image to an external AI after your confirmation and consent, as described above.',
+    pp_s5_h: '5. Retention',
+    pp_s5_b:
+      'Inquiry and consultation content is retained for handling and necessary records. Statistical data such as access analytics is automatically deleted after a set period. Personal information that is no longer needed is erased by appropriate means.',
+    pp_s6_h: '6. Your rights',
+    pp_s6_b:
+      'You may request disclosure, correction, deletion, or suspension of use of your personal information. To do so, please contact us at the address below. We will respond in accordance with the law after verifying your identity.',
+    pp_s7_h: '7. Cookies and analytics',
+    pp_s7_b:
+      'Our site may use cookies or similar technologies and access analytics to improve usability and understand usage. These do not contain information that directly identifies you.',
+    pp_s8_h: '8. Contact and business information',
+    pp_s8_b:
+      'For inquiries about this policy and requests regarding the handling of personal information, please contact us below.',
+    pp_biz_name: 'Business name',
+    pp_biz_rep: 'Representative',
+    pp_biz_addr: 'Location',
+    pp_biz_contact: 'Contact',
+    pp_s9_h: '9. Changes to this policy',
+    pp_s9_b:
+      'We may revise this policy in response to changes in law or improvements to our services. We will announce significant changes on this page.',
     solutions_body:
       'A new category of products merging generative AI and hardware. We propose new ways for people and AI to relate through education, IoT, and entertainment.',
     services_eyebrow: 'Services',
@@ -1685,6 +1854,7 @@ const FOOTER_HTML = `
     </div>
     <div class="footer__bottom">
       <span class="footer__copy" data-i18n="footer_copy" data-i18n-params='{"year":${COPY_YEAR}}'></span>
+      <a href="privacy/" class="footer__link" data-i18n="nav_privacy"></a>
     </div>
   </div>
 </footer>
