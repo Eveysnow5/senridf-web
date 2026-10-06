@@ -200,3 +200,36 @@ test('⑥ 画像OCRは正解表を通るまで閉じている（専用鍵があ�
   const src = readFileSync(path.join(ROOT, 'functions/api/demo-order-extract.js'), 'utf8');
   assert.match(src, /onDedicatedKey && VISION_READY \? items : items\.filter/);
 });
+
+// account.html の ?next= は「登録したらデモに戻る」道。オープンリダイレクトにしない。
+test('⑦ account.html の ?next= はサイト内パスだけ通す（外部・プロトコル相対・javascript: は弾く）', () => {
+  const src = readFileSync(path.join(ROOT, 'account.html'), 'utf8');
+  const m = src.match(/function safeNext\(\) \{[\s\S]*?\n {2}\}/);
+  assert.ok(m, 'safeNext が account.html に見つからない');
+  const make = (q) =>
+    new Function('location', 'URLSearchParams', m[0] + '; return safeNext();')(
+      { search: q },
+      URLSearchParams,
+    );
+  assert.equal(
+    make('?next=%2Fsolutions%2Forder-to-ledger%23demo'),
+    '/solutions/order-to-ledger#demo',
+  );
+  assert.equal(make('?next=/account.html'), '/account.html');
+  for (const bad of [
+    '?next=//evil.com/x',
+    '?next=https://evil.com',
+    '?next=javascript:alert(1)',
+    // 「/\evil.com」はブラウザが「//evil.com」と解釈する（プロトコル相対）。符号化で確実に \ を渡す。
+    '?next=%2F%5Cevil.com',
+    '?next=%2F%2Fevil.com',
+    '?next=/a?b=1',
+    '?next=',
+    '',
+  ]) {
+    assert.equal(make(bad), null, `通してはいけない: ${bad}`);
+  }
+  // 受発注ページの登録リンクが、符号化した next で account.html を指している
+  const html = readFileSync(path.join(ROOT, 'solutions/order-to-ledger.html'), 'utf8');
+  assert.match(html, /href="\/account\.html\?next=%2Fsolutions%2Forder-to-ledger%23demo"/);
+});

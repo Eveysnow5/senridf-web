@@ -118,6 +118,17 @@ const T = {
       'PDF・Excelの注文書を、AIが自動で受注台帳に。毎日の転記とチェックを、なくします。',
     o2l_hero_cta: '無料で試す',
     o2l_hero_cta_note: '登録なしで1回、登録で3回まで無料。',
+    o2l_ex_eyebrow: '変換例',
+    o2l_ex_title: 'この注文書が、この台帳になります',
+    o2l_ex_lead: '架空のサンプル注文書を、実際にAIで整形した結果です。',
+    o2l_ex_before: '整形前：注文書（PDF）',
+    o2l_ex_after: '整形後：受注台帳（Excelでダウンロード）',
+    o2l_ex_img_alt: 'サンプル注文書（株式会社サンプル商事から大阪サンプル卸株式会社宛、明細5行）',
+    o2l_ex_p1: '得意先は差出人から読み取ります（「御中」の宛先＝自社とは区別）。',
+    o2l_ex_p2: '小計・消費税・合計は明細ではないので、台帳の行にしません。',
+    o2l_ex_p3: '明細ごとの納期指定（5行目）は、見出しの納期より優先します。',
+    o2l_ex_note:
+      '※ 書式によっては読み違えることがあります。ダウンロード前に必ず内容をご確認ください。（備考列は省略して表示）',
     o2l_flow_eyebrow: 'こんな作業、ありませんか？',
     o2l_flow_title: '注文書を、手で台帳に写す毎日',
     o2l_before_label: '今のやり方',
@@ -175,6 +186,7 @@ const T = {
     o2l_ai_working: 'AIが整形中…',
     o2l_ai_disabled: 'AI整形は近日公開です。読み取り結果は上の表からダウンロードできます。',
     o2l_ai_anon_used: '無料お試し（1回）を使い切りました。登録すると3回までご利用いただけます。',
+    o2l_ai_register_link: '無料で登録する →',
     o2l_ai_member_used: '無料お試し（3回）を使い切りました。ぜひ無料でご相談ください。',
     o2l_ai_daily: '本日の無料体験は上限に達しました。時間をおいてお試しください。',
     o2l_ai_toobig: 'ファイルが大きいため、無料体験では先頭部分のみ処理しました。',
@@ -712,6 +724,16 @@ const T = {
     o2l_hero_lead: 'PDF、Excel 的订单，AI 自动转成受注台账。省掉每天的转记和核对。',
     o2l_hero_cta: '免费试用',
     o2l_hero_cta_note: '未注册可试 1 次，注册后免费 3 次。',
+    o2l_ex_eyebrow: '转换示例',
+    o2l_ex_title: '这份订单，会变成这张台账',
+    o2l_ex_lead: '这是用 AI 实际整形一份虚构示例订单得到的结果。',
+    o2l_ex_before: '整形前：订单（PDF）',
+    o2l_ex_after: '整形后：受注台账（可下载为 Excel）',
+    o2l_ex_img_alt: '示例订单（由株式会社サンプル商事发给大阪サンプル卸株式会社，共 5 行明细）',
+    o2l_ex_p1: '得意先（客户）从发件方读取，不会和标着「御中」的收件方（即自家公司）混淆。',
+    o2l_ex_p2: '小计、消费税、合计不是明细，不会作为台账的行。',
+    o2l_ex_p3: '明细里单独指定的交货日（第 5 行）优先于抬头的交货日。',
+    o2l_ex_note: '※ 根据格式不同，可能会读错。下载前请务必核对内容。（备注列未显示）',
     o2l_flow_eyebrow: '你是不是也在这样做？',
     o2l_flow_title: '每天把订单一行行抄进台账',
     o2l_before_label: '现在的做法',
@@ -768,6 +790,7 @@ const T = {
     o2l_ai_working: 'AI 整形中…',
     o2l_ai_disabled: 'AI 整形即将上线。读取结果可从上面的表格下载。',
     o2l_ai_anon_used: '免费体验（1 次）已用完。注册后可用 3 次。',
+    o2l_ai_register_link: '免费注册 →',
     o2l_ai_member_used: '免费体验（3 次）已用完。欢迎免费咨询。',
     o2l_ai_daily: '今日免费体验已达上限，请稍后再试。',
     o2l_ai_toobig: '文件较大，免费体验只处理了开头部分。',
@@ -1341,6 +1364,20 @@ const T = {
     o2l_ai_disabled:
       'AI structuring is coming soon. You can download the raw reading from the table above.',
     o2l_ai_anon_used: 'You have used your free try (1). Register to get 3 more.',
+    o2l_ex_eyebrow: 'Example',
+    o2l_ex_title: 'This order form becomes this ledger',
+    o2l_ex_lead: 'The actual result of structuring a fictional sample order form with AI.',
+    o2l_ex_before: 'Before: order form (PDF)',
+    o2l_ex_after: 'After: order ledger (downloadable as Excel)',
+    o2l_ex_img_alt:
+      'Sample order form (from Sample Shoji Co. to Osaka Sample Oroshi Co., 5 line items)',
+    o2l_ex_p1:
+      'The customer is read from the sender, not confused with the addressee marked “onchu” (your company).',
+    o2l_ex_p2: 'Subtotal, tax and total are not line items, so they do not become ledger rows.',
+    o2l_ex_p3: 'A delivery date set on a line (row 5) takes priority over the header date.',
+    o2l_ex_note:
+      '* Some layouts may be misread. Always check the content before downloading. (Notes column hidden here.)',
+    o2l_ai_register_link: 'Register for free →',
     o2l_ai_member_used: 'You have used your 3 free tries. Please get a free consultation.',
     o2l_ai_daily: 'Today’s free trial limit has been reached. Please try again later.',
     o2l_ai_toobig: 'The file is large, so only the first part was processed in the free trial.',
@@ -1929,6 +1966,11 @@ function applyTranslations(lang) {
   document.querySelectorAll('[data-i18n-title]').forEach((el) => {
     const key = el.dataset.i18nTitle;
     if (t[key] !== undefined) el.setAttribute('title', t[key]);
+  });
+  // 画像の代替テキストも読み上げ・検索に出る文案（受発注の変換例で初使用）。
+  document.querySelectorAll('[data-i18n-alt]').forEach((el) => {
+    const key = el.dataset.i18nAlt;
+    if (t[key] !== undefined) el.setAttribute('alt', t[key]);
   });
   // Active state on language buttons
   document.querySelectorAll('[data-lang]').forEach((btn) => {

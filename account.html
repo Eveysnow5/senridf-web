@@ -169,6 +169,9 @@
       <div class="icon">✦</div>
       <h1 class="card-title" data-i18n="welcome">欢迎回来</h1>
       <p class="member-email" id="member-email"></p>
+      <!-- ?next= で来たとき（例：受発注デモの無料回数を使い切って登録した人）の戻り道。
+           自動では飛ばさない：審査中などの状態表示を読ませるため。表示制御は JS（safeNext）。 -->
+      <a id="return-link" class="btn-primary" style="display:none;text-decoration:none;text-align:center;margin-bottom:16px" data-i18n="return_to_page">元のページに戻る</a>
       <div id="account-status" class="account-status"></div>
       <div id="tool-list">
         <a class="tool-link" id="admin-link" href="solutions/demo/admin.html">
@@ -258,6 +261,7 @@
       st_disabled: 'アカウントが停止されています。管理者にお問い合わせください。',
       st_pending: 'アカウントは審査中です。承認後に各ツールをご利用いただけます。',
       st_load_fail: 'アカウント状態の読み込みに失敗しました。再読み込みしてください。',
+      return_to_page: '元のページに戻る',
       err_login: 'メールアドレスまたはパスワードが正しくありません。',
       err_need_email: '先にメールアドレスを入力してください。',
       reset_sent: 'パスワード再設定メールを送信しました。ご確認ください。',
@@ -307,6 +311,7 @@
       st_disabled: '您的账号已被停用，请联系管理员。',
       st_pending: '账号正在审核中，审核通过后即可使用各项工具。',
       st_load_fail: '账号状态加载失败，请刷新重试。',
+      return_to_page: '返回原页面',
       err_login: '邮箱或密码错误，请重试。',
       err_need_email: '请先填写邮箱地址。',
       reset_sent: '重置密码邮件已发送，请查收。',
@@ -356,6 +361,7 @@
       st_disabled: 'Your account has been disabled. Please contact the administrator.',
       st_pending: 'Your account is under review. You can use the tools once approved.',
       st_load_fail: 'Failed to load account status. Please refresh and try again.',
+      return_to_page: 'Back to the previous page',
       err_login: 'Incorrect email or password. Please try again.',
       err_need_email: 'Please enter your email address first.',
       reset_sent: 'Password reset email sent. Please check your inbox.',
@@ -425,6 +431,15 @@
     });
   }
 
+  /* ?next= の戻り先。オープンリダイレクトにしないため、サイト内の絶対パスだけを許す
+     （先頭が「/」1 個、英数字と / _ . - だけ、任意で #アンカー）。//evil.com や
+     https:// や javascript: はこの形に合わないので弾かれる。 */
+  function safeNext() {
+    const v = new URLSearchParams(location.search).get('next') || '';
+    return /^\/(?!\/)[A-Za-z0-9/_.-]*(#[A-Za-z0-9_-]+)?$/.test(v) ? v : null;
+  }
+  const nextPath = safeNext();
+
   onAuthStateChanged(auth, async user => {
     // 既定 app に匿名セッションが居座ると（例：コンソールで signInAnonymously を実行後、
     // ログインし直さなかった等）、下の if(user) が匿名を「会員」と誤認し、
@@ -459,6 +474,8 @@
           statusEl.style.display = 'block';
         }
       }
+      const ret = document.getElementById('return-link');
+      if (nextPath) { ret.href = nextPath; ret.style.display = 'block'; }
       show('state-member');
     } else {
       localStorage.removeItem('sdf_user_email');

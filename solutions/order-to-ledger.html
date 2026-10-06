@@ -115,6 +115,16 @@
     .o2l-ai { margin-top: 18px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
     .o2l-ai__status { font-size: 13px; color: #6b6b6b; }
     .o2l-ledger { margin-top: 20px; }
+    /* 実際の変換例 */
+    /* 縦並び：台帳は 10 列あり、横並びだと右列に収まらず「納期」が隠れる（渲染で確認） */
+    .o2l-ex { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; margin-top: 40px; }
+    .o2l-ex__before { margin: 0; max-width: 420px; }
+    .o2l-ex__before img { display: block; width: 100%; height: auto; border: 1px solid #e5e2dc; border-radius: 6px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06); }
+    .o2l-ex__label { font-size: 13px; font-weight: 500; color: #6b6b6b; margin-bottom: 12px; }
+    .o2l-ex__table th { border: 1px solid #ece9e3; padding: 6px 10px; background: #f0ede7; font-weight: 500; white-space: nowrap; color: #3a3a3a; }
+    .o2l-ex__points { margin: 18px 0 0; padding-left: 1.2em; font-size: 13px; line-height: 1.9; color: #4a4a4a; }
+    .o2l-ex__note { margin-top: 10px; font-size: 12px; color: #9a9a9a; }
+    .o2l-ai__link { margin-left: 8px; color: #6a6557; text-decoration: underline; }
     .o2l-ai__note { margin-top: 10px; font-size: 12px; color: #8a8a8a; line-height: 1.7; }
     .o2l-ai__note strong { color: #4a4a4a; font-weight: 500; }
     .o2l-sample { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
@@ -147,6 +157,62 @@
         </div>
       </div>
     </div>
+
+    <!-- 実際の変換例：表の値は 2026-10-06 に本番端点でサンプル注文書を整形した**実際の出力**
+         （docs/lead-gen/sample-order-golden.md の正解表と一致を確認済み）。作り物の見本ではない。
+         プロンプトや列を変えたら、本番で再実行してここも差し替えること。 -->
+    <section class="section section--tight">
+      <div data-animate>
+        <span class="section__eyebrow" data-i18n="o2l_ex_eyebrow">変換例</span>
+        <h2 class="section__title" data-i18n="o2l_ex_title">この注文書が、この台帳になります</h2>
+        <p class="section__lead" data-i18n="o2l_ex_lead">
+          架空のサンプル注文書を、実際にAIで整形した結果です。
+        </p>
+      </div>
+      <div class="o2l-ex" data-animate>
+        <figure class="o2l-ex__before">
+          <figcaption class="o2l-ex__label" data-i18n="o2l_ex_before">整形前：注文書（PDF）</figcaption>
+          <a href="solutions/samples/sample-order.pdf" target="_blank" rel="noopener">
+            <img
+              src="solutions/samples/sample-order-preview.jpg"
+              width="860"
+              height="640"
+              loading="lazy"
+              data-i18n-alt="o2l_ex_img_alt"
+              alt="サンプル注文書（株式会社サンプル商事から大阪サンプル卸株式会社宛、明細5行）"
+            />
+          </a>
+        </figure>
+        <div class="o2l-ex__after">
+          <div class="o2l-ex__label" data-i18n="o2l_ex_after">整形後：受注台帳（Excelでダウンロード）</div>
+          <div class="o2l-tablewrap">
+            <table class="o2l-table o2l-ex__table">
+              <thead>
+                <tr>
+                  <th>受注日</th><th>得意先</th><th>注文番号</th><th>品番</th><th>品名</th>
+                  <th>数量</th><th>単位</th><th>単価</th><th>金額</th><th>納期</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>2026年10月6日</td><td>株式会社サンプル商事</td><td>PO-2026-1015</td><td>A-1001</td><td>コピー用紙 A4 500枚</td><td>20</td><td>箱</td><td>2,400</td><td>48,000</td><td>2026年10月20日</td></tr>
+                <tr><td>2026年10月6日</td><td>株式会社サンプル商事</td><td>PO-2026-1015</td><td>B-2050</td><td>ボールペン 黒 0.5mm</td><td>100</td><td>本</td><td>120</td><td>12,000</td><td>2026年10月20日</td></tr>
+                <tr><td>2026年10月6日</td><td>株式会社サンプル商事</td><td>PO-2026-1015</td><td>C-3300</td><td>クリアファイル A4 50枚入</td><td>30</td><td>袋</td><td>680</td><td>20,400</td><td>2026年10月20日</td></tr>
+                <tr><td>2026年10月6日</td><td>株式会社サンプル商事</td><td>PO-2026-1015</td><td>D-4120</td><td>ホッチキス針 No.10</td><td>40</td><td>箱</td><td>150</td><td>6,000</td><td>2026年10月20日</td></tr>
+                <tr><td>2026年10月6日</td><td>株式会社サンプル商事</td><td>PO-2026-1015</td><td>E-5005</td><td>ガムテープ 50mm</td><td>24</td><td>巻</td><td>310</td><td>7,440</td><td>2026/10/13</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <ul class="o2l-ex__points">
+            <li data-i18n="o2l_ex_p1">得意先は差出人から読み取ります（「御中」の宛先＝自社とは区別）。</li>
+            <li data-i18n="o2l_ex_p2">小計・消費税・合計は明細ではないので、台帳の行にしません。</li>
+            <li data-i18n="o2l_ex_p3">明細ごとの納期指定（5行目）は、見出しの納期より優先します。</li>
+          </ul>
+          <p class="o2l-ex__note" data-i18n="o2l_ex_note">
+            ※ 書式によっては読み違えることがあります。ダウンロード前に必ず内容をご確認ください。（備考列は省略して表示）
+          </p>
+        </div>
+      </div>
+    </section>
 
     <!-- 現状 vs 自動化後 -->
     <section class="section">
@@ -270,6 +336,15 @@
               <span data-msg="working" data-i18n="o2l_ai_working" hidden></span>
               <span data-msg="disabled" data-i18n="o2l_ai_disabled" hidden></span>
               <span data-msg="anon_used_up" data-i18n="o2l_ai_anon_used" hidden></span>
+              <!-- 同じ data-msg なので文言と一緒に出る。next は %2F/%23 で符号化（# を素で書くと
+                   account.html 側のアンカーになり、戻り先から落ちる）-->
+              <a
+                data-msg="anon_used_up"
+                class="o2l-ai__link"
+                href="/account.html?next=%2Fsolutions%2Forder-to-ledger%23demo"
+                data-i18n="o2l_ai_register_link"
+                hidden
+              ></a>
               <span data-msg="member_used_up" data-i18n="o2l_ai_member_used" hidden></span>
               <span data-msg="daily" data-i18n="o2l_ai_daily" hidden></span>
               <span data-msg="toobig" data-i18n="o2l_ai_toobig" hidden></span>
