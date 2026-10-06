@@ -246,8 +246,11 @@ const ENV_KEY = {
 //    コードに持つ。以前は DEMO_CHAT_ENDPOINT / DEMO_MODEL も要り、鍵だけ入れると
 //    SiliconFlow の鍵で DashScope を叩いて 401 になる罠だった。
 // ⚠️ 鍵は siliconflow.com（国際站）で発行したもの。siliconflow.cn の鍵とは別物。
-// ⚠️ 鍵が無いので未検証：① モデル id ② enable_thinking:false を受けるか
-//    ③ Gemma 4 の画像入力。鍵が入ったら最初に 1 回ずつスモークテストすること。
+// ✅ 2026-10-06 実鍵でスモークテスト済み：① モデル id 有効 ② enable_thinking:false を受ける
+//    （1 回 1.8s〜7s）③ テキスト経路はサンプル注文書の正解表と 5/5 完全一致
+//    （送信前の部首正規化＋列タブ区切りの修正後。docs/lead-gen/sample-order-golden.md）。
+// ❌ 画像入力は受け付けるが**誤読する**（社名・品番・数量）→ demo-order-extract の
+//    VISION_READY=false で閉じている。visionModel を変えたら正解表を通してから開けること。
 // ⚠️ SiliconFlow の規約はサーバーの所在地を明記していない。「中国を経由しない」とは
 //    書けない。書いてよいのは「シンガポール法人の SiliconFlow 経由で Google Gemma 4」まで。
 export const DEMO_PROVIDER = {

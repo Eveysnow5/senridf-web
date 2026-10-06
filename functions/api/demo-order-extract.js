@@ -17,6 +17,15 @@ import { checkInputSize, quotaDecision, limitsFor, DEMO_LIMITS } from './_lib/de
 import { bumpDemoCounters } from './_lib/demoCounters.js';
 import { buildDemoOrderPrompt, LEDGER_COLUMNS } from './_lib/buildDemoOrderPrompt.js';
 import { visionExtract, MAX_IMAGE_CHARS } from './_lib/demoVision.js';
+import { normalizeJa } from './_lib/normalizeJa.js';
+
+// 画像OCRを公開してよいか。専用鍵があっても**品質がサンプルの正解表を通るまでは閉じる**。
+// 2026-10-06 SiliconFlow / Gemma 4 で実測：画像から直接台帳化すると得意先に宛先を入れ、
+// 二段（書き起こし→台帳化）でも書き起こし自体が「サンプル商事→サンプル卸事」
+// 「A-1001→A-001」「500枚→50枚」と誤読した。もっともらしい誤った数字は最悪の失敗なので、
+// 「準備中」と正直に出す方を選ぶ（見える失敗＞黙った誤り）。別の視覚モデルが
+// docs/lead-gen/sample-order-golden.md を通ったら true にする。
+export const VISION_READY = false;
 
 function json(status, body) {
   return new Response(JSON.stringify(body), {
@@ -89,7 +98,8 @@ export function mergeRows(perFile) {
       const out = { ファイル: f.name };
       let filled = 0;
       for (const k of LEDGER_COLUMNS) {
-        const v = row[k] == null ? '' : String(row[k]).trim();
+        // 返答側にも部首文字が残りうる（モデルは原文どおり写す）ので、ここでも正規化。
+        const v = row[k] == null ? '' : normalizeJa(String(row[k])).trim();
         out[k] = v;
         if (v) filled++;
       }
@@ -143,7 +153,8 @@ export async function onRequest(context) {
     .filter((it) => it && (typeof it.text === 'string' || typeof it.image === 'string'))
     .map((it) => ({
       name: String(it.name || '').slice(0, 120),
-      text: typeof it.text === 'string' ? it.text.trim() : '',
+      // 送る前に康熙部首を通常の漢字へ（normalizeJa.js 参照）。
+      text: typeof it.text === 'string' ? normalizeJa(it.text.trim()) : '',
       image: typeof it.image === 'string' ? it.image : '',
       pageCount: Number(it.pageCount),
     }))
@@ -158,7 +169,8 @@ export async function onRequest(context) {
   //    必ずエラーになり、しかも bumpDemoCounters が先に走るので**ユーザーの無料回数を
   //    無駄に消費する**。そこで専用キーが無い間は画像を「準備中」として受理前に外し、
   //    回数も消費しない。DEMO_API_KEY を入れれば自動で画像も処理対象に戻る。
-  const servedItems = onDedicatedKey ? items : items.filter((it) => !it.image);
+  //    2026-10-06 追記：専用鍵があっても VISION_READY が false の間は同じく外す（上の定数参照）。
+  const servedItems = onDedicatedKey && VISION_READY ? items : items.filter((it) => !it.image);
   const visionPending = items.length - servedItems.length;
   if (!servedItems.length) {
     // 全部が画像で専用キーが無い → 回数を消費せず「準備中」を返す（200・空）。

@@ -3,7 +3,8 @@ import assert from 'node:assert';
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mergeRows } from '../functions/api/demo-order-extract.js';
+import { mergeRows, VISION_READY } from '../functions/api/demo-order-extract.js';
+import { normalizeJa } from '../functions/api/_lib/normalizeJa.js';
 import {
   LEDGER_COLUMNS,
   buildDemoOrderPrompt,
@@ -119,4 +120,83 @@ test('⑤ サンプル注文書が公開パスにあり、ページから参照�
   assert.match(html, /href="solutions\/samples\/sample-order\.pdf"/);
   const js = readFileSync(path.join(ROOT, 'js/order-to-ledger-demo.js'), 'utf8');
   assert.match(js, /fetch\('\/solutions\/samples\/sample-order\.pdf'\)/);
+});
+
+// ── 2026-10-06 追加：SiliconFlow / Gemma のスモークテストで出た三つの穴 ────────────
+
+test('④ 康熙部首を日本の字形の漢字に戻す（素の NFKC だと 黒→黑 の中国字形になる）', () => {
+  // 実際の PDF から出た文字列（Edge 印刷）。見た目は同じでも Excel で一致しない。
+  assert.equal(normalizeJa('コピー⽤紙'), 'コピー用紙');
+  assert.equal(normalizeJa('ボールペン ⿊ 0.5mm'), 'ボールペン 黒 0.5mm');
+  assert.equal(normalizeJa('50枚⼊'), '50枚入');
+  assert.equal(normalizeJa('2026年10⽉6⽇'), '2026年10月6日');
+  assert.equal(normalizeJa('⾭'), '青', '⾭ は 靑 ではなく 青');
+  assert.equal(normalizeJa('⻑⻄'), '長西', '部首補助ブロックも');
+  assert.equal(normalizeJa('⿓'), '龍', '龍は人名で正規に使うので竜にしない');
+});
+
+test('④ 部首以外には触らない（全角数字・普通の漢字・記号はそのまま）', () => {
+  const s = '株式会社サンプル商事　ＰＯ－２０２６　黑字 ¥1,000';
+  assert.equal(normalizeJa(s), s);
+  assert.equal(normalizeJa(''), '');
+  assert.equal(normalizeJa(undefined), undefined);
+});
+
+test('④ 送信前と返答後の両方で正規化される（モデルは原文どおり写すので片側では足りない）', () => {
+  const { rows } = mergeRows([{ name: 'a.pdf', rows: [{ 品名: 'コピー⽤紙' }] }]);
+  assert.equal(rows[0].品名, 'コピー用紙');
+  const src = readFileSync(path.join(ROOT, 'functions/api/demo-order-extract.js'), 'utf8');
+  assert.match(
+    src,
+    /text: typeof it\.text === 'string' \? normalizeJa\(/,
+    '送信前の正規化が外れた',
+  );
+});
+
+// クライアントの joinLine は IIFE の中にあるので、ソースから抜き出して本物を試す
+// （テスト用の写しを作ると本番とずれる）。
+function clientJoinLine() {
+  const src = readFileSync(path.join(ROOT, 'js/order-to-ledger-demo.js'), 'utf8');
+  const m = src.match(/function joinLine\(items\) \{[\s\S]*?\n {2}\}\n/);
+  assert.ok(m, 'joinLine がクライアントに見つからない');
+  return new Function(m[0] + '; return joinLine;')();
+}
+// pdf.js の文字片の形：transform[0]=字の大きさ, transform[4]=x, width=幅
+const piece = (str, x, width, size = 10) => ({
+  str,
+  width,
+  height: size,
+  transform: [size, 0, 0, size, x, 0],
+});
+
+test('⑤ 隙間で繋ぐ：分割された語は連結・語の区切りは空白・列の区切りはタブ', () => {
+  const joinLine = clientJoinLine();
+  // 実測した em 値：分割 0.00 / 語間 0.29 / 列間 ≥0.86（docs の正解表を作った PDF から）
+  const line = [
+    piece('2', 0, 6),
+    piece('B-2050', 6 + 22.8, 40), // 2.28em → タブ
+    piece('ボールペン', 68.8 + 20.5, 50), // 2.05em → タブ
+    piece('黒', 139.3 + 2.9, 10), // 0.29em → 空白
+    piece('0.5mm', 152.2 + 2.9, 25), // 0.29em → 空白
+    piece('10', 180.1 + 70.3, 12), // 7.03em → タブ
+  ];
+  assert.equal(joinLine(line), '2\tB-2050\tボールペン 黒 0.5mm\t10');
+  // 分割片（隙間 0）は連結される
+  assert.equal(
+    joinLine([piece('コピー', 0, 30), piece('用', 30, 10), piece('紙', 40, 10)]),
+    'コピー用紙',
+  );
+});
+
+test('⑤ 空白だけの文字片は位置計算に使わない（列の隙間いっぱいに伸びていて隙間が負になる）', () => {
+  const joinLine = clientJoinLine();
+  // Edge の PDF：「20」の後に幅の広い空白片があり、その終端は次の「箱」より右にある
+  const line = [piece('20', 0, 12), piece(' ', 12, 30), piece('箱', 22.3, 10)];
+  assert.equal(joinLine(line), '20\t箱');
+});
+
+test('⑥ 画像OCRは正解表を通るまで閉じている（専用鍵があっても）', () => {
+  assert.equal(VISION_READY, false, '視覚モデルが正解表を通ったことを確認してから true にする');
+  const src = readFileSync(path.join(ROOT, 'functions/api/demo-order-extract.js'), 'utf8');
+  assert.match(src, /onDedicatedKey && VISION_READY \? items : items\.filter/);
 });

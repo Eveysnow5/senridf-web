@@ -98,6 +98,34 @@
     return XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false });
   }
 
+  // 同じ行の文字片を、実際の見た目の隙間（字の大きさ＝em 単位）で繋ぐ：
+  //   ≤0.15em → そのまま連結（PDF 内で分割されただけの語。例：コピー|用|紙）
+  //   ≤0.6em  → 空白（セル内の語の区切り。通常の空白字形は 0.25〜0.35em）
+  //   >0.6em  → タブ（列の区切り）。Excel/CSV 経路もセルをタブで送るので形式がそろう。
+  // 以前は常に ' ' で繋いでいたため、語が「コピー 用 紙」と割れ、列の境目も消えて
+  // 「500枚 20 箱」の数量/単位を取り違えた（2026-10-06、Gemma で発覚）。
+  // 空白だけの文字片は位置計算に使わない：Edge/Chrome の PDF はセル間に空白片を置き、
+  // その幅が列の隙間全体に伸びているため、測ると隙間が負になる。
+  function joinLine(items) {
+    items.sort(function (a, b) {
+      return a.transform[4] - b.transform[4];
+    });
+    var text = '';
+    var prevEnd = null;
+    items.forEach(function (it) {
+      if (!it.str.trim()) return;
+      var x = it.transform[4];
+      var size = Math.abs(it.transform[0]) || it.height || 10;
+      if (prevEnd !== null) {
+        var gap = (x - prevEnd) / size;
+        text += gap > 0.6 ? '\t' : gap > 0.15 ? ' ' : '';
+      }
+      text += it.str;
+      prevEnd = x + (it.width || 0);
+    });
+    return text.trim();
+  }
+
   function parsePdfText(buf) {
     if (typeof pdfjsLib === 'undefined') return Promise.reject(new Error('pdf.js'));
     return pdfjsLib
@@ -119,14 +147,14 @@
               content.items.forEach(function (it) {
                 if (!it.str) return;
                 var y = Math.round(it.transform[5]);
-                (lines[y] = lines[y] || []).push(it.str);
+                (lines[y] = lines[y] || []).push(it);
               });
               Object.keys(lines)
                 .sort(function (a, b) {
                   return b - a;
                 })
                 .forEach(function (y) {
-                  var text = lines[y].join(' ').trim();
+                  var text = joinLine(lines[y]);
                   if (text) out.push([text]);
                 });
             });
