@@ -45,13 +45,14 @@ const T = {
     values_eyebrow: '価値観',
     values_title: '技術は人間のために',
     val1_name: 'リアリズム',
-    val1_desc: '現実に根ざした企画と実行。理想を掲げながらも、実現可能な道筋を誠実に追い求めます。',
+    val1_desc:
+      '現実に根ざした企画と実行。理想を掲げながらも、実現可能な道筋を誠実に追い求めます。だからこそまずはオンラインのツールでAIを日々の仕事に役立つ形にし、その先にAIを組み込んだハードウェアを見据えています。',
     val2_name: '明確さ',
     val2_desc:
-      '複雑な技術を、誰もが理解できる言葉と形に変える。明確なコミュニケーションが信頼の土台です。',
+      '複雑な技術を、誰もが理解できる言葉と形に変える。明確なコミュニケーションが信頼の土台です。AIが何をして、データがどこへ行くのかも、はっきりお伝えします。',
     val3_name: '責任',
     val3_desc:
-      'テクノロジーの力を持つ者が、その使い方に責任を持つ。私たちはAIの倫理的活用にコミットします。',
+      'テクノロジーの力を持つ者が、その使い方に責任を持つ。私たちはAIの倫理的活用にコミットします。最後の判断は使う人に委ね、結果を人が確かめられる形でお届けします。',
 
     /* About teaser (homepage) */
     about_teaser_eyebrow: '千里同風とは',
@@ -682,11 +683,14 @@ const T = {
     values_eyebrow: '价值观',
     values_title: '技术服务于人',
     val1_name: '现实主义',
-    val1_desc: '脚踏实地的规划与执行。在追求理想的同时，诚实地寻求可实现的路径。',
+    val1_desc:
+      '脚踏实地的规划与执行。在追求理想的同时，诚实地寻求可实现的路径。所以我们先用在线工具把 AI 真正用到日常工作里，再走向嵌入 AI 的硬件。',
     val2_name: '清晰',
-    val2_desc: '将复杂的技术转化为每个人都能理解的语言与形式。清晰的沟通是信任的基础。',
+    val2_desc:
+      '将复杂的技术转化为每个人都能理解的语言与形式。清晰的沟通是信任的基础。AI 做了什么、数据会去哪里，我们都会讲清楚。',
     val3_name: '责任',
-    val3_desc: '拥有技术力量的人，对其使用方式负责。我们致力于AI的伦理化应用。',
+    val3_desc:
+      '拥有技术力量的人，对其使用方式负责。我们致力于AI的伦理化应用。最后的判断交给使用的人，结果始终以人能核对的形式交付。',
 
     about_teaser_eyebrow: '关于我们',
     about_teaser_title: '从大阪出发，探索连接人与AI的新形式。',
@@ -1278,13 +1282,13 @@ const T = {
     values_title: 'Technology Serves People',
     val1_name: 'Realism',
     val1_desc:
-      'Grounded planning and execution. While holding onto ideals, we honestly pursue achievable paths.',
+      'Grounded planning and execution. While holding onto ideals, we honestly pursue achievable paths. That is why we start with online tools that put AI to real use in everyday work, with AI-embedded hardware as the next step.',
     val2_name: 'Clarity',
     val2_desc:
-      'Translating complex technology into language and forms everyone can understand. Clear communication is the foundation of trust.',
+      'Translating complex technology into language and forms everyone can understand. Clear communication is the foundation of trust. We tell you plainly what the AI does and where your data goes.',
     val3_name: 'Responsibility',
     val3_desc:
-      'Those with the power of technology must be responsible for how it is used. We are committed to the ethical application of AI.',
+      'Those with the power of technology must be responsible for how it is used. We are committed to the ethical application of AI. The final judgement stays with the people who use our tools, and results are always delivered in a form a person can check.',
 
     about_teaser_eyebrow: 'About',
     about_teaser_title: 'From Osaka, exploring new ways to connect people and AI.',
