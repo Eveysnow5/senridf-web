@@ -1,7 +1,8 @@
 /* 受発注ランディングのデモ（バッチ + 画像OCR対応）：
-   - 文字PDF/Excel/CSV：ブラウザ内で解析し、テキストのみ送る（原本ファイルは非送信）。
-   - スキャンPDF/画像：文字レイヤーが無いので、画像を視覚モデル(通義千問VL)に送って読み取る。
-     ⚠️ 画像は当社サーバー経由で Qwen に送信されるため、送信前に**確認ダイアログ**で同意を取る。
+   - 文字PDF/Excel/CSV：ブラウザ内で解析。AI整形を押したときだけ、読み取った文字を送る
+     （原本ファイルは非送信）。送り先 AI の名称は送信前に表示する（loadAiRoute）。
+   - スキャンPDF/画像：文字レイヤーが無いので、画像を視覚モデルに送って読み取る。
+     ⚠️ 画像は当社サーバー経由で AI に送信されるため、送信前に**確認ダイアログ**で同意を取る。
    端点：/api/demo-order-extract に items[]（text か image）を送信 → AI が構造化 → 1 枚に合并。
    トークンは window.sdfDemoToken（会員=会員トークン、未ログイン=匿名）。
 
@@ -250,6 +251,7 @@
         renderFileList(ok, results.length - ok.length);
         showStatus(null);
         resultEl.hidden = false;
+        loadAiRoute();
       })
       .catch(function (err) {
         console.error('[order-to-ledger] バッチ解析失败:', err);
@@ -302,6 +304,39 @@
       cancel.addEventListener('click', onCancel);
       modal.hidden = false;
     });
+  }
+
+  // ── 送り先の開示（送信前）──────────────────────────────────────────────────────
+  // 端点の GET が「今実際に使う AI」の名称を返す（専用鍵の有無で変わるため、ページに
+  // 固定で書くと経路とずれる）。取れなければ名称は出さず、汎用の注記だけ残す。
+  var aiRouteEl = document.getElementById('o2lAiRoute');
+  var aiRouteNameEl = document.getElementById('o2lAiRouteName');
+  var aiRouteLoaded = false;
+  function showAiRoute(name) {
+    if (!aiRouteEl || !aiRouteNameEl || !name) return;
+    aiRouteNameEl.textContent = String(name);
+    aiRouteEl.hidden = false;
+  }
+  function loadAiRoute() {
+    if (aiRouteLoaded || typeof window.sdfDemoToken !== 'function') return;
+    aiRouteLoaded = true;
+    Promise.resolve(window.sdfDemoToken())
+      .then(function (token) {
+        if (!token) throw new Error('no token');
+        return fetch('/api/demo-order-extract', {
+          headers: { Authorization: 'Bearer ' + token },
+        });
+      })
+      .then(function (res) {
+        return res.ok ? res.json() : null;
+      })
+      .then(function (b) {
+        if (b && b.ai) showAiRoute(b.ai);
+        else aiRouteLoaded = false; // 次の読み取り時に再試行
+      })
+      .catch(function () {
+        aiRouteLoaded = false;
+      });
   }
 
   // ── AI 整形 ──────────────────────────────────────────────────────────────────
@@ -370,6 +405,7 @@
         }
         var columns = (r.body && r.body.columns) || [];
         var rows = (r.body && r.body.rows) || [];
+        if (r.body && r.body.ai) showAiRoute(r.body.ai); // 実際に使った AI で上書き
         // 専用付費キーが無い間、画像は「準備中」としてサーバ側で外される（回数は消費しない）。
         var visionPending = (r.body && r.body.visionPending) || 0;
         if (!rows.length) {
@@ -441,6 +477,31 @@
       var wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, '台帳');
       XLSX.writeFile(wb, 'daicho.xlsx');
+    });
+  }
+
+  // ── サンプル注文書で試す ─────────────────────────────────────────────────────
+  // 静的な PDF を取ってきて、ユーザーが選んだファイルと同じ経路（ブラウザ内読み取り）に流す。
+  // 特別扱いはしない＝サンプルで動けば実ファイルでも同じ経路が動いている証拠になる。
+  var sampleBtn = document.getElementById('o2lSample');
+  if (sampleBtn) {
+    sampleBtn.addEventListener('click', function () {
+      sampleBtn.disabled = true;
+      fetch('/solutions/samples/sample-order.pdf')
+        .then(function (res) {
+          if (!res.ok) throw new Error('sample ' + res.status);
+          return res.blob();
+        })
+        .then(function (blob) {
+          handleFiles([new File([blob], 'sample-order.pdf', { type: 'application/pdf' })]);
+        })
+        .catch(function (err) {
+          console.error('[order-to-ledger] サンプル取得失敗:', err);
+          showStatus('parse');
+        })
+        .then(function () {
+          sampleBtn.disabled = false;
+        });
     });
   }
 

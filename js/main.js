@@ -141,18 +141,23 @@ const T = {
     o2l_demo_eyebrow: '試してみる',
     o2l_demo_title: 'お手元の注文書で、実際に変換',
     o2l_demo_lead:
-      '注文書（PDF・Excel）をアップロードすると、受注台帳の形に変換します。ファイルはブラウザ内で処理され、サーバーには送信されません。',
+      '注文書（PDF・Excel・CSV）を選ぶと、受注台帳の形に変換します。ファイルの読み取りはお使いのブラウザ内で行い、ファイル本体はサーバーに送信しません。',
     o2l_drop_text:
-      '帳票（注文書・給与明細など）を PDF・Excel・CSV でドロップ、またはクリックして選択（最大10ファイル）',
+      '注文書（PDF・Excel・CSV）をここにドロップ、またはクリックして選択（最大10ファイル）',
     o2l_drop_hint:
-      '文字PDF・Excel・CSVはブラウザ内で処理（非送信）。スキャン・画像は読み取りに画像を送信します（送信前に確認）。',
+      'ファイルの読み取りはブラウザ内で行います（ファイル本体は送信しません）。スキャン・画像は、読み取りのため画像を送信します（送信前に確認）。',
+    o2l_sample_btn: 'サンプル注文書で試す',
+    o2l_sample_view: 'サンプルの中身を見る（PDF）',
+    o2l_ai_send_note:
+      '「AIで台帳に整形」を押すと、読み取った文字だけを当社サーバー経由でAIに送信します（ファイル本体は送信しません）。',
+    o2l_ai_route_label: '使用するAI：',
     o2l_file_image: '画像',
     o2l_ai_cancelled: '画像の送信をキャンセルしました。',
     o2l_ai_vision_pending:
       '画像・スキャンのOCRは現在準備中です。文字情報入りのPDF・Excel・CSVはそのままご利用いただけます。',
     o2l_cf_title: '画像として読み取りますか？',
     o2l_cf_body:
-      'このファイルには文字情報が無いため、画像として読み取ります。この場合、画像は当社サーバー経由で通義千問（Qwen）の視覚モデルに送信されます。（文字PDF・Excel・CSVはブラウザ内で処理され、送信されません。）',
+      'このファイルには文字情報が無いため、画像として読み取ります。この場合、画像そのものが当社サーバー経由で、デモ欄に表示しているAIに送信されます。（文字PDF・Excel・CSVは、ファイル本体を送信しません。）',
     o2l_cf_ok: '送信して読み取る',
     o2l_cf_cancel: 'キャンセル',
     o2l_status_parsing: '読み取り中…',
@@ -190,9 +195,11 @@ const T = {
     o2l_trust_eyebrow: '安心してお使いいただくために',
     o2l_trust_title: 'データの取り扱い',
     o2l_trust1:
-      '文字PDF・Excel・CSVは、お使いのブラウザ内で処理し、当社サーバーには送信しません。（スキャン・画像のみ、読み取りのため画像を送信します＝送信前に確認します。）',
-    o2l_trust2: '抽出した内容は保存しません。処理が終わればすぐに破棄されます。',
-    o2l_trust3: '通信はすべて暗号化されています（HTTPS / AES-256）。',
+      'ファイルの読み取りはお使いのブラウザ内で行い、ファイル本体は当社サーバーに送信しません。',
+    o2l_trust2:
+      '「AIで台帳に整形」を押したときだけ、読み取った文字を当社サーバー経由でAIに送信します（スキャン・画像は画像を送信。送信前に確認します）。使用するAIはデモ欄に表示しています。',
+    o2l_trust3: '当社サーバーでは、送信された内容を保存しません。',
+    o2l_trust4: '通信はすべて暗号化されています（HTTPS）。',
     o2l_trust_privacy: '詳しい取り扱いは、プライバシーポリシーをご覧ください。',
     o2l_cta_title: 'まずは、今の作業を教えてください。',
     o2l_cta_lead: '無料でお試しいただくか、御社の業務に合わせた自動化をご相談ください。',
@@ -215,7 +222,7 @@ const T = {
     o2l_f_privacy_post: 'に同意したものとみなします。',
     pp_eyebrow: 'プライバシー',
     pp_title: 'プライバシーポリシー',
-    pp_updated: '制定日：2026年10月5日',
+    pp_updated: '制定日：2026年10月5日／改定日：2026年10月6日',
     pp_intro:
       '千里同風株式会社（以下「当社」）は、当社ウェブサイト（senridf.com）および各ツール・サービスにおけるお客様の個人情報を、以下の方針に基づき適切に取り扱います。',
     pp_s1_h: '1. 取得する情報',
@@ -228,13 +235,15 @@ const T = {
     pp_s3_b:
       '法令に基づく場合を除き、お客様の個人情報を第三者に販売・提供することはありません。ただし、サービスの提供のために次の外部サービスを利用しており、処理に必要な範囲でデータが送信されます。',
     pp_s3_qwen:
-      '生成AI（Alibaba Cloud「通義千問」／DashScope）— 翻訳・文書整形・画像OCRなどのAI処理に利用します。画像・スキャンのOCRは、送信前に確認ダイアログで明示的にご同意いただいた場合に限り、その画像を送信します。',
+      '生成AI（Alibaba Cloud「通義千問」／DashScope）— 翻訳・文書整形などのAI処理に利用します。',
+    pp_s3_sf:
+      '生成AI（SiliconFlow、運営：SILICONFLOW LABS PTE. LTD.〔シンガポール〕、モデル：Google Gemma 4）— 受発注デモのAI整形・画像読み取りに利用します。受発注デモで実際に使用しているAIは、デモ欄に表示します。画像・スキャンは、送信前に確認ダイアログでご同意いただいた場合に限り送信します。',
     pp_s3_google: 'Google / Firebase — ログイン認証とデータ保存（Firestore）に利用します。',
     pp_s3_cf: 'Cloudflare — ウェブサイトの配信とアクセス解析に利用します。',
     pp_s3_dg: 'Deepgram — 音声通訳機能をご利用の場合に、音声をテキスト化するために利用します。',
     pp_s4_h: '4. ブラウザ内での処理について',
     pp_s4_b:
-      '受発注デモなど一部のツールでは、テキスト情報を含むPDF・Excel・CSVファイルはお客様のブラウザ内だけで解析し、ファイルそのものは当社サーバーに送信しません。一方、画像・スキャンしたファイルのOCRは、上記のとおり確認・同意のうえで画像を外部AIに送信します。',
+      '受発注デモなど一部のツールでは、テキスト情報を含むPDF・Excel・CSVファイルはお客様のブラウザ内で解析し、ファイルそのものは当社サーバーに送信しません。「AIで整形」をご利用の場合に限り、読み取った文字（画像・スキャンの場合は、確認・同意のうえで画像）を当社サーバー経由で上記の生成AIに送信します。当社サーバーではその内容を保存しません。',
     pp_s5_h: '5. 保存期間',
     pp_s5_b:
       'お問い合わせ・ご相談の内容は、対応および必要な記録のために保管します。アクセス解析などの統計データは一定期間ののち自動的に削除されます。保管が不要になった個人情報は、適切な方法で消去します。',
@@ -726,18 +735,22 @@ const T = {
     o2l_demo_eyebrow: '实际试一下',
     o2l_demo_title: '用你手边的订单，当场转换',
     o2l_demo_lead:
-      '上传订单（PDF / Excel），就会转成受注台账的样子。文件在浏览器内处理，不上传服务器。',
-    o2l_drop_text:
-      '把帳票（订单 / 工资单等）以 PDF / Excel / CSV 拖到这里，或点击选择（最多 10 个）',
+      '选择订单（PDF / Excel / CSV），就会转成受注台账的样子。文件在你的浏览器内读取，文件本身不会发送到服务器。',
+    o2l_drop_text: '把订单（PDF / Excel / CSV）拖到这里，或点击选择（最多 10 个）',
     o2l_drop_hint:
-      '文字 PDF / Excel / CSV 在浏览器内处理（不上传）。扫描件 / 图片会把图片发送识别（发送前会确认）。',
+      '文件在浏览器内读取（文件本身不发送）。扫描件 / 图片为了识别会发送图片（发送前会确认）。',
+    o2l_sample_btn: '用示例订单试试',
+    o2l_sample_view: '查看示例内容（PDF）',
+    o2l_ai_send_note:
+      '点「用 AI 整形成台账」时，只会把读取到的文字经由我们的服务器发送给 AI（文件本身不发送）。',
+    o2l_ai_route_label: '使用的 AI：',
     o2l_file_image: '图片',
     o2l_ai_cancelled: '已取消发送图片。',
     o2l_ai_vision_pending:
       '图片/扫描件的 OCR 正在准备中。含文字信息的 PDF、Excel、CSV 可照常使用。',
     o2l_cf_title: '要作为图片识别吗？',
     o2l_cf_body:
-      '这个文件没有文字信息，需要作为图片识别。此时图片会经由我们的服务器发送到通义千问（Qwen）视觉模型。（文字 PDF / Excel / CSV 在浏览器内处理，不会发送。）',
+      '这个文件没有文字信息，需要作为图片识别。此时图片本身会经由我们的服务器，发送给演示区显示的 AI。（文字 PDF / Excel / CSV 不会发送文件本身。）',
     o2l_cf_ok: '发送并识别',
     o2l_cf_cancel: '取消',
     o2l_status_parsing: '读取中…',
@@ -773,10 +786,11 @@ const T = {
     o2l_price_maint: '维护改进 每月 5,000 日元起（可选）。',
     o2l_trust_eyebrow: '为了让你放心使用',
     o2l_trust_title: '数据怎么处理',
-    o2l_trust1:
-      '文字 PDF / Excel / CSV 在你的浏览器内处理，不发送到我们的服务器。（只有扫描件 / 图片，为了识别会发送图片，发送前会确认。）',
-    o2l_trust2: '抽取的内容不保存，处理完立即丢弃。',
-    o2l_trust3: '所有通信都经过加密（HTTPS / AES-256）。',
+    o2l_trust1: '文件在你的浏览器内读取，文件本身不会发送到我们的服务器。',
+    o2l_trust2:
+      '只有点「用 AI 整形成台账」时，才会把读取到的文字经由我们的服务器发送给 AI（扫描件 / 图片会发送图片，发送前会确认）。使用的 AI 显示在演示区。',
+    o2l_trust3: '我们的服务器不保存发送过来的内容。',
+    o2l_trust4: '所有通信都经过加密（HTTPS）。',
     o2l_trust_privacy: '更详细的处理方式请见隐私政策。',
     o2l_cta_title: '先告诉我们，你现在是怎么做的。',
     o2l_cta_lead: '可以免费试用，也可以按贵司业务聊聊怎么自动化。',
@@ -798,7 +812,7 @@ const T = {
     o2l_f_privacy_post: '。',
     pp_eyebrow: '隐私',
     pp_title: '隐私政策',
-    pp_updated: '制定日期：2026年10月5日',
+    pp_updated: '制定日期：2026年10月5日／修订日期：2026年10月6日',
     pp_intro:
       '千里同風株式会社（以下简称“本公司”）依据以下方针，妥善处理您在本公司网站（senridf.com）及各工具与服务中的个人信息。',
     pp_s1_h: '1. 收集的信息',
@@ -810,14 +824,15 @@ const T = {
     pp_s3_h: '3. 外部服务与第三方提供',
     pp_s3_b:
       '除法律要求外，本公司不会向第三方出售或提供您的个人信息。但为提供服务，我们使用以下外部服务，并在处理所需范围内发送数据。',
-    pp_s3_qwen:
-      '生成式AI（阿里云“通义千问”／DashScope）— 用于翻译、文档整理、图像OCR等AI处理。图片/扫描件的OCR，仅在发送前经确认弹窗明确同意后，才会发送该图片。',
+    pp_s3_qwen: '生成式AI（阿里云“通义千问”／DashScope）— 用于翻译、文档整理等AI处理。',
+    pp_s3_sf:
+      '生成式AI（SiliconFlow，运营方：SILICONFLOW LABS PTE. LTD.〔新加坡〕，模型：Google Gemma 4）— 用于受発注演示的AI整形与图片识别。受発注演示实际使用的AI会显示在演示区。图片/扫描件仅在发送前经确认弹窗同意后才会发送。',
     pp_s3_google: 'Google / Firebase — 用于登录认证与数据存储（Firestore）。',
     pp_s3_cf: 'Cloudflare — 用于网站分发与访问分析。',
     pp_s3_dg: 'Deepgram — 在您使用语音口译功能时，用于将语音转为文字。',
     pp_s4_h: '4. 关于浏览器内处理',
     pp_s4_b:
-      '在受発注演示等部分工具中，含文字信息的 PDF、Excel、CSV 文件仅在您的浏览器内解析，文件本身不会发送到本公司服务器。而图片/扫描件的 OCR，会如上所述在确认与同意后将图片发送给外部AI。',
+      '在受発注演示等部分工具中，含文字信息的 PDF、Excel、CSV 文件在您的浏览器内解析，文件本身不会发送到本公司服务器。仅在您使用「AI 整形」时，读取到的文字（图片/扫描件则在确认与同意后发送图片）会经由本公司服务器发送给上述生成式AI。本公司服务器不保存这些内容。',
     pp_s5_h: '5. 保存期限',
     pp_s5_b:
       '咨询与相談内容将为处理及必要记录而保存。访问分析等统计数据会在一定期限后自动删除。不再需要保存的个人信息，将以适当方式销毁。',
@@ -1292,18 +1307,22 @@ const T = {
     o2l_demo_eyebrow: 'Try it',
     o2l_demo_title: 'Convert your own order form, live',
     o2l_demo_lead:
-      'Upload an order form (PDF or Excel) and it is converted into ledger form. Files are processed in your browser and never sent to our servers.',
-    o2l_drop_text:
-      'Drop your documents (orders, pay slips, etc.) as PDF / Excel / CSV, or click to choose (up to 10)',
+      'Choose an order form (PDF / Excel / CSV) and it is converted into ledger form. Files are read in your browser; the files themselves are never sent to our servers.',
+    o2l_drop_text: 'Drop order forms (PDF / Excel / CSV) here, or click to choose (up to 10)',
     o2l_drop_hint:
-      'Text PDF / Excel / CSV are processed in your browser (not uploaded). Scans / images are sent for reading (we ask first).',
+      'Files are read in your browser (the files themselves are not sent). Scans / images are sent as images for reading (we ask first).',
+    o2l_sample_btn: 'Try with a sample order',
+    o2l_sample_view: 'View the sample (PDF)',
+    o2l_ai_send_note:
+      'When you press “Structure into a ledger with AI”, only the extracted text is sent to an AI via our server (the file itself is not sent).',
+    o2l_ai_route_label: 'AI used:',
     o2l_file_image: 'image',
     o2l_ai_cancelled: 'Image sending was cancelled.',
     o2l_ai_vision_pending:
       'OCR for images / scans is being set up. Text-based PDF, Excel, and CSV files work as usual.',
     o2l_cf_title: 'Read this as an image?',
     o2l_cf_body:
-      'This file has no text, so it will be read as an image. The image is then sent via our server to the Tongyi Qianwen (Qwen) vision model. (Text PDF / Excel / CSV are processed in your browser and are not sent.)',
+      'This file has no text, so it will be read as an image. The image itself is then sent via our server to the AI shown in the demo section. (For text PDF / Excel / CSV, the file itself is not sent.)',
     o2l_cf_ok: 'Send and read',
     o2l_cf_cancel: 'Cancel',
     o2l_status_parsing: 'Reading…',
@@ -1342,9 +1361,11 @@ const T = {
     o2l_trust_eyebrow: 'So you can use it with confidence',
     o2l_trust_title: 'How your data is handled',
     o2l_trust1:
-      'Text PDF / Excel / CSV are processed in your browser and never sent to our servers. (Only scans / images are sent, for reading — and we ask first.)',
-    o2l_trust2: 'Extracted content is not stored — it is discarded as soon as processing finishes.',
-    o2l_trust3: 'All communication is encrypted (HTTPS / AES-256).',
+      'Files are read in your browser; the files themselves are never sent to our servers.',
+    o2l_trust2:
+      'Only when you press “Structure into a ledger with AI” is the extracted text sent to an AI via our server (scans / images are sent as images, and we ask first). The AI in use is shown in the demo section.',
+    o2l_trust3: 'Our servers do not store the content you send.',
+    o2l_trust4: 'All communication is encrypted (HTTPS).',
     o2l_trust_privacy: 'See our Privacy Policy for full details.',
     o2l_cta_title: 'Tell us how you work today.',
     o2l_cta_lead: 'Try it for free, or talk to us about automation tailored to your business.',
@@ -1367,7 +1388,7 @@ const T = {
     o2l_f_privacy_post: '.',
     pp_eyebrow: 'Privacy',
     pp_title: 'Privacy Policy',
-    pp_updated: 'Effective date: October 5, 2026',
+    pp_updated: 'Effective date: October 5, 2026 / Revised: October 6, 2026',
     pp_intro:
       'Senridoufuu Co., Ltd. ("we", "us") handles your personal information on our website (senridf.com) and across our tools and services in accordance with the policy below.',
     pp_s1_h: '1. Information we collect',
@@ -1380,14 +1401,16 @@ const T = {
     pp_s3_b:
       'We do not sell or disclose your personal information to third parties except as required by law. However, to provide our services we use the following external services, and data is sent to them to the extent needed for processing.',
     pp_s3_qwen:
-      'Generative AI (Alibaba Cloud "Tongyi Qianwen" / DashScope) — used for translation, document formatting, and image OCR. For image/scan OCR, the image is sent only after you explicitly agree via a confirmation dialog before sending.',
+      'Generative AI (Alibaba Cloud "Tongyi Qianwen" / DashScope) — used for AI processing such as translation and document formatting.',
+    pp_s3_sf:
+      'Generative AI (SiliconFlow, operated by SILICONFLOW LABS PTE. LTD. [Singapore]; model: Google Gemma 4) — used for AI structuring and image reading in the order-to-ledger demo. The AI actually in use is shown in the demo section. Images/scans are sent only after you agree via a confirmation dialog.',
     pp_s3_google: 'Google / Firebase — used for login authentication and data storage (Firestore).',
     pp_s3_cf: 'Cloudflare — used for website delivery and access analytics.',
     pp_s3_dg:
       'Deepgram — used to transcribe speech to text when you use the voice interpretation feature.',
     pp_s4_h: '4. In-browser processing',
     pp_s4_b:
-      'In some tools, such as the order-to-ledger demo, PDF, Excel, and CSV files that contain text are parsed entirely within your browser, and the files themselves are not sent to our servers. OCR for images and scanned files, however, sends the image to an external AI after your confirmation and consent, as described above.',
+      'In some tools, such as the order-to-ledger demo, PDF, Excel, and CSV files that contain text are parsed within your browser, and the files themselves are not sent to our servers. Only when you use “Structure with AI” is the extracted text (or, for images and scans, the image, after your confirmation and consent) sent via our server to the generative AI listed above. Our servers do not store that content.',
     pp_s5_h: '5. Retention',
     pp_s5_b:
       'Inquiry and consultation content is retained for handling and necessary records. Statistical data such as access analytics is automatically deleted after a set period. Personal information that is no longer needed is erased by appropriate means.',

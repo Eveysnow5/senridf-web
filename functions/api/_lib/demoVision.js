@@ -1,9 +1,10 @@
-// 受発注デモの画像OCR：スキャン/画像ファイルを視覚モデル（通義千問VL）に送って
-// 読み取り＋構造化する。
+// 受発注デモの画像OCR：スキャン/画像ファイルを視覚モデルに送って読み取り＋構造化する。
+// 送り先は models.js の demoProvider（専用鍵ありなら SiliconFlow の Gemma 4）。
+// 専用鍵が無い間は demo-order-extract.js が画像を「準備中」として外すので、ここは呼ばれない。
 //
 // ⚠️⚠️ プライバシー上の重要な違い：
-//   文字PDF/Excel/CSV は**ブラウザ内で処理**し、テキストのみ送る（原本ファイルは非送信）。
-//   一方この画像OCRは、**画像を当社サーバー経由で通義千問(Qwen)の視覚モデルに送信する**。
+//   文字PDF/Excel/CSV は**ブラウザ内で読み取り**、AI整形時に読み取った文字だけ送る。
+//   一方この画像OCRは、**画像そのものを当社サーバー経由で AI に送信する**。
 //   したがってフロント（js/order-to-ledger-demo.js）で**明示同意（確認ダイアログ）**を
 //   取ってから呼ぶこと。文言もその旨を明記する。
 //
@@ -12,7 +13,7 @@
 // フォールバック付きで直接指定する（テキスト側の集中管理を汚さない）。
 // 視覚モデルは enable_thinking 非対応のことがあるので送らない。
 
-import { CHAT_ENDPOINT, modelFor } from './models.js';
+import { demoProvider, modelFor } from './models.js';
 import { fetchWithTimeout } from './fetchWithTimeout.js';
 import { recordUsage } from './usageRecorder.js';
 import { buildDemoOrderPrompt } from './buildDemoOrderPrompt.js';
@@ -21,9 +22,10 @@ import { buildDemoOrderPrompt } from './buildDemoOrderPrompt.js';
 export const MAX_IMAGE_CHARS = 1_200_000; // ≈ 900KB
 
 export function visionConfig(env) {
+  const p = demoProvider(env);
   return {
-    endpoint: env.DEMO_VISION_ENDPOINT || env.DEMO_CHAT_ENDPOINT || CHAT_ENDPOINT,
-    apiKey: env.DEMO_API_KEY || env.QWEN_API_KEY,
+    endpoint: env.DEMO_VISION_ENDPOINT || p.endpoint,
+    apiKey: p.apiKey,
   };
 }
 
@@ -47,7 +49,7 @@ export async function visionExtract({ env, dataUrl, idToken, context }) {
             content: [
               {
                 type: 'text',
-                text: buildDemoOrderPrompt('（下の画像の帳票を読み取ってください）'),
+                text: buildDemoOrderPrompt('（下の画像の注文書を読み取ってください）'),
               },
               { type: 'image_url', image_url: { url: dataUrl } },
             ],

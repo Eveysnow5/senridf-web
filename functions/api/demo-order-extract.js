@@ -12,10 +12,10 @@
 
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
 import { recordUsage } from './_lib/usageRecorder.js';
-import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
+import { demoProvider, modelFor } from './_lib/models.js';
 import { checkInputSize, quotaDecision, limitsFor, DEMO_LIMITS } from './_lib/demoQuota.js';
 import { bumpDemoCounters } from './_lib/demoCounters.js';
-import { buildDemoOrderPrompt } from './_lib/buildDemoOrderPrompt.js';
+import { buildDemoOrderPrompt, LEDGER_COLUMNS } from './_lib/buildDemoOrderPrompt.js';
 import { visionExtract, MAX_IMAGE_CHARS } from './_lib/demoVision.js';
 
 function json(status, body) {
@@ -76,22 +76,24 @@ async function extractOne({ endpoint, apiKey, env, text, idToken, context }) {
   return parseLedger(dataR.choices?.[0]?.message?.content ?? '');
 }
 
-// 複数ファイルの行を 1 枚に合并：列は union（初出順）＋先頭に「ファイル」列。
+// 複数ファイルの行を 1 枚に合并。列は「ファイル」＋固定の LEDGER_COLUMNS。
+// モデルが返した余計なキーは捨て、欠けたキーは空にする＝表の形はコードが保証する。
+// 固定列がすべて空の行（列名を外した応答など）は捨てる：中身の無い行で埋めず、
+// 全滅なら呼び出し側で「失敗」として見せる（見える失敗＞黙った空行）。
 export function mergeRows(perFile) {
-  const columns = ['ファイル'];
-  const seen = new Set(columns);
+  const columns = ['ファイル', ...LEDGER_COLUMNS];
   const rows = [];
   for (const f of perFile) {
     for (const row of f.rows) {
+      if (!row || typeof row !== 'object') continue;
       const out = { ファイル: f.name };
-      for (const k of Object.keys(row)) {
-        if (!seen.has(k)) {
-          seen.add(k);
-          columns.push(k);
-        }
-        out[k] = row[k] == null ? '' : String(row[k]);
+      let filled = 0;
+      for (const k of LEDGER_COLUMNS) {
+        const v = row[k] == null ? '' : String(row[k]).trim();
+        out[k] = v;
+        if (v) filled++;
       }
-      rows.push(out);
+      if (filled) rows.push(out);
     }
   }
   return { columns, rows };
@@ -99,15 +101,22 @@ export function mergeRows(perFile) {
 
 export async function onRequest(context) {
   const { request, env, data } = context;
-  if (request.method !== 'POST') return json(405, { error: 'Method Not Allowed' });
 
-  // 鍵の解決（A+B 両対応、2026-09-14）：
-  //   B（本命）: DEMO_API_KEY（SiliconFlow 予充值など、専用・隔離。残高がハード天井）。
-  //   A（暫定）: 無ければ既存の QWEN_API_KEY に fallback ＝ 同事の env 変更を待たず今すぐ動く。
+  // 鍵の解決（A+B 両対応、2026-09-14 / 送り先は 2026-10-06 に models.demoProvider へ集約）：
+  //   B（本命）: DEMO_API_KEY（SiliconFlow 国際站の予充值。専用・隔離。残高がハード天井）。
+  //   A（暫定）: 無ければ既存の QWEN_API_KEY（DashScope）に fallback。
   // 専用キーがあるときは 500/日、共有キーに fallback 中は 50/日に絞って本番ツールの
   // 無料桶を守る（08-24 の枯渇事故の教訓）。SiliconFlow キーを入れれば自動で 500 に戻る。
-  const onDedicatedKey = !!env.DEMO_API_KEY;
-  const apiKey = env.DEMO_API_KEY || env.QWEN_API_KEY;
+  // 変数名は aiRoute（下の provider＝ログイン種別 と取り違えないため）。
+  const aiRoute = demoProvider(env);
+  const onDedicatedKey = aiRoute.dedicated;
+  const apiKey = aiRoute.apiKey;
+
+  // GET＝「今どの AI に送るか」だけを返す（送信前の開示用。AI は呼ばない・回数も消費しない）。
+  // 経路が A/B どちらでも、ページの表示が実際の送り先と一致するようにここから出す。
+  if (request.method === 'GET') return json(200, { ai: apiKey ? aiRoute.label : null });
+  if (request.method !== 'POST') return json(405, { error: 'Method Not Allowed' });
+
   if (!apiKey) return json(503, { disabled: true, error: 'demo_disabled' });
   const globalDailyCap = onDedicatedKey ? undefined : 50; // undefined＝既定 500
 
@@ -189,7 +198,7 @@ export async function onRequest(context) {
   // 3) 各ファイルを並列で LLM 構造化 → 合并。独立プロバイダ対応：エンドポイント/モデルは
   //    DEMO_CHAT_ENDPOINT / DEMO_MODEL(=modelFor の env 上書き) で差し替え可能。
   //    1 件が失敗しても他は返す（allSettled）。全滅なら 502。
-  const endpoint = env.DEMO_CHAT_ENDPOINT || CHAT_ENDPOINT;
+  const endpoint = aiRoute.endpoint;
   const lim = limitsFor(provider);
   const settled = await Promise.allSettled(
     servedItems.map((it) => {
@@ -217,6 +226,7 @@ export async function onRequest(context) {
   return json(200, {
     columns: merged.columns,
     rows: merged.rows,
+    ai: aiRoute.label,
     files: perFile.length,
     failed: servedItems.length - perFile.length,
     visionPending, // 専用キーが無く「準備中」として外した画像の件数（0 のことが多い）

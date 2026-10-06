@@ -236,6 +236,47 @@ const ENV_KEY = {
   demoVision: 'DEMO_VISION_MODEL',
 };
 
+// ── 受発注デモ専用プロバイダ（2026-10-06）────────────────────────────────────
+// 専用鍵 DEMO_API_KEY（予充值）があるときは、デモだけ SiliconFlow 国際站
+// （運営 SILICONFLOW LABS PTE. LTD.＝シンガポール法人）の Google Gemma 4 で回す。
+// 共有の DashScope（中国大陸の端点）から外すのは、日本の取引先データを扱うデモで
+// 「どこの何に送るか」を名指しで開示できるようにするため（作者決定）。
+//
+// ⚠️ 同事が設定するのは DEMO_API_KEY **だけ**で済むよう、端点とモデルの既定値を
+//    コードに持つ。以前は DEMO_CHAT_ENDPOINT / DEMO_MODEL も要り、鍵だけ入れると
+//    SiliconFlow の鍵で DashScope を叩いて 401 になる罠だった。
+// ⚠️ 鍵は siliconflow.com（国際站）で発行したもの。siliconflow.cn の鍵とは別物。
+// ⚠️ 鍵が無いので未検証：① モデル id ② enable_thinking:false を受けるか
+//    ③ Gemma 4 の画像入力。鍵が入ったら最初に 1 回ずつスモークテストすること。
+// ⚠️ SiliconFlow の規約はサーバーの所在地を明記していない。「中国を経由しない」とは
+//    書けない。書いてよいのは「シンガポール法人の SiliconFlow 経由で Google Gemma 4」まで。
+export const DEMO_PROVIDER = {
+  endpoint: 'https://api.siliconflow.com/v1/chat/completions',
+  model: 'google/gemma-4-26B-A4B-it',
+  visionModel: 'google/gemma-4-26B-A4B-it',
+  // 公開ページに出す名称。固有名詞だけなので三語共通。
+  label: 'Google Gemma 4 · SiliconFlow',
+};
+// 専用鍵が無い間の暫定経路（共有 QWEN 鍵・DashScope）の表示名。
+export const DEMO_FALLBACK_LABEL = 'Qwen · Alibaba Cloud';
+
+const DEMO_MODEL_FIELD = { demoExtract: 'model', demoVision: 'visionModel' };
+
+/**
+ * 受発注デモが**実際に**どこへ送るか。ページの開示文言はこの label を表示するので、
+ * 経路と表示がずれないよう、送信側（端点）と表示側の両方がここだけを読む。
+ */
+export function demoProvider(env) {
+  const dedicated = !!env?.DEMO_API_KEY;
+  return {
+    dedicated,
+    apiKey: env?.DEMO_API_KEY || env?.QWEN_API_KEY || '',
+    endpoint: env?.DEMO_CHAT_ENDPOINT || (dedicated ? DEMO_PROVIDER.endpoint : CHAT_ENDPOINT),
+    // env でモデルを上書きした場合は、その id をそのまま表示する（名称を偽らない）。
+    label: env?.DEMO_MODEL || (dedicated ? DEMO_PROVIDER.label : DEMO_FALLBACK_LABEL),
+  };
+}
+
 /**
  * Resolve the model id for a task.
  * @param {string} task one of the keys in TASK_TIER
@@ -245,5 +286,9 @@ const ENV_KEY = {
 export function modelFor(task, env) {
   const tier = TASK_TIER[task];
   if (!tier) throw new Error(`Unknown model task: ${task}`);
-  return env?.[ENV_KEY[task]] || TIERS[tier];
+  const override = env?.[ENV_KEY[task]];
+  if (override) return override;
+  // デモは専用鍵があれば専用プロバイダのモデル（DashScope の id は通らない）。
+  if (DEMO_MODEL_FIELD[task] && env?.DEMO_API_KEY) return DEMO_PROVIDER[DEMO_MODEL_FIELD[task]];
+  return TIERS[tier];
 }

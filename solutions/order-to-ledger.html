@@ -115,6 +115,10 @@
     .o2l-ai { margin-top: 18px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
     .o2l-ai__status { font-size: 13px; color: #6b6b6b; }
     .o2l-ledger { margin-top: 20px; }
+    .o2l-ai__note { margin-top: 10px; font-size: 12px; color: #8a8a8a; line-height: 1.7; }
+    .o2l-ai__note strong { color: #4a4a4a; font-weight: 500; }
+    .o2l-sample { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+    .o2l-sample a { font-size: 13px; color: #6a6557; text-decoration: underline; }
 
     @media (max-width: 760px) {
       .o2l-flow, .o2l-price-grid { grid-template-columns: 1fr; }
@@ -209,7 +213,7 @@
         <span class="section__eyebrow" data-i18n="o2l_demo_eyebrow">試してみる</span>
         <h2 class="section__title" data-i18n="o2l_demo_title">お手元の注文書で、実際に変換</h2>
         <p class="section__lead" data-i18n="o2l_demo_lead">
-          注文書（PDF・Excel）をアップロードすると、受注台帳の形に変換します。ファイルはブラウザ内で処理され、サーバーには送信されません。
+          注文書（PDF・Excel・CSV）を選ぶと、受注台帳の形に変換します。ファイルの読み取りはお使いのブラウザ内で行い、ファイル本体はサーバーに送信しません。
         </p>
       </div>
       <div class="o2l-demo" data-animate>
@@ -223,11 +227,22 @@
           />
           <div class="o2l-drop__icon" aria-hidden="true">📄</div>
           <p class="o2l-drop__text" data-i18n="o2l_drop_text">
-            注文書（PDF・Excel・CSV）をここにドロップ、またはクリックして選択
+            注文書（PDF・Excel・CSV）をここにドロップ、またはクリックして選択（最大10ファイル）
           </p>
           <p class="o2l-drop__hint" data-i18n="o2l_drop_hint">
-            ファイルはお使いのブラウザ内で処理され、アップロードされません。
+            ファイルの読み取りはブラウザ内で行います（ファイル本体は送信しません）。
           </p>
+        </div>
+
+        <!-- サンプル注文書：手元に注文書が無い／実データを上げたくない人向け。
+             中身が既知なので、AI の出力が正しいかを業務知識なしに照合できる -->
+        <div class="o2l-sample">
+          <button id="o2lSample" type="button" class="o2l-btn o2l-btn--sm o2l-btn--ghost" data-i18n="o2l_sample_btn">
+            サンプル注文書で試す
+          </button>
+          <a href="solutions/samples/sample-order.pdf" target="_blank" rel="noopener" data-i18n="o2l_sample_view">
+            サンプルの中身を見る（PDF）
+          </a>
         </div>
 
         <div id="o2lStatus" class="o2l-status" hidden>
@@ -264,6 +279,14 @@
               <span data-msg="vision_pending" data-i18n="o2l_ai_vision_pending" hidden></span>
             </span>
           </div>
+          <!-- 送信前の開示：AI整形で何をどこへ送るか。送り先は端点の GET が返す実際の経路を表示 -->
+          <p class="o2l-ai__note">
+            <span data-i18n="o2l_ai_send_note"></span>
+            <span id="o2lAiRoute" hidden>
+              <span data-i18n="o2l_ai_route_label"></span>
+              <strong id="o2lAiRouteName"></strong>
+            </span>
+          </p>
 
           <div id="o2lLedger" class="o2l-ledger" hidden>
             <div class="o2l-result__bar">
@@ -346,12 +369,13 @@
       </div>
       <div class="o2l-trust" data-animate>
         <ul>
-          <li data-i18n="o2l_trust1">アップロードされたファイルは、お使いのブラウザ内で処理されます。当社サーバーには送信されません。</li>
-          <li data-i18n="o2l_trust2">抽出した内容は保存しません。処理が終わればすぐに破棄されます。</li>
-          <li data-i18n="o2l_trust3">通信はすべて暗号化されています（HTTPS / AES-256）。</li>
+          <li data-i18n="o2l_trust1">ファイルの読み取りはお使いのブラウザ内で行い、ファイル本体は当社サーバーに送信しません。</li>
+          <li data-i18n="o2l_trust2">「AIで台帳に整形」を押したときだけ、読み取った文字を当社サーバー経由でAIに送信します。</li>
+          <li data-i18n="o2l_trust3">当社サーバーでは、送信された内容を保存しません。</li>
+          <li data-i18n="o2l_trust4">通信はすべて暗号化されています（HTTPS）。</li>
         </ul>
         <p class="o2l-trust__note" data-i18n="o2l_trust_privacy">
-          詳しい取り扱いは、プライバシーポリシーをご覧ください（準備中）。
+          詳しい取り扱いは、プライバシーポリシーをご覧ください。
         </p>
       </div>
     </section>
@@ -455,6 +479,6 @@
 
   <!-- ?v= はキャッシュバスター。JS は max-age=14400（4h）で配信されるため、
        中身を変えたらここを上げないと、最近訪れた人は最大4時間 古い JS を掴む。 -->
-  <script src="js/order-to-ledger-demo.js?v=20260914e"></script>
+  <script src="js/order-to-ledger-demo.js?v=20261006a"></script>
 </body>
 </html>
