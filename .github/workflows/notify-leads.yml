@@ -1,0 +1,38 @@
+name: Notify new leads
+
+# 受発注 LP の相談フォーム → Firestore leads。毎時、未通知のリードがあれば issue を立てて
+# 作者に @mention（＝GitHub からメールが届く）。「1営業日以内に返信」の約束を、
+# 管理画面を開き忘れても守れるようにするため。本文に個人情報は載せない（公開リポジトリ）。
+# 詳細は scripts/lead-notifier/index.js。
+
+on:
+  schedule:
+    - cron: '7 * * * *' # 毎時 7 分（正時の混雑を避ける）
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  notify:
+    # 源リポジトリだけで動かす（同期副本には secrets が無い）。
+    if: github.repository == 'sherlockafa007/senridoufuu-web'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        working-directory: scripts/lead-notifier
+        run: npm install
+
+      - name: Check leads and notify
+        working-directory: scripts/lead-notifier
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node index.js

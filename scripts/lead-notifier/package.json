@@ -1,0 +1,9 @@
+{
+  "name": "lead-notifier",
+  "version": "1.0.0",
+  "description": "Hourly check for new consultation leads; opens a GitHub issue (no personal data) so the owner gets an email",
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

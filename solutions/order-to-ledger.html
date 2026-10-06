@@ -124,6 +124,15 @@
     .o2l-ex__table th { border: 1px solid #ece9e3; padding: 6px 10px; background: #f0ede7; font-weight: 500; white-space: nowrap; color: #3a3a3a; }
     .o2l-ex__points { margin: 18px 0 0; padding-left: 1.2em; font-size: 13px; line-height: 1.9; color: #4a4a4a; }
     .o2l-ex__note { margin-top: 10px; font-size: 12px; color: #9a9a9a; }
+    /* FAQ */
+    .o2l-faq { margin-top: 32px; max-width: 760px; }
+    .o2l-faq details { border-top: 1px solid #e5e2dc; padding: 18px 0; }
+    .o2l-faq details:last-child { border-bottom: 1px solid #e5e2dc; }
+    .o2l-faq summary { cursor: pointer; font-size: 15px; font-weight: 500; color: #2b2b2b; list-style: none; position: relative; padding-right: 28px; }
+    .o2l-faq summary::-webkit-details-marker { display: none; }
+    .o2l-faq summary::after { content: '+'; position: absolute; right: 4px; top: 0; color: #8a8a8a; }
+    .o2l-faq details[open] summary::after { content: '−'; }
+    .o2l-faq details p { margin: 12px 0 0; font-size: 14px; line-height: 1.9; color: #4a4a4a; }
     .o2l-ai__link { margin-left: 8px; color: #6a6557; text-decoration: underline; }
     .o2l-ai__note { margin-top: 10px; font-size: 12px; color: #8a8a8a; line-height: 1.7; }
     .o2l-ai__note strong { color: #4a4a4a; font-weight: 500; }
@@ -455,6 +464,36 @@
       </div>
     </section>
 
+    <!-- よくある質問：確定・検証済みの事実だけ（料金の範囲・納期は作者確認待ちのため未掲載） -->
+    <section class="section">
+      <div data-animate>
+        <span class="section__eyebrow" data-i18n="o2l_faq_eyebrow">よくある質問</span>
+        <h2 class="section__title" data-i18n="o2l_faq_title">導入前によくいただく質問</h2>
+      </div>
+      <div class="o2l-faq" data-animate>
+        <details>
+          <summary data-i18n="o2l_faq_q1">読み取りの精度は？</summary>
+          <p data-i18n="o2l_faq_a1"></p>
+        </details>
+        <details>
+          <summary data-i18n="o2l_faq_q2">どんなファイルに対応していますか？</summary>
+          <p data-i18n="o2l_faq_a2"></p>
+        </details>
+        <details>
+          <summary data-i18n="o2l_faq_q3">弥生や販売管理ソフトと連携できますか？</summary>
+          <p data-i18n="o2l_faq_a3"></p>
+        </details>
+        <details>
+          <summary data-i18n="o2l_faq_q4">取引先の注文データを送っても大丈夫ですか？</summary>
+          <p data-i18n="o2l_faq_a4"></p>
+        </details>
+        <details>
+          <summary data-i18n="o2l_faq_q5">相談すると、いつ返事がもらえますか？</summary>
+          <p data-i18n="o2l_faq_a5"></p>
+        </details>
+      </div>
+    </section>
+
     <!-- 最終CTA -->
     <section class="section">
       <div data-animate>
@@ -474,7 +513,7 @@
       <div class="o2l-consult" data-animate>
         <h2 class="section__title" data-i18n="o2l_consult_title">御社の業務に合わせてご相談ください</h2>
         <p class="section__lead" data-i18n="o2l_consult_lead">
-          現状の作業やお困りごとをお書きください。折り返しご連絡します。費用はかかりません。
+          現状の作業やお困りごとをお書きください。1営業日以内にご返信します。費用はかかりません。
         </p>
         <form id="o2lLeadForm" class="o2l-form" novalidate>
           <label class="o2l-field">
