@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&family=Noto+Serif+JP:wght@300;400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <base href="../">
-  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/main.css?v=20261006c">
 </head>
 <body data-page-title="demo_page_title">
 
@@ -63,6 +63,23 @@
       <p class="sr-only" data-tool-status role="status" aria-live="polite"></p>
 
       <div class="tool-grid" data-tool-grid>
+
+        <!-- 主力产品排第一并轻微强调（2026-10-06 视觉巡检：原来排在最后、单独占一行） -->
+        <a href="solutions/order-to-ledger.html" class="tool-card tool-card--featured" data-tags="docs generate">
+          <span class="tool-card__icon" aria-hidden="true">▦</span>
+          <span class="tool-card__body">
+            <span class="tool-card__meta">
+              <span class="tool-card__tag" data-i18n="tag_docs">文書解析</span>
+              <span class="tool-card__tag" data-i18n="tag_generate">テキスト生成</span>
+              <span class="tool-card__badge" data-i18n="badge_open">ログイン不要</span>
+            </span>
+            <h3 class="tool-card__name" data-i18n="o2l_card_title">受発注 · Excel自動化</h3>
+            <p class="tool-card__desc" data-i18n="o2l_card_desc"></p>
+            <span class="tool-card__cta"
+              ><span data-i18n="o2l_card_cta">試してみる</span> →</span
+            >
+          </span>
+        </a>
 
         <a
           href="solutions/demo/translation.html"
@@ -162,22 +179,6 @@
             <p class="tool-card__desc" data-i18n="japanese_one"></p>
             <span class="tool-card__cta"
               ><span data-i18n="japanese_cta">学習を始める</span> →</span
-            >
-          </span>
-        </a>
-
-        <a href="solutions/order-to-ledger.html" class="tool-card" data-tags="docs generate">
-          <span class="tool-card__icon" aria-hidden="true">▦</span>
-          <span class="tool-card__body">
-            <span class="tool-card__meta">
-              <span class="tool-card__tag" data-i18n="tag_docs">文書解析</span>
-              <span class="tool-card__tag" data-i18n="tag_generate">テキスト生成</span>
-              <span class="tool-card__badge" data-i18n="badge_open">ログイン不要</span>
-            </span>
-            <h3 class="tool-card__name" data-i18n="o2l_card_title">受発注 · Excel自動化</h3>
-            <p class="tool-card__desc" data-i18n="o2l_card_desc"></p>
-            <span class="tool-card__cta"
-              ><span data-i18n="o2l_card_cta">試してみる</span> →</span
             >
           </span>
         </a>

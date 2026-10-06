@@ -62,9 +62,6 @@ const T = {
     about_teaser_cta: 'チームを見る',
 
     nav_member: 'メンバー',
-    demo_tools_eyebrow: 'オンラインデモ',
-    demo_tools_title: 'AI機能デモ',
-    demo_tools_body: '当社が開発しているAI技術を、ブラウザ上で実際に触ってお確かめいただけます。',
     demo_member_badge: '会員限定',
 
     /* Footer */
@@ -101,6 +98,10 @@ const T = {
     ms3_event: '公式ウェブサイト 公開',
     ms3_desc:
       '千里同風株式会社の公式ウェブサイトをリニューアルし、会社のビジョンとサービスを世界に向けて発信。',
+    ms4_event: 'オンラインAIツール 公開',
+    ms4_desc: '翻訳・文書分析・日本語学習など、AIを日々の仕事と学びに役立てるツールを順次公開。',
+    ms5_event: '受発注の自動化 デモ公開',
+    ms5_desc: '注文書をAIで受注台帳に整形する、中小企業向けの業務自動化を開始。',
 
     /* Solutions page */
     solutions_page_title: '千里同風株式会社 — ソリューション',
@@ -298,7 +299,20 @@ const T = {
     pp_s9_b:
       '当社は、法令の変更やサービスの改善に応じて本ポリシーを改定することがあります。重要な変更がある場合は本ページでお知らせします。',
     solutions_body:
-      '生成AIとハードウェアを融合させた、新しいカテゴリの製品群。教育・IoT・エンターテインメント分野で、人とAIの新しい関係性を提案します。',
+      'まずはオンラインのツールで、AIを日々の仕事に役立つ形に。その先に、生成AIを組み込んだハードウェアの開発を進めています。',
+    sol_now_eyebrow: '提供中',
+    sol_now_title: 'いま使えるAIツール',
+    sol_feat_tag: '業務自動化',
+    sol_feat_p1: 'サンプル注文書で、登録なしにすぐ試せます',
+    sol_feat_p2: '御社の書式に合わせた個別構築は5万円〜',
+    sol_feat_p3: 'ご相談には1営業日以内にご返信',
+    sol_feat_cta: '詳しく見る・無料で試す',
+    sol_more_pre: '翻訳・文書分析・日本語学習などのAIツールは',
+    sol_more_link: 'オンラインデモ一覧',
+    sol_more_post: 'からお試しいただけます。',
+    sol_dev_eyebrow: '開発中',
+    sol_dev_title: 'AIを組み込んだハードウェア',
+    sol_dev_badge: '開発中',
     services_eyebrow: 'サービス',
     services_title: '私たちが提供すること',
     srv1_name: '市場・業界調査',
@@ -310,7 +324,6 @@ const T = {
     srv3_name: 'AI統合ハードウェア開発',
     srv3_desc:
       '生成AI・画像認識・音声インターフェースを組み込んだハードウェア製品の企画・プロトタイピング支援。',
-    coming_soon: '近日公開',
     product1_category: '教育向け',
     product1_name: 'AI学習デバイス',
     product1_desc:
@@ -375,7 +388,6 @@ const T = {
     lifestory_one: '約100の質問に答えると、AIがあなたの半生を一冊にまとめます。',
     japanese_one: '214語の動詞活用を自動生成。ログイン不要でそのまま使えます。',
     bids_one: '大阪市の入札公告を毎日収集し、中国語の要約を付けて一覧に。',
-    demo_tools_cta: 'デモを見る',
 
     /* Blog page */
     blog_page_title: '千里同風株式会社 — ブログ',
@@ -699,9 +711,6 @@ const T = {
     about_teaser_cta: '了解团队',
 
     nav_member: '会员',
-    demo_tools_eyebrow: '在线演示',
-    demo_tools_title: 'AI 功能演示',
-    demo_tools_body: '我们开发的 AI 技术，可以在浏览器中直接上手确认。',
     demo_member_badge: '会员专属',
 
     footer_tagline: '人类对AI陪伴的一切渴望，不过是对灵魂共鸣的向往。',
@@ -734,6 +743,10 @@ const T = {
       '启动面向日本市场的生成式AI硬件产品调研与概念开发。探索教育、医疗、消费电子及公共服务领域的可能性。',
     ms3_event: '官方网站上线',
     ms3_desc: '千里同風株式会社官方网站全新上线，向全球传达公司愿景与服务内容。',
+    ms4_event: '在线 AI 工具 上线',
+    ms4_desc: '陆续上线翻译、文书分析、日语学习等工具，把 AI 用到日常工作与学习中。',
+    ms5_event: '受发注自动化 演示上线',
+    ms5_desc: '面向中小企业的业务自动化起步：用 AI 把订单整理成受注台账。',
 
     solutions_page_title: '千里同風株式会社 — 解决方案',
     solutions_eyebrow: '解决方案',
@@ -921,7 +934,20 @@ const T = {
     pp_s9_h: '9. 本政策的修订',
     pp_s9_b: '本公司可能因法律变更或服务改进而修订本政策。如有重要变更，将在本页面通知。',
     solutions_body:
-      '融合生成式AI与硬件的全新产品类别。我们在教育、IoT与娱乐领域，探索人与AI的新型关系。',
+      '先用在线工具，把 AI 用到日常工作里。在此之上，我们也在开发嵌入生成式 AI 的硬件。',
+    sol_now_eyebrow: '提供中',
+    sol_now_title: '现在就能用的 AI 工具',
+    sol_feat_tag: '业务自动化',
+    sol_feat_p1: '用示例订单，无需注册即可马上试用',
+    sol_feat_p2: '按贵司格式定制，5万日元起',
+    sol_feat_p3: '咨询在 1 个工作日内回复',
+    sol_feat_cta: '查看详情·免费试用',
+    sol_more_pre: '翻译、文书分析、日语学习等 AI 工具，可在',
+    sol_more_link: '在线演示一览',
+    sol_more_post: '中试用。',
+    sol_dev_eyebrow: '开发中',
+    sol_dev_title: '嵌入 AI 的硬件',
+    sol_dev_badge: '开发中',
     services_eyebrow: '服务',
     services_title: '我们能提供什么',
     srv1_name: '市场与行业调研',
@@ -930,7 +956,6 @@ const T = {
     srv2_desc: '从供应链调研、用户研究、概念开发，到合作伙伴促成，提供全链条支持。',
     srv3_name: 'AI集成硬件开发',
     srv3_desc: '支持集成生成式AI、图像识别、语音界面的硬件产品企划与原型开发。',
-    coming_soon: '即将发布',
     product1_category: '教育',
     product1_name: 'AI学习设备',
     product1_desc: '搭载生成式AI技术的儿童学习设备。通过互动对话深化学习体验。',
@@ -991,7 +1016,6 @@ const T = {
     lifestory_one: '回答约 100 个问题，AI 为你写成一本完整的人生传记。',
     japanese_one: '214 个常用动词变位自动生成，无需登录，打开即用。',
     bids_one: '每日抓取大阪市招标公告，附中文摘要，便于快速筛选。',
-    demo_tools_cta: '查看演示',
 
     blog_page_title: '千里同風株式会社 — 博客',
     blog_eyebrow: '博客',
@@ -1297,9 +1321,6 @@ const T = {
     about_teaser_cta: 'Meet the team',
 
     nav_member: 'Member',
-    demo_tools_eyebrow: 'Online Demo',
-    demo_tools_title: 'AI Feature Demos',
-    demo_tools_body: 'See and try the AI technology we build, right in your browser.',
     demo_member_badge: 'Members Only',
 
     footer_tagline:
@@ -1336,6 +1357,12 @@ const T = {
     ms3_event: 'Official Website Launch',
     ms3_desc:
       "Senridoufuu's official website relaunches, communicating the company's vision and services to a global audience.",
+    ms4_event: 'Online AI tools launched',
+    ms4_desc:
+      'Released tools for translation, document analysis, Japanese learning and more, putting AI to use in everyday work and study.',
+    ms5_event: 'Order-to-ledger demo launched',
+    ms5_desc:
+      'Started business automation for small and mid-sized companies: AI that turns order forms into an order ledger.',
 
     solutions_page_title: 'Senridoufuu — Solutions',
     solutions_eyebrow: 'Solutions',
@@ -1536,7 +1563,20 @@ const T = {
     pp_s9_b:
       'We may revise this policy in response to changes in law or improvements to our services. We will announce significant changes on this page.',
     solutions_body:
-      'A new category of products merging generative AI and hardware. We propose new ways for people and AI to relate through education, IoT, and entertainment.',
+      'We start with online tools that put AI to real use in everyday work, and are developing hardware with generative AI built in as the next step.',
+    sol_now_eyebrow: 'Available now',
+    sol_now_title: 'AI tools you can use today',
+    sol_feat_tag: 'Business automation',
+    sol_feat_p1: 'Try it right away with a sample order form, no sign-up',
+    sol_feat_p2: 'Custom builds for your formats from ¥50,000',
+    sol_feat_p3: 'We reply to inquiries within 1 business day',
+    sol_feat_cta: 'Learn more and try it free',
+    sol_more_pre: 'Other AI tools (translation, document analysis, Japanese learning) are in the ',
+    sol_more_link: 'online demo list',
+    sol_more_post: '.',
+    sol_dev_eyebrow: 'In development',
+    sol_dev_title: 'Hardware with AI built in',
+    sol_dev_badge: 'In development',
     services_eyebrow: 'Services',
     services_title: 'What We Offer',
     srv1_name: 'Market & Industry Research',
@@ -1548,7 +1588,6 @@ const T = {
     srv3_name: 'AI-Integrated Hardware Development',
     srv3_desc:
       'Planning and prototyping support for hardware products incorporating generative AI, image recognition, and voice interfaces.',
-    coming_soon: 'Coming Soon',
     product1_category: 'Education',
     product1_name: 'AI Learning Device',
     product1_desc:
@@ -1614,7 +1653,6 @@ const T = {
     lifestory_one: 'Answer about 100 questions; AI writes your life story as a book.',
     japanese_one: '214 common verbs with auto-generated conjugations. No login needed.',
     bids_one: 'Daily Osaka City tender notices, each summarized in Chinese.',
-    demo_tools_cta: 'See the demos',
 
     blog_page_title: 'Senridoufuu — Blog',
     blog_eyebrow: 'Blog',

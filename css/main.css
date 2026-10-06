@@ -1299,3 +1299,91 @@ main { padding-top: var(--nav-h); }
 
   .page-header { padding: 56px var(--page-px) 48px; }
 }
+
+/* === PAGE POLISH（2026-10-06 视觉巡检）================================
+   在作者的屏幕（1920×1080＋150% 缩放＝CSS 视口约 1272×606）和手机（390 宽）上
+   逐页截图后改的几处。放在文件末尾＝覆盖上面同优先级的基础规则。 */
+
+/* A. 页头与正文之间原来空约 200px（页头下 72 + 正文上 128 + 内容自带的上边距）。
+   工具页（page-header--tool / section--tool）有自己的紧凑版式，排除在外。 */
+.page-header:not(.page-header--tool) + .section:not(.section--tool) { padding-top: 64px; }
+.page-header:not(.page-header--tool) + .section:not(.section--tool) > :first-child { margin-top: 0; }
+
+/* B. 团队：人像占位原为整列宽的 3:4（约 730px 高），比 606 的屏幕还高，姓名和简介被挤到下一屏。
+   改成左侧小像＋右侧文字。保留 3:4 比例与 data-image-key，后台换真照片后照样合适。 */
+.team-grid { gap: 56px; }
+.team-member {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  column-gap: 32px;
+  align-items: start;
+}
+.team-member__photo { grid-row: 1 / span 4; margin-bottom: 0; }
+.team-member > :not(.team-member__photo) { grid-column: 2; }
+.team-member__name { font-size: 1.75rem; }
+
+/* D/F. 解决方案页：「提供中」主推卡片 + 「開発中」紧凑卡片 */
+.sol-feature {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 48px;
+  align-items: center;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  padding: 40px;
+  margin-top: 32px;
+}
+.sol-feature__tag {
+  display: inline-block;
+  font-family: var(--f-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.28em;
+  color: var(--c-accent-mid);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.sol-feature__name {
+  font-family: var(--f-serif);
+  font-size: 1.75rem;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  margin-bottom: 14px;
+}
+.sol-feature__desc { font-size: 0.9375rem; font-weight: 300; line-height: 1.95; color: var(--c-text-2); }
+.sol-feature__points { margin: 18px 0 26px; display: grid; gap: 6px; }
+.sol-feature__points li { font-size: 0.875rem; color: var(--c-text-2); padding-left: 18px; position: relative; }
+.sol-feature__points li::before { content: '✓'; position: absolute; left: 0; color: var(--c-accent-mid); }
+.sol-feature__actions { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; }
+.sol-feature__media { margin: 0; }
+.sol-feature__media img { width: 100%; height: auto; border: 1px solid var(--c-border); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06); }
+.sol-more { margin-top: 28px; font-size: 0.875rem; color: var(--c-text-2); }
+.sol-more a { color: var(--c-accent); border-bottom: 1px solid currentColor; }
+
+.products-grid--compact { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 40px; }
+.products-grid--compact .product-card { border: 1px solid var(--c-border); padding: 28px 26px; }
+.product-card__badge {
+  display: inline-block;
+  font-family: var(--f-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.2em;
+  color: var(--c-text-3);
+  border: 1px solid var(--c-border);
+  padding: 3px 8px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* E. demo 列表：主力产品排第一并轻微强调 */
+.tool-card--featured { border-color: var(--c-accent-mid); background: var(--c-accent-light); }
+
+@media (max-width: 1024px) {
+  .sol-feature { grid-template-columns: 1fr; gap: 28px; padding: 32px 28px; }
+  .products-grid--compact { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .page-header:not(.page-header--tool) + .section:not(.section--tool) { padding-top: 40px; }
+  .team-member { grid-template-columns: 104px minmax(0, 1fr); column-gap: 20px; }
+  .team-member__name { font-size: 1.375rem; letter-spacing: 0.12em; }
+  .sol-feature { padding: 24px 20px; }
+  .sol-feature__name { font-size: 1.375rem; }
+}

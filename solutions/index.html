@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&family=Noto+Serif+JP:wght@300;400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <base href="../">
-  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/main.css?v=20261006c">
   <style>
     .mvv-wrap .section { border-top: none; padding: 96px 48px; }
     .mvv-wrap .values-grid { margin-top: 64px; }
@@ -28,72 +28,92 @@
           <span class="section__eyebrow" data-i18n="solutions_eyebrow">ソリューション</span>
           <h1 class="section__title" data-i18n="solutions_title">製品・サービス</h1>
           <p class="section__lead" data-i18n="solutions_body">
-            生成AIとハードウェアを融合させた、新しいカテゴリの製品群。教育・IoT・エンターテインメント分野で、人とAIの新しい関係性を提案します。
+            まずはオンラインのツールで、AIを日々の仕事に役立つ形に。その先に、生成AIを組み込んだハードウェアの開発を進めています。
           </p>
         </div>
       </div>
     </div>
 
-    <!-- Online Tools：一覧は /solutions/demo に集約（2026-08-27。以前ここに同じ
-         カードを並べていたが、二重管理で内容がずれたため入口だけ残す） -->
+    <!-- 提供中（2026-10-06）：真正可用的产品放最前。以前这页只有三个「近日公開」的硬件空框，
+         访客点进「製品・サービス」看到的全是"即将推出"，已上线的受発注反而不在。
+         其余 AI 工具的一览仍集约在 /solutions/demo（2026-08-27 起，避免二重管理）。 -->
     <section class="section">
       <div data-animate>
-        <span class="section__eyebrow" data-i18n="demo_tools_eyebrow">オンラインデモ</span>
-        <h2 class="section__title" data-i18n="demo_tools_title">AI機能デモ</h2>
-        <p class="section__lead" data-i18n="demo_tools_body"></p>
-        <a href="solutions/demo.html" class="cta-link">
-          <span data-i18n="demo_tools_cta"></span>
-          <span class="cta-link__arrow">→</span>
-        </a>
+        <span class="section__eyebrow" data-i18n="sol_now_eyebrow">提供中</span>
+        <h2 class="section__title" data-i18n="sol_now_title">いま使えるAIツール</h2>
       </div>
+      <div class="sol-feature" data-animate>
+        <div>
+          <span class="sol-feature__tag" data-i18n="sol_feat_tag">業務自動化</span>
+          <h3 class="sol-feature__name" data-i18n="o2l_card_title">受発注 · Excel自動化</h3>
+          <p class="sol-feature__desc" data-i18n="o2l_card_desc"></p>
+          <ul class="sol-feature__points">
+            <li data-i18n="sol_feat_p1">サンプル注文書で、登録なしにすぐ試せます</li>
+            <li data-i18n="sol_feat_p2">御社の書式に合わせた個別構築は5万円〜</li>
+            <li data-i18n="sol_feat_p3">ご相談には1営業日以内にご返信</li>
+          </ul>
+          <div class="sol-feature__actions">
+            <a href="solutions/order-to-ledger.html" class="cta-link">
+              <span data-i18n="sol_feat_cta">詳しく見る・無料で試す</span>
+              <span class="cta-link__arrow">→</span>
+            </a>
+          </div>
+        </div>
+        <figure class="sol-feature__media">
+          <img
+            src="solutions/samples/sample-order-preview.jpg"
+            width="860"
+            height="640"
+            loading="lazy"
+            data-i18n-alt="o2l_ex_img_alt"
+            alt="サンプル注文書"
+          />
+        </figure>
+      </div>
+      <p class="sol-more">
+        <span data-i18n="sol_more_pre">翻訳・文書分析・日本語学習などのAIツールは</span>
+        <a href="solutions/demo.html" data-i18n="sol_more_link">オンラインデモ一覧</a>
+        <span data-i18n="sol_more_post">からお試しいただけます。</span>
+      </p>
     </section>
 
-    <!-- Products Showcase -->
-    <section class="section">
-      <div class="products-grid">
-
-        <!-- Product 1 -->
+    <!-- 開発中：硬件。原来是 16:9 的大空框＋「近日公開」，改成紧凑卡片＋「開発中」（更准确）。 -->
+    <section class="section section--tight">
+      <div data-animate>
+        <span class="section__eyebrow" data-i18n="sol_dev_eyebrow">開発中</span>
+        <h2 class="section__title" data-i18n="sol_dev_title">AIを組み込んだハードウェア</h2>
+      </div>
+      <div class="products-grid products-grid--compact">
         <div class="product-card" data-animate data-animate-delay="1">
-          <div class="product-card__media">
-            <div class="product-card__placeholder">
-              <div class="product-card__coming-label" data-i18n="coming_soon">近日公開</div>
-            </div>
+          <div class="product-card__category">
+            <span data-i18n="product1_category">教育向け</span>
+            <span class="product-card__badge" data-i18n="sol_dev_badge">開発中</span>
           </div>
-          <div class="product-card__category" data-i18n="product1_category">教育向け</div>
           <h3 class="product-card__name" data-i18n="product1_name">AI学習デバイス</h3>
           <p class="product-card__desc" data-i18n="product1_desc">
             生成AI技術を搭載した子ども向け学習デバイス。インタラクティブな対話を通じて学びを深めます。
           </p>
         </div>
-
-        <!-- Product 2 -->
         <div class="product-card" data-animate data-animate-delay="2">
-          <div class="product-card__media">
-            <div class="product-card__placeholder">
-              <div class="product-card__coming-label" data-i18n="coming_soon">近日公開</div>
-            </div>
+          <div class="product-card__category">
+            <span data-i18n="product2_category">IoT</span>
+            <span class="product-card__badge" data-i18n="sol_dev_badge">開発中</span>
           </div>
-          <div class="product-card__category" data-i18n="product2_category">IoT</div>
           <h3 class="product-card__name" data-i18n="product2_name">画像認識 IoTデバイス</h3>
           <p class="product-card__desc" data-i18n="product2_desc">
             高精度な画像認識機能を搭載したスマートIoTデバイス。環境を理解し、適切に反応します。
           </p>
         </div>
-
-        <!-- Product 3 -->
         <div class="product-card" data-animate data-animate-delay="3">
-          <div class="product-card__media">
-            <div class="product-card__placeholder">
-              <div class="product-card__coming-label" data-i18n="coming_soon">近日公開</div>
-            </div>
+          <div class="product-card__category">
+            <span data-i18n="product3_category">エンターテインメント</span>
+            <span class="product-card__badge" data-i18n="sol_dev_badge">開発中</span>
           </div>
-          <div class="product-card__category" data-i18n="product3_category">エンターテインメント</div>
           <h3 class="product-card__name" data-i18n="product3_name">AIインタラクティブ トイ</h3>
           <p class="product-card__desc" data-i18n="product3_desc">
             生成AIと連携した次世代インタラクティブトイ。子どもの創造性と感性を育みます。
           </p>
         </div>
-
       </div>
     </section>
 
