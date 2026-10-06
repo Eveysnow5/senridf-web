@@ -1128,7 +1128,7 @@ main { padding-top: var(--nav-h); }
    比一屏长，强制吸附会让人读不到块的下半截。块比视口还高时，浏览器允许在块内自由滚动
    （scroll-snap 规范对超大吸附区域的处理），所以不会卡住内容。
    scroll-padding-top＝固定导航的高度：每页的顶边对齐到导航下方，而不是被导航盖住。 */
-@media (min-width: 1025px) and (min-height: 640px) {
+@media (min-width: 1025px) and (min-height: 500px) {
   html.home-snap {
     scroll-snap-type: y mandatory;
     scroll-padding-top: var(--nav-h);
@@ -1185,6 +1185,27 @@ main { padding-top: var(--nav-h); }
   }
   /* flex 列里的子元素带 margin:auto 会缩到内容宽，页脚会比平时窄（渲染发现）→ 撑满 */
   .home-snap #footer-placeholder .footer__container { width: 100%; }
+}
+
+/* 矮屏桌面（宽 >1024、高 ≤760）再收紧一档。
+   ⚠️ 最常见的就是它：1920×1080 屏＋Windows 150% 缩放＝CSS 视口约 1272×606（扣掉浏览器
+   工具栏）。启用条件原为「高 ≥640」，正好把这批笔记本整个排除在外——作者实机上滚轮无效，
+   截图里导航 107px/72px≈1.5 倍才查出来。标题字号原本只随宽度（3.5vw）变，宽而矮时偏大。 */
+@media (min-width: 1025px) and (min-height: 500px) and (max-height: 760px) {
+  .home-snap .section__title {
+    font-size: clamp(1.5rem, 2.6vw, 2.125rem);
+    margin-bottom: 20px;
+  }
+  .home-snap .section__body { line-height: 1.85; }
+  .home-snap .mvv-cell { padding-top: 32px; padding-bottom: 32px; }
+  .home-snap main > .section { padding-top: 28px; padding-bottom: 28px; }
+  .home-snap .values-grid { margin-top: 24px; }
+  .home-snap .value-card { padding-top: 24px; padding-bottom: 24px; }
+  .home-snap .value-card__number { margin-bottom: 12px; }
+  .home-snap .value-card__name { margin-bottom: 10px; }
+  .home-snap .value-card__desc { line-height: 1.8; }
+  .home-snap .about-teaser { padding-top: 32px; }
+  .home-snap .about-teaser__visual { max-height: calc(100svh - var(--nav-h) - 200px); }
 }
 
 /* === KEYFRAMES === */
