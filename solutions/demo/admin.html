@@ -43,7 +43,8 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
 .adm-tabs a { padding:10px 16px; font-size:13px; color:#6b7280; text-decoration:none; border-bottom:2px solid transparent; margin-bottom:-1px; display:inline-flex; align-items:center; gap:6px; }
 .adm-tabs a:hover { color:#111827; }
 .adm-tabs a.is-active { color:#111827; font-weight:500; border-bottom-color:#111827; }
-.adm-badge { display:none; min-width:18px; padding:0 6px; border-radius:99px; background:#f97316; color:#fff; font-size:11px; line-height:18px; text-align:center; }
+/* 有新消息的标签只亮一个小红点（作者 2026-10-06：数字看概览卡片即可） */
+.adm-badge { display:none; width:8px; height:8px; border-radius:50%; background:#ef4444; }
 .adm-badge.is-on { display:inline-block; }
 .adm-sec-title { font-size:12px; color:#9ca3af; margin:0 0 10px; letter-spacing:.04em; }
 .adm-todo { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px; margin-bottom:28px; }
@@ -409,7 +410,9 @@ function setTodo(key, n, sub, alert) {
   card.classList.toggle('is-alert', !!alert);
   const badge = document.getElementById('tb-' + key);
   if (badge) {
-    badge.textContent = alert && n ? String(n) : '';
+    // 小红点：不写数字，件数放在 title（鼠标悬停可见）。读取失败（n 为 null）时不亮——
+    // 失败已在概览卡片上标出，红点只表示"有新的东西要看"。
+    badge.title = alert && n ? n + ' 件' : '';
     badge.classList.toggle('is-on', !!(alert && n));
   }
 }

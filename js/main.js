@@ -28,7 +28,6 @@ const T = {
     /* Hero */
     hero_corp: '千里同風株式会社',
     hero_tagline: '人間がAIとの寄り添いを求めるすべての願いは、魂の共鳴への渇望にほかならない。',
-    hero_scroll: 'scroll',
 
     /* Mission */
     mission_eyebrow: 'ミッション',
@@ -670,7 +669,6 @@ const T = {
 
     hero_corp: '千里同風株式会社',
     hero_tagline: '人类对AI陪伴的一切渴望，不过是对灵魂共鸣的向往。',
-    hero_scroll: '向下滑动',
 
     mission_eyebrow: '使命',
     mission_title: '通过融合AI与硬件，缩短人与技术之间的距离。',
@@ -1263,7 +1261,6 @@ const T = {
     hero_corp: 'Senridoufuu Co., Ltd.',
     hero_tagline:
       'Every human desire for closeness with AI is nothing but a yearning for resonance of souls.',
-    hero_scroll: 'scroll',
 
     mission_eyebrow: 'Mission',
     mission_title:
