@@ -134,9 +134,11 @@ service cloud.firestore {
     }
 
     // ── 前端错误上报 ──
+    // delete は管理者のみ：後台から解決済み/陳腐化したエラーを手動で消せるように。
+    // （TTL は expireAt で自動削除するが、6か月前の古い記録は満了まで残るため手動掃除も要る）
     match /errors/{doc} {
       allow create, update: if isSignedIn();
-      allow read: if isAdmin();
+      allow read, delete: if isAdmin();
     }
 
     // ── 受発注LPの相談リード（Stage D）──

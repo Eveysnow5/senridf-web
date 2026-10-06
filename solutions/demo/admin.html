@@ -176,11 +176,12 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
             <th class="text-left py-2 pr-4 font-normal">类型</th>
             <th class="text-left py-2 pr-4 font-normal">消息</th>
             <th class="text-left py-2 pr-4 font-normal">页面</th>
-            <th class="text-left py-2 font-normal">用户</th>
+            <th class="text-left py-2 pr-4 font-normal">用户</th>
+            <th class="text-left py-2 font-normal"></th>
           </tr>
         </thead>
         <tbody id="errTable">
-          <tr><td colspan="6" class="py-4 text-center text-gray-400">加载中…</td></tr>
+          <tr><td colspan="7" class="py-4 text-center text-gray-400">加载中…</td></tr>
         </tbody>
       </table>
     </div>
@@ -442,7 +443,7 @@ window.loadErrors = async function () {
   } catch (e) {
     console.error(e);
     body.innerHTML =
-      '<tr><td colspan="6" class="py-4 text-center text-red-400">加载失败，请检查 Firestore 规则</td></tr>';
+      '<tr><td colspan="7" class="py-4 text-center text-red-400">加载失败，请检查 Firestore 规则</td></tr>';
   }
 };
 
@@ -471,12 +472,24 @@ function renderErrors(docs) {
       <td class="py-2 pr-4 text-gray-500 whitespace-nowrap">${escapeHtml(d.type || '')}</td>
       <td class="py-2 pr-4 text-gray-700 max-w-[280px] break-words">${msg}</td>
       <td class="py-2 pr-4 text-gray-400 whitespace-nowrap">${escapeHtml(d.lastPage || '')}</td>
-      <td class="py-2 text-gray-400 max-w-[160px] truncate" title="${escapeHtml(d.lastEmail || '')}">${escapeHtml(d.lastEmail || '')}</td>
+      <td class="py-2 pr-4 text-gray-400 max-w-[160px] truncate" title="${escapeHtml(d.lastEmail || '')}">${escapeHtml(d.lastEmail || '')}</td>
+      <td class="py-2"><button type="button" onclick="deleteError('${escapeHtml(d.id)}')" class="text-red-400 hover:text-red-600">删除</button></td>
     </tr>`;
       })
       .join('') ||
-    '<tr><td colspan="6" class="py-4 text-center text-gray-400">暂无错误记录</td></tr>';
+    '<tr><td colspan="7" class="py-4 text-center text-gray-400">暂无错误记录</td></tr>';
 }
+
+window.deleteError = async function (id) {
+  if (!confirm('删除这条错误记录？')) return;
+  try {
+    await deleteDoc(doc(db, 'errors', id));
+    loadErrors();
+  } catch (e) {
+    console.error(e);
+    alert('删除失败，请检查 Firestore 规则');
+  }
+};
 
 // ── 相談リード (受発注LP Stage D) ────────────────────────────────────────────
 window.loadLeads = async function () {
