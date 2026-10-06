@@ -36,6 +36,29 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
 .ag-btn-noperm { padding:10px 24px;background:#f3f4f6;color:#374151;border:none;border-radius:8px;font-size:14px;cursor:pointer; }
 #dashboard { display:none; }
 .tbl-scroll { overflow-x:auto; }
+/* 概览 + 标签页（2026-10-06） */
+[data-panel] { display:none; }
+[data-panel].is-active { display:block; }
+.adm-tabs { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:24px; border-bottom:1px solid #e5e7eb; }
+.adm-tabs a { padding:10px 16px; font-size:13px; color:#6b7280; text-decoration:none; border-bottom:2px solid transparent; margin-bottom:-1px; display:inline-flex; align-items:center; gap:6px; }
+.adm-tabs a:hover { color:#111827; }
+.adm-tabs a.is-active { color:#111827; font-weight:500; border-bottom-color:#111827; }
+.adm-badge { display:none; min-width:18px; padding:0 6px; border-radius:99px; background:#f97316; color:#fff; font-size:11px; line-height:18px; text-align:center; }
+.adm-badge.is-on { display:inline-block; }
+.adm-sec-title { font-size:12px; color:#9ca3af; margin:0 0 10px; letter-spacing:.04em; }
+.adm-todo { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px; margin-bottom:28px; }
+.adm-todo__card { display:block; background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:18px 20px; text-decoration:none; color:inherit; transition:border-color .15s, box-shadow .15s; }
+.adm-todo__card:hover { border-color:#9ca3af; box-shadow:0 4px 14px rgba(0,0,0,.05); }
+.adm-todo__card.is-alert { border-color:#fdba74; background:#fff7ed; }
+.adm-todo__label { font-size:12px; color:#6b7280; }
+.adm-todo__num { font-size:2rem; font-weight:600; line-height:1.1; margin:8px 0 6px; color:#d1d5db; }
+.adm-todo__card.is-alert .adm-todo__num { color:#ea580c; }
+.adm-todo__sub { font-size:12px; color:#9ca3af; }
+.adm-status { display:flex; flex-wrap:wrap; gap:10px; }
+.adm-status a { background:#fff; border:1px solid #e5e7eb; border-radius:99px; padding:7px 14px; font-size:12px; color:#4b5563; text-decoration:none; }
+.adm-status a:hover { border-color:#9ca3af; }
+.adm-status a.is-bad { border-color:#fca5a5; background:#fef2f2; color:#b91c1c; }
+@media (max-width:640px) { .adm-todo { grid-template-columns:1fr; } }
 </style>
   <link rel="stylesheet" href="/css/admin-header.css">
 </head>
@@ -46,14 +69,14 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
   <div class="flex items-center gap-3 flex-1">
     <a href="/" class="text-gray-300 font-light text-lg hover:text-gray-600 transition-colors" title="返回主页">千里同風</a>
     <span class="text-gray-200">·</span>
-    <span class="text-gray-700 font-medium text-sm">管理后台 · 运行监控</span>
+    <span class="text-gray-700 font-medium text-sm">管理后台</span>
     <span id="lastRefresh" class="text-gray-400 text-xs ml-2"></span>
   </div>
   <div class="flex items-center gap-3">
     <a href="/admin/" class="text-xs px-3 py-1.5 rounded border border-blue-200 text-blue-500 hover:bg-blue-50 transition-colors">✎ 内容编辑</a>
     <a href="/admin/blog/" class="text-xs px-3 py-1.5 rounded border border-blue-200 text-blue-500 hover:bg-blue-50 transition-colors">✍ Blog</a>
     <a href="/solutions/demo/ai-intel.html" class="text-xs px-3 py-1.5 rounded border border-blue-200 text-blue-500 hover:bg-blue-50 transition-colors">🛰 AI 情报</a>
-    <button onclick="loadData()" type="button" id="refreshBtn" class="text-xs px-3 py-1.5 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">↻ 刷新</button>
+    <button onclick="refreshAll()" type="button" id="refreshBtn" class="text-xs px-3 py-1.5 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">↻ 刷新</button>
     <span id="adminEmail" class="text-xs text-gray-400 hidden sm:block"></span>
     <button id="logoutBtn" type="button" class="text-xs px-3 py-1.5 rounded border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors">退出</button>
   </div>
@@ -90,6 +113,48 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
 <!-- Dashboard -->
 <div id="dashboard" class="max-w-5xl mx-auto px-4 py-6">
 
+  <!-- 标签栏（2026-10-06）：原来 7 个区块从上到下排在一页，要紧的事被埋在长列表里。
+       改为「概览 + 标签页」：每个标签有自己的网址（#leads 等），可收藏、可后退。
+       各区块的加载函数与元素 id 全部不变，只是包进 data-panel 里按标签显示。 -->
+  <nav class="adm-tabs" aria-label="后台分区">
+    <a href="#overview" data-tab="overview">概览</a>
+    <a href="#leads" data-tab="leads">咨询 <span class="adm-badge" id="tb-leads"></span></a>
+    <a href="#users" data-tab="users">用户 <span class="adm-badge" id="tb-users"></span></a>
+    <a href="#monitor" data-tab="monitor">监控</a>
+    <a href="#errors" data-tab="errors">错误 <span class="adm-badge" id="tb-errors"></span></a>
+    <a href="#traffic" data-tab="traffic">访问</a>
+    <a href="#glossary" data-tab="glossary">术语</a>
+  </nav>
+
+  <!-- 概览：只放「要处理的事」＋一行运行状态。数字都来自各标签已读到的数据（不额外查询）。 -->
+  <section data-panel="overview">
+    <div class="adm-sec-title">需要处理</div>
+    <div class="adm-todo">
+      <a href="#leads" class="adm-todo__card" id="ov-leads">
+        <div class="adm-todo__label">新咨询（近 7 天）</div>
+        <div class="adm-todo__num" id="ov-leads-num">—</div>
+        <div class="adm-todo__sub" id="ov-leads-sub">读取中…</div>
+      </a>
+      <a href="#users" class="adm-todo__card" id="ov-users">
+        <div class="adm-todo__label">待审核用户</div>
+        <div class="adm-todo__num" id="ov-users-num">—</div>
+        <div class="adm-todo__sub" id="ov-users-sub">读取中…</div>
+      </a>
+      <a href="#errors" class="adm-todo__card" id="ov-errors">
+        <div class="adm-todo__label">新错误（24 小时内）</div>
+        <div class="adm-todo__num" id="ov-errors-num">—</div>
+        <div class="adm-todo__sub" id="ov-errors-sub">读取中…</div>
+      </a>
+    </div>
+    <div class="adm-sec-title">运行状态</div>
+    <div class="adm-status">
+      <a href="#monitor" id="ov-scrape">招标抓取：读取中…</a>
+      <a href="#monitor" id="ov-ai">大模型：读取中…</a>
+      <a href="#traffic" id="ov-traffic">访问：读取中…</a>
+    </div>
+  </section>
+
+  <section data-panel="users">
   <!-- Users Management -->
   <div class="card mb-6">
     <div class="flex items-center justify-between mb-4">
@@ -100,7 +165,9 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
       <div class="text-gray-400 text-xs py-2">加载中…</div>
     </div>
   </div>
+  </section>
 
+  <section data-panel="monitor">
   <!-- Scrape Status -->
   <div class="card mb-6">
     <div class="flex items-center justify-between mb-4">
@@ -128,7 +195,9 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
       <div class="text-gray-400 text-xs py-2">加载中…</div>
     </div>
   </div>
+  </section>
 
+  <section data-panel="leads">
   <!-- 相談リード（受発注LP Stage D）-->
   <div class="card mb-6">
     <div class="flex items-center justify-between mb-4">
@@ -157,7 +226,9 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
       </table>
     </div>
   </div>
+  </section>
 
+  <section data-panel="errors">
   <!-- Error Log -->
   <div class="card mb-6">
     <div class="flex items-center justify-between mb-4">
@@ -186,7 +257,9 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
       </table>
     </div>
   </div>
+  </section>
 
+  <section data-panel="glossary">
   <!-- Glossary -->
   <div class="card mb-6">
     <div class="flex items-center justify-between mb-4">
@@ -218,7 +291,9 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
       </table>
     </div>
   </div>
+  </section>
 
+  <section data-panel="traffic">
   <!-- Stat Cards -->
   <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
     <div class="card">
@@ -280,6 +355,7 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
       </table>
     </div>
   </div>
+  </section>
 
 </div>
 
@@ -301,6 +377,58 @@ const PAGE_NAMES = {
 };
 
 // Firebase app/auth/db 来自 /js/shared/firebase-init.js
+
+// ── 标签页（2026-10-06）────────────────────────────────────────────────────────
+// 网址的 #hash 决定显示哪个标签（可收藏、可后退）；未知或空 → 概览。
+const TABS = ['overview', 'leads', 'users', 'monitor', 'errors', 'traffic', 'glossary'];
+function showTab() {
+  const h = location.hash.slice(1);
+  const name = TABS.includes(h) ? h : 'overview';
+  document.querySelectorAll('[data-panel]').forEach((p) => p.classList.toggle('is-active', p.dataset.panel === name));
+  document.querySelectorAll('[data-tab]').forEach((a) => a.classList.toggle('is-active', a.dataset.tab === name));
+}
+addEventListener('hashchange', showTab);
+showTab();
+
+// ── 概览 ──────────────────────────────────────────────────────────────────────
+// 数字全部来自各标签的加载函数已经读到的数据（不额外查 Firestore）。
+// 读取失败时明说「读取失败」，不显示 0 —— "没读到"和"是 0"必须长得不一样。
+function relTime(d) {
+  if (!d) return '—';
+  const m = Math.round((Date.now() - d.getTime()) / 60000);
+  if (m < 1) return '刚刚';
+  if (m < 60) return m + ' 分钟前';
+  const h = Math.round(m / 60);
+  if (h < 48) return h + ' 小时前';
+  return Math.round(h / 24) + ' 天前';
+}
+function setTodo(key, n, sub, alert) {
+  const card = document.getElementById('ov-' + key);
+  document.getElementById('ov-' + key + '-num').textContent = n == null ? '—' : String(n);
+  document.getElementById('ov-' + key + '-sub').textContent = sub;
+  card.classList.toggle('is-alert', !!alert);
+  const badge = document.getElementById('tb-' + key);
+  if (badge) {
+    badge.textContent = alert && n ? String(n) : '';
+    badge.classList.toggle('is-on', !!(alert && n));
+  }
+}
+function setStatus(id, text, bad) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.classList.toggle('is-bad', !!bad);
+}
+
+// 右上角「刷新」：所有标签一起重读（原来只重读访问统计）。
+window.refreshAll = function () {
+  loadUsers();
+  loadScrapeStatus();
+  loadUsage();
+  loadLeads();
+  loadErrors();
+  loadGlossary();
+  return loadData();
+};
 
 // ── Auth State ────────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async u => {
@@ -344,6 +472,7 @@ window.loadData = async function() {
     document.getElementById('lastRefresh').textContent = '更新于 ' + new Date().toLocaleTimeString('zh-CN');
   } catch (err) {
     console.error(err);
+    setStatus('ov-traffic', '访问：读取失败', true);
     document.getElementById('loading').innerHTML = '<div class="text-red-400 text-sm">加载失败，请检查 Firestore 安全规则</div>';
   } finally {
     document.getElementById('refreshBtn').textContent = '↻ 刷新';
@@ -371,6 +500,7 @@ function renderDashboard(docs) {
   document.getElementById('st-anon').textContent = anonCount;
   document.getElementById('st-today').textContent = todayCount;
   document.getElementById('st-week').textContent = weekCount;
+  setStatus('ov-traffic', `访问：今日 ${todayCount} · 本周 ${weekCount}`);
 
   // ── Per-Page ───────────────────────────────────────────────────────────────
   const byPage = {};
@@ -442,6 +572,7 @@ window.loadErrors = async function () {
     renderErrors(docs);
   } catch (e) {
     console.error(e);
+    setTodo('errors', null, '读取失败', true);
     body.innerHTML =
       '<tr><td colspan="7" class="py-4 text-center text-red-400">加载失败，请检查 Firestore 规则</td></tr>';
   }
@@ -449,6 +580,19 @@ window.loadErrors = async function () {
 
 function renderErrors(docs) {
   document.getElementById('errCount').textContent = `共 ${docs.length} 类`;
+  const seen = (d) => (d.lastSeen && typeof d.lastSeen.toDate === 'function' ? d.lastSeen.toDate() : null);
+  const recent = docs.filter((d) => {
+    const t = seen(d);
+    return t && Date.now() - t.getTime() < 24 * 3600 * 1000;
+  });
+  setTodo(
+    'errors',
+    recent.length,
+    recent.length
+      ? `最近一次 ${relTime(seen(recent[0]))} · 共 ${docs.length} 类`
+      : `24 小时内没有新错误 · 共 ${docs.length} 类`,
+    recent.length > 0,
+  );
   document.getElementById('errTable').innerHTML =
     docs
       .map((d) => {
@@ -500,6 +644,7 @@ window.loadLeads = async function () {
     renderLeads(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
   } catch (e) {
     console.error(e);
+    setTodo('leads', null, '读取失败', true);
     body.innerHTML =
       '<tr><td colspan="7" class="py-4 text-center text-red-400">加载失败，请检查 Firestore 规则</td></tr>';
   }
@@ -507,6 +652,20 @@ window.loadLeads = async function () {
 
 function renderLeads(docs) {
   document.getElementById('leadCount').textContent = `共 ${docs.length} 条`;
+  // 「新」＝近 7 天。没有"已回复"标记，所以按时间算；回复完可删除或留着，7 天后自然不再计入。
+  const at = (d) => (d.createdAt && typeof d.createdAt.toDate === 'function' ? d.createdAt.toDate() : null);
+  const fresh = docs.filter((d) => {
+    const t = at(d);
+    return t && Date.now() - t.getTime() < 7 * 86400000;
+  });
+  setTodo(
+    'leads',
+    fresh.length,
+    fresh.length
+      ? `最新 ${relTime(at(fresh[0]))} · 承诺 1 个工作日内回复`
+      : `近 7 天没有新咨询 · 共 ${docs.length} 条`,
+    fresh.length > 0,
+  );
   document.getElementById('leadTable').innerHTML =
     docs
       .map((d) => {
@@ -637,6 +796,13 @@ window.loadUsers = async function() {
   el.innerHTML = '<div class="text-gray-400 text-xs py-2">加载中…</div>';
   try {
     const snap = await getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc')));
+    const pending = snap.docs.filter((d) => (d.data().status || 'pending') === 'pending').length;
+    setTodo(
+      'users',
+      pending,
+      pending ? '注册后等待你批准' : `没有待审核 · 共 ${snap.size} 人`,
+      pending > 0,
+    );
     if (snap.empty) {
       el.innerHTML = '<div class="text-gray-400 text-xs py-2">暂无注册用户</div>';
       return;
@@ -662,6 +828,7 @@ window.loadUsers = async function() {
       </div>`;
     }).join('');
   } catch (err) {
+    setTodo('users', null, '读取失败', true);
     el.innerHTML = `<div class="text-red-400 text-xs py-2">${err.message}</div>`;
   }
 };
@@ -707,6 +874,7 @@ window.loadUsage = async function() {
     days.sort((a, b) => (a.day < b.day ? 1 : -1));   // 文档 id 就是日期，倒序
     if (!days.length) {
       whenEl.textContent = '';
+      setStatus('ov-ai', '大模型：还没有用量记录');
       el.innerHTML = '<div class="text-gray-400 text-xs py-2">还没有用量记录</div>';
       return;
     }
@@ -726,6 +894,11 @@ window.loadUsage = async function() {
       }
     }
     whenEl.textContent = days[days.length - 1].day + ' ～ ' + days[0].day + '（' + days.length + ' 天）';
+    // 文档 id 是 UTC 日期（usageRecorder.js），所以写「最近记录日」而不是「今天」。
+    setStatus(
+      'ov-ai',
+      `大模型：最近记录日 ${days[0].day}（UTC）· ${n(days[0].calls)} 次`,
+    );
 
     const kfmt = (v) => (v >= 1e6 ? (v / 1e6).toFixed(2) + 'M' : v >= 1000 ? Math.round(v / 1000) + 'K' : String(v));
     const stat = (label, val, color) =>
@@ -790,6 +963,7 @@ window.loadUsage = async function() {
     el.innerHTML = head + caveat + reasonNote + table + chart;
   } catch (err) {
     whenEl.textContent = '';
+    setStatus('ov-ai', '大模型：读取失败', true);
     el.innerHTML = '<div class="text-red-400 text-xs py-2">读取失败：' + esc(err.message) +
       '（需要 Firestore 规则允许管理员读 llm_usage）</div>';
   }
@@ -804,11 +978,19 @@ window.loadScrapeStatus = async function() {
     const snap = await getDoc(doc(db, 'meta', 'scrape_status'));
     if (!snap.exists()) {
       whenEl.textContent = '';
+      setStatus('ov-scrape', '招标抓取：暂无记录', true);
       el.innerHTML = '<div class="text-gray-400 text-xs py-2">暂无抓取记录（下次定时任务运行后显示）</div>';
       return;
     }
     const r = snap.data();
     const t = r.finished_at?.toDate?.();
+    // 抓取每天 02:00 JST 跑一次（scrape-bids.yml）。超过 36 小时没有新结果＝漏跑，标红。
+    const stale = !t || Date.now() - t.getTime() > 36 * 3600 * 1000;
+    setStatus(
+      'ov-scrape',
+      `招标抓取：${r.ok ? '✓ 成功' : '✗ 失败'} · ${relTime(t)}${stale ? '（超过 36 小时未更新）' : ''}`,
+      !r.ok || stale,
+    );
     const okBadge = r.ok
       ? '<span class="tag" style="background:#dcfce7;color:#15803d">成功</span>'
       : '<span class="tag" style="background:#fee2e2;color:#b91c1c">失败</span>';
@@ -840,6 +1022,7 @@ window.loadScrapeStatus = async function() {
     el.innerHTML = totalsHtml + (sources || '<div class="text-gray-400 text-xs">无来源数据</div>');
   } catch (err) {
     whenEl.textContent = '';
+    setStatus('ov-scrape', '招标抓取：读取失败', true);
     el.innerHTML = `<div class="text-red-400 text-xs py-2">读取失败：${esc(err.message)}（可能需在 Firestore 规则中允许管理员读取 meta 集合）</div>`;
   }
 };
