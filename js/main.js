@@ -91,17 +91,14 @@ const T = {
     milestones_title: '会社の歩み',
     milestones_body: '千里同風株式会社の設立から現在までの歩みをご覧ください。',
     ms1_event: '千里同風株式会社 設立',
-    ms1_desc: '大阪市にて設立。生成AI搭載ハードウェアの研究・企画に特化した会社として始動。',
-    ms2_event: '市場調査・製品企画 開始',
-    ms2_desc:
-      '日本市場向け生成AIハードウェア製品の調査・コンセプト開発を開始。教育・医療・家電・公共サービス分野での可能性を探求。',
-    ms3_event: '公式ウェブサイト 公開',
+    ms1_desc: '大阪市にて設立。AIの研究と、AIを組み込んだ製品・サービスの企画を事業として始動。',
+    ms2_event: '公式ウェブサイト 公開',
+    ms2_desc: '公式ウェブサイトを公開。最初のAIツール「中日翻訳」も同時にリリース。',
+    ms3_event: 'オンラインAIツール 順次公開',
     ms3_desc:
-      '千里同風株式会社の公式ウェブサイトをリニューアルし、会社のビジョンとサービスを世界に向けて発信。',
-    ms4_event: 'オンラインAIツール 公開',
-    ms4_desc: '翻訳・文書分析・日本語学習など、AIを日々の仕事と学びに役立てるツールを順次公開。',
-    ms5_event: '受発注の自動化 デモ公開',
-    ms5_desc: '注文書をAIで受注台帳に整形する、中小企業向けの業務自動化を開始。',
+      '文書分析・人生インタビュー・日本語動詞活用・入札情報モニタリング・中国語原稿校正を順次公開。',
+    ms4_event: '受発注の自動化 デモ公開',
+    ms4_desc: '注文書をAIで受注台帳に整形する、中小企業向けの業務自動化を開始。',
 
     /* Solutions page */
     solutions_page_title: '千里同風株式会社 — ソリューション',
@@ -739,16 +736,13 @@ const T = {
     milestones_title: '公司历程',
     milestones_body: '了解千里同風株式会社从成立至今的发展历程。',
     ms1_event: '千里同風株式会社 成立',
-    ms1_desc: '于大阪市成立。作为专注于生成式AI硬件研究与企划的公司正式启动。',
-    ms2_event: '开始市场调研与产品企划',
-    ms2_desc:
-      '启动面向日本市场的生成式AI硬件产品调研与概念开发。探索教育、医疗、消费电子及公共服务领域的可能性。',
-    ms3_event: '官方网站上线',
-    ms3_desc: '千里同風株式会社官方网站全新上线，向全球传达公司愿景与服务内容。',
-    ms4_event: '在线 AI 工具 上线',
-    ms4_desc: '陆续上线翻译、文书分析、日语学习等工具，把 AI 用到日常工作与学习中。',
-    ms5_event: '受发注自动化 演示上线',
-    ms5_desc: '面向中小企业的业务自动化起步：用 AI 把订单整理成受注台账。',
+    ms1_desc: '于大阪市成立。以 AI 研究，以及嵌入 AI 的产品与服务企划为业务正式启动。',
+    ms2_event: '官方网站上线',
+    ms2_desc: '官方网站上线，同时发布第一个 AI 工具「中日翻译」。',
+    ms3_event: '在线 AI 工具陆续上线',
+    ms3_desc: '陆续上线文书分析、人生访谈、日语动词活用、招标信息监控、中文稿件校对。',
+    ms4_event: '受发注自动化 演示上线',
+    ms4_desc: '面向中小企业的业务自动化起步：用 AI 把订单整理成受注台账。',
 
     solutions_page_title: '千里同風株式会社 — 解决方案',
     solutions_eyebrow: '解决方案',
@@ -1352,20 +1346,16 @@ const T = {
     milestones_title: 'Our Journey',
     milestones_body:
       "A look at the key moments in Senridoufuu's history, from founding to the present.",
-    ms1_event: 'Senridoufuu Co., Ltd. Founded',
-    ms1_desc:
-      'Established in Osaka. The company launches as a research and planning firm specializing in generative AI-embedded hardware.',
-    ms2_event: 'Market Research & Product Planning Begins',
+    ms1_event: 'Company founded',
+    ms1_desc: 'Founded in Osaka to research AI and plan products and services with AI built in.',
+    ms2_event: 'Official website launched',
     ms2_desc:
-      'Initiated research and concept development for generative AI hardware products targeting the Japanese market, exploring opportunities in education, healthcare, consumer electronics, and public services.',
-    ms3_event: 'Official Website Launch',
+      'Launched the official website, together with our first AI tool: Chinese–Japanese translation.',
+    ms3_event: 'Online AI tools released',
     ms3_desc:
-      "Senridoufuu's official website relaunches, communicating the company's vision and services to a global audience.",
-    ms4_event: 'Online AI tools launched',
+      'Released document analysis, life-story interviews, Japanese verb conjugation, Osaka bid monitoring and Chinese proofreading, one after another.',
+    ms4_event: 'Order-to-ledger demo launched',
     ms4_desc:
-      'Released tools for translation, document analysis, Japanese learning and more, putting AI to use in everyday work and study.',
-    ms5_event: 'Order-to-ledger demo launched',
-    ms5_desc:
       'Started business automation for small and mid-sized companies: AI that turns order forms into an order ledger.',
 
     solutions_page_title: 'Senridoufuu — Solutions',
