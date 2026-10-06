@@ -145,6 +145,12 @@ const T = {
       'ファイルの読み取りはお使いのブラウザ内で行い、ファイル本体は送信しません。「AIで台帳に整形」を押したときだけ、読み取った文字を当社サーバー経由でAIに送信し、当社サーバーでは保存しません。使用するAIはデモ欄に表示しています。詳しくはプライバシーポリシーをご覧ください。',
     o2l_faq_q5: '相談すると、いつ返事がもらえますか？',
     o2l_faq_a5: '1営業日以内にご返信します。ご相談は無料です。',
+    o2l_faq_q6: '料金には何が含まれますか？',
+    o2l_faq_a6:
+      '要件のヒアリング、入力（注文書）と出力（台帳・取込用Excel）の形式の確定、完成品の納品、2回までの修正が含まれます。保守・改善は任意で、別途月額です。',
+    o2l_faq_q7: '納期はどのくらいですか？',
+    o2l_faq_a7:
+      '対象のファイルをすべてご提供いただいてから、最短1営業日で初回の台帳をお届けします。調整を含む完成時期は、内容に応じてご相談のうえ決定します。',
     o2l_flow_eyebrow: 'こんな作業、ありませんか？',
     o2l_flow_title: '注文書を、手で台帳に写す毎日',
     o2l_before_label: '今のやり方',
@@ -218,7 +224,7 @@ const T = {
     o2l_price_paid_title: '小規模自動化',
     o2l_price_paid_price: '5万円〜',
     o2l_price_paid_desc:
-      '御社の注文書・台帳の形式に合わせて個別に構築します。まずは無料でご相談ください。',
+      '御社の注文書・台帳の形式に合わせて個別に構築します。要件のヒアリング、入力・出力形式の確定、完成品の納品、2回までの修正を含みます。まずは無料でご相談ください。',
     o2l_price_maint: '保守・改善は月5,000円〜（任意）。',
     o2l_trust_eyebrow: '安心してお使いいただくために',
     o2l_trust_title: 'データの取り扱い',
@@ -766,6 +772,12 @@ const T = {
       '文件在您的浏览器内读取，文件本身不会发送。只有点「用 AI 整形成台账」时，读取到的文字才会经由我们的服务器发送给 AI，我们的服务器不保存。使用的 AI 显示在演示区。详情请见隐私政策。',
     o2l_faq_q5: '咨询后多久能得到回复？',
     o2l_faq_a5: '我们会在 1 个工作日内回复。咨询免费。',
+    o2l_faq_q6: '费用包含哪些内容？',
+    o2l_faq_a6:
+      '包含需求沟通、确定输入（订单）与输出（台账、导入用 Excel）的格式、交付成品，以及 2 次修改。维护改进为可选，另按月收费。',
+    o2l_faq_q7: '交付需要多久？',
+    o2l_faq_a7:
+      '收到全部相关文件后，最快 1 个工作日交付第一版台账。含调整在内的完成时间，根据内容与您商定。',
     o2l_flow_eyebrow: '你是不是也在这样做？',
     o2l_flow_title: '每天把订单一行行抄进台账',
     o2l_before_label: '现在的做法',
@@ -837,7 +849,8 @@ const T = {
     o2l_price_free_desc: '未注册可试 1 次，注册后免费 3 次。',
     o2l_price_paid_title: '小型自动化',
     o2l_price_paid_price: '5万日元起',
-    o2l_price_paid_desc: '按贵司订单/台账格式单独定制。先免费聊聊需求。',
+    o2l_price_paid_desc:
+      '按贵司订单/台账格式单独定制。包含需求沟通、确定输入输出格式、交付成品、2 次修改。先免费聊聊需求。',
     o2l_price_maint: '维护改进 每月 5,000 日元起（可选）。',
     o2l_trust_eyebrow: '为了让你放心使用',
     o2l_trust_title: '数据怎么处理',
@@ -1425,6 +1438,12 @@ const T = {
       'Files are read in your browser, and the files themselves are not sent. Only when you press “Structure into a ledger with AI” is the extracted text sent to an AI via our server, and our servers do not store it. The AI in use is shown in the demo section. See our Privacy Policy for details.',
     o2l_faq_q5: 'How soon will I hear back after contacting you?',
     o2l_faq_a5: 'We reply within 1 business day. Consultation is free.',
+    o2l_faq_q6: 'What does the price include?',
+    o2l_faq_a6:
+      'Requirements discussion, agreeing the input (order form) and output (ledger / import Excel) formats, delivery of the finished tool, and up to 2 revisions. Maintenance and improvements are optional and billed monthly.',
+    o2l_faq_q7: 'How long does delivery take?',
+    o2l_faq_a7:
+      'Once we have all the relevant files, we deliver the first version of the ledger in as little as 1 business day. The completion date, including adjustments, is agreed with you depending on the work.',
     o2l_ai_register_link: 'Register for free →',
     o2l_ai_member_used: 'You have used your 3 free tries. Please get a free consultation.',
     o2l_ai_daily: 'Today’s free trial limit has been reached. Please try again later.',
@@ -1441,7 +1460,7 @@ const T = {
     o2l_price_paid_title: 'Small-scale automation',
     o2l_price_paid_price: 'From ¥50,000',
     o2l_price_paid_desc:
-      'Built to fit your order forms and ledger. Start with a free consultation.',
+      'Built to fit your order forms and ledger. Includes requirements discussion, agreeing the input and output formats, delivery of the finished tool, and up to 2 revisions. Start with a free consultation.',
     o2l_price_maint: 'Maintenance and improvements from ¥5,000/month (optional).',
     o2l_trust_eyebrow: 'So you can use it with confidence',
     o2l_trust_title: 'How your data is handled',
