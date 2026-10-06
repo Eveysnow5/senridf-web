@@ -181,6 +181,7 @@ const T = {
     o2l_drop_hint:
       'ファイルの読み取りはブラウザ内で行います（ファイル本体は送信しません）。スキャン・画像は、読み取りのため画像を送信します（送信前に確認）。',
     o2l_sample_btn: 'サンプル注文書で試す',
+    o2l_drop_title: 'ファイルを選択',
     o2l_sample_view: 'サンプルの中身を見る（PDF）',
     o2l_ai_send_note:
       '「AIで台帳に整形」を押すと、読み取った文字だけを当社サーバー経由でAIに送信します（ファイル本体は送信しません）。',
@@ -295,6 +296,7 @@ const T = {
     pp_biz_rep: '代表者',
     pp_biz_addr: '所在地',
     pp_biz_contact: '連絡先',
+    pp_biz_addr_val: '大阪市',
     pp_s9_h: '9. 本ポリシーの改定',
     pp_s9_b:
       '当社は、法令の変更やサービスの改善に応じて本ポリシーを改定することがあります。重要な変更がある場合は本ページでお知らせします。',
@@ -821,6 +823,7 @@ const T = {
     o2l_drop_hint:
       '文件在浏览器内读取（文件本身不发送）。扫描件 / 图片为了识别会发送图片（发送前会确认）。',
     o2l_sample_btn: '用示例订单试试',
+    o2l_drop_title: '选择文件',
     o2l_sample_view: '查看示例内容（PDF）',
     o2l_ai_send_note:
       '点「用 AI 整形成台账」时，只会把读取到的文字经由我们的服务器发送给 AI（文件本身不发送）。',
@@ -931,6 +934,7 @@ const T = {
     pp_biz_rep: '代表者',
     pp_biz_addr: '所在地',
     pp_biz_contact: '联系方式',
+    pp_biz_addr_val: '大阪市',
     pp_s9_h: '9. 本政策的修订',
     pp_s9_b: '本公司可能因法律变更或服务改进而修订本政策。如有重要变更，将在本页面通知。',
     solutions_body:
@@ -1408,6 +1412,7 @@ const T = {
     o2l_drop_hint:
       'Files are read in your browser (the files themselves are not sent). Scans / images are sent as images for reading (we ask first).',
     o2l_sample_btn: 'Try with a sample order',
+    o2l_drop_title: 'Choose files',
     o2l_sample_view: 'View the sample (PDF)',
     o2l_ai_send_note:
       'When you press “Structure into a ledger with AI”, only the extracted text is sent to an AI via our server (the file itself is not sent).',
@@ -1559,6 +1564,7 @@ const T = {
     pp_biz_rep: 'Representative',
     pp_biz_addr: 'Location',
     pp_biz_contact: 'Contact',
+    pp_biz_addr_val: 'Osaka, Japan',
     pp_s9_h: '9. Changes to this policy',
     pp_s9_b:
       'We may revise this policy in response to changes in law or improvements to our services. We will announce significant changes on this page.',

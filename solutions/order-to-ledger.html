@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&family=Noto+Serif+JP:wght@300;400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <base href="../">
-  <link rel="stylesheet" href="css/main.css?v=20261006c">
+  <link rel="stylesheet" href="css/main.css?v=ce9bfd5cb3">
   <style>
     /* 受発注ランディング専用の軽微なスタイル。配色は本文の落ち着いたトーンに合わせ、
        濃色/淡色どちらでも破綻しないよう currentColor と控えめな枠線で組む。 */
@@ -292,7 +292,7 @@
         </p>
       </div>
       <div class="o2l-demo" data-animate>
-        <div id="o2lDrop" class="o2l-drop" role="button" tabindex="0" title="ファイルを選択">
+        <div id="o2lDrop" class="o2l-drop" role="button" tabindex="0" title="ファイルを選択" data-i18n-title="o2l_drop_title">
           <input
             type="file"
             id="o2lFile"
@@ -578,8 +578,8 @@
     crossorigin="anonymous"
   ></script>
 
-  <script src="js/main.js"></script>
-  <script type="module" src="js/tracking.js"></script>
+  <script src="js/main.js?v=38b69408ac"></script>
+  <script type="module" src="js/tracking.js?v=41b6af1985"></script>
 
   <!-- デモ送信用トークン：会員（既定 app にログイン済み）ならその ID トークン、
        未ログインなら tracking.js（具名 app）が作った匿名セッションのトークン。
@@ -599,8 +599,8 @@
     };
   </script>
 
-  <!-- ?v= はキャッシュバスター。JS は max-age=14400（4h）で配信されるため、
-       中身を変えたらここを上げないと、最近訪れた人は最大4時間 古い JS を掴む。 -->
-  <script src="js/order-to-ledger-demo.js?v=20261006b"></script>
+  <!-- ?v= は内容指纹（npm run bust が自動で書く。tests/cache-bust が更新漏れを検出）。
+       JS は 4 時間ブラウザにキャッシュされるため、指纹が変わらないと古い JS を掴む。 -->
+  <script src="js/order-to-ledger-demo.js?v=d5d4a8e754"></script>
 </body>
 </html>

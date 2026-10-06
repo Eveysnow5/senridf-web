@@ -381,7 +381,10 @@
     },
   };
 
-  let currentLang = localStorage.getItem('sdf_lang') || 'ja';
+  // ?lang= を最優先（main.js と同じ順序）。以前は localStorage しか見ず、?lang=zh のリンクから
+  // 来ても日本語で表示されていた（2026-10-06 混在言語スキャンで発覚）。
+  const LANG_PARAM = new URLSearchParams(location.search).get('lang');
+  let currentLang = (T[LANG_PARAM] && LANG_PARAM) || localStorage.getItem('sdf_lang') || 'ja';
   const dict = () => T[currentLang] || T.ja;
   const t = (key) => dict()[key] ?? key;
 
