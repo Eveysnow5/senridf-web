@@ -63,6 +63,8 @@ test('① プロンプトは固定列を全部列挙し、計算させず、集�
   assert.match(p, /計算しない/);
   assert.match(p, /小計・消費税・合計/);
   assert.match(p, /得意先＝注文書を発行した会社/);
+  // 本番 E2E で「宛先を得意先にする」誤りが出た。その錨（御中/様）を消させない。
+  assert.match(p, /「御中」「様」が付いた会社は宛先/);
   assert.ok(p.includes('TEXT'));
 });
 
