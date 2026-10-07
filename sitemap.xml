@@ -8,7 +8,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.senridf.com/</loc>
-    <lastmod>2026-06-16</lastmod>
+    <lastmod>2026-10-07</lastmod>
   </url>
   <url>
     <loc>https://www.senridf.com/about/</loc>
@@ -16,11 +16,15 @@
   </url>
   <url>
     <loc>https://www.senridf.com/about/milestones</loc>
-    <lastmod>2026-06-16</lastmod>
+    <lastmod>2026-10-07</lastmod>
+  </url>
+  <url>
+    <loc>https://www.senridf.com/about/company</loc>
+    <lastmod>2026-10-07</lastmod>
   </url>
   <url>
     <loc>https://www.senridf.com/solutions/</loc>
-    <lastmod>2026-08-28</lastmod>
+    <lastmod>2026-10-07</lastmod>
   </url>
   <url>
     <loc>https://www.senridf.com/solutions/demo</loc>

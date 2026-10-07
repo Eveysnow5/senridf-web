@@ -27,6 +27,7 @@ const T = {
 
     /* Hero */
     hero_corp: '千里同風株式会社',
+    home_page_title: '千里同風株式会社 — AIを、日々の仕事に役立つ形に（大阪）',
     hero_tagline: '人間がAIとの寄り添いを求めるすべての願いは、魂の共鳴への渇望にほかならない。',
 
     /* Mission */
@@ -58,7 +59,7 @@ const T = {
     about_teaser_eyebrow: '千里同風とは',
     about_teaser_title: '大阪から、AIと人をつなぐ新しい形を探して。',
     about_teaser_body:
-      '千里同風株式会社は、生成AI搭載ハードウェアの研究・企画に特化した会社です。市場調査から製品コンセプト開発まで、一貫したサポートを提供します。',
+      '千里同風株式会社は、大阪を拠点にAIの研究と実用化に取り組む会社です。いまはオンラインのAIツールと業務の自動化を提供し、その先に生成AIを組み込んだハードウェアの開発を進めています。',
     about_teaser_cta: 'チームを見る',
 
     nav_member: 'メンバー',
@@ -69,6 +70,8 @@ const T = {
     footer_nav_heading: 'ナビゲーション',
     footer_contact_heading: 'お問い合わせ',
     nav_privacy: 'プライバシーポリシー',
+    nav_consult: '無料相談',
+    nav_company: '会社概要',
     footer_copy: '© {year} 千里同風株式会社',
     addr_street: '大阪府大阪市淀川区西三国4丁目4-9-7',
     addr_city: '大阪市, 日本',
@@ -86,6 +89,23 @@ const T = {
       '中国公認会計士（CPA）。財務戦略・クロスボーダービジネスのアドバイザリーを担当。中日間のビジネス開発および財務管理をサポートします。',
 
     /* Milestones page */
+    company_page_title: '千里同風株式会社 — 会社概要',
+    company_eyebrow: '会社概要',
+    company_title: '会社概要',
+    co_name_h: '商号',
+    co_name_v: '千里同風株式会社',
+    co_est_h: '設立',
+    co_rep_h: '代表者',
+    co_rep_v: '代表取締役　南 雪',
+    co_addr_h: '所在地',
+    co_addr_v: '〒532-0006 大阪府大阪市淀川区西三国4丁目4-9-7',
+    co_biz_h: '事業内容',
+    co_biz1: 'AI技術の研究、リサーチ及び情報提供',
+    co_biz2: 'AIを活用した業務改善・効率化のコンサルティング、クラウドサービスの提供',
+    co_biz3: 'ソフトウェア・ハードウェアの企画開発、販売',
+    co_biz4: '市場調査の受託、経営コンサルティング',
+    co_contact_h: 'お問い合わせ',
+    co_contact_cta: '無料相談フォーム',
     milestones_page_title: '千里同風株式会社 — 沿革',
     milestones_eyebrow: '沿革',
     milestones_title: '会社の歩み',
@@ -680,6 +700,7 @@ const T = {
     nav_blog: '博客',
 
     hero_corp: '千里同風株式会社',
+    home_page_title: '千里同風株式会社 — 让 AI 真正用到日常工作里（大阪）',
     hero_tagline: '人类对AI陪伴的一切渴望，不过是对灵魂共鸣的向往。',
 
     mission_eyebrow: '使命',
@@ -706,7 +727,7 @@ const T = {
     about_teaser_eyebrow: '关于我们',
     about_teaser_title: '从大阪出发，探索连接人与AI的新形式。',
     about_teaser_body:
-      '千里同風株式会社是一家专注于生成式AI硬件产品研究与企划的公司。我们提供从市场调研到产品概念开发的全程支持。',
+      '千里同風株式会社以大阪为据点，致力于 AI 的研究与落地。现阶段提供在线 AI 工具和业务自动化，在此之上推进嵌入生成式 AI 的硬件开发。',
     about_teaser_cta: '了解团队',
 
     nav_member: '会员',
@@ -716,6 +737,8 @@ const T = {
     footer_nav_heading: '导航',
     footer_contact_heading: '联系方式',
     nav_privacy: '隐私政策',
+    nav_consult: '免费咨询',
+    nav_company: '公司概况',
     footer_copy: '© {year} 千里同風株式会社',
     addr_street: '大阪府大阪市淀川区西三国4丁目4-9-7',
     addr_city: '大阪市, 日本',
@@ -731,6 +754,23 @@ const T = {
     team2_bio:
       '中国注册会计师（CPA）。负责财务战略与跨境商业咨询，支持中日之间的业务开发与财务管理。',
 
+    company_page_title: '千里同風株式会社 — 公司概况',
+    company_eyebrow: '公司概况',
+    company_title: '公司概况',
+    co_name_h: '公司名称',
+    co_name_v: '千里同風株式会社',
+    co_est_h: '成立',
+    co_rep_h: '代表人',
+    co_rep_v: '代表董事　南 雪',
+    co_addr_h: '地址',
+    co_addr_v: '〒532-0006 日本大阪府大阪市淀川区西三国4丁目4-9-7',
+    co_biz_h: '业务内容',
+    co_biz1: 'AI 技术的研究、调研与信息提供',
+    co_biz2: '运用 AI 的业务改善与效率化咨询、云服务提供',
+    co_biz3: '软件与硬件的企划开发、销售',
+    co_biz4: '受托市场调研、经营咨询',
+    co_contact_h: '联系方式',
+    co_contact_cta: '免费咨询表单',
     milestones_page_title: '千里同風株式会社 — 大事记',
     milestones_eyebrow: '大事记',
     milestones_title: '公司历程',
@@ -1285,6 +1325,7 @@ const T = {
     nav_blog: 'Blog',
 
     hero_corp: 'Senridoufuu Co., Ltd.',
+    home_page_title: 'Senridoufuu Co., Ltd. — Putting AI to real use in everyday work (Osaka)',
     hero_tagline:
       'Every human desire for closeness with AI is nothing but a yearning for resonance of souls.',
 
@@ -1315,7 +1356,7 @@ const T = {
     about_teaser_eyebrow: 'About',
     about_teaser_title: 'From Osaka, exploring new ways to connect people and AI.',
     about_teaser_body:
-      'Senridoufuu Co., Ltd. specializes in research and planning for generative AI-embedded hardware products. We offer end-to-end support from market research to product concept development.',
+      'Senridoufuu Co., Ltd. is an Osaka-based company researching AI and putting it to practical use. Today we provide online AI tools and business automation, and are developing hardware with generative AI built in as the next step.',
     about_teaser_cta: 'Meet the team',
 
     nav_member: 'Member',
@@ -1326,6 +1367,8 @@ const T = {
     footer_nav_heading: 'Navigation',
     footer_contact_heading: 'Contact',
     nav_privacy: 'Privacy Policy',
+    nav_consult: 'Free consultation',
+    nav_company: 'Company',
     footer_copy: '© {year} Senridoufuu Co., Ltd.',
     addr_street: '4-9-7, Nishimikuni 4-chome, Yodogawa-ku',
     addr_city: 'Osaka, Japan',
@@ -1341,6 +1384,23 @@ const T = {
     team2_bio:
       'Certified Public Accountant (CPA), China. Provides advisory on financial strategy and cross-border business development, supporting operations between China and Japan.',
 
+    company_page_title: 'Senridoufuu — Company Profile',
+    company_eyebrow: 'Company',
+    company_title: 'Company Profile',
+    co_name_h: 'Company name',
+    co_name_v: 'Senridoufuu Co., Ltd. (千里同風株式会社)',
+    co_est_h: 'Established',
+    co_rep_h: 'Representative',
+    co_rep_v: 'Yuki Minami, Representative Director',
+    co_addr_h: 'Address',
+    co_addr_v: '4-4-9-7 Nishimikuni, Yodogawa-ku, Osaka 532-0006, Japan',
+    co_biz_h: 'Business',
+    co_biz1: 'AI research and information services',
+    co_biz2: 'Consulting on AI-driven business improvement and efficiency; cloud services',
+    co_biz3: 'Planning, development and sale of software and hardware',
+    co_biz4: 'Contract market research and management consulting',
+    co_contact_h: 'Contact',
+    co_contact_cta: 'Free consultation form',
     milestones_page_title: 'Senridoufuu — Milestones',
     milestones_eyebrow: 'Milestones',
     milestones_title: 'Our Journey',
@@ -1939,6 +1999,7 @@ const NAV_HTML = `
           <a href="about/" class="nav__link" data-i18n="nav_about"></a>
           <div class="nav__dropdown">
             <a href="about/" class="nav__dropdown-link" data-i18n="nav_team"></a>
+            <a href="about/company.html" class="nav__dropdown-link" data-i18n="nav_company"></a>
             <a href="about/milestones.html" class="nav__dropdown-link" data-i18n="nav_milestones"></a>
           </div>
         </div>
@@ -1951,6 +2012,7 @@ const NAV_HTML = `
           </div>
         </div>
       </div>
+      <a href="/solutions/order-to-ledger.html#consult" class="nav__cta" data-i18n="nav_consult"></a>
       <a href="/account.html" id="nav-member-link" class="nav__link" style="font-size:0.8125rem;opacity:.7;"></a>
       <div class="nav__lang" id="langDesktop">
         <button class="nav__lang-btn" data-lang="ja">日</button>
@@ -1969,6 +2031,7 @@ const NAV_HTML = `
   <div class="nav__mobile-section">
     <div class="nav__mobile-parent" data-i18n="nav_about"></div>
     <a href="about/" class="nav__mobile-child" data-i18n="nav_team"></a>
+    <a href="about/company.html" class="nav__mobile-child" data-i18n="nav_company"></a>
     <a href="about/milestones.html" class="nav__mobile-child" data-i18n="nav_milestones"></a>
   </div>
   <div class="nav__mobile-section">
@@ -1977,6 +2040,7 @@ const NAV_HTML = `
     <a href="solutions/demo.html" class="nav__mobile-child" data-i18n="nav_demo"></a>
     <a href="solutions/blog/" class="nav__mobile-child" data-i18n="nav_blog"></a>
   </div>
+  <a href="/solutions/order-to-ledger.html#consult" class="nav__mobile-cta" data-i18n="nav_consult"></a>
   <div class="nav__mobile-lang" id="langMobile">
     <button class="nav__mobile-lang-btn" data-lang="ja">日本語</button>
     <button class="nav__mobile-lang-btn" data-lang="zh">中文</button>
@@ -1999,6 +2063,7 @@ const FOOTER_HTML = `
         <div class="footer__col-heading" data-i18n="footer_nav_heading"></div>
         <div class="footer__links">
           <a href="about/" class="footer__link" data-i18n="nav_team"></a>
+          <a href="about/company.html" class="footer__link" data-i18n="nav_company"></a>
           <a href="about/milestones.html" class="footer__link" data-i18n="nav_milestones"></a>
           <a href="solutions/" class="footer__link" data-i18n="nav_products"></a>
           <a href="solutions/demo.html" class="footer__link" data-i18n="nav_demo"></a>
@@ -2082,8 +2147,14 @@ function applyTranslations(lang) {
   const langMap = { ja: 'ja', zh: 'zh-CN', en: 'en' };
   document.documentElement.lang = langMap[lang] || 'ja';
   // Page title
+  // 标题里没有公司名的（如「受発注の自動化」「プライバシーポリシー」），后面补上「| 公司名」。
+  // 以前直接用键值，首页被覆盖成只剩「千里同風株式会社」，其他页又缺公司名——搜索结果和
+  // 浏览器标签上都看不出是谁的网站（2026-10-06 基本功体检发现）。
   const titleKey = document.body.dataset.pageTitle;
-  if (titleKey && t[titleKey]) document.title = t[titleKey];
+  if (titleKey && t[titleKey]) {
+    const tt = t[titleKey];
+    document.title = /千里同風|Senridoufuu/.test(tt) ? tt : `${tt} | ${t.hero_corp}`;
+  }
   updateNavMember();
 }
 

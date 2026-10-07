@@ -1387,3 +1387,68 @@ main { padding-top: var(--nav-h); }
   .sol-feature { padding: 24px 20px; }
   .sol-feature__name { font-size: 1.375rem; }
 }
+
+/* 导航常驻「無料相談」（2026-10-06 对标：先进同类网站导航里都有「相談する」按钮） */
+.nav__cta {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--c-accent);
+  color: #fff;
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  transition: opacity 200ms var(--ease);
+}
+.nav__cta:hover { opacity: 0.85; }
+.nav__mobile-cta {
+  display: block;
+  margin: 8px 0 32px;
+  padding: 14px 20px;
+  border-radius: 999px;
+  background: var(--c-accent);
+  color: #fff;
+  text-align: center;
+  font-size: 0.9375rem;
+  letter-spacing: 0.06em;
+}
+@media (max-width: 1024px) {
+  .nav__right { gap: 16px; }
+  .nav__cta { padding: 6px 12px; font-size: 0.75rem; }
+}
+
+/* 会社概要（2026-10-06） */
+.company-table {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  max-width: 880px;
+  border-top: 1px solid var(--c-border);
+}
+.company-table dt,
+.company-table dd {
+  padding: 22px 0;
+  border-bottom: 1px solid var(--c-border);
+  font-size: 0.9375rem;
+  line-height: 1.9;
+}
+.company-table dt { color: var(--c-text-3); letter-spacing: 0.08em; }
+.company-table dd { margin: 0; color: var(--c-text); font-weight: 300; }
+.company-table dd a { color: var(--c-accent); }
+.company-table__list li { position: relative; padding-left: 1.1em; }
+.company-table__list li::before { content: '・'; position: absolute; left: 0; color: var(--c-text-3); }
+.company-table__cta {
+  display: inline-block;
+  margin-left: 20px;
+  padding: 4px 14px;
+  border: 1px solid var(--c-accent);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+}
+@media (max-width: 768px) {
+  .company-table { grid-template-columns: 1fr; }
+  .company-table dt { padding: 18px 0 4px; border-bottom: none; }
+  .company-table dd { padding: 0 0 18px; }
+  .company-table__cta { margin: 10px 0 0; }
+  .company-table dd a[href^='mailto'] { display: block; }
+}

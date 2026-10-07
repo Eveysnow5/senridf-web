@@ -36,6 +36,7 @@ const PAGES = {
   'index.html': 'public',
   'about/index.html': 'public',
   'about/milestones.html': 'public',
+  'about/company.html': 'public',
   'solutions/index.html': 'public',
   'solutions/order-to-ledger.html': 'public', // 受発注→台帳 ランディング（lead-gen）。/solutions/demo/ 配下でないので noindex 対象外＝可索引
   'solutions/blog/index.html': 'public',
