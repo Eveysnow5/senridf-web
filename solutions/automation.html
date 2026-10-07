@@ -5,93 +5,111 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>企業自動化ソリューション | 千里同風</title>
     <link rel="stylesheet" href="../css/main.css">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-white text-gray-900">
-    <nav class="bg-white border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <a href="/" class="text-2xl font-bold">千里同風</a>
-            <ul class="flex gap-6">
-                <li><a href="/" class="hover:text-blue-600">ホーム</a></li>
-                <li><a href="/solutions/" class="hover:text-blue-600">ソリューション</a></li>
-                <li><a href="/about/" class="hover:text-blue-600">について</a></li>
+<body class="bg-white text-black">
+    <nav class="border-b border-gray-200">
+        <div class="max-w-6xl mx-auto px-8 py-6 flex justify-between items-center">
+            <a href="/" class="text-xl font-bold">千里同風</a>
+            <ul class="flex gap-8">
+                <li><a href="/" class="hover:text-gray-600">ホーム</a></li>
+                <li><a href="/solutions/" class="hover:text-gray-600">ソリューション</a></li>
+                <li><a href="/about/" class="hover:text-gray-600">について</a></li>
             </ul>
         </div>
     </nav>
 
-    <section class="bg-gradient-to-r from-gray-50 to-white py-20 px-4">
-        <div class="max-w-4xl mx-auto text-center">
-            <h1 class="text-5xl font-bold mb-6" data-i18n="auto_hero_title">中小企業のための AI オフィス自動化</h1>
-            <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto" data-i18n="auto_hero_subtitle">毎日の手作業を AI に任せて、チームは本来の仕事に集中。</p>
-            <div class="flex gap-4 justify-center flex-wrap">
-                <a href="https://www.senridf.com/solutions/" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-bold text-lg transition" data-i18n="auto_cta_trial">無料トライアル</a>
-                <a href="mailto:team@senridf.com" class="bg-gray-200 hover:bg-gray-300 text-gray-900 px-8 py-4 rounded-lg font-bold text-lg transition" data-i18n="auto_cta_consult">企業方案の相談</a>
+    <section class="py-24 px-8">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-5xl font-bold mb-8 leading-tight" data-i18n="auto_hero_title">中小企業のための AI オフィス自動化</h1>
+            <p class="text-lg text-gray-700 mb-12 leading-relaxed max-w-2xl" data-i18n="auto_hero_subtitle">毎日の手作業を AI に任せて、チームは本来の仕事に集中。1 回のクリック、1 つの動作で完了。</p>
+            <div class="flex gap-6">
+                <a href="#trial" class="px-8 py-4 bg-black text-white hover:bg-gray-800 font-bold transition" data-i18n="auto_cta_trial">無料トライアル</a>
+                <a href="#contact" class="px-8 py-4 border border-black hover:bg-gray-50 font-bold transition" data-i18n="auto_cta_consult">企業方案の相談</a>
             </div>
         </div>
     </section>
 
-    <section class="py-20 px-4 bg-white">
+    <section class="py-24 px-8 border-t border-gray-200">
         <div class="max-w-6xl mx-auto">
-            <h2 class="text-4xl font-bold text-center mb-16" data-i18n="auto_solutions_title">今すぐできることをご紹介</h2>
+            <h2 class="text-4xl font-bold mb-20" data-i18n="auto_solutions_title">今すぐできることをご紹介</h2>
 
-            <div class="grid md:grid-cols-2 gap-8">
-                <div class="border border-gray-200 rounded-lg p-8">
-                    <h3 class="text-2xl font-bold mb-4" data-i18n="auto_card1_title">発注書自動化</h3>
-                    <p class="text-sm text-gray-600 bg-gray-50 p-4 rounded mb-6" data-i18n="auto_card1_scenario">実例：日本のお米屋さん、1日80件</p>
-                    <div class="space-y-4 mb-6">
-                        <div>
-                            <p class="font-bold text-red-600 mb-2">❌ <span data-i18n="auto_card1_before">人工処理</span></p>
-                            <ul class="text-sm text-gray-600 space-y-1">
-                                <li>• <span data-i18n="auto_card1_b1">1 枚 2 分の手作業入力</span></li>
-                                <li>• <span data-i18n="auto_card1_b4">月コスト：約 ¥192 万</span></li>
-                            </ul>
+            <div class="mb-20 pb-20 border-b border-gray-200">
+                <div class="flex gap-12 items-start">
+                    <div class="flex-shrink-0"><span class="text-5xl font-bold text-gray-300">01</span></div>
+                    <div class="flex-1">
+                        <h3 class="text-3xl font-bold mb-2" data-i18n="auto_card1_title">発注書自動化</h3>
+                        <p class="text-gray-600 mb-8" data-i18n="auto_card1_scenario">実例：日本のお米屋さん、1日80件の発注書</p>
+                        <div class="grid md:grid-cols-2 gap-12 mb-8">
+                            <div>
+                                <p class="text-sm font-bold text-gray-500 mb-4 uppercase" data-i18n="auto_card1_before">人工処理</p>
+                                <ul class="space-y-3">
+                                    <li class="text-gray-700"><span data-i18n="auto_card1_b1">1 枚 2 分の手作業入力</span></li>
+                                    <li class="text-gray-700"><span data-i18n="auto_card1_b2">80 枚で 2 時間 40 分</span></li>
+                                    <li class="text-lg font-bold"><span data-i18n="auto_card1_b3">¥64,000/日</span></li>
+                                    <li class="text-lg font-bold"><span data-i18n="auto_card1_b4">月 ¥192万</span></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-gray-500 mb-4 uppercase" data-i18n="auto_card1_after">AI 自動化</p>
+                                <ul class="space-y-3">
+                                    <li class="text-gray-700"><span data-i18n="auto_card1_a1">スキャン → AI 抽出 → Excel 自動生成</span></li>
+                                    <li class="text-gray-700"><span data-i18n="auto_card1_a2">処理時間：10 分</span></li>
+                                    <li class="text-lg font-bold"><span data-i18n="auto_card1_a4">月 ¥190万 節減 + 2.5 時間/日</span></li>
+                                </ul>
+                            </div>
                         </div>
-                        <div>
-                            <p class="font-bold text-green-600 mb-2">✓ <span data-i18n="auto_card1_after">AI 自動化</span></p>
-                            <ul class="text-sm text-gray-600 space-y-1">
-                                <li>• <span data-i18n="auto_card1_a2">処理時間：10 分</span></li>
-                                <li>• <span data-i18n="auto_card1_a4">月間節減：約 ¥190 万</span></li>
-                            </ul>
-                        </div>
+                        <a href="#trial" class="inline-block px-8 py-3 bg-black text-white hover:bg-gray-800 font-bold transition" data-i18n="auto_cta_try">無料で試す</a>
                     </div>
-                    <a href="https://www.senridf.com/solutions/" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded font-bold transition text-center block" data-i18n="auto_cta_try">無料で試す</a>
                 </div>
+            </div>
 
-                <div class="border border-gray-200 rounded-lg p-8">
-                    <h3 class="text-2xl font-bold mb-4" data-i18n="auto_card2_title">ファイル管理 AI 社員</h3>
-                    <p class="text-sm text-gray-600 bg-gray-50 p-4 rounded mb-6" data-i18n="auto_card2_scenario">実例：10,000+ 件のファイル</p>
-                    <div class="space-y-4 mb-6">
-                        <div>
-                            <p class="font-bold text-red-600 mb-2">❌ <span data-i18n="auto_card2_before">人工管理</span></p>
-                            <ul class="text-sm text-gray-600 space-y-1">
-                                <li>• <span data-i18n="auto_card2_b1">ファイルが散在、分類困難</span></li>
-                                <li>• <span data-i18n="auto_card2_b2">重複ファイルが増加</span></li>
-                            </ul>
+            <div class="mb-20">
+                <div class="flex gap-12 items-start">
+                    <div class="flex-shrink-0"><span class="text-5xl font-bold text-gray-300">02</span></div>
+                    <div class="flex-1">
+                        <h3 class="text-3xl font-bold mb-2" data-i18n="auto_card2_title">ファイル管理 AI 社員</h3>
+                        <p class="text-gray-600 mb-8" data-i18n="auto_card2_scenario">実例：10,000+ 件の行政ファイル管理</p>
+                        <div class="grid md:grid-cols-2 gap-12 mb-8">
+                            <div>
+                                <p class="text-sm font-bold text-gray-500 mb-4 uppercase" data-i18n="auto_card2_before">人工管理</p>
+                                <ul class="space-y-3">
+                                    <li class="text-gray-700"><span data-i18n="auto_card2_b1">ファイルが散在、分類困難</span></li>
+                                    <li class="text-gray-700"><span data-i18n="auto_card2_b2">重複ファイルがストレージを圧迫</span></li>
+                                    <li class="text-gray-700"><span data-i18n="auto_card2_b3">ネーミング不統一、検索困難</span></li>
+                                    <li class="text-gray-700"><span data-i18n="auto_card2_b4">新規ファイルは手動分類（時間浪費）</span></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-gray-500 mb-4 uppercase" data-i18n="auto_card2_after">AI 自動化</p>
+                                <ul class="space-y-3">
+                                    <li class="text-gray-700"><span data-i18n="auto_card2_a1">アップロード → AI が内容解析</span></li>
+                                    <li class="text-lg font-bold"><span data-i18n="auto_card2_a2">ストレージ 30%+ 節約</span></li>
+                                    <li class="text-gray-700"><span data-i18n="auto_card2_a3">スマート自動リネーム＆分類</span></li>
+                                    <li class="text-lg font-bold"><span data-i18n="auto_card2_a4">毎日 80% 時間削減</span></li>
+                                </ul>
+                            </div>
                         </div>
-                        <div>
-                            <p class="font-bold text-green-600 mb-2">✓ <span data-i18n="auto_card2_after">AI 自動化</span></p>
-                            <ul class="text-sm text-gray-600 space-y-1">
-                                <li>• <span data-i18n="auto_card2_a2">ストレージ節約 30%+</span></li>
-                                <li>• <span data-i18n="auto_card2_a4">毎日 80% の時間削減</span></li>
-                            </ul>
-                        </div>
+                        <a href="#trial" class="inline-block px-8 py-3 bg-black text-white hover:bg-gray-800 font-bold transition" data-i18n="auto_cta_try">無料で試す</a>
                     </div>
-                    <a href="https://www.senridf.com/solutions/" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded font-bold transition text-center block" data-i18n="auto_cta_try">無料で試す</a>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="py-20 px-4 bg-blue-50 text-center">
-        <div class="max-w-4xl mx-auto">
-            <h2 class="text-4xl font-bold mb-8" data-i18n="auto_trial_title">まずは無料で試してみよう</h2>
-            <a href="https://www.senridf.com/solutions/" class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-lg font-bold text-lg inline-block" data-i18n="auto_cta_start">今すぐ試す</a>
+    <section id="trial" class="py-24 px-8 border-t border-gray-200">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-4xl font-bold mb-6" data-i18n="auto_trial_title">まずは無料で試してみよう</h2>
+            <p class="text-lg text-gray-600 mb-12" data-i18n="auto_trial_desc">登録不要、1 回の試用で効果を確認。その後、さらに 3 回試用できます。</p>
+            <a href="https://www.senridf.com/solutions/" class="inline-block px-10 py-4 bg-black text-white hover:bg-gray-800 font-bold text-lg transition" data-i18n="auto_cta_start">今すぐ試す</a>
         </div>
     </section>
 
-    <section class="py-20 px-4 bg-white text-center">
+    <section id="contact" class="py-24 px-8 border-t border-gray-200 bg-gray-50">
         <div class="max-w-4xl mx-auto">
-            <h2 class="text-4xl font-bold mb-8" data-i18n="auto_contact_title">次のステップ</h2>
-            <a href="mailto:team@senridf.com" class="text-blue-600 hover:underline font-bold text-lg">team@senridf.com</a>
+            <h2 class="text-3xl font-bold mb-4" data-i18n="auto_contact_title">次のステップ</h2>
+            <p class="text-gray-600 mb-6" data-i18n="auto_contact_desc">その他のお問い合わせ</p>
+            <a href="mailto:team@senridf.com" class="text-black font-bold hover:underline">team@senridf.com</a>
         </div>
     </section>
 
