@@ -40,6 +40,7 @@ const PAGES = {
   'contact.html': 'public', // 汎用の無料相談フォーム（2026-10-07）
   'solutions/index.html': 'public',
   'solutions/order-to-ledger.html': 'public', // 受発注→台帳 ランディング（lead-gen）。/solutions/demo/ 配下でないので noindex 対象外＝可索引
+  'solutions/automation.html': 'public', // 企業自動化ソリューション（AI オフィス自動化ランディング）
   'solutions/blog/index.html': 'public',
   'privacy/index.html': 'public', // プライバシーポリシー（公開・可索引）
   'solutions/demo.html': 'public', // 工具目录（营销页），卡片上标「会員限定」但目录本身公开
