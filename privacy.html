@@ -15,11 +15,19 @@
         .nav-container { max-width: 1280px; margin: 0 auto; padding: 24px 48px; display: flex; justify-content: space-between; align-items: center; }
         .nav-logo { font-size: 20px; font-weight: 600; color: #1D3D2D; }
         .nav-links { list-style: none; display: flex; gap: 48px; margin: 0; padding: 0; }
-        .page-container { max-width: 800px; margin: 0 auto; padding: 96px 48px; }
-        h1 { font-size: 40px; font-weight: 600; margin-bottom: 32px; }
-        h2 { font-size: 24px; font-weight: 600; margin-top: 48px; margin-bottom: 16px; color: #1C1C1C; }
-        p { font-size: 16px; line-height: 1.8; color: #4A4A47; margin-bottom: 16px; }
-        .updated { font-size: 14px; color: #8C8C88; margin-bottom: 48px; }
+        .legal { max-width: 760px; margin: 0 auto; padding: 96px 48px; }
+        .legal h1 { font-size: 32px; font-weight: 600; margin-bottom: 16px; }
+        .legal h2 { font-size: 18px; font-weight: 600; color: #2b2b2b; margin: 36px 0 12px; }
+        .legal h3 { font-size: 16px; font-weight: 600; color: #2b2b2b; margin: 24px 0 8px; }
+        .legal p { font-size: 15px; line-height: 1.9; color: #4a4a4a; margin: 0 0 12px; }
+        .legal ul, .legal ol { margin: 0 0 12px; padding-left: 1.3em; }
+        .legal li { font-size: 15px; line-height: 1.9; color: #4a4a4a; }
+        .legal a { color: #1D3D2D; text-decoration: underline; }
+        .legal a:hover { color: #3A6A4A; }
+        .legal__updated { font-size: 13px; color: #9a9a9a; margin-bottom: 28px; }
+        table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+        table th, table td { padding: 12px; text-align: left; border: 1px solid #E0E0D8; font-size: 15px; }
+        table th { background-color: #F2F2EC; font-weight: 600; }
         .footer { padding: 48px; border-top: 1px solid #E0E0D8; background-color: #F2F2EC; text-align: center; font-size: 14px; color: #8C8C88; }
     </style>
 </head>
@@ -37,28 +45,129 @@
         </div>
     </nav>
 
-    <div class="page-container">
-        <h1>プライバシーポリシー</h1>
-        <div class="updated">最終更新：2026年10月7日</div>
+    <div class="legal">
+        <h1>プライバシーポリシー・データ処理方針</h1>
+        <div class="legal__updated">最終更新：2026年10月7日</div>
 
-        <h2>1. データの保管と保護</h2>
-        <p>SenriDFは、ユーザーの業務データ（発注書、ファイル、メール等）をFly.io上のPostgreSQLデータベースに保管します。転送中はTLS/SSL、保存中はPGCrypto拡張機能により暗号化されます。</p>
+        <h2>1. データ存储与安全</h2>
 
-        <h2>2. 第三者サービスの利用</h2>
-        <p>AI機能の提供にOpenAI APIを使用しています。アップロードされたデータはOpenAIに送信され、<strong>30日後に自動削除</strong>されます。これはOpenAIのデフォルトポリシーです。</p>
+        <h3>保存位置</h3>
+        <ul>
+            <li>SenriDF の主要なアプリケーションは <strong>Fly.io</strong> 上で実行されています</li>
+            <li>ユーザーの業務データ（発注書、ファイル、メール等）は PostgreSQL データベースに保存されます</li>
+            <li>転送中と保存中のデータは暗号化されます</li>
+        </ul>
 
-        <h2>3. データアクセス権</h2>
-        <p>ユーザーは自分のデータにいつでもアクセス、確認、修正、削除をリクエストできます。アカウント削除後、すべてのデータは即座に完全に削除されます。</p>
+        <h3>データ暗号化</h3>
+        <ul>
+            <li><strong>転送中</strong>：TLS/SSL による暗号化（HTTPS）</li>
+            <li><strong>保存中</strong>：
+                <ul>
+                    <li>PostgreSQL の <strong>PGCrypto 拡張機能</strong> を使用</li>
+                    <li>ユーザー認証情報（パスワード等）は bcrypt でハッシュ化</li>
+                    <li>敏感なデータフィールドは暗号化キーで保護</li>
+                </ul>
+            </li>
+        </ul>
 
-        <h2>4. AI出力に関する責任</h2>
-        <p>SenriDFのAIは完全な正確性を保証しません。自動処理の結果には誤りが生じる可能性があります。ユーザーは最終実行前に必ず確認してください。</p>
+        <h2>2. 第三方サービスの利用</h2>
+        <p>SenriDF は以下の第三方サービスを使用してAI機能を提供します：</p>
 
-        <h2>5. 法令遵守</h2>
-        <p>本ポリシーは日本の個人情報保護法（APPI）に準拠しています。当局からのデータ開示請求には適切に対応します。</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>サービス</th>
+                    <th>用途</th>
+                    <th>データ共有内容</th>
+                    <th>保持ポリシー</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>OpenAI</td>
+                    <td>自然言語処理、テキスト分析、生成</td>
+                    <td>入力テキスト・ファイル内容（ユーザー授権時）</td>
+                    <td><strong>30日後自動削除</strong></td>
+                </tr>
+                <tr>
+                    <td>Gmail/Zoho/163</td>
+                    <td>メール連携機能</td>
+                    <td>メールテキスト（ユーザー認可時）</td>
+                    <td>メールプロバイダーのポリシーに準拠</td>
+                </tr>
+            </tbody>
+        </table>
 
-        <h2>6. お問い合わせ</h2>
+        <h3>OpenAI データ保持に関する重要事項</h3>
+        <ul>
+            <li>ユーザーがアップロードしたデータ（発注書、ファイル内容等）は AI 処理のため OpenAI に送信されます</li>
+            <li>OpenAI は受け取ったデータを <strong>30 日間保持</strong> した後、自動的に削除します</li>
+            <li>これは OpenAI のデフォルトポリシーです（詳細：<a href="https://openai.com/privacy">OpenAI Privacy Policy</a>）</li>
+            <li>SenriDF のサーバーでも独立してデータを保管する場合があります</li>
+        </ul>
+        <p><strong>重要：</strong> これらのサービスに送信されるデータは最小限に抑えられます。機密性の高い情報は必要に応じてマスキング処理が行われます。</p>
+
+        <h2>3. ユーザーのデータ権</h2>
+
+        <h3>データへのアクセス</h3>
+        <ul>
+            <li>ユーザーは自分のデータにいつでもアクセス、確認、修正できます</li>
+            <li>AI による自動処理には事前授権が必要です</li>
+            <li>高リスク操作（自動削除、自動転送等）には追加の確認ステップ（Safety Gate）が設けられています</li>
+        </ul>
+
+        <h3>データの削除</h3>
+        <ul>
+            <li>ユーザーは自分のアカウントと関連するすべてのデータの削除をリクエストできます</li>
+            <li>アカウント削除後、すべてのデータは即座に完全に削除されます</li>
+        </ul>
+
+        <h2>4. AI 出力に関する免責事項</h2>
+
+        <h3>AI の限界</h3>
+        <p>SenriDF の AI は完全な正確性を保証しません。自動処理の結果には以下のような誤りが生じる可能性があります：</p>
+        <ul>
+            <li>テキスト認識（OCR）の誤読</li>
+            <li>ファイル分類の誤分類</li>
+            <li>メール要約の不正確性</li>
+            <li>日時認識のエラー</li>
+        </ul>
+
+        <h3>品質保証</h3>
+        <ul>
+            <li>私たちは自動化の正確性を向上させるため継続的に改善しています</li>
+            <li>ただし、完全な正確性は保証できません</li>
+            <li><strong>ユーザーは自動処理の結果を最終実行前に必ず確認してください</strong></li>
+        </ul>
+
+        <h2>5. データアクセス権と透明性</h2>
+
+        <h3>AI がアクセスできるデータ</h3>
+        <p>SenriDF の AI 機能が処理するのは、ユーザーが明示的に許可したデータのみです：</p>
+        <ul>
+            <li>発注書・請求書のテキスト・画像</li>
+            <li>ファイル名と内容</li>
+            <li>メール本文（メール連携機能を有効にした場合）</li>
+            <li>ユーザーが入力したテキスト</li>
+        </ul>
+
+        <h3>AI がアクセスしないもの</h3>
+        <ul>
+            <li>パスワード、認証情報</li>
+            <li>システムレベルのメタデータ</li>
+            <li>他のユーザーのデータ</li>
+        </ul>
+
+        <h2>6. 法令遵守</h2>
+        <ul>
+            <li>本ポリシーは日本の個人情報保護法（APPI）に準拠しています</li>
+            <li>政府当局からのデータ開示請求には適切に対応します</li>
+            <li>ユーザーの正当な権利を保護しつつ、法的義務を果たします</li>
+        </ul>
+
+        <h2>7. お問い合わせ</h2>
         <p>プライバシー・データに関するご質問は以下までお問い合わせください。</p>
-        <p><strong>メール：</strong> <a href="mailto:team@senridf.com" style="color: #1D3D2D; text-decoration: none;">team@senridf.com</a></p>
+        <p><strong>メール：</strong> <a href="mailto:team@senridf.com">team@senridf.com</a></p>
         <p><strong>対応言語：</strong> 日本語、中国語、English</p>
     </div>
 
