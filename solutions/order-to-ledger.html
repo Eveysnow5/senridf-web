@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" class="page-snap">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,18 +9,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&family=Noto+Serif+JP:wght@300;400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <base href="../">
-  <link rel="stylesheet" href="css/main.css?v=5a6a380042">
+  <link rel="stylesheet" href="css/main.css?v=de2ccbdee9">
   <style>
     /* 受発注ランディング専用の軽微なスタイル。配色は本文の落ち着いたトーンに合わせ、
        濃色/淡色どちらでも破綻しないよう currentColor と控えめな枠線で組む。 */
-    .o2l-btn {
-      display: inline-flex; align-items: center; gap: 10px;
-      padding: 14px 30px; border-radius: 6px; text-decoration: none;
-      font-size: 15px; font-weight: 500; line-height: 1;
-      background: #2b2b2b; color: #fff; border: 1px solid #2b2b2b;
-      transition: opacity .2s ease;
-    }
-    .o2l-btn:hover { opacity: .85; }
     .o2l-btn--ghost { background: transparent; color: #2b2b2b; }
     .o2l-btn__note { display: block; margin-top: 12px; font-size: 12px; color: #8a8a8a; }
     .o2l-btn-row { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 28px; align-items: center; }
@@ -91,20 +83,6 @@
     .o2l-files__img { font-size: 10px; color: #b0663a; border: 1px solid #d9b8a6; border-radius: 3px; padding: 1px 5px; margin-left: 6px; }
     /* 相談フォーム（Stage D） */
     .o2l-consult { max-width: 640px; }
-    .o2l-form { display: flex; flex-direction: column; gap: 16px; margin-top: 28px; }
-    .o2l-field { display: flex; flex-direction: column; gap: 6px; }
-    .o2l-field__label { font-size: 13px; color: #4a4a4a; font-weight: 500; }
-    .o2l-field input, .o2l-field textarea { font: inherit; font-size: 15px; padding: 11px 13px; border: 1px solid #d8d4cc; border-radius: 6px; background: #fff; color: #2b2b2b; width: 100%; box-sizing: border-box; }
-    .o2l-field input:focus, .o2l-field textarea:focus { outline: none; border-color: #8a8577; box-shadow: 0 0 0 3px rgba(138, 133, 119, 0.15); }
-    .o2l-field textarea { resize: vertical; min-height: 96px; }
-    .o2l-form button[type="submit"] { align-self: flex-start; }
-    .o2l-form__status { font-size: 13px; color: #4a4a4a; }
-    .o2l-form__status [data-msg="ok"] { color: #2f7d4f; }
-    .o2l-form__status [data-msg="error"], .o2l-form__status [data-msg="invalid"] { color: #c0392b; }
-    .o2l-form__privacy { margin-top: 14px; font-size: 12px; color: #9a9a9a; }
-    .o2l-form__privacy a { color: #6a6557; text-decoration: underline; }
-    /* ハニーポット：視覚・支援技術の双方から隠す（表示されず、送信もされない想定） */
-    .o2l-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
     /* 同意ダイアログ。display は :not([hidden]) 側に置く（hidden 属性を効かせるため）。 */
     .o2l-modal { position: fixed; inset: 0; background: rgba(20, 18, 15, 0.5); z-index: 1000; padding: 20px; }
     .o2l-modal:not([hidden]) { display: flex; align-items: center; justify-content: center; }
@@ -143,6 +121,7 @@
       .o2l-flow, .o2l-price-grid { grid-template-columns: 1fr; }
     }
   </style>
+
 
   <!-- head-meta:start（npm run meta 生成，勿手改） -->
   <link rel="icon" href="/favicon.ico" sizes="any">
@@ -539,7 +518,7 @@
         <p class="section__lead" data-i18n="o2l_consult_lead">
           現状の作業やお困りごとをお書きください。1営業日以内にご返信します。費用はかかりません。
         </p>
-        <form id="o2lLeadForm" class="o2l-form" novalidate>
+        <form id="o2lLeadForm" class="o2l-form" data-lead-form data-lead-source="order-to-ledger" novalidate>
           <label class="o2l-field">
             <span class="o2l-field__label" data-i18n="o2l_f_name">お名前</span>
             <input type="text" name="name" required maxlength="100" autocomplete="name" />
@@ -563,7 +542,7 @@
           <button type="submit" class="o2l-btn" id="o2lLeadSubmit" data-i18n="o2l_f_submit">
             送信する
           </button>
-          <span id="o2lLeadStatus" class="o2l-form__status" hidden>
+          <span id="o2lLeadStatus" class="o2l-form__status" data-lead-status hidden>
             <span data-msg="sending" data-i18n="o2l_f_sending" hidden></span>
             <span data-msg="ok" data-i18n="o2l_f_ok" hidden></span>
             <span data-msg="invalid" data-i18n="o2l_f_invalid" hidden></span>
@@ -594,8 +573,8 @@
     crossorigin="anonymous"
   ></script>
 
-  <script src="js/main.js?v=955e68fc92"></script>
-  <script type="module" src="js/tracking.js?v=41b6af1985"></script>
+  <script src="js/main.js?v=c05cb8befb"></script>
+  <script type="module" src="js/tracking.js?v=88cdd8560f"></script>
 
   <!-- デモ送信用トークン：会員（既定 app にログイン済み）ならその ID トークン、
        未ログインなら tracking.js（具名 app）が作った匿名セッションのトークン。
@@ -617,6 +596,7 @@
 
   <!-- ?v= は内容指纹（npm run bust が自動で書く。tests/cache-bust が更新漏れを検出）。
        JS は 4 時間ブラウザにキャッシュされるため、指纹が変わらないと古い JS を掴む。 -->
-  <script src="js/order-to-ledger-demo.js?v=d5d4a8e754"></script>
+  <script src="js/lead-form.js?v=79f82c44f2"></script>
+  <script src="js/order-to-ledger-demo.js?v=d423d98571"></script>
 </body>
 </html>

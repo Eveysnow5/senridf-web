@@ -1418,6 +1418,123 @@ main { padding-top: var(--nav-h); }
   .nav__cta { padding: 6px 12px; font-size: 0.75rem; }
 }
 
+/* 相談フォーム（共用：/contact.html と受発注ページ #consult。2026-10-07 受発注ページの <style> から移設。
+   クラス名の o2l- は移設前の名残で、受発注専用ではない） */
+.o2l-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 14px 30px; border-radius: 6px; text-decoration: none;
+  font-size: 15px; font-weight: 500; line-height: 1;
+  background: #2b2b2b; color: #fff; border: 1px solid #2b2b2b;
+  transition: opacity .2s ease;
+}
+.o2l-btn:hover { opacity: .85; }
+.o2l-form { display: flex; flex-direction: column; gap: 16px; margin-top: 28px; }
+.o2l-field { display: flex; flex-direction: column; gap: 6px; }
+.o2l-field__label { font-size: 13px; color: #4a4a4a; font-weight: 500; }
+.o2l-field input, .o2l-field textarea { font: inherit; font-size: 15px; padding: 11px 13px; border: 1px solid #d8d4cc; border-radius: 6px; background: #fff; color: #2b2b2b; width: 100%; box-sizing: border-box; }
+.o2l-field input:focus, .o2l-field textarea:focus { outline: none; border-color: #8a8577; box-shadow: 0 0 0 3px rgba(138, 133, 119, 0.15); }
+.o2l-field textarea { resize: vertical; min-height: 96px; }
+.o2l-form button[type="submit"] { align-self: flex-start; }
+.o2l-form__status { font-size: 13px; color: #4a4a4a; }
+.o2l-form__status [data-msg="ok"] { color: #2f7d4f; }
+.o2l-form__status [data-msg="error"], .o2l-form__status [data-msg="invalid"] { color: #c0392b; }
+.o2l-form__privacy { margin-top: 14px; font-size: 12px; color: #9a9a9a; }
+.o2l-form__privacy a { color: #6a6557; text-decoration: underline; }
+/* ハニーポット：視覚・支援技術の双方から隠す（表示されず、送信もされない想定） */
+.o2l-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+/* 無料相談ページ（/contact.html） */
+.contact-form { max-width: 640px; }
+.contact-mail { margin-top: 28px; font-size: 13px; color: #6b6b6b; }
+.contact-mail a { color: #6a6557; text-decoration: underline; }
+
+/* === 受発注ページ：一屏一页（2026-10-07 作者要求，与首页同一套做法）===
+   条件与首页相同（桌面且高 ≥500）。每块至少一屏、内容垂直居中、顶边吸附在导航下方。
+   块比一屏高时（变换例、AI 整形后的结果表、展开的 FAQ）浏览器允许在块内自由滚动，不会卡住。
+   原 128px 的上下留白在一屏一页里显得空，收到 48px。 */
+@media (min-width: 1025px) and (min-height: 500px) {
+  html.page-snap {
+    scroll-snap-type: y mandatory;
+    scroll-padding-top: var(--nav-h);
+  }
+  .page-snap main > .page-header,
+  .page-snap main > .section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: calc(100svh - var(--nav-h));
+    padding-top: 48px;
+    padding-bottom: 48px;
+    scroll-snap-align: start;
+  }
+  .page-snap main > .page-header { border-bottom: none; }
+  .page-snap #footer-placeholder {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100svh - var(--nav-h));
+    scroll-snap-align: start;
+  }
+  .page-snap #footer-placeholder > .footer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .page-snap #footer-placeholder .footer__container { width: 100%; }
+  /* 相談フォームは縦一列だと 606 高で 150px はみ出す（実測）→ 左に見出し、右にフォーム */
+  .page-snap .o2l-consult {
+    max-width: none;
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    /* 余った高さは最後の行に寄せる（均等割りだと左の見出しと本文の間が空く：渲染で確認） */
+    grid-template-rows: auto auto 1fr;
+    column-gap: 64px;
+    align-items: start;
+  }
+  .page-snap .o2l-consult > :not(.o2l-form) { grid-column: 1; }
+  .page-snap .o2l-consult > .o2l-form {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    margin-top: 0;
+  }
+}
+
+/* 矮屏桌面（高 ≤760，即 1920×1080＋150% 缩放的 1272×606）：块只要比一屏高出一点，
+   浏览器就允许在块内自由滚动、滚轮不再吸附——实测 606 高时 10 块里 6 块超出 30〜180px，
+   滚轮翻页又变回「半页半页」。所以收紧到能放进一屏。变换例（图＋10 列表）和相談フォーム
+   本来就放不下，保持块内滚动。 */
+@media (min-width: 1025px) and (min-height: 500px) and (max-height: 760px) {
+  .page-snap main > .page-header,
+  .page-snap main > .section { padding-top: 20px; padding-bottom: 20px; }
+  .page-snap .section__title {
+    font-size: clamp(1.5rem, 2.6vw, 2.125rem);
+    margin-bottom: 16px;
+  }
+  .page-snap .section__lead { margin-bottom: 0; }
+  .page-snap .o2l-flow,
+  .page-snap .o2l-price-grid { margin-top: 20px; }
+  .page-snap .o2l-flow-col { padding: 18px 24px; }
+  .page-snap .o2l-flow-col__label { margin-bottom: 8px; }
+  .page-snap .o2l-steps li { padding-top: 6px; padding-bottom: 6px; }
+  .page-snap .o2l-steps li::before { top: 6px; }
+  .page-snap .values-grid { margin-top: 20px; }
+  .page-snap .value-card { padding-top: 20px; padding-bottom: 20px; }
+  .page-snap .value-card__number { margin-bottom: 10px; }
+  .page-snap .value-card__name { margin-bottom: 8px; }
+  .page-snap .o2l-demo { margin-top: 20px; }
+  .page-snap .o2l-drop { padding: 28px 24px; }
+  .page-snap .o2l-price-card { padding: 22px 24px; }
+  .page-snap .o2l-trust { margin-top: 20px; padding: 18px 28px; }
+  .page-snap .o2l-trust li { padding-top: 8px; padding-bottom: 8px; }
+  .page-snap .o2l-trust li::before { top: 8px; }
+  .page-snap .o2l-faq { margin-top: 12px; }
+  .page-snap .o2l-faq details { padding: 11px 0; }
+  .page-snap .o2l-form { gap: 10px; margin-top: 16px; }
+  .page-snap .o2l-field input,
+  .page-snap .o2l-field textarea { padding-top: 8px; padding-bottom: 8px; }
+  .page-snap .o2l-field textarea { min-height: 72px; }
+}
+
 /* 会社概要（2026-10-06） */
 .company-table {
   display: grid;

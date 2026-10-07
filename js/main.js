@@ -72,6 +72,12 @@ const T = {
     nav_privacy: 'プライバシーポリシー',
     nav_consult: '無料相談',
     nav_company: '会社概要',
+    contact_page_title: '無料相談・お問い合わせ',
+    contact_eyebrow: 'お問い合わせ',
+    contact_title: '無料相談',
+    contact_lead:
+      'AIの活用や業務の自動化、ツールについてのご質問など、内容を問わずお気軽にご相談ください。1営業日以内にご返信します。費用はかかりません。',
+    contact_mail_pre: 'メールでも受け付けています：',
     footer_copy: '© {year} 千里同風株式会社',
     addr_street: '大阪府大阪市淀川区西三国4丁目4-9-7',
     addr_city: '大阪市, 日本',
@@ -739,6 +745,12 @@ const T = {
     nav_privacy: '隐私政策',
     nav_consult: '免费咨询',
     nav_company: '公司概况',
+    contact_page_title: '免费咨询・联系我们',
+    contact_eyebrow: '联系我们',
+    contact_title: '免费咨询',
+    contact_lead:
+      'AI 的应用、业务自动化、工具使用上的疑问等，内容不限，欢迎随时咨询。我们会在 1 个工作日内回复，不收费。',
+    contact_mail_pre: '也可以直接发邮件：',
     footer_copy: '© {year} 千里同風株式会社',
     addr_street: '大阪府大阪市淀川区西三国4丁目4-9-7',
     addr_city: '大阪市, 日本',
@@ -1369,6 +1381,12 @@ const T = {
     nav_privacy: 'Privacy Policy',
     nav_consult: 'Free consultation',
     nav_company: 'Company',
+    contact_page_title: 'Free Consultation & Contact',
+    contact_eyebrow: 'Contact',
+    contact_title: 'Free consultation',
+    contact_lead:
+      'Questions about using AI, automating your work, or our tools — whatever the topic, feel free to ask. We reply within 1 business day, free of charge.',
+    contact_mail_pre: 'Or email us: ',
     footer_copy: '© {year} Senridoufuu Co., Ltd.',
     addr_street: '4-9-7, Nishimikuni 4-chome, Yodogawa-ku',
     addr_city: 'Osaka, Japan',
@@ -2012,8 +2030,8 @@ const NAV_HTML = `
           </div>
         </div>
       </div>
-      <a href="/solutions/order-to-ledger.html#consult" class="nav__cta" data-i18n="nav_consult"></a>
       <a href="/account.html" id="nav-member-link" class="nav__link" style="font-size:0.8125rem;opacity:.7;"></a>
+      <a href="/contact.html" class="nav__cta" data-i18n="nav_consult"></a>
       <div class="nav__lang" id="langDesktop">
         <button class="nav__lang-btn" data-lang="ja">日</button>
         <span class="nav__lang-sep">/</span>
@@ -2040,7 +2058,7 @@ const NAV_HTML = `
     <a href="solutions/demo.html" class="nav__mobile-child" data-i18n="nav_demo"></a>
     <a href="solutions/blog/" class="nav__mobile-child" data-i18n="nav_blog"></a>
   </div>
-  <a href="/solutions/order-to-ledger.html#consult" class="nav__mobile-cta" data-i18n="nav_consult"></a>
+  <a href="/contact.html" class="nav__mobile-cta" data-i18n="nav_consult"></a>
   <div class="nav__mobile-lang" id="langMobile">
     <button class="nav__mobile-lang-btn" data-lang="ja">日本語</button>
     <button class="nav__mobile-lang-btn" data-lang="zh">中文</button>
@@ -2073,7 +2091,8 @@ const FOOTER_HTML = `
       <div>
         <div class="footer__col-heading" data-i18n="footer_contact_heading"></div>
         <address class="footer__address">
-          <a href="mailto:yuki.minami@senridf.com">yuki.minami@senridf.com</a><br><br>
+          <a href="mailto:yuki.minami@senridf.com">yuki.minami@senridf.com</a><br>
+          <a href="contact.html" data-i18n="nav_consult"></a><br><br>
           <span data-i18n="addr_street"></span><br>
           <span data-i18n="addr_city"></span>
         </address>

@@ -26,6 +26,7 @@ export const PUBLIC = {
   'solutions/order-to-ledger.html': '/solutions/order-to-ledger',
   'solutions/blog/index.html': '/solutions/blog/',
   'privacy/index.html': '/privacy/',
+  'contact.html': '/contact',
 };
 
 const START = '<!-- head-meta:start（npm run meta 生成，勿手改） -->';

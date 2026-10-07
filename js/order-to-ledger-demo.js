@@ -544,7 +544,7 @@
     });
   }
 
-  // ── 相談フォーム（Stage D）───────────────────────────────────────────────────
+  // ── 相談欄へのスクロール（Stage D）─────────────────────────────────────────────
   // 「無料で相談する」CTA を相談欄へスクロール（#demo と同じく base href 対策で JS）。
   var consultSection = document.getElementById('consult');
   var toConsultLinks = document.querySelectorAll('a[href="#consult"]');
@@ -556,56 +556,5 @@
     });
   }
 
-  var leadForm = document.getElementById('o2lLeadForm');
-  var leadStatus = document.getElementById('o2lLeadStatus');
-  var leadSubmit = document.getElementById('o2lLeadSubmit');
-  function showLeadStatus(key) {
-    toggleMsgs(leadStatus, key);
-  }
-  if (leadForm) {
-    leadForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      // ハニーポット：人間には見えない欄。埋まっていたらボット扱いし、成功を装って何も送らない。
-      var hp = leadForm.querySelector('[name="website"]');
-      if (hp && hp.value) {
-        showLeadStatus('ok');
-        return;
-      }
-      var name = (leadForm.querySelector('[name="name"]').value || '').trim();
-      var company = (leadForm.querySelector('[name="company"]').value || '').trim();
-      var email = (leadForm.querySelector('[name="email"]').value || '').trim();
-      var message = (leadForm.querySelector('[name="message"]').value || '').trim();
-      // クライアント側の最低限チェック。本検証は firestore.rules が強制。
-      if (!name || !message || !/.+@.+\..+/.test(email)) {
-        showLeadStatus('invalid');
-        return;
-      }
-      if (typeof window.sdfSubmitLead !== 'function') {
-        showLeadStatus('error');
-        return;
-      }
-      if (leadSubmit) leadSubmit.disabled = true;
-      showLeadStatus('sending');
-      window
-        .sdfSubmitLead({
-          name: name,
-          company: company,
-          email: email,
-          message: message,
-          lang: (document.documentElement.lang || 'ja').slice(0, 8),
-          source: 'order-to-ledger',
-        })
-        .then(function () {
-          showLeadStatus('ok');
-          leadForm.reset();
-        })
-        .catch(function (err) {
-          console.error('[order-to-ledger] 相談送信失敗:', err);
-          showLeadStatus('error');
-        })
-        .then(function () {
-          if (leadSubmit) leadSubmit.disabled = false;
-        });
-    });
-  }
+  // 送信処理は js/lead-form.js（/contact.html と共用）。
 })();

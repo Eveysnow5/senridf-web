@@ -20,6 +20,7 @@ export const ASSETS = [
   'css/main.css',
   'js/tracking.js',
   'js/order-to-ledger-demo.js',
+  'js/lead-form.js',
 ];
 
 // 换行符先统一成 LF 再算：Windows 上 git 会按 autocrlf 把工作区转成 CRLF，仓库里是 LF。

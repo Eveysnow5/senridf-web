@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>無料相談・お問い合わせ | 千里同風株式会社</title>
+  <meta name="description" content="千里同風株式会社への無料相談・お問い合わせ。AIの活用や業務の自動化、ツールについてのご質問など、内容を問わずお気軽にどうぞ。1営業日以内にご返信します。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&family=Noto+Serif+JP:wght@300;400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <base href="./">
+  <link rel="stylesheet" href="css/main.css?v=de2ccbdee9">
+  <!-- head-meta:start（npm run meta 生成，勿手改） -->
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="canonical" href="https://www.senridf.com/contact">
+  <meta property="og:site_name" content="千里同風株式会社">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:url" content="https://www.senridf.com/contact">
+  <meta property="og:title" content="無料相談・お問い合わせ | 千里同風株式会社">
+  <meta property="og:description" content="千里同風株式会社への無料相談・お問い合わせ。AIの活用や業務の自動化、ツールについてのご質問など、内容を問わずお気軽にどうぞ。1営業日以内にご返信します。">
+  <meta property="og:image" content="https://www.senridf.com/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <!-- head-meta:end -->
+</head>
+<body data-page-title="contact_page_title">
+
+  <div id="nav-placeholder"></div>
+
+  <main>
+
+    <div class="page-header">
+      <div class="page-header__container">
+        <div data-animate>
+          <span class="section__eyebrow" data-i18n="contact_eyebrow">お問い合わせ</span>
+          <h1 class="section__title" data-i18n="contact_title">無料相談</h1>
+          <p class="section__lead" data-i18n="contact_lead">
+            AIの活用や業務の自動化、ツールについてのご質問など、内容を問わずお気軽にご相談ください。1営業日以内にご返信します。費用はかかりません。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 汎用の相談窓口（2026-10-07 作者：無料相談は受発注に限らない共通機能）。
+         送信先は受発注ページと同じ Firestore leads（source=contact で区別）。 -->
+    <section class="section">
+      <div class="contact-form" data-animate>
+        <form class="o2l-form" data-lead-form data-lead-source="contact" novalidate>
+          <label class="o2l-field">
+            <span class="o2l-field__label" data-i18n="o2l_f_name">お名前</span>
+            <input type="text" name="name" required maxlength="100" autocomplete="name" />
+          </label>
+          <label class="o2l-field">
+            <span class="o2l-field__label" data-i18n="o2l_f_company">会社名（任意）</span>
+            <input type="text" name="company" maxlength="150" autocomplete="organization" />
+          </label>
+          <label class="o2l-field">
+            <span class="o2l-field__label" data-i18n="o2l_f_email">メールアドレス</span>
+            <input type="email" name="email" required maxlength="200" autocomplete="email" />
+          </label>
+          <label class="o2l-field">
+            <span class="o2l-field__label" data-i18n="o2l_f_message">ご相談内容</span>
+            <textarea name="message" required maxlength="2000" rows="6"></textarea>
+          </label>
+          <!-- ハニーポット：人間には見えない。ボットが埋めたら送信しない（CSS で隠す）。 -->
+          <div class="o2l-hp" aria-hidden="true">
+            <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+          </div>
+          <button type="submit" class="o2l-btn" data-i18n="o2l_f_submit">送信する</button>
+          <span class="o2l-form__status" data-lead-status hidden>
+            <span data-msg="sending" data-i18n="o2l_f_sending" hidden></span>
+            <span data-msg="ok" data-i18n="o2l_f_ok" hidden></span>
+            <span data-msg="invalid" data-i18n="o2l_f_invalid" hidden></span>
+            <span data-msg="error" data-i18n="o2l_f_error" hidden></span>
+          </span>
+        </form>
+        <p class="o2l-form__privacy">
+          <span data-i18n="o2l_f_privacy_pre">送信により</span>
+          <a href="/privacy/" data-i18n="o2l_f_privacy_link">プライバシーポリシー</a>
+          <span data-i18n="o2l_f_privacy_post">に同意したものとみなします。</span>
+        </p>
+        <p class="contact-mail">
+          <span data-i18n="contact_mail_pre">メールでも受け付けています：</span>
+          <a href="mailto:yuki.minami@senridf.com">yuki.minami@senridf.com</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="js/main.js?v=c05cb8befb"></script>
+  <script type="module" src="js/tracking.js?v=88cdd8560f"></script>
+  <script src="js/lead-form.js?v=79f82c44f2"></script>
+</body>
+</html>

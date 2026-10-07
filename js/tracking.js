@@ -32,10 +32,10 @@ const db = getFirestore(app);
 // デモが匿名トークンを要るときはここから取る。会員判定は既定 app 側で別途行う。
 window.sdfAnonToken = () => (auth.currentUser ? auth.currentUser.getIdToken() : null);
 
-// 相談リード送信（受発注LPの Stage D フォーム）。errors/visits と同じく、この具名 app の
+// 相談リード送信（共通の相談フォーム）。errors/visits と同じく、この具名 app の
 // 匿名セッションで Firestore の leads へ直書きする（サーバ単価コストが無いので端点は不要）。
 // フィールド検証は firestore.rules 側が強制（匿名でも create 可、read は管理者のみ）。
-// 呼び出し側（js/order-to-ledger-demo.js）は値のトリムと必須チェックを済ませてから渡す。
+// 呼び出し側（js/lead-form.js：/contact.html と受発注ページ）は値のトリムと必須チェックを済ませてから渡す。
 window.sdfSubmitLead = async (lead) => {
   // 送信時点で匿名ログインが未完了なら待つ（track() が走っていても競合し得る）。
   if (!auth.currentUser) await signInAnonymously(auth);
@@ -61,6 +61,7 @@ function getPageName() {
   if (p.includes('/solutions')) return 'solutions';
   if (p.includes('/about')) return 'about';
   if (p.includes('/blog')) return 'blog';
+  if (p.includes('/contact')) return 'contact';
   return 'home';
 }
 
