@@ -4,115 +4,141 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>企業自動化ソリューション | 千里同風</title>
-    <link rel="stylesheet" href="../css/main.css">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400&family=Noto+Serif+JP:wght@300;400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
+    <style>
+        nav { border-bottom: 1px solid #E0E0D8; }
+        nav a { text-decoration: none; color: #1C1C1C; }
+        nav a:hover { color: #3A6A4A; }
+        .nav-container { max-width: 1280px; margin: 0 auto; padding: 24px 48px; display: flex; justify-content: space-between; align-items: center; }
+        .nav-logo { font-size: 20px; font-weight: 600; color: #1D3D2D; }
+        .nav-links { list-style: none; display: flex; gap: 48px; margin: 0; padding: 0; }
+        .solutions-container { max-width: 1280px; margin: 0 auto; padding: 96px 48px; }
+        .section-title { font-size: 36px; font-weight: 600; margin-bottom: 80px; color: #1C1C1C; }
+        .solution-block { margin-bottom: 80px; padding-bottom: 80px; border-bottom: 1px solid #E0E0D8; display: flex; gap: 48px; }
+        .solution-number { font-size: 64px; font-weight: 300; color: #EBF2ED; flex-shrink: 0; }
+        .solution-content h3 { font-size: 28px; font-weight: 600; margin-bottom: 8px; color: #1C1C1C; }
+        .solution-content p { font-size: 16px; color: #4A4A47; margin-bottom: 32px; }
+        .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-bottom: 32px; }
+        .comparison-col h4 { font-size: 14px; font-weight: 600; color: #8C8C88; text-transform: uppercase; margin-bottom: 16px; }
+        .comparison-col ul { list-style: none; padding: 0; margin: 0; }
+        .comparison-col li { font-size: 16px; color: #4A4A47; margin-bottom: 12px; line-height: 1.6; }
+        .highlight { font-size: 18px; font-weight: 600; color: #1D3D2D; }
+        .cta-button { display: inline-block; padding: 16px 32px; background-color: #1D3D2D; color: white; text-decoration: none; font-weight: 600; }
+        .cta-button:hover { background-color: #3A6A4A; }
+        .trial-section { padding: 96px 48px; background-color: #EBF2ED; text-align: center; border-top: 1px solid #E0E0D8; }
+        .trial-section h2 { font-size: 36px; font-weight: 600; margin-bottom: 24px; color: #1C1C1C; }
+        .trial-section p { font-size: 18px; color: #4A4A47; margin-bottom: 48px; }
+        .contact-section { padding: 96px 48px; border-top: 1px solid #E0E0D8; }
+        .contact-container { max-width: 800px; margin: 0 auto; }
+    </style>
 </head>
 <body style="background-color: #F8F8F5; color: #1C1C1C;">
-    <nav style="border-bottom: 1px solid #E0E0D8;">
-        <div style="max-width: 1280px; margin: 0 auto; padding: 24px 32px; display: flex; justify-content: space-between; align-items: center;">
-            <a href="/" style="font-size: 20px; font-weight: bold; color: #1D3D2D; text-decoration: none;">千里同風</a>
-            <ul style="list-style: none; display: flex; gap: 32px;">
-                <li><a href="/" style="color: #1C1C1C; text-decoration: none;">ホーム</a></li>
-                <li><a href="/solutions/" style="color: #1C1C1C; text-decoration: none;">ソリューション</a></li>
-                <li><a href="/about/" style="color: #1C1C1C; text-decoration: none;">について</a></li>
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="nav-logo">千里同風</a>
+            <ul class="nav-links">
+                <li><a href="/">ホーム</a></li>
+                <li><a href="/solutions/automation.html">ソリューション</a></li>
+                <li><a href="/about/">について</a></li>
+                <li><a href="/privacy.html">プライバシー</a></li>
+                <li><a href="/contact.html">お問い合わせ</a></li>
             </ul>
         </div>
     </nav>
 
-    <section style="padding: 96px 32px;">
+    <section style="padding: 96px 48px;">
         <div style="max-width: 960px; margin: 0 auto;">
-            <h1 style="font-size: 48px; font-weight: bold; margin-bottom: 32px; line-height: 1.2;" data-i18n="auto_hero_title">中小企業のための AI オフィス自動化</h1>
-            <p style="font-size: 18px; color: #4A4A47; margin-bottom: 48px; line-height: 1.6; max-width: 768px;" data-i18n="auto_hero_subtitle">毎日の手作業を AI に任せて、チームは本来の仕事に集中。1 回のクリック、1 つの動作で完了。</p>
+            <h1 style="font-size: 48px; font-weight: 600; margin-bottom: 32px; line-height: 1.2;">中小企業のための AI オフィス自動化</h1>
+            <p style="font-size: 18px; color: #4A4A47; margin-bottom: 48px; line-height: 1.8; max-width: 768px;" data-i18n="auto_hero_subtitle">毎日の手作業を AI に任せて、チームは本来の仕事に集中。1 回のクリック、1 つの動作で完了。</p>
             <div style="display: flex; gap: 24px;">
-                <a href="#trial" style="padding: 16px 32px; background-color: #1D3D2D; color: white; text-decoration: none; font-weight: bold; border: none; cursor: pointer;" data-i18n="auto_cta_trial">無料トライアル</a>
-                <a href="#contact" style="padding: 16px 32px; border: 2px solid #1D3D2D; color: #1D3D2D; text-decoration: none; font-weight: bold; cursor: pointer;" data-i18n="auto_cta_consult">企業方案の相談</a>
+                <a href="#trial" class="cta-button">無料トライアル</a>
+                <a href="#contact" class="cta-button" style="background-color: transparent; border: 2px solid #1D3D2D; color: #1D3D2D;">企業方案の相談</a>
             </div>
         </div>
     </section>
 
-    <section style="padding: 96px 32px; border-top: 1px solid #E0E0D8;">
-        <div style="max-width: 1280px; margin: 0 auto;">
-            <h2 style="font-size: 36px; font-weight: bold; margin-bottom: 80px;" data-i18n="auto_solutions_title">今すぐできることをご紹介</h2>
+    <section style="padding: 96px 48px; border-top: 1px solid #E0E0D8;">
+        <div class="solutions-container">
+            <h2 class="section-title">今すぐできることをご紹介</h2>
 
-            <div style="margin-bottom: 80px; padding-bottom: 80px; border-bottom: 1px solid #E0E0D8;">
-                <div style="display: flex; gap: 48px;">
-                    <div style="flex-shrink: 0;"><span style="font-size: 60px; font-weight: bold; color: #EBF2ED;">01</span></div>
-                    <div style="flex: 1;">
-                        <h3 style="font-size: 28px; font-weight: bold; margin-bottom: 8px;" data-i18n="auto_card1_title">発注書自動化</h3>
-                        <p style="color: #4A4A47; margin-bottom: 32px;" data-i18n="auto_card1_scenario">実例：日本のお米屋さん、1日80件の発注書</p>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-bottom: 32px;">
-                            <div>
-                                <p style="font-size: 12px; font-weight: bold; color: #8C8C88; margin-bottom: 16px; text-transform: uppercase;" data-i18n="auto_card1_before">人工処理</p>
-                                <ul style="list-style: none; padding: 0; margin: 0;">
-                                    <li style="color: #4A4A47; margin-bottom: 12px;"><span data-i18n="auto_card1_b1">1 枚 2 分の手作業入力</span></li>
-                                    <li style="color: #4A4A47; margin-bottom: 12px;"><span data-i18n="auto_card1_b2">80 枚で 2 時間 40 分</span></li>
-                                    <li style="font-size: 18px; font-weight: bold; color: #1D3D2D; margin-bottom: 12px;"><span data-i18n="auto_card1_b3">¥64,000/日</span></li>
-                                    <li style="font-size: 18px; font-weight: bold; color: #1D3D2D;"><span data-i18n="auto_card1_b4">月 ¥192万</span></li>
-                                </ul>
-                            </div>
-                            <div>
-                                <p style="font-size: 12px; font-weight: bold; color: #8C8C88; margin-bottom: 16px; text-transform: uppercase;" data-i18n="auto_card1_after">AI 自動化</p>
-                                <ul style="list-style: none; padding: 0; margin: 0;">
-                                    <li style="color: #4A4A47; margin-bottom: 12px;"><span data-i18n="auto_card1_a1">スキャン → AI 抽出 → Excel 自動生成</span></li>
-                                    <li style="color: #4A4A47; margin-bottom: 12px;"><span data-i18n="auto_card1_a2">処理時間：10 分</span></li>
-                                    <li style="font-size: 18px; font-weight: bold; color: #3A6A4A;"><span data-i18n="auto_card1_a4">月 ¥190万 節減 + 2.5 時間/日</span></li>
-                                </ul>
-                            </div>
+            <div class="solution-block">
+                <div class="solution-number">01</div>
+                <div class="solution-content">
+                    <h3>発注書自動化</h3>
+                    <p>実例：日本のお米屋さん、1日80件の発注書</p>
+                    <div class="comparison">
+                        <div class="comparison-col">
+                            <h4>人工処理</h4>
+                            <ul>
+                                <li>1 枚 2 分の手作業入力</li>
+                                <li>80 枚で 2 時間 40 分</li>
+                                <li class="highlight">¥64,000/日</li>
+                                <li class="highlight">月 ¥192万</li>
+                            </ul>
                         </div>
-                        <a href="#trial" style="display: inline-block; padding: 12px 32px; background-color: #1D3D2D; color: white; text-decoration: none; font-weight: bold;" data-i18n="auto_cta_try">無料で試す</a>
+                        <div class="comparison-col">
+                            <h4>AI 自動化</h4>
+                            <ul>
+                                <li>スキャン → AI 抽出 → Excel 自動生成</li>
+                                <li>処理時間：10 分</li>
+                                <li style="color: #3A6A4A; font-weight: 600;">月 ¥190万 節減 + 2.5 時間/日</li>
+                            </ul>
+                        </div>
                     </div>
+                    <a href="#trial" class="cta-button">無料で試す</a>
                 </div>
             </div>
 
-            <div style="margin-bottom: 80px;">
-                <div style="display: flex; gap: 48px;">
-                    <div style="flex-shrink: 0;"><span style="font-size: 60px; font-weight: bold; color: #EBF2ED;">02</span></div>
-                    <div style="flex: 1;">
-                        <h3 style="font-size: 28px; font-weight: bold; margin-bottom: 8px;" data-i18n="auto_card2_title">ファイル管理 AI 社員</h3>
-                        <p style="color: #4A4A47; margin-bottom: 32px;" data-i18n="auto_card2_scenario">実例：10,000+ 件の行政ファイル管理</p>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-bottom: 32px;">
-                            <div>
-                                <p style="font-size: 12px; font-weight: bold; color: #8C8C88; margin-bottom: 16px; text-transform: uppercase;" data-i18n="auto_card2_before">人工管理</p>
-                                <ul style="list-style: none; padding: 0; margin: 0;">
-                                    <li style="color: #4A4A47; margin-bottom: 12px;"><span data-i18n="auto_card2_b1">ファイルが散在、分類困難</span></li>
-                                    <li style="color: #4A4A47; margin-bottom: 12px;"><span data-i18n="auto_card2_b2">重複ファイルがストレージを圧迫</span></li>
-                                    <li style="color: #4A4A47; margin-bottom: 12px;"><span data-i18n="auto_card2_b3">ネーミング不統一、検索困難</span></li>
-                                    <li style="color: #4A4A47;"><span data-i18n="auto_card2_b4">新規ファイルは手動分類（時間浪費）</span></li>
-                                </ul>
-                            </div>
-                            <div>
-                                <p style="font-size: 12px; font-weight: bold; color: #8C8C88; margin-bottom: 16px; text-transform: uppercase;" data-i18n="auto_card2_after">AI 自動化</p>
-                                <ul style="list-style: none; padding: 0; margin: 0;">
-                                    <li style="color: #4A4A47; margin-bottom: 12px;"><span data-i18n="auto_card2_a1">アップロード → AI が内容解析</span></li>
-                                    <li style="font-size: 18px; font-weight: bold; color: #3A6A4A; margin-bottom: 12px;"><span data-i18n="auto_card2_a2">ストレージ 30%+ 節約</span></li>
-                                    <li style="color: #4A4A47; margin-bottom: 12px;"><span data-i18n="auto_card2_a3">スマート自動リネーム＆分類</span></li>
-                                    <li style="font-size: 18px; font-weight: bold; color: #3A6A4A;"><span data-i18n="auto_card2_a4">毎日 80% 時間削減</span></li>
-                                </ul>
-                            </div>
+            <div class="solution-block" style="border: none;">
+                <div class="solution-number">02</div>
+                <div class="solution-content">
+                    <h3>ファイル管理 AI 社員</h3>
+                    <p>実例：10,000+ 件の行政ファイル管理</p>
+                    <div class="comparison">
+                        <div class="comparison-col">
+                            <h4>人工管理</h4>
+                            <ul>
+                                <li>ファイルが散在、分類困難</li>
+                                <li>重複ファイルがストレージを圧迫</li>
+                                <li>ネーミング不統一、検索困難</li>
+                                <li>新規ファイルは手動分類（時間浪費）</li>
+                            </ul>
                         </div>
-                        <a href="#trial" style="display: inline-block; padding: 12px 32px; background-color: #1D3D2D; color: white; text-decoration: none; font-weight: bold;" data-i18n="auto_cta_try">無料で試す</a>
+                        <div class="comparison-col">
+                            <h4>AI 自動化</h4>
+                            <ul>
+                                <li>アップロード → AI が内容解析</li>
+                                <li style="color: #3A6A4A; font-weight: 600;">ストレージ 30%+ 節約</li>
+                                <li>スマート自動リネーム＆分類</li>
+                                <li style="color: #3A6A4A; font-weight: 600;">毎日 80% 時間削減</li>
+                            </ul>
+                        </div>
                     </div>
+                    <a href="#trial" class="cta-button">無料で試す</a>
                 </div>
             </div>
         </div>
     </section>
 
-    <section id="trial" style="padding: 96px 32px; border-top: 1px solid #E0E0D8; background-color: #EBF2ED; text-align: center;">
+    <div id="trial" class="trial-section">
         <div style="max-width: 960px; margin: 0 auto;">
-            <h2 style="font-size: 36px; font-weight: bold; margin-bottom: 24px;" data-i18n="auto_trial_title">まずは無料で試してみよう</h2>
-            <p style="font-size: 18px; color: #4A4A47; margin-bottom: 48px;" data-i18n="auto_trial_desc">登録不要、1 回の試用で効果を確認。その後、さらに 3 回試用できます。</p>
-            <a href="https://www.senridf.com/solutions/" style="display: inline-block; padding: 16px 40px; background-color: #1D3D2D; color: white; text-decoration: none; font-weight: bold; font-size: 18px;" data-i18n="auto_cta_start">今すぐ試す</a>
+            <h2>まずは無料で試してみよう</h2>
+            <p>登録不要、1 回の試用で効果を確認。その後、さらに 3 回試用できます。</p>
+            <a href="https://www.senridf.com/solutions/" class="cta-button" style="padding: 16px 40px; font-size: 18px;">今すぐ試す</a>
+        </div>
+    </div>
+
+    <section id="contact" class="contact-section">
+        <div class="contact-container">
+            <h2 style="font-size: 28px; font-weight: 600; margin-bottom: 16px;">次のステップ</h2>
+            <p style="color: #4A4A47; margin-bottom: 24px;">その他のお問い合わせ</p>
+            <a href="mailto:team@senridf.com" style="color: #1D3D2D; font-weight: 600; text-decoration: none;">team@senridf.com</a>
         </div>
     </section>
 
-    <section id="contact" style="padding: 96px 32px; border-top: 1px solid #E0E0D8;">
-        <div style="max-width: 960px; margin: 0 auto;">
-            <h2 style="font-size: 28px; font-weight: bold; margin-bottom: 16px;" data-i18n="auto_contact_title">次のステップ</h2>
-            <p style="color: #4A4A47; margin-bottom: 24px;" data-i18n="auto_contact_desc">その他のお問い合わせ</p>
-            <a href="mailto:team@senridf.com" style="color: #1D3D2D; font-weight: bold; text-decoration: none;">team@senridf.com</a>
-        </div>
-    </section>
-
-    <script src="../js/main.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
