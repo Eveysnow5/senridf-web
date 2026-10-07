@@ -1528,7 +1528,8 @@ main { padding-top: var(--nav-h); }
   .page-snap .o2l-trust li { padding-top: 8px; padding-bottom: 8px; }
   .page-snap .o2l-trust li::before { top: 8px; }
   .page-snap .o2l-faq { margin-top: 12px; }
-  .page-snap .o2l-faq details { padding: 11px 0; }
+  .page-snap .o2l-faq details { padding: 7px 0; }
+  .page-snap .o2l-faq details p { margin-top: 6px; line-height: 1.7; }
   .page-snap .o2l-form { gap: 10px; margin-top: 16px; }
   .page-snap .o2l-field input,
   .page-snap .o2l-field textarea { padding-top: 8px; padding-bottom: 8px; }
