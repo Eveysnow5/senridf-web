@@ -1,0 +1,25 @@
+{
+ "pyodide": "314.0.7",
+ "source_revision": "fb9a857",
+ "bundle": {
+  "name": "jpclose-bundle.zip",
+  "sha256": "cdc99ac4e42bbe25755717d3cd7f54c4ddb41ec8e26faba0071db07d1654e05c",
+  "files": 74,
+  "bytes": 241410
+ },
+ "wheels": [
+  {
+   "name": "openpyxl-3.1.5-py2.py3-none-any.whl",
+   "sha256": "5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2"
+  },
+  {
+   "name": "et_xmlfile-2.0.0-py3-none-any.whl",
+   "sha256": "7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa"
+  },
+  {
+   "name": "jpholiday-1.0.3-py3-none-any.whl",
+   "sha256": "abe5f0191f27a88623a33aaaa7cd04035886b5d7adb41a42eaeba0e721dc1982"
+  }
+ ],
+ "note": "引擎在浏览器内运行，财务数据不上传。/ エンジンはブラウザ内で動き、財務データは送信されない。"
+}

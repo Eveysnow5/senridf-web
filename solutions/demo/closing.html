@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>月结引擎 — 千里同風</title>
+  <link rel="stylesheet" href="/css/tailwind.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet" />
+  <!-- Pyodide：结账引擎（Python）在浏览器里跑，财务数据不出这台电脑。版本与 closing-engine/manifest.json 的 pyodide 一致。 -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.js" integrity="sha384-hYKrcQ7FiKU7f1c92md9N2eh7BoBVX4CPkNDfQyyVclsjZevvDOBUkajGcYk1EF8" crossorigin="anonymous"></script>
+  <style>
+    body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
+    .hidden { display: none; }
+    #auth-gate { position:fixed;inset:0;background:#faf9f7;display:flex;align-items:center;justify-content:center;z-index:9999; }
+    .ag-center { text-align:center; }
+    .ag-spinner { width:28px;height:28px;border:2px solid #e5e7eb;border-top-color:#6366f1;border-radius:50%;animation:ag-s .8s linear infinite;margin:0 auto; }
+    .ag-text { color:#9ca3af;font-size:13px;margin-top:12px;font-family:sans-serif; }
+    @keyframes ag-s { to { transform: rotate(360deg); } }
+    .lang-btn { color:#9ca3af; }
+    .lang-btn:hover { color:#4b5563; }
+    .lang-btn.active { color:#4f46e5;font-weight:600; }
+    /* 页面局部样式（不进 Tailwind 构建） */
+    .ce-card { background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px 18px;margin-bottom:14px; }
+    .ce-h { font-size:13px;font-weight:600;color:#374151;margin-bottom:10px; }
+    .ce-opt { display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#374151;padding:4px 0;cursor:pointer; }
+    .ce-opt input { margin-top:3px; }
+    .ce-hint { font-size:12px;color:#6b7280;line-height:1.7; }
+    .ce-row { display:flex;flex-wrap:wrap;gap:16px;align-items:center; }
+    .ce-input { border:1px solid #d1d5db;border-radius:6px;padding:5px 8px;font-size:13px; }
+    .ce-btn { background:#4f46e5;color:#fff;border-radius:6px;padding:8px 18px;font-size:13px;font-weight:500; }
+    .ce-btn:disabled { background:#a5b4fc;cursor:not-allowed; }
+    .ce-btn2 { border:1px solid #d1d5db;color:#374151;border-radius:6px;padding:6px 14px;font-size:12px;background:#fff; }
+    .ce-btn2:hover { border-color:#9ca3af; }
+    .ce-status { font-size:12px;color:#6b7280;margin-top:10px;min-height:18px; }
+    .ce-status.err { color:#b91c1c;white-space:pre-wrap; }
+    .ce-privacy { background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:8px;padding:10px 14px;font-size:12px;line-height:1.7;margin-bottom:14px; }
+    .ce-table-wrap { overflow-x:auto; }
+    .ce-table { width:100%;border-collapse:collapse;font-size:12px; }
+    .ce-table th { text-align:left;color:#6b7280;font-weight:500;border-bottom:1px solid #e5e7eb;padding:6px 8px;white-space:nowrap; }
+    .ce-table td { border-bottom:1px solid #f3f4f6;padding:6px 8px;vertical-align:top;color:#374151; }
+    .ce-table td.nw { white-space:nowrap; }
+    #logout-btn, #user-email { white-space:nowrap; }
+    .ce-table td.num { text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums; }
+    .ce-detail { color:#6b7280;font-size:11px;margin-top:2px;white-space:pre-wrap;word-break:break-all; }
+    .ce-st { display:inline-block;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600; }
+    .ce-st.PASS { background:#d1fae5;color:#047857; }
+    .ce-st.FAIL { background:#fee2e2;color:#b91c1c; }
+    .ce-st.SKIP { background:#f3f4f6;color:#6b7280; }
+    .ce-summary { font-size:14px;font-weight:600;margin-bottom:6px; }
+    .ce-summary.ok { color:#047857; }
+    .ce-summary.ng { color:#b91c1c; }
+    .ce-answers { width:100%;min-height:160px;font-family:ui-monospace,Consolas,monospace;font-size:12px;border:1px solid #e5e7eb;border-radius:6px;padding:8px;background:#f9fafb; }
+  </style>
+  <!-- head-meta:start（npm run meta 生成，勿手改） -->
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <!-- head-meta:end -->
+</head>
+<body class="bg-gray-50 min-h-screen" data-page-title="ce_page_title">
+
+  <div id="auth-gate"><div class="ag-center"><div class="ag-spinner"></div><p class="ag-text" data-i18n="ag_verifying">验证身份中…</p></div></div>
+
+  <div id="app">
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div>
+          <h1 class="text-base font-semibold text-gray-900" data-i18n="ce_title">月结引擎（日本·试用版）</h1>
+          <p class="text-xs text-gray-500" data-i18n="ce_subtitle">工资 · 社保 · 源泉 · 银行对账 · 消费税 → 审计底稿</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="flex items-center gap-1 text-xs mr-1">
+            <button type="button" class="lang-btn px-1 py-0.5" data-lang="ja">日</button>
+            <span class="text-gray-200">/</span>
+            <button type="button" class="lang-btn px-1 py-0.5" data-lang="zh">中</button>
+            <span class="text-gray-200">/</span>
+            <button type="button" class="lang-btn px-1 py-0.5" data-lang="en">EN</button>
+          </span>
+          <span id="user-email" class="text-xs text-gray-400 hidden sm:block"></span>
+          <button type="button" id="logout-btn" class="text-xs text-gray-500 hover:text-gray-800 ml-1" data-i18n="ce_logout">退出</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-4 py-6">
+      <div class="ce-privacy" data-i18n="ce_privacy">数据只在这个浏览器里处理，不会发送到服务器。</div>
+
+      <section class="ce-card">
+        <h2 class="ce-h" data-i18n="ce_step_data">1. 数据</h2>
+        <label class="ce-opt"><input type="radio" name="ce-src" value="tokyo" checked /><span data-i18n="ce_src_tokyo">样本：东京虚构公司</span></label>
+        <label class="ce-opt"><input type="radio" name="ce-src" value="osaka" /><span data-i18n="ce_src_osaka">样本：大阪虚构公司</span></label>
+        <label class="ce-opt"><input type="radio" name="ce-src" value="upload" /><span data-i18n="ce_src_upload">选择本公司的文件夹</span></label>
+        <div id="ce-upload-box" class="hidden" style="margin:6px 0 0 22px">
+          <input type="file" id="ce-folder" webkitdirectory multiple class="text-xs" title="company folder" />
+          <p id="ce-folder-info" class="ce-hint" data-i18n="ce_upload_none">尚未选择文件夹</p>
+          <p class="ce-hint" data-i18n="ce_upload_hint"></p>
+        </div>
+      </section>
+
+      <section class="ce-card">
+        <div class="ce-row">
+          <label class="ce-hint"><span data-i18n="ce_step_month">2. 结账月份</span>
+            <input type="month" id="ce-month" class="ce-input" value="2026-06" title="month" /></label>
+          <label class="ce-hint"><span data-i18n="ce_step_lang">底稿语言</span>
+            <select id="ce-wp-lang" class="ce-input" title="workpaper language">
+              <option value="zh" data-i18n="ce_lang_zh">中文</option>
+              <option value="ja" data-i18n="ce_lang_ja">日文</option>
+            </select></label>
+          <button type="button" id="ce-run" class="ce-btn" data-i18n="ce_run">执行结账</button>
+        </div>
+        <p id="ce-status" class="ce-status"></p>
+        <p class="ce-hint" data-i18n="ce_disclaimer"></p>
+      </section>
+
+      <section id="ce-result" class="hidden">
+        <div class="ce-card">
+          <p id="ce-summary" class="ce-summary"></p>
+          <p id="ce-company" class="ce-hint"></p>
+          <div class="ce-row" style="margin-top:10px">
+            <button type="button" id="ce-download" class="ce-btn" data-i18n="ce_download">下载底稿</button>
+          </div>
+        </div>
+
+        <div class="ce-card">
+          <h2 class="ce-h" data-i18n="ce_checks">检查结果</h2>
+          <div class="ce-table-wrap">
+            <table class="ce-table">
+              <thead><tr><th data-i18n="ce_col_id">编号</th><th data-i18n="ce_col_check">检查</th><th data-i18n="ce_col_status">结果</th><th data-i18n="ce_col_n">件数</th></tr></thead>
+              <tbody id="ce-checks"></tbody>
+            </table>
+          </div>
+          <div id="ce-na-box" class="hidden" style="margin-top:12px">
+            <h3 class="ce-h" data-i18n="ce_na">不适用</h3>
+            <ul id="ce-na" class="ce-hint"></ul>
+          </div>
+        </div>
+
+        <div class="ce-card">
+          <h2 class="ce-h" id="ce-pending-h"></h2>
+          <div class="ce-table-wrap">
+            <table class="ce-table">
+              <thead><tr><th data-i18n="ce_col_qid">编号</th><th data-i18n="ce_col_cat">类别</th><th data-i18n="ce_col_item">事项</th><th data-i18n="ce_col_date">日期</th><th data-i18n="ce_col_amount">金额</th></tr></thead>
+              <tbody id="ce-pending"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="ce-card">
+          <h2 class="ce-h" data-i18n="ce_answers">回答模板</h2>
+          <p id="ce-answers-none" class="ce-hint hidden" data-i18n="ce_answers_none">没有未匹配的银行流水。</p>
+          <div id="ce-answers-box">
+            <textarea id="ce-answers" class="ce-answers" readonly title="decisions.yaml"></textarea>
+            <div class="ce-row" style="margin-top:8px">
+              <button type="button" id="ce-copy" class="ce-btn2" data-i18n="ce_copy">复制</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { auth, db } from '/js/shared/firebase-init.js';
+    import { initErrorReporting } from '/js/shared/report-error.js';
+    import { signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+    import { mountAuthGate } from '/js/shared/auth-gate.js';
+
+    initErrorReporting({ db });
+
+    document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+    function showEmail(user) {
+      document.getElementById('user-email').textContent = user.email;
+    }
+    mountAuthGate({ auth, db, onApproved: showEmail, onAdmin: showEmail });
+
+    // ── 引擎 ────────────────────────────────────────────────────────────────
+    // 财务数据只写进 Pyodide 的内存文件系统，不发任何网络请求。
+    // 网络请求只有三类：Pyodide 运行时（jsdelivr）、引擎包与 wheel（本站同源）。
+    const ENGINE = new URL('closing-engine/', location.href);
+    const ROOT = '/opt/jpclose';
+    const WORK = '/work';
+    const SAMPLE_MONTH = { tokyo: '2026-06', osaka: '2026-07' };
+    const $ = (id) => document.getElementById(id);
+    const t = (k) => window.sdfT(k);
+
+    let py = null; // 加载完成的 Pyodide 实例（只加载一次）
+    let lastXlsx = null; // { bytes, name }
+
+    function setStatus(key, extra, isErr) {
+      const el = $('ce-status');
+      el.classList.toggle('err', !!isErr);
+      if (extra) {
+        delete el.dataset.i18n;
+        el.textContent = `${t(key)}${extra}`;
+      } else {
+        window.sdfSetText(el, key);
+      }
+    }
+
+    async function sha256Hex(buf) {
+      const h = await crypto.subtle.digest('SHA-256', buf);
+      return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function fetchChecked(name, sha) {
+      const r = await fetch(new URL(name, ENGINE), { cache: 'no-cache' });
+      if (!r.ok) throw new Error('bundle');
+      const buf = await r.arrayBuffer();
+      if ((await sha256Hex(buf)) !== sha) throw new Error('bundle');
+      return buf;
+    }
+
+    const LOAD_TIMEOUT_MS = 180000;
+    function withTimeout(promise, ms) {
+      let timer;
+      const limit = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('load')), ms);
+      });
+      return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+    }
+
+    async function loadEngine() {
+      if (py) return py;
+      setStatus('ce_status_loading_runtime');
+      const manifest = await (await fetch(new URL('manifest.json', ENGINE), { cache: 'no-cache' })).json();
+      // 运行环境被拦（网络、CSP、浏览器扩展）时 loadPyodide 的 promise 不会结束，
+      // 页面会永远停在「加载中」——所以给它一个时限，超时就明确报错。
+      const p = await withTimeout(
+        window.loadPyodide({ indexURL: `https://cdn.jsdelivr.net/pyodide/v${manifest.pyodide}/full/` }),
+        LOAD_TIMEOUT_MS,
+      );
+      await withTimeout(p.loadPackage(['micropip', 'pyyaml']), LOAD_TIMEOUT_MS);
+      setStatus('ce_status_loading_engine');
+      // 引擎包与 wheel 都按 manifest 的 sha256 校验：部署到一半、缓存串版都会在这里停下，而不是跑出错的数。
+      const zip = await fetchChecked(manifest.bundle.name, manifest.bundle.sha256);
+      p.unpackArchive(zip, 'zip', { extractDir: ROOT });
+      p.FS.mkdirTree('/wheels');
+      for (const w of manifest.wheels) {
+        const buf = await fetchChecked(`wheels/${w.name}`, w.sha256);
+        p.FS.writeFile(`/wheels/${w.name}`, new Uint8Array(buf));
+      }
+      await p.runPythonAsync(`
+import micropip, sys, os
+await micropip.install(["emfs:/wheels/" + n for n in sorted(os.listdir("/wheels"))], deps=False)
+sys.path.insert(0, "${ROOT}/src")
+import jpclose.web
+`);
+      py = p;
+      return p;
+    }
+
+    function rmTree(p, dir) {
+      if (!p.FS.analyzePath(dir).exists) return;
+      for (const name of p.FS.readdir(dir)) {
+        if (name === '.' || name === '..') continue;
+        const full = `${dir}/${name}`;
+        if (p.FS.isDir(p.FS.stat(full).mode)) rmTree(p, full);
+        else p.FS.unlink(full);
+      }
+      p.FS.rmdir(dir);
+    }
+
+    // 上传的文件夹写进 /work/company。webkitRelativePath 的第一段是文件夹本身的名字，去掉。
+    async function writeUpload(p, files) {
+      rmTree(p, WORK);
+      const base = `${WORK}/company`;
+      p.FS.mkdirTree(base);
+      let hasCompany = false;
+      for (const f of files) {
+        const parts = f.webkitRelativePath.split('/').slice(1);
+        if (!parts.length || parts.some((s) => s === '..' || s === '')) continue;
+        const rel = parts.join('/');
+        if (rel === 'company.yaml') hasCompany = true;
+        const dir = parts.slice(0, -1).join('/');
+        if (dir) p.FS.mkdirTree(`${base}/${dir}`);
+        p.FS.writeFile(`${base}/${rel}`, new Uint8Array(await f.arrayBuffer()));
+      }
+      return hasCompany ? base : null;
+    }
+
+    function today() {
+      const d = new Date();
+      const z = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
+    }
+
+    function cell(tr, text, cls) {
+      const td = document.createElement('td');
+      if (cls) td.className = cls;
+      td.textContent = text;
+      tr.appendChild(td);
+      return td;
+    }
+
+    function render(r) {
+      $('ce-result').classList.remove('hidden');
+      const n = r.checks.length;
+      const fail = r.checks.filter((c) => c.status === 'FAIL').length;
+      const skip = r.checks.filter((c) => c.status === 'SKIP').length;
+      const sum = $('ce-summary');
+      sum.className = `ce-summary ${r.ok ? 'ok' : 'ng'}`;
+      window.sdfSetText(sum, 'ce_summary', {
+        pass: n - fail - skip,
+        n,
+        fail,
+        skip,
+        na: r.not_applicable.length,
+      });
+      $('ce-company').textContent = `${r.company} · ${r.month}`;
+
+      const tb = $('ce-checks');
+      tb.replaceChildren();
+      for (const c of r.checks) {
+        const tr = document.createElement('tr');
+        cell(tr, c.id, 'nw');
+        const name = cell(tr, c.name);
+        if (c.details && c.details.length) {
+          const d = document.createElement('div');
+          d.className = 'ce-detail';
+          d.textContent = c.details.join('\n');
+          name.appendChild(d);
+        }
+        const st = document.createElement('span');
+        st.className = `ce-st ${c.status}`;
+        window.sdfSetText(st, `ce_st_${c.status.toLowerCase()}`);
+        const td = document.createElement('td');
+        td.appendChild(st);
+        tr.appendChild(td);
+        cell(tr, String(c.n), 'num');
+        tb.appendChild(tr);
+      }
+
+      const na = $('ce-na');
+      na.replaceChildren();
+      for (const x of r.not_applicable) {
+        const li = document.createElement('li');
+        li.textContent = `${x.id} ${x.name}：${x.reason}`;
+        na.appendChild(li);
+      }
+      $('ce-na-box').classList.toggle('hidden', !r.not_applicable.length);
+
+      window.sdfSetText($('ce-pending-h'), 'ce_pending', r.n_pending);
+      const pb = $('ce-pending');
+      pb.replaceChildren();
+      for (const x of r.pending) {
+        const tr = document.createElement('tr');
+        cell(tr, x.qid, 'nw');
+        cell(tr, x.category);
+        const item = cell(tr, x.title);
+        if (x.detail) {
+          const d = document.createElement('div');
+          d.className = 'ce-detail';
+          d.textContent = x.detail;
+          item.appendChild(d);
+        }
+        cell(tr, x.date, 'nw');
+        cell(tr, x.amount === null || x.amount === undefined ? '' : Number(x.amount).toLocaleString(), 'num');
+        pb.appendChild(tr);
+      }
+
+      $('ce-answers').value = r.answers || '';
+      $('ce-answers-box').classList.toggle('hidden', !r.answers);
+      $('ce-answers-none').classList.toggle('hidden', !!r.answers);
+    }
+
+    async function run() {
+      const btn = $('ce-run');
+      const src = document.querySelector('input[name="ce-src"]:checked').value;
+      const month = $('ce-month').value;
+      if (!month) return setStatus('ce_err_no_month', '', true);
+      const files = $('ce-folder').files;
+      if (src === 'upload' && !files.length) return setStatus('ce_upload_none', '', true);
+      btn.disabled = true;
+      $('ce-result').classList.add('hidden');
+      lastXlsx = null;
+      try {
+        let p;
+        try {
+          p = await loadEngine();
+        } catch (e) {
+          console.error(e);
+          if (e.message === 'bundle') return setStatus('ce_err_bundle', '', true);
+          if (e.message === 'load') return setStatus('ce_err_load', '', true);
+          return setStatus('ce_err_runtime', ` ${e.message}`, true);
+        }
+        let dir = `${ROOT}/samples/${src}_sample`;
+        if (src === 'upload') {
+          dir = await writeUpload(p, files);
+          if (!dir) return setStatus('ce_err_no_company', '', true);
+        }
+        setStatus('ce_status_running');
+        await new Promise((res) => setTimeout(res, 30)); // 让「计算中」先画出来，再占住主线程
+        const out = '/tmp/workpaper.xlsx';
+        if (p.FS.analyzePath(out).exists) p.FS.unlink(out);
+        p.globals.set('ce_args', p.toPy([dir, month, today(), $('ce-wp-lang').value, out]));
+        const json = p.runPython(`
+import json, traceback, jpclose.web
+try:
+    _r = jpclose.web.run(*ce_args)
+except Exception as _e:
+    _r = dict(ok=False, kind="runtime", error=f"{type(_e).__name__}: {_e}", trace=traceback.format_exc())
+json.dumps(_r, ensure_ascii=False, default=str)
+`);
+        const r = JSON.parse(json);
+        if (r.error) {
+          if (r.trace) console.error(r.trace);
+          const key = { company: 'ce_err_company', close: 'ce_err_close' }[r.kind] || 'ce_err_runtime';
+          return setStatus(key, ` ${r.error}`, true);
+        }
+        lastXlsx = { bytes: p.FS.readFile(out), name: `workpaper_${r.month}_${$('ce-wp-lang').value}.xlsx` };
+        setStatus('ce_status_done');
+        render(r);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // ── 交互 ────────────────────────────────────────────────────────────────
+    document.querySelectorAll('input[name="ce-src"]').forEach((el) => {
+      el.addEventListener('change', () => {
+        const v = el.value;
+        $('ce-upload-box').classList.toggle('hidden', v !== 'upload');
+        if (SAMPLE_MONTH[v]) $('ce-month').value = SAMPLE_MONTH[v];
+      });
+    });
+    $('ce-folder').addEventListener('change', (e) => {
+      const n = e.target.files.length;
+      if (n) window.sdfSetText($('ce-folder-info'), 'ce_upload_count', n);
+      else window.sdfSetText($('ce-folder-info'), 'ce_upload_none');
+    });
+    $('ce-run').addEventListener('click', run);
+    $('ce-download').addEventListener('click', () => {
+      if (!lastXlsx) return;
+      const blob = new Blob([lastXlsx.bytes], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = lastXlsx.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+    $('ce-copy').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText($('ce-answers').value);
+        window.sdfSetText($('ce-copy'), 'ce_copied');
+      } catch (e) {
+        console.error(e);
+        $('ce-answers').select();
+      }
+    });
+    // 底稿语言默认跟界面：日文界面 → 日文底稿，其余 → 中文
+    if (window.sdfLang && window.sdfLang() === 'ja') $('ce-wp-lang').value = 'ja';
+  </script>
+  <script src="../../js/main.js?v=92a17fb111"></script>
+</body>
+</html>

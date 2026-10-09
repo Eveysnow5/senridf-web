@@ -60,6 +60,7 @@ const PAGES = {
   'solutions/demo/admin.html': 'admin', // 会员审核后台
   'solutions/demo/ai-intel.html': 'internal',
 
+  'solutions/demo/closing.html': 'gated-tool', // 月结引擎：Pyodide 在浏览器内运行，财务数据不上传
   'solutions/demo/analysis.html': 'gated-tool',
   'solutions/demo/lifestory.html': 'gated-tool',
   'solutions/demo/proofreader.html': 'gated-tool',
