@@ -6,3 +6,5 @@
 #
 # -text = 完全不做换行转换，进来什么样出去什么样。
 tests/corpus/** -text
+# 月结引擎的构建产物按 sha256 校验（manifest.json）：换行一个字节都不能动
+solutions/demo/closing-engine/** -text

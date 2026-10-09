@@ -8,8 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet" />
-  <!-- Pyodide：结账引擎（Python）在浏览器里跑，财务数据不出这台电脑。版本与 closing-engine/manifest.json 的 pyodide 一致。 -->
-  <script src="https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.js" integrity="sha384-hYKrcQ7FiKU7f1c92md9N2eh7BoBVX4CPkNDfQyyVclsjZevvDOBUkajGcYk1EF8" crossorigin="anonymous"></script>
+  <!-- 结账引擎（Python/Pyodide）在 Web Worker 里跑：closing-worker.js。财务数据不出这台电脑。 -->
   <style>
     body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
     .hidden { display: none; }
@@ -23,16 +22,16 @@
     .lang-btn.active { color:#4f46e5;font-weight:600; }
     /* 页面局部样式（不进 Tailwind 构建） */
     .ce-card { background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px 18px;margin-bottom:14px; }
-    .ce-h { font-size:13px;font-weight:600;color:#374151;margin-bottom:10px; }
-    .ce-opt { display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#374151;padding:4px 0;cursor:pointer; }
-    .ce-opt input { margin-top:3px; }
+    .ce-h { font-size:14px;font-weight:600;color:#1f2937;margin-bottom:8px; }
+    .ce-h3 { font-size:13px;font-weight:600;color:#374151;margin-bottom:8px; }
     .ce-hint { font-size:12px;color:#6b7280;line-height:1.7; }
-    .ce-row { display:flex;flex-wrap:wrap;gap:16px;align-items:center; }
+    .ce-row { display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center; }
     .ce-input { border:1px solid #d1d5db;border-radius:6px;padding:5px 8px;font-size:13px; }
-    .ce-btn { background:#4f46e5;color:#fff;border-radius:6px;padding:8px 18px;font-size:13px;font-weight:500; }
+    .ce-btn { background:#4f46e5;color:#fff;border-radius:6px;padding:8px 18px;font-size:13px;font-weight:500;white-space:nowrap; }
     .ce-btn:disabled { background:#a5b4fc;cursor:not-allowed; }
-    .ce-btn2 { border:1px solid #d1d5db;color:#374151;border-radius:6px;padding:6px 14px;font-size:12px;background:#fff; }
+    .ce-btn2 { display:inline-block;border:1px solid #d1d5db;color:#374151;border-radius:6px;padding:6px 14px;font-size:12px;background:#fff;white-space:nowrap;text-decoration:none; }
     .ce-btn2:hover { border-color:#9ca3af; }
+    .ce-link { color:#4f46e5;text-decoration:underline;background:none;padding:0;font-size:12px; }
     .ce-status { font-size:12px;color:#6b7280;margin-top:10px;min-height:18px; }
     .ce-status.err { color:#b91c1c;white-space:pre-wrap; }
     .ce-privacy { background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:8px;padding:10px 14px;font-size:12px;line-height:1.7;margin-bottom:14px; }
@@ -40,18 +39,28 @@
     .ce-table { width:100%;border-collapse:collapse;font-size:12px; }
     .ce-table th { text-align:left;color:#6b7280;font-weight:500;border-bottom:1px solid #e5e7eb;padding:6px 8px;white-space:nowrap; }
     .ce-table td { border-bottom:1px solid #f3f4f6;padding:6px 8px;vertical-align:top;color:#374151; }
+    .ce-table td.num { text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums; }
     .ce-table td.nw { white-space:nowrap; }
     #logout-btn, #user-email { white-space:nowrap; }
-    .ce-table td.num { text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums; }
+    .ce-path { font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#4b5563;white-space:nowrap; }
     .ce-detail { color:#6b7280;font-size:11px;margin-top:2px;white-space:pre-wrap;word-break:break-all; }
-    .ce-st { display:inline-block;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600; }
-    .ce-st.PASS { background:#d1fae5;color:#047857; }
-    .ce-st.FAIL { background:#fee2e2;color:#b91c1c; }
-    .ce-st.SKIP { background:#f3f4f6;color:#6b7280; }
+    .ce-st { display:inline-block;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;white-space:nowrap; }
+    .ce-st.PASS, .ce-st.ok { background:#d1fae5;color:#047857; }
+    .ce-st.FAIL, .ce-st.missing, .ce-st.error { background:#fee2e2;color:#b91c1c; }
+    .ce-st.SKIP, .ce-st.absent, .ce-st.wait { background:#f3f4f6;color:#6b7280; }
+    .ce-st.warn { background:#fef3c7;color:#92400e; }
+    .ce-need { font-size:11px;color:#6b7280;white-space:nowrap; }
+    .ce-need.required { color:#b91c1c;font-weight:600; }
     .ce-summary { font-size:14px;font-weight:600;margin-bottom:6px; }
     .ce-summary.ok { color:#047857; }
     .ce-summary.ng { color:#b91c1c; }
     .ce-answers { width:100%;min-height:160px;font-family:ui-monospace,Consolas,monospace;font-size:12px;border:1px solid #e5e7eb;border-radius:6px;padding:8px;background:#f9fafb; }
+    .ce-progress { margin-top:12px; }
+    .ce-bar { height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden; }
+    .ce-bar > div { height:100%;width:0;background:#4f46e5;border-radius:999px;transition:width .3s ease; }
+    .ce-progress-text { display:flex;justify-content:space-between;gap:12px;font-size:12px;color:#374151;margin-top:6px; }
+    .ce-sample { font-size:12px;color:#6b7280;margin:18px 0 6px;text-align:center; }
+    .ce-banner { background:#eef2ff;color:#3730a3;border-radius:6px;padding:6px 10px;font-size:12px;margin-bottom:10px; }
   </style>
   <!-- head-meta:start（npm run meta 生成，勿手改） -->
   <link rel="icon" href="/favicon.ico" sizes="any">
@@ -67,7 +76,7 @@
       <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
         <div>
           <h1 class="text-base font-semibold text-gray-900" data-i18n="ce_title">月结引擎（日本·试用版）</h1>
-          <p class="text-xs text-gray-500" data-i18n="ce_subtitle">工资 · 社保 · 源泉 · 银行对账 · 消费税 → 审计底稿</p>
+          <p class="text-xs text-gray-500" data-i18n="ce_subtitle">工资 · 社保 · 源泉 · 银行对账 · 消费税 → 底稿</p>
         </div>
         <div class="flex items-center gap-2">
           <span class="flex items-center gap-1 text-xs mr-1">
@@ -86,35 +95,54 @@
     <main class="max-w-3xl mx-auto px-4 py-6">
       <div class="ce-privacy" data-i18n="ce_privacy">数据只在这个浏览器里处理，不会发送到服务器。</div>
 
+      <!-- 1. 准备并选择公司资料 -->
       <section class="ce-card">
-        <h2 class="ce-h" data-i18n="ce_step_data">1. 数据</h2>
-        <label class="ce-opt"><input type="radio" name="ce-src" value="tokyo" checked /><span data-i18n="ce_src_tokyo">样本：东京虚构公司</span></label>
-        <label class="ce-opt"><input type="radio" name="ce-src" value="osaka" /><span data-i18n="ce_src_osaka">样本：大阪虚构公司</span></label>
-        <label class="ce-opt"><input type="radio" name="ce-src" value="upload" /><span data-i18n="ce_src_upload">选择本公司的文件夹</span></label>
-        <div id="ce-upload-box" class="hidden" style="margin:6px 0 0 22px">
-          <input type="file" id="ce-folder" webkitdirectory multiple class="text-xs" title="company folder" />
-          <p id="ce-folder-info" class="ce-hint" data-i18n="ce_upload_none">尚未选择文件夹</p>
-          <p class="ce-hint" data-i18n="ce_upload_hint"></p>
+        <h2 class="ce-h" data-i18n="ce_step_files">1. 准备公司资料</h2>
+        <p class="ce-hint" data-i18n="ce_files_intro"></p>
+        <div class="ce-row" style="margin:10px 0 12px">
+          <a id="ce-tpl" class="ce-btn2" href="closing-engine/template.zip" download="公司资料模板.zip" data-i18n="ce_tpl_download">下载空白模板（zip）</a>
         </div>
+        <div class="ce-table-wrap">
+          <table class="ce-table">
+            <thead><tr><th>#</th><th data-i18n="ce_col_file">文件</th><th data-i18n="ce_col_need">何时需要</th><th data-i18n="ce_col_state">状态</th></tr></thead>
+            <tbody id="ce-list"></tbody>
+          </table>
+        </div>
+        <div class="ce-row" style="margin-top:12px">
+          <label class="ce-btn2" for="ce-folder" data-i18n="ce_pick_folder">选择公司资料文件夹</label>
+          <input type="file" id="ce-folder" webkitdirectory multiple class="hidden" title="company folder" />
+          <span id="ce-folder-info" class="ce-hint" data-i18n="ce_upload_none">尚未选择文件夹</span>
+        </div>
+        <p class="ce-hint" style="margin-top:6px" data-i18n="ce_upload_hint"></p>
+        <p id="ce-pre" class="ce-status"></p>
       </section>
 
+      <!-- 2. 结账 -->
       <section class="ce-card">
+        <h2 class="ce-h" data-i18n="ce_step_run">2. 结账</h2>
         <div class="ce-row">
-          <label class="ce-hint"><span data-i18n="ce_step_month">2. 结账月份</span>
-            <input type="month" id="ce-month" class="ce-input" value="2026-06" title="month" /></label>
+          <label class="ce-hint"><span data-i18n="ce_step_month">结账月份</span>
+            <input type="month" id="ce-month" class="ce-input" title="month" /></label>
           <label class="ce-hint"><span data-i18n="ce_step_lang">底稿语言</span>
             <select id="ce-wp-lang" class="ce-input" title="workpaper language">
               <option value="zh" data-i18n="ce_lang_zh">中文</option>
               <option value="ja" data-i18n="ce_lang_ja">日文</option>
             </select></label>
-          <button type="button" id="ce-run" class="ce-btn" data-i18n="ce_run">执行结账</button>
+          <button type="button" id="ce-run" class="ce-btn" data-i18n="ce_run" disabled>执行结账</button>
+        </div>
+        <div id="ce-progress" class="ce-progress hidden">
+          <div class="ce-bar"><div id="ce-bar"></div></div>
+          <div class="ce-progress-text"><span id="ce-stage"></span><span id="ce-elapsed"></span></div>
+          <p class="ce-hint" data-i18n="ce_p_note"></p>
         </div>
         <p id="ce-status" class="ce-status"></p>
         <p class="ce-hint" data-i18n="ce_disclaimer"></p>
       </section>
 
+      <!-- 结果 -->
       <section id="ce-result" class="hidden">
         <div class="ce-card">
+          <p id="ce-sample-banner" class="ce-banner hidden" data-i18n="ce_sample_banner"></p>
           <p id="ce-summary" class="ce-summary"></p>
           <p id="ce-company" class="ce-hint"></p>
           <div class="ce-row" style="margin-top:10px">
@@ -123,7 +151,7 @@
         </div>
 
         <div class="ce-card">
-          <h2 class="ce-h" data-i18n="ce_checks">检查结果</h2>
+          <h2 class="ce-h3" data-i18n="ce_checks">检查结果</h2>
           <div class="ce-table-wrap">
             <table class="ce-table">
               <thead><tr><th data-i18n="ce_col_id">编号</th><th data-i18n="ce_col_check">检查</th><th data-i18n="ce_col_status">结果</th><th data-i18n="ce_col_n">件数</th></tr></thead>
@@ -131,13 +159,13 @@
             </table>
           </div>
           <div id="ce-na-box" class="hidden" style="margin-top:12px">
-            <h3 class="ce-h" data-i18n="ce_na">不适用</h3>
+            <h3 class="ce-h3" data-i18n="ce_na">不适用</h3>
             <ul id="ce-na" class="ce-hint"></ul>
           </div>
         </div>
 
         <div class="ce-card">
-          <h2 class="ce-h" id="ce-pending-h"></h2>
+          <h2 class="ce-h3" id="ce-pending-h"></h2>
           <div class="ce-table-wrap">
             <table class="ce-table">
               <thead><tr><th data-i18n="ce_col_qid">编号</th><th data-i18n="ce_col_cat">类别</th><th data-i18n="ce_col_item">事项</th><th data-i18n="ce_col_date">日期</th><th data-i18n="ce_col_amount">金额</th></tr></thead>
@@ -147,7 +175,7 @@
         </div>
 
         <div class="ce-card">
-          <h2 class="ce-h" data-i18n="ce_answers">回答模板</h2>
+          <h2 class="ce-h3" data-i18n="ce_answers">回答模板</h2>
           <p id="ce-answers-none" class="ce-hint hidden" data-i18n="ce_answers_none">没有未匹配的银行流水。</p>
           <div id="ce-answers-box">
             <textarea id="ce-answers" class="ce-answers" readonly title="decisions.yaml"></textarea>
@@ -157,6 +185,13 @@
           </div>
         </div>
       </section>
+
+      <p class="ce-sample">
+        <span data-i18n="ce_sample_line">还没准备好？先看示例结果：</span>
+        <button type="button" class="ce-link" data-sample="tokyo" data-i18n="ce_sample_tokyo">东京虚构公司</button>
+        ·
+        <button type="button" class="ce-link" data-sample="osaka" data-i18n="ce_sample_osaka">大阪虚构公司</button>
+      </p>
     </main>
   </div>
 
@@ -174,115 +209,267 @@
     }
     mountAuthGate({ auth, db, onApproved: showEmail, onAdmin: showEmail });
 
-    // ── 引擎 ────────────────────────────────────────────────────────────────
-    // 财务数据只写进 Pyodide 的内存文件系统，不发任何网络请求。
-    // 网络请求只有三类：Pyodide 运行时（jsdelivr）、引擎包与 wheel（本站同源）。
-    const ENGINE = new URL('closing-engine/', location.href);
-    const ROOT = '/opt/jpclose';
-    const WORK = '/work';
+    // ── 清单（与引擎 jpclose.web.CHECKLIST 同序同 id；状态由引擎的 precheck 给出）───────
+    const CHECKLIST = [
+      ['company', 'company.yaml', 'required'],
+      ['employees', 'employees.yaml', 'required'],
+      ['opening', 'opening_balances.yaml', 'required'],
+      ['bank', 'bank/', 'required'],
+      ['monthly', 'monthly/YYYY-MM/', 'monthly'],
+      ['bank_rules', 'bank_rules.yaml', 'optional'],
+      ['fixed_assets', 'fixed_assets.yaml', 'optional'],
+      ['decisions', 'decisions.yaml', 'optional'],
+      ['adjustments', 'adjustments.yaml', 'optional'],
+      ['labor_insurance', 'labor_insurance.yaml', 'season'],
+      ['corporate_tax', 'corporate_tax.yaml', 'year_end'],
+    ];
     const SAMPLE_MONTH = { tokyo: '2026-06', osaka: '2026-07' };
+    // 进度条：每个阶段占的区间（月份按 i/n 在 50→95 之间推进）
+    const STAGE_PCT = { runtime: 5, packages: 30, engine: 40, ready: 50, workpaper: 96 };
+    const LOAD_TIMEOUT_MS = 180000;
     const $ = (id) => document.getElementById(id);
     const t = (k) => window.sdfT(k);
 
-    let py = null; // 加载完成的 Pyodide 实例（只加载一次）
-    let lastXlsx = null; // { bytes, name }
+    let worker = null;
+    let ready = false; // 运行环境已加载
+    let files = []; // [{path, buf}]（已去掉文件夹本身的名字）
+    let prechecked = false; // 当前文件夹 + 月份已预检且可结账
+    let lastXlsx = null;
+    let pending = null; // {resolve, reject, kind}
+    let timer = null;
+    let t0 = 0;
 
-    function setStatus(key, extra, isErr) {
-      const el = $('ce-status');
+    // ── 清单渲染 ─────────────────────────────────────────────────────────────
+    function renderList(result) {
+      const byId = Object.fromEntries((result?.items || []).map((x) => [x.id, x]));
+      const tb = $('ce-list');
+      tb.replaceChildren();
+      CHECKLIST.forEach(([id, path, need], i) => {
+        const tr = document.createElement('tr');
+        const no = document.createElement('td');
+        no.className = 'nw';
+        no.textContent = `${i + 1}`;
+        tr.appendChild(no);
+        const f = document.createElement('td');
+        const name = document.createElement('div');
+        window.sdfSetText(name, `ce_f_${id}`);
+        const p = document.createElement('div');
+        p.className = 'ce-path';
+        p.textContent = path;
+        const d = document.createElement('div');
+        d.className = 'ce-detail';
+        window.sdfSetText(d, `ce_fd_${id}`);
+        f.append(name, p, d);
+        tr.appendChild(f);
+        const n = document.createElement('td');
+        const ns = document.createElement('span');
+        ns.className = `ce-need ${need}`;
+        window.sdfSetText(ns, `ce_need_${need}`);
+        n.appendChild(ns);
+        tr.appendChild(n);
+        const s = document.createElement('td');
+        const st = document.createElement('span');
+        const x = byId[id];
+        const status = x ? x.status : 'wait';
+        st.className = `ce-st ${status}`;
+        window.sdfSetText(st, `ce_s_${status}`);
+        s.appendChild(st);
+        if (x && x.detail) {
+          const dd = document.createElement('div');
+          dd.className = 'ce-detail';
+          dd.textContent = x.detail;
+          s.appendChild(dd);
+        }
+        tr.appendChild(s);
+        tb.appendChild(tr);
+      });
+    }
+
+    // ── Worker ───────────────────────────────────────────────────────────────
+    function setStatus(el, key, extra, isErr) {
       el.classList.toggle('err', !!isErr);
       if (extra) {
         delete el.dataset.i18n;
         el.textContent = `${t(key)}${extra}`;
-      } else {
+      } else if (key) {
         window.sdfSetText(el, key);
+      } else {
+        delete el.dataset.i18n;
+        el.textContent = '';
       }
     }
 
-    async function sha256Hex(buf) {
-      const h = await crypto.subtle.digest('SHA-256', buf);
-      return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    function showProgress(on) {
+      $('ce-progress').classList.toggle('hidden', !on);
+      clearInterval(timer);
+      if (on) {
+        t0 = performance.now();
+        const tick = () =>
+          window.sdfSetText($('ce-elapsed'), 'ce_p_elapsed', Math.round((performance.now() - t0) / 1000));
+        tick();
+        timer = setInterval(tick, 1000);
+      }
     }
 
-    async function fetchChecked(name, sha) {
-      const r = await fetch(new URL(name, ENGINE), { cache: 'no-cache' });
-      if (!r.ok) throw new Error('bundle');
-      const buf = await r.arrayBuffer();
-      if ((await sha256Hex(buf)) !== sha) throw new Error('bundle');
-      return buf;
+    function setBar(pct, key, params) {
+      $('ce-bar').style.width = `${Math.max(0, Math.min(100, pct))}%`;
+      window.sdfSetText($('ce-stage'), key, params);
     }
 
-    const LOAD_TIMEOUT_MS = 180000;
-    function withTimeout(promise, ms) {
-      let timer;
-      const limit = new Promise((_, reject) => {
-        timer = setTimeout(() => reject(new Error('load')), ms);
+    function onWorkerMessage(e) {
+      const m = e.data || {};
+      if (m.type === 'stage') {
+        if (m.stage === 'ready') ready = true;
+        setBar(STAGE_PCT[m.stage] ?? 0, `ce_p_${m.stage}`);
+      } else if (m.type === 'progress') {
+        if (m.stage === 'month') setBar(50 + (45 * m.i) / m.n, 'ce_p_month', { label: m.label, i: m.i, n: m.n });
+        else setBar(STAGE_PCT.workpaper, 'ce_p_workpaper');
+      } else if (pending) {
+        const p = pending;
+        pending = null;
+        if (m.type === 'error') p.reject(Object.assign(new Error(m.message), { kind: m.kind }));
+        else p.resolve(m);
+      }
+    }
+
+    function getWorker() {
+      if (!worker) {
+        worker = new Worker('closing-worker.js');
+        worker.onmessage = onWorkerMessage;
+        worker.onerror = (ev) => {
+          console.error(ev);
+          if (pending) {
+            const p = pending;
+            pending = null;
+            p.reject(Object.assign(new Error(ev.message || 'worker'), { kind: 'runtime' }));
+          }
+        };
+      }
+      return worker;
+    }
+
+    // 一次只发一个请求。运行环境还没加载完时加时限：被网络/CSP/扩展拦住时 Pyodide 不会报错，只会一直等
+    function ask(msg, transfer) {
+      return new Promise((resolve, reject) => {
+        let limit = null;
+        if (!ready) {
+          limit = setTimeout(() => {
+            if (!pending) return;
+            pending = null;
+            worker?.terminate();
+            worker = null;
+            reject(Object.assign(new Error('load'), { kind: 'load' }));
+          }, LOAD_TIMEOUT_MS);
+        }
+        const done = (fn) => (v) => {
+          clearTimeout(limit);
+          fn(v);
+        };
+        pending = { resolve: done(resolve), reject: done(reject) };
+        getWorker().postMessage(msg, transfer || []);
       });
-      return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
     }
 
-    async function loadEngine() {
-      if (py) return py;
-      setStatus('ce_status_loading_runtime');
-      const manifest = await (await fetch(new URL('manifest.json', ENGINE), { cache: 'no-cache' })).json();
-      // 运行环境被拦（网络、CSP、浏览器扩展）时 loadPyodide 的 promise 不会结束，
-      // 页面会永远停在「加载中」——所以给它一个时限，超时就明确报错。
-      const p = await withTimeout(
-        window.loadPyodide({ indexURL: `https://cdn.jsdelivr.net/pyodide/v${manifest.pyodide}/full/` }),
-        LOAD_TIMEOUT_MS,
-      );
-      await withTimeout(p.loadPackage(['micropip', 'pyyaml']), LOAD_TIMEOUT_MS);
-      setStatus('ce_status_loading_engine');
-      // 引擎包与 wheel 都按 manifest 的 sha256 校验：部署到一半、缓存串版都会在这里停下，而不是跑出错的数。
-      const zip = await fetchChecked(manifest.bundle.name, manifest.bundle.sha256);
-      p.unpackArchive(zip, 'zip', { extractDir: ROOT });
-      p.FS.mkdirTree('/wheels');
-      for (const w of manifest.wheels) {
-        const buf = await fetchChecked(`wheels/${w.name}`, w.sha256);
-        p.FS.writeFile(`/wheels/${w.name}`, new Uint8Array(buf));
+    function errKey(err) {
+      return { bundle: 'ce_err_bundle', load: 'ce_err_load' }[err.kind] || 'ce_err_runtime';
+    }
+
+    // ── 1. 选文件夹 → 预检 ───────────────────────────────────────────────────
+    async function precheck() {
+      const month = $('ce-month').value;
+      prechecked = false;
+      $('ce-run').disabled = true;
+      if (!files.length || !month) return;
+      setStatus($('ce-pre'), 'ce_pre_running');
+      showProgress(!ready);
+      try {
+        // 文件内容各给 Worker 一份拷贝（Worker 每次重写内存文件系统）
+        const copy = files.map((f) => ({ path: f.path, buf: f.buf.slice(0) }));
+        const m = await ask({ cmd: 'precheck', files: copy, month }, copy.map((f) => f.buf));
+        const r = m.result;
+        renderList(r);
+        prechecked = !!r.ready;
+        if (r.ready) setStatus($('ce-pre'), 'ce_pre_ok');
+        else if (r.error) setStatus($('ce-pre'), 'ce_pre_engine_err', ` ${r.error}`, true);
+        else setStatus($('ce-pre'), 'ce_pre_block', '', true);
+      } catch (err) {
+        console.error(err);
+        setStatus($('ce-pre'), errKey(err), err.kind === 'runtime' ? ` ${err.message}` : '', true);
+      } finally {
+        showProgress(false);
+        $('ce-run').disabled = !prechecked;
       }
-      await p.runPythonAsync(`
-import micropip, sys, os
-await micropip.install(["emfs:/wheels/" + n for n in sorted(os.listdir("/wheels"))], deps=False)
-sys.path.insert(0, "${ROOT}/src")
-import jpclose.web
-`);
-      py = p;
-      return p;
     }
 
-    function rmTree(p, dir) {
-      if (!p.FS.analyzePath(dir).exists) return;
-      for (const name of p.FS.readdir(dir)) {
-        if (name === '.' || name === '..') continue;
-        const full = `${dir}/${name}`;
-        if (p.FS.isDir(p.FS.stat(full).mode)) rmTree(p, full);
-        else p.FS.unlink(full);
+    $('ce-folder').addEventListener('change', async (e) => {
+      const list = [...e.target.files];
+      if (!list.length) {
+        window.sdfSetText($('ce-folder-info'), 'ce_upload_none');
+        return;
       }
-      p.FS.rmdir(dir);
-    }
-
-    // 上传的文件夹写进 /work/company。webkitRelativePath 的第一段是文件夹本身的名字，去掉。
-    async function writeUpload(p, files) {
-      rmTree(p, WORK);
-      const base = `${WORK}/company`;
-      p.FS.mkdirTree(base);
-      let hasCompany = false;
-      for (const f of files) {
+      window.sdfSetText($('ce-folder-info'), 'ce_upload_count', list.length);
+      // webkitRelativePath 的第一段是文件夹本身的名字，去掉
+      files = [];
+      for (const f of list) {
         const parts = f.webkitRelativePath.split('/').slice(1);
-        if (!parts.length || parts.some((s) => s === '..' || s === '')) continue;
-        const rel = parts.join('/');
-        if (rel === 'company.yaml') hasCompany = true;
-        const dir = parts.slice(0, -1).join('/');
-        if (dir) p.FS.mkdirTree(`${base}/${dir}`);
-        p.FS.writeFile(`${base}/${rel}`, new Uint8Array(await f.arrayBuffer()));
+        if (!parts.length) continue;
+        files.push({ path: parts.join('/'), buf: await f.arrayBuffer() });
       }
-      return hasCompany ? base : null;
-    }
+      if (!files.some((f) => f.path === 'company.yaml')) {
+        renderList(null);
+        setStatus($('ce-pre'), 'ce_err_no_company', '', true);
+        $('ce-run').disabled = true;
+        return;
+      }
+      if (!$('ce-month').value) {
+        const months = files
+          .map((f) => f.path.match(/^monthly\/(\d{4}-\d{2})\//))
+          .filter(Boolean)
+          .map((m) => m[1])
+          .sort();
+        if (months.length) $('ce-month').value = months[months.length - 1];
+      }
+      precheck();
+    });
+    $('ce-month').addEventListener('change', () => precheck());
 
+    // ── 2. 结账 ──────────────────────────────────────────────────────────────
     function today() {
       const d = new Date();
       const z = (n) => String(n).padStart(2, '0');
       return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
+    }
+
+    async function run(source) {
+      const month = source === 'upload' ? $('ce-month').value : SAMPLE_MONTH[source];
+      if (!month) return setStatus($('ce-status'), 'ce_err_no_month', '', true);
+      $('ce-run').disabled = true;
+      document.querySelectorAll('[data-sample]').forEach((b) => (b.disabled = true));
+      $('ce-result').classList.add('hidden');
+      lastXlsx = null;
+      setStatus($('ce-status'), '');
+      showProgress(true);
+      setBar(ready ? STAGE_PCT.ready : 0, ready ? 'ce_p_ready' : 'ce_p_runtime');
+      try {
+        const lang = $('ce-wp-lang').value;
+        const m = await ask({ cmd: 'run', source, month, lang, today: today() });
+        const r = m.result;
+        if (r.error) {
+          const key = { company: 'ce_err_company', close: 'ce_err_close' }[r.kind] || 'ce_err_runtime';
+          return setStatus($('ce-status'), key, ` ${r.error}`, true);
+        }
+        setBar(100, 'ce_status_done');
+        lastXlsx = { bytes: m.xlsx, name: `workpaper_${r.month}_${lang}.xlsx` };
+        setStatus($('ce-status'), 'ce_status_done');
+        render(r, source !== 'upload');
+      } catch (err) {
+        console.error(err);
+        setStatus($('ce-status'), errKey(err), err.kind === 'runtime' ? ` ${err.message}` : '', true);
+      } finally {
+        showProgress(false);
+        $('ce-run').disabled = !prechecked;
+        document.querySelectorAll('[data-sample]').forEach((b) => (b.disabled = false));
+      }
     }
 
     function cell(tr, text, cls) {
@@ -293,20 +480,15 @@ import jpclose.web
       return td;
     }
 
-    function render(r) {
+    function render(r, isSample) {
       $('ce-result').classList.remove('hidden');
+      $('ce-sample-banner').classList.toggle('hidden', !isSample);
       const n = r.checks.length;
       const fail = r.checks.filter((c) => c.status === 'FAIL').length;
       const skip = r.checks.filter((c) => c.status === 'SKIP').length;
       const sum = $('ce-summary');
       sum.className = `ce-summary ${r.ok ? 'ok' : 'ng'}`;
-      window.sdfSetText(sum, 'ce_summary', {
-        pass: n - fail - skip,
-        n,
-        fail,
-        skip,
-        na: r.not_applicable.length,
-      });
+      window.sdfSetText(sum, 'ce_summary', { pass: n - fail - skip, n, fail, skip, na: r.not_applicable.length });
       $('ce-company').textContent = `${r.company} · ${r.month}`;
 
       const tb = $('ce-checks');
@@ -362,74 +544,12 @@ import jpclose.web
       $('ce-answers').value = r.answers || '';
       $('ce-answers-box').classList.toggle('hidden', !r.answers);
       $('ce-answers-none').classList.toggle('hidden', !!r.answers);
-    }
-
-    async function run() {
-      const btn = $('ce-run');
-      const src = document.querySelector('input[name="ce-src"]:checked').value;
-      const month = $('ce-month').value;
-      if (!month) return setStatus('ce_err_no_month', '', true);
-      const files = $('ce-folder').files;
-      if (src === 'upload' && !files.length) return setStatus('ce_upload_none', '', true);
-      btn.disabled = true;
-      $('ce-result').classList.add('hidden');
-      lastXlsx = null;
-      try {
-        let p;
-        try {
-          p = await loadEngine();
-        } catch (e) {
-          console.error(e);
-          if (e.message === 'bundle') return setStatus('ce_err_bundle', '', true);
-          if (e.message === 'load') return setStatus('ce_err_load', '', true);
-          return setStatus('ce_err_runtime', ` ${e.message}`, true);
-        }
-        let dir = `${ROOT}/samples/${src}_sample`;
-        if (src === 'upload') {
-          dir = await writeUpload(p, files);
-          if (!dir) return setStatus('ce_err_no_company', '', true);
-        }
-        setStatus('ce_status_running');
-        await new Promise((res) => setTimeout(res, 30)); // 让「计算中」先画出来，再占住主线程
-        const out = '/tmp/workpaper.xlsx';
-        if (p.FS.analyzePath(out).exists) p.FS.unlink(out);
-        p.globals.set('ce_args', p.toPy([dir, month, today(), $('ce-wp-lang').value, out]));
-        const json = p.runPython(`
-import json, traceback, jpclose.web
-try:
-    _r = jpclose.web.run(*ce_args)
-except Exception as _e:
-    _r = dict(ok=False, kind="runtime", error=f"{type(_e).__name__}: {_e}", trace=traceback.format_exc())
-json.dumps(_r, ensure_ascii=False, default=str)
-`);
-        const r = JSON.parse(json);
-        if (r.error) {
-          if (r.trace) console.error(r.trace);
-          const key = { company: 'ce_err_company', close: 'ce_err_close' }[r.kind] || 'ce_err_runtime';
-          return setStatus(key, ` ${r.error}`, true);
-        }
-        lastXlsx = { bytes: p.FS.readFile(out), name: `workpaper_${r.month}_${$('ce-wp-lang').value}.xlsx` };
-        setStatus('ce_status_done');
-        render(r);
-      } finally {
-        btn.disabled = false;
-      }
+      $('ce-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     // ── 交互 ────────────────────────────────────────────────────────────────
-    document.querySelectorAll('input[name="ce-src"]').forEach((el) => {
-      el.addEventListener('change', () => {
-        const v = el.value;
-        $('ce-upload-box').classList.toggle('hidden', v !== 'upload');
-        if (SAMPLE_MONTH[v]) $('ce-month').value = SAMPLE_MONTH[v];
-      });
-    });
-    $('ce-folder').addEventListener('change', (e) => {
-      const n = e.target.files.length;
-      if (n) window.sdfSetText($('ce-folder-info'), 'ce_upload_count', n);
-      else window.sdfSetText($('ce-folder-info'), 'ce_upload_none');
-    });
-    $('ce-run').addEventListener('click', run);
+    $('ce-run').addEventListener('click', () => run('upload'));
+    document.querySelectorAll('[data-sample]').forEach((b) => b.addEventListener('click', () => run(b.dataset.sample)));
     $('ce-download').addEventListener('click', () => {
       if (!lastXlsx) return;
       const blob = new Blob([lastXlsx.bytes], {
@@ -454,7 +574,8 @@ json.dumps(_r, ensure_ascii=False, default=str)
     });
     // 底稿语言默认跟界面：日文界面 → 日文底稿，其余 → 中文
     if (window.sdfLang && window.sdfLang() === 'ja') $('ce-wp-lang').value = 'ja';
+    renderList(null);
   </script>
-  <script src="../../js/main.js?v=92a17fb111"></script>
+  <script src="../../js/main.js?v=ffe0953117"></script>
 </body>
 </html>

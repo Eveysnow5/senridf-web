@@ -1,11 +1,11 @@
 {
  "pyodide": "314.0.7",
- "source_revision": "fb9a857",
+ "source_revision": "a3c8749",
  "bundle": {
   "name": "jpclose-bundle.zip",
-  "sha256": "cdc99ac4e42bbe25755717d3cd7f54c4ddb41ec8e26faba0071db07d1654e05c",
+  "sha256": "e214d7cd6b28b70e9ef268758f25cf1d44a0d567bdfef3575575dbeb7e95c555",
   "files": 74,
-  "bytes": 241410
+  "bytes": 246266
  },
  "wheels": [
   {
@@ -21,5 +21,14 @@
    "sha256": "abe5f0191f27a88623a33aaaa7cd04035886b5d7adb41a42eaeba0e721dc1982"
   }
  ],
+ "loader": {
+  "name": "pyodide.js",
+  "sha256": "3141b814715a72e59b51b1b18b9ceae5bf19f7c852417e431bb0a34feadf825c",
+  "sri": "sha384-hYKrcQ7FiKU7f1c92md9N2eh7BoBVX4CPkNDfQyyVclsjZevvDOBUkajGcYk1EF8"
+ },
+ "template": {
+  "name": "template.zip",
+  "sha256": "cff1702899d66d29b25551e7fb93d746b5b03de93c14160b30b9742641d62959"
+ },
  "note": "引擎在浏览器内运行，财务数据不上传。/ エンジンはブラウザ内で動き、財務データは送信されない。"
 }

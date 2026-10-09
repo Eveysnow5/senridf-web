@@ -2,7 +2,8 @@ const js = require('@eslint/js');
 const globals = require('globals');
 
 module.exports = [
-  { ignores: ['node_modules/**', 'assets/**', 'tools/**'] },
+  // closing-engine/ は月结引擎の構建产物（第三方 pyodide.js を含む、build_web_bundle.py が生成）
+  { ignores: ['node_modules/**', 'assets/**', 'tools/**', 'solutions/demo/closing-engine/**'] },
 
   // 浏览器经典脚本（<script src>）
   {
@@ -66,6 +67,12 @@ module.exports = [
       'no-unused-vars': 'warn',
       'no-undef': 'error',
     },
+  },
+
+  // 月结引擎的 Web Worker（经典脚本，importScripts 同源的 pyodide.js → 全局 loadPyodide）
+  {
+    files: ['solutions/demo/closing-worker.js'],
+    languageOptions: { globals: { ...globals.worker, loadPyodide: 'readonly' } },
   },
 
   // sdf-admin Worker：ESM + Workers 运行时全局（fetch/Response/crypto…）
