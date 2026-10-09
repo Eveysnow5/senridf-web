@@ -61,6 +61,25 @@
     .ce-progress-text { display:flex;justify-content:space-between;gap:12px;font-size:12px;color:#374151;margin-top:6px; }
     .ce-sample { font-size:12px;color:#6b7280;margin:18px 0 6px;text-align:center; }
     .ce-banner { background:#eef2ff;color:#3730a3;border-radius:6px;padding:6px 10px;font-size:12px;margin-bottom:10px; }
+    .ce-sheets { font-size:11px;color:#6366f1;margin-top:1px; }
+    .ce-ans-row td { background:#f9fafb; }
+    .ce-form { display:grid;gap:8px;padding:6px 0; }
+    .ce-form label { font-size:11px;color:#6b7280; }
+    .ce-form .ce-input { width:100%; }
+    .ce-line { display:grid;grid-template-columns:2fr 1.2fr 1.2fr 1fr auto;gap:6px;align-items:center; }
+    .ce-grid2 { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
+    .ce-err { color:#b91c1c;font-size:12px;min-height:16px; }
+    .ce-diff { font-size:12px;color:#6b7280; }
+    .ce-diff.bad { color:#b91c1c; }
+    .ce-answered { font-size:11px;color:#047857;font-weight:600;white-space:nowrap; }
+    details.ce-adv summary { font-size:12px;color:#6b7280;cursor:pointer;margin-top:10px; }
+    /* 手机：待确认表隐藏「类别」「日期」两列（日期也写在说明里），回答表单单列 */
+    @media (max-width: 640px) {
+      #ce-pending-table th:nth-child(2), #ce-pending-table td:nth-child(2):not([colspan]),
+      #ce-pending-table th:nth-child(4), #ce-pending-table td:nth-child(4):not([colspan]) { display:none; }
+      .ce-line { grid-template-columns:1fr 1fr; }
+      .ce-grid2 { grid-template-columns:1fr; }
+    }
   </style>
   <!-- head-meta:start（npm run meta 生成，勿手改） -->
   <link rel="icon" href="/favicon.ico" sizes="any">
@@ -100,7 +119,8 @@
         <h2 class="ce-h" data-i18n="ce_step_files">1. 准备公司资料</h2>
         <p class="ce-hint" data-i18n="ce_files_intro"></p>
         <div class="ce-row" style="margin:10px 0 12px">
-          <a id="ce-tpl" class="ce-btn2" href="closing-engine/template.zip" download="公司资料模板.zip" data-i18n="ce_tpl_download">下载空白模板（zip）</a>
+          <a class="ce-btn" href="closing-engine/template.xlsx" download="公司资料.xlsx" data-i18n="ce_tpl_xlsx">下载 Excel 模板（推荐）</a>
+          <a class="ce-btn2" href="closing-engine/template.zip" download="公司资料模板.zip" data-i18n="ce_tpl_yaml">YAML 模板（进阶）</a>
         </div>
         <div class="ce-table-wrap">
           <table class="ce-table">
@@ -166,23 +186,33 @@
 
         <div class="ce-card">
           <h2 class="ce-h3" id="ce-pending-h"></h2>
+          <p class="ce-hint" data-i18n="ce_ans_intro"></p>
           <div class="ce-table-wrap">
-            <table class="ce-table">
-              <thead><tr><th data-i18n="ce_col_qid">编号</th><th data-i18n="ce_col_cat">类别</th><th data-i18n="ce_col_item">事项</th><th data-i18n="ce_col_date">日期</th><th data-i18n="ce_col_amount">金额</th></tr></thead>
+            <table class="ce-table" id="ce-pending-table">
+              <thead><tr><th data-i18n="ce_col_qid">编号</th><th data-i18n="ce_col_cat">类别</th><th data-i18n="ce_col_item">事项</th><th data-i18n="ce_col_date">日期</th><th data-i18n="ce_col_amount">金额</th><th data-i18n="ce_col_answer">回答</th></tr></thead>
               <tbody id="ce-pending"></tbody>
             </table>
           </div>
-        </div>
-
-        <div class="ce-card">
-          <h2 class="ce-h3" data-i18n="ce_answers">回答模板</h2>
-          <p id="ce-answers-none" class="ce-hint hidden" data-i18n="ce_answers_none">没有未匹配的银行流水。</p>
-          <div id="ce-answers-box">
-            <textarea id="ce-answers" class="ce-answers" readonly title="decisions.yaml"></textarea>
-            <div class="ce-row" style="margin-top:8px">
-              <button type="button" id="ce-copy" class="ce-btn2" data-i18n="ce_copy">复制</button>
-            </div>
+          <div class="ce-row" style="margin-top:12px">
+            <button type="button" id="ce-rerun" class="ce-btn" disabled></button>
           </div>
+          <div id="ce-dl-box" class="hidden" style="margin-top:10px">
+            <div class="ce-row">
+              <button type="button" id="ce-dl-book" class="ce-btn2 hidden" data-i18n="ce_dl_book">下载更新后的公司资料.xlsx</button>
+              <button type="button" id="ce-dl-dec" class="ce-btn2 hidden" data-i18n="ce_dl_decisions">下载回答文件</button>
+            </div>
+            <p class="ce-hint" style="margin-top:4px" data-i18n="ce_dl_note"></p>
+          </div>
+          <details class="ce-adv">
+            <summary data-i18n="ce_adv_yaml">进阶：YAML 回答模板</summary>
+            <p id="ce-answers-none" class="ce-hint hidden" data-i18n="ce_answers_none">没有未匹配的银行流水。</p>
+            <div id="ce-answers-box">
+              <textarea id="ce-answers" class="ce-answers" readonly title="decisions.yaml"></textarea>
+              <div class="ce-row" style="margin-top:8px">
+                <button type="button" id="ce-copy" class="ce-btn2" data-i18n="ce_copy">复制</button>
+              </div>
+            </div>
+          </details>
         </div>
       </section>
 
@@ -210,18 +240,19 @@
     mountAuthGate({ auth, db, onApproved: showEmail, onAdmin: showEmail });
 
     // ── 清单（与引擎 jpclose.web.CHECKLIST 同序同 id；状态由引擎的 precheck 给出）───────
+    // [id, YAML 文件, 何时需要, Excel 工作簿里对应的表]
     const CHECKLIST = [
-      ['company', 'company.yaml', 'required'],
-      ['employees', 'employees.yaml', 'required'],
-      ['opening', 'opening_balances.yaml', 'required'],
-      ['bank', 'bank/', 'required'],
-      ['monthly', 'monthly/YYYY-MM/', 'monthly'],
-      ['bank_rules', 'bank_rules.yaml', 'optional'],
-      ['fixed_assets', 'fixed_assets.yaml', 'optional'],
-      ['decisions', 'decisions.yaml', 'optional'],
-      ['adjustments', 'adjustments.yaml', 'optional'],
-      ['labor_insurance', 'labor_insurance.yaml', 'season'],
-      ['corporate_tax', 'corporate_tax.yaml', 'year_end'],
+      ['company', 'company.yaml', 'required', '公司・方针・追加科目・支给项目・银行账户'],
+      ['employees', 'employees.yaml', 'required', '员工・标准报酬・住民税・固定工资'],
+      ['opening', 'opening_balances.yaml', 'required', '期初余额'],
+      ['bank', 'bank/', 'required', ''],
+      ['monthly', 'monthly/YYYY-MM/', 'monthly', '每月工资・奖金・开票'],
+      ['bank_rules', 'bank_rules.yaml', 'optional', '银行规则'],
+      ['fixed_assets', 'fixed_assets.yaml', 'optional', '固定资产・折旧分摊'],
+      ['decisions', 'decisions.yaml', 'optional', '回答'],
+      ['adjustments', 'adjustments.yaml', 'optional', '调整分录'],
+      ['labor_insurance', 'labor_insurance.yaml', 'season', '劳动保险'],
+      ['corporate_tax', 'corporate_tax.yaml', 'year_end', '法人税・法人税调整・中间纳付'],
     ];
     const SAMPLE_MONTH = { tokyo: '2026-06', osaka: '2026-07' };
     // 进度条：每个阶段占的区间（月份按 i/n 在 50→95 之间推进）
@@ -236,6 +267,11 @@
     let prechecked = false; // 当前文件夹 + 月份已预检且可结账
     let lastXlsx = null;
     let pending = null; // {resolve, reject, kind}
+    let lastRun = null; // {source, result}：最后一次结账（重新结账用）
+    let answers = {}; // 页面上填的回答 {key: {...}}（本次会话内保留）
+    let lastBook = null; // 回答写回后的公司资料.xlsx（Uint8Array）
+    let lastDecisions = ''; // 合并后的 decisions.yaml
+    const ui = () => (window.sdfLang ? window.sdfLang() : 'ja');
     let timer = null;
     let t0 = 0;
 
@@ -244,7 +280,7 @@
       const byId = Object.fromEntries((result?.items || []).map((x) => [x.id, x]));
       const tb = $('ce-list');
       tb.replaceChildren();
-      CHECKLIST.forEach(([id, path, need], i) => {
+      CHECKLIST.forEach(([id, path, need, sheets], i) => {
         const tr = document.createElement('tr');
         const no = document.createElement('td');
         no.className = 'nw';
@@ -259,7 +295,16 @@
         const d = document.createElement('div');
         d.className = 'ce-detail';
         window.sdfSetText(d, `ce_fd_${id}`);
-        f.append(name, p, d);
+        f.append(name, p);
+        if (sheets) {
+          const sh = document.createElement('div');
+          sh.className = 'ce-sheets';
+          const lab = document.createElement('span');
+          window.sdfSetText(lab, 'ce_wb_sheets');
+          sh.append(lab, document.createTextNode(` ${sheets}`));
+          f.append(sh);
+        }
+        f.append(d);
         tr.appendChild(f);
         const n = document.createElement('td');
         const ns = document.createElement('span');
@@ -385,7 +430,7 @@
       try {
         // 文件内容各给 Worker 一份拷贝（Worker 每次重写内存文件系统）
         const copy = files.map((f) => ({ path: f.path, buf: f.buf.slice(0) }));
-        const m = await ask({ cmd: 'precheck', files: copy, month }, copy.map((f) => f.buf));
+        const m = await ask({ cmd: 'precheck', files: copy, month, ui: ui() }, copy.map((f) => f.buf));
         const r = m.result;
         renderList(r);
         prechecked = !!r.ready;
@@ -440,11 +485,13 @@
       return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
     }
 
-    async function run(source) {
+    async function run(source, withAnswers) {
       const month = source === 'upload' ? $('ce-month').value : SAMPLE_MONTH[source];
+      if (!withAnswers) answers = {};
       if (!month) return setStatus($('ce-status'), 'ce_err_no_month', '', true);
       $('ce-run').disabled = true;
       document.querySelectorAll('[data-sample]').forEach((b) => (b.disabled = true));
+      $('ce-rerun').disabled = true;
       $('ce-result').classList.add('hidden');
       lastXlsx = null;
       setStatus($('ce-status'), '');
@@ -452,7 +499,13 @@
       setBar(ready ? STAGE_PCT.ready : 0, ready ? 'ce_p_ready' : 'ce_p_runtime');
       try {
         const lang = $('ce-wp-lang').value;
-        const m = await ask({ cmd: 'run', source, month, lang, today: today() });
+        if (source === 'upload') {
+          // 每次都从选好的文件重新写入（上一次带回答的结账改过的 decisions 不留在 Worker 里）
+          const copy = files.map((f) => ({ path: f.path, buf: f.buf.slice(0) }));
+          await ask({ cmd: 'precheck', files: copy, month, ui: ui() }, copy.map((f) => f.buf));
+        }
+        const ans = withAnswers && Object.keys(answers).length ? answers : null;
+        const m = await ask({ cmd: 'run', source, month, lang, today: today(), answers: ans, ui: ui() });
         const r = m.result;
         if (r.error) {
           const key = { company: 'ce_err_company', close: 'ce_err_close' }[r.kind] || 'ce_err_runtime';
@@ -460,8 +513,14 @@
         }
         setBar(100, 'ce_status_done');
         lastXlsx = { bytes: m.xlsx, name: `workpaper_${r.month}_${lang}.xlsx` };
+        lastBook = m.book || null;
+        lastDecisions = r.decisions_yaml || '';
+        lastRun = { source, result: r };
         setStatus($('ce-status'), 'ce_status_done');
         render(r, source !== 'upload');
+        $('ce-dl-box').classList.toggle('hidden', !lastBook && !lastDecisions);
+        $('ce-dl-book').classList.toggle('hidden', !lastBook);
+        $('ce-dl-dec').classList.toggle('hidden', !!lastBook || !lastDecisions);
       } catch (err) {
         console.error(err);
         setStatus($('ce-status'), errKey(err), err.kind === 'runtime' ? ` ${err.message}` : '', true);
@@ -469,6 +528,7 @@
         showProgress(false);
         $('ce-run').disabled = !prechecked;
         document.querySelectorAll('[data-sample]').forEach((b) => (b.disabled = false));
+        updateRerun();
       }
     }
 
@@ -538,14 +598,213 @@
         }
         cell(tr, x.date, 'nw');
         cell(tr, x.amount === null || x.amount === undefined ? '' : Number(x.amount).toLocaleString(), 'num');
+        const act = document.createElement('td');
+        act.className = 'nw';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ce-btn2';
+        window.sdfSetText(btn, answers[x.key] ? 'ce_ans_edit' : 'ce_ans_btn');
+        btn.addEventListener('click', () => openForm(tr, x, btn));
+        act.appendChild(btn);
+        if (answers[x.key]) {
+          const ok = document.createElement('div');
+          ok.className = 'ce-answered';
+          window.sdfSetText(ok, 'ce_ans_saved');
+          act.appendChild(ok);
+        }
+        tr.appendChild(act);
         pb.appendChild(tr);
       }
+      $('ce-dl-box').classList.add('hidden');
 
       $('ce-answers').value = r.answers || '';
       $('ce-answers-box').classList.toggle('hidden', !r.answers);
       $('ce-answers-none').classList.toggle('hidden', !!r.answers);
       $('ce-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+    // ── 页面上回答待确认 ─────────────────────────────────────────────────────
+    // 银行流水：入账（可拆成多行，合计要等于金额）或「已处理」；其他：「已处理」并写理由。
+    // 判断人记在本机（localStorage），日期 = 今天。回答进 decisions（判断记录），不改上传的原文件。
+    function el(tag, cls, key) {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (key) window.sdfSetText(e, key);
+      return e;
+    }
+    function field(labelKey, input) {
+      const w = el('div');
+      w.append(el('label', null, labelKey), input);
+      return w;
+    }
+    function input(value, title) {
+      const i = el('input', 'ce-input');
+      i.value = value ?? '';
+      i.title = title || '';
+      return i;
+    }
+    function select(options, value, blankKey) {
+      const s = el('select', 'ce-input');
+      if (blankKey !== undefined) {
+        const o = el('option', null, blankKey);
+        o.value = '';
+        s.appendChild(o);
+      }
+      for (const v of options) {
+        const o = el('option');
+        o.value = v;
+        o.textContent = v;
+        s.appendChild(o);
+      }
+      if (value) s.value = value;
+      s.title = blankKey ? window.sdfT(blankKey) : '';
+      return s;
+    }
+    function savedBy() {
+      try {
+        return localStorage.getItem('ce_by') || '';
+      } catch (e) {
+        console.error(e);
+        return '';
+      }
+    }
+
+    function openForm(tr, x, btn) {
+      const next = tr.nextElementSibling;
+      if (next && next.classList.contains('ce-ans-row')) {
+        next.remove();
+        return;
+      }
+      const r = lastRun.result;
+      const isBank = x.cat === 'bank_unmatched' || x.cat === 'bank_ambiguous';
+      const prev = answers[x.key] || {};
+      const row = el('tr', 'ce-ans-row');
+      const td = el('td');
+      td.colSpan = 6;
+      const form = el('div', 'ce-form');
+      const action = select(isBank ? ['book', 'done'] : ['done'], prev.action || (isBank ? 'book' : 'done'));
+      [...action.options].forEach((o) => window.sdfSetText(o, o.value === 'book' ? 'ce_ans_book' : 'ce_ans_done'));
+      form.appendChild(field('ce_ans_action', action));
+
+      const linesBox = el('div', 'ce-form');
+      const diff = el('div', 'ce-diff');
+      const amount = Math.abs(Number(x.amount || 0));
+      const accounts = r.accounts.map((a) => a.name);
+      function addLine(l) {
+        const line = el('div', 'ce-line');
+        const acc = select(accounts, l.account, 'ce_ans_account');
+        const sub = input(l.sub, 'sub');
+        sub.placeholder = window.sdfT('ce_ans_sub');
+        const tax = select(r.tax_categories, l.tax, 'ce_ans_tax');
+        const amt = input(l.amount ?? '', 'amount');
+        amt.type = 'number';
+        amt.inputMode = 'numeric';
+        const rm = el('button', 'ce-link', 'ce_ans_remove');
+        rm.type = 'button';
+        rm.addEventListener('click', () => {
+          if (linesBox.children.length > 1) line.remove();
+          sumCheck();
+        });
+        amt.addEventListener('input', sumCheck);
+        line.append(acc, sub, tax, amt, rm);
+        linesBox.appendChild(line);
+      }
+      function lines() {
+        return [...linesBox.children].map((l) => {
+          const [acc, sub, tax, amt] = l.querySelectorAll('select, input');
+          return { account: acc.value, sub: sub.value.trim(), tax: tax.value, amount: Number(amt.value || 0) };
+        });
+      }
+      function sumCheck() {
+        const d = amount - lines().reduce((a, l) => a + l.amount, 0);
+        diff.classList.toggle('bad', d !== 0);
+        window.sdfSetText(diff, 'ce_ans_diff', d.toLocaleString());
+      }
+      const prevLines = prev.lines || (prev.account ? [{ ...prev, amount }] : [{ amount }]);
+      prevLines.forEach(addLine);
+      const split = el('button', 'ce-link', 'ce_ans_split');
+      split.type = 'button';
+      split.addEventListener('click', () => {
+        addLine({ amount: '' });
+        sumCheck();
+      });
+      const bookBox = el('div', 'ce-form');
+      bookBox.append(linesBox, diff, split);
+      form.appendChild(bookBox);
+      sumCheck();
+
+      const evidence = input(prev.evidence, 'evidence');
+      const reason = input(prev.reason, 'reason');
+      const by = input(prev.by || savedBy(), 'by');
+      const g = el('div', 'ce-grid2');
+      g.append(field('ce_ans_evidence', evidence), field('ce_ans_by', by));
+      form.append(g, field('ce_ans_reason', reason));
+      const at = el('div', 'ce-hint');
+      window.sdfSetText(at, 'ce_ans_at', { d: today() });
+      const err = el('div', 'ce-err');
+      const save = el('button', 'ce-btn', 'ce_ans_save');
+      save.type = 'button';
+      const cancel = el('button', 'ce-btn2', 'ce_ans_cancel');
+      cancel.type = 'button';
+      const btns = el('div', 'ce-row');
+      btns.append(save, cancel);
+      form.append(at, err, btns);
+      const toggle = () => bookBox.classList.toggle('hidden', action.value !== 'book');
+      action.addEventListener('change', toggle);
+      toggle();
+
+      cancel.addEventListener('click', () => row.remove());
+      save.addEventListener('click', () => {
+        const a = { action: action.value, by: by.value.trim(), at: today() };
+        if (evidence.value.trim()) a.evidence = evidence.value.trim();
+        if (reason.value.trim()) a.reason = reason.value.trim();
+        if (!a.by) return window.sdfSetText(err, 'ce_ans_err_by');
+        if (a.action === 'book') {
+          const ls = lines();
+          if (ls.some((l) => !l.account)) return window.sdfSetText(err, 'ce_ans_err_account');
+          if (ls.reduce((s, l) => s + l.amount, 0) !== amount || ls.some((l) => l.amount <= 0))
+            return window.sdfSetText(err, 'ce_ans_err_sum');
+          const clean = (l) => Object.fromEntries(Object.entries(l).filter(([, v]) => v !== '' && v !== 0));
+          if (ls.length === 1) Object.assign(a, clean({ ...ls[0], amount: '' }));
+          else a.lines = ls.map(clean);
+        } else if (!a.reason) {
+          return window.sdfSetText(err, 'ce_ans_err_reason');
+        }
+        try {
+          localStorage.setItem('ce_by', a.by);
+        } catch (e) {
+          console.error(e);
+        }
+        answers[x.key] = a;
+        row.remove();
+        window.sdfSetText(btn, 'ce_ans_edit');
+        if (!btn.nextElementSibling) btn.after(el('div', 'ce-answered', 'ce_ans_saved'));
+        updateRerun();
+      });
+      td.appendChild(form);
+      row.appendChild(td);
+      tr.after(row);
+    }
+
+    function updateRerun() {
+      const n = Object.keys(answers).length;
+      window.sdfSetText($('ce-rerun'), 'ce_rerun', n);
+      $('ce-rerun').disabled = !n || !lastRun;
+    }
+    $('ce-rerun').addEventListener('click', () => lastRun && run(lastRun.source, true));
+    function download(bytes, name, type) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([bytes], { type }));
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+    $('ce-dl-book').addEventListener('click', () =>
+      download(lastBook, '公司资料.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+    );
+    $('ce-dl-dec').addEventListener('click', () => download(lastDecisions, 'decisions.yaml', 'text/yaml'));
 
     // ── 交互 ────────────────────────────────────────────────────────────────
     $('ce-run').addEventListener('click', () => run('upload'));
@@ -575,7 +834,8 @@
     // 底稿语言默认跟界面：日文界面 → 日文底稿，其余 → 中文
     if (window.sdfLang && window.sdfLang() === 'ja') $('ce-wp-lang').value = 'ja';
     renderList(null);
+    updateRerun();
   </script>
-  <script src="../../js/main.js?v=ffe0953117"></script>
+  <script src="../../js/main.js?v=09cf1d7004"></script>
 </body>
 </html>

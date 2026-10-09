@@ -8,9 +8,10 @@
  * pyodide.js 放在本站而不是 CDN：Worker 的 importScripts 不能带 SRI，所以由构建脚本核对公开版哈希后同源发布，
  * 这里再按 manifest 的 sha256 核对一次。
  *
- * 消息（页面 → Worker）：{cmd:'init'} / {cmd:'precheck', files, month} / {cmd:'run', source, month, lang, today}
+ * 消息（页面 → Worker）：{cmd:'init'} / {cmd:'precheck', files, month, ui}
+ *                       / {cmd:'run', source, month, lang, today, answers, ui}
  * 消息（Worker → 页面）：{type:'stage', stage} / {type:'progress', stage, i, n, label}
- *                       / {type:'precheck', result} / {type:'result', result, xlsx} / {type:'error', kind, message}
+ *                       / {type:'precheck', result} / {type:'result', result, xlsx, book} / {type:'error', kind, message}
  */
 'use strict';
 
@@ -100,12 +101,12 @@ function callPy(p, args, code) {
 
 const PRECHECK = `
 import json, jpclose.web
-json.dumps(jpclose.web.precheck(*ce_args), ensure_ascii=False, default=str)
+json.dumps(jpclose.web.precheck(ce_args[0], ce_args[1], ui=ce_args[2]), ensure_ascii=False, default=str)
 `;
 const RUN = `
 import json, traceback, jpclose.web
 try:
-    _r = jpclose.web.run(*ce_args, progress=ce_progress)
+    _r = jpclose.web.run(*ce_args[:5], progress=ce_progress, answers=ce_args[5], ui=ce_args[6])
 except Exception as _e:
     _r = dict(ok=False, kind="runtime", error=f"{type(_e).__name__}: {_e}", trace=traceback.format_exc())
 json.dumps(_r, ensure_ascii=False, default=str)
@@ -117,7 +118,7 @@ self.onmessage = async (e) => {
     const p = await init();
     if (m.cmd === 'precheck') {
       writeCompany(p, m.files);
-      post({ type: 'precheck', result: callPy(p, [WORK, m.month], PRECHECK) });
+      post({ type: 'precheck', result: callPy(p, [WORK, m.month, m.ui || 'ja'], PRECHECK) });
     } else if (m.cmd === 'run') {
       const dir = m.source === 'upload' ? WORK : `${ROOT}/samples/${m.source}_sample`;
       const out = '/tmp/workpaper.xlsx';
@@ -125,14 +126,25 @@ self.onmessage = async (e) => {
       p.globals.set('ce_progress', (stage, i, n, label) =>
         post({ type: 'progress', stage, i, n, label }),
       );
-      const r = callPy(p, [dir, m.month, m.today, m.lang, out], RUN);
+      // answers：画面で入力した回答（無ければ null）。ui：画面の言語（エラーの訳に使う）
+      const r = callPy(
+        p,
+        [dir, m.month, m.today, m.lang, out, m.answers || null, m.ui || 'ja'],
+        RUN,
+      );
       if (r.trace) console.error(r.trace);
       if (r.error) {
         post({ type: 'result', result: r });
         return;
       }
       const bytes = p.FS.readFile(out);
-      post({ type: 'result', result: r, xlsx: bytes }, [bytes.buffer]);
+      const transfer = [bytes.buffer];
+      let book = null;
+      if (r.book_path) {
+        book = p.FS.readFile(r.book_path); // 回答を書き込んだ公司资料.xlsx
+        transfer.push(book.buffer);
+      }
+      post({ type: 'result', result: r, xlsx: bytes, book }, transfer);
     }
   } catch (err) {
     console.error(err);
