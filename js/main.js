@@ -677,6 +677,50 @@ const T = {
 
     /* Auth gate (5 つのツールページ共通) */
     ag_verifying: '認証中…',
+    ce_ev_h: '証憑（写真・PDF）',
+    ce_ev_intro:
+      '領収書・請求書・納付書などを写真や PDF のまま入れると、このパソコンの中で文字を読み取り、日付・金額・取引先の下書きを作ります（画像は外に送りません）。確かめて「確認」すると索引簿に載り、日付・金額・取引先で検索できます（電子帳簿保存法の検索要件）。原本は名前も中身も変えずに会社フォルダの evidence/ に保存します。',
+    ce_ev_need_folder:
+      '証憑は「会社フォルダを開く」で開いたときに使えます（原本と索引簿をフォルダに書くため）。',
+    ce_ev_add_paper: '紙の証憑を追加（写真・スキャン）',
+    ce_ev_add_elec: '電子で受け取ったファイルを追加',
+    ce_ev_kinds:
+      '「紙」はその場で撮った・スキャンした紙。「電子」はメール・ダウンロード・ネットバンキングで受け取ったデータ（データのまま保存する義務があります）。',
+    ce_ev_paper_notice:
+      '紙の写しは作業用です。このツールはスキャナ保存の要件（認定タイムスタンプ）を満たさないので、紙の原本を 7 年間保存してください（国税庁 一問一答【スキャナ保存関係】問31・32・59）。',
+    ce_ev_drafts:
+      '未確認の下書きが {n} 件あります。日付・金額・取引先を確かめて「確認」してください（未確認のものは帳簿に使いません）。',
+    ce_ev_q_date: '取引日',
+    ce_ev_q_amount: '金額',
+    ce_ev_q_party: '取引先',
+    ce_ev_q_void: '取消も含む',
+    ce_ev_search: '検索',
+    ce_ev_clear: 'クリア',
+    ce_ev_col_status: '状態',
+    ce_ev_col_doc: '書類',
+    ce_ev_col_file: 'ファイル',
+    ce_ev_col_bank: '照合先の明細',
+    ce_ev_empty: '証憑はまだありません。',
+    ce_ev_st_draft: '下書き',
+    ce_ev_st_ok: '確認済',
+    ce_ev_st_void: '取消',
+    ce_ev_kind_paper: '紙',
+    ce_ev_kind_elec: '電子',
+    ce_ev_confirm: '確認',
+    ce_ev_fix: '直す',
+    ce_ev_void: '取消',
+    ce_ev_reason_fix: '確認済の行を直す理由（訂正削除記録に残ります）',
+    ce_ev_reason_void: '取り消す理由（行も原本も消さず、記録に残ります）',
+    ce_ev_dup: '{name} は取り込み済みです（同じ中身）',
+    ce_ev_err_read:
+      '{name} を読めませんでした：{msg}（原本は保存済み。下書きに手で入れてください）',
+    ce_ev_reading:
+      '読み取り中：{name}（{i}/{n} ファイル・{p}/{pn} 頁）——写真は 1 頁 10〜60 秒かかります',
+    ce_ev_done: '{n} 頁を読み取りました（{s} 秒）',
+    ce_ev_attached: '照合先を決めました',
+    ce_ans_credit_h: '誰が払ったか（貸方）',
+    ce_ans_credit: '貸方の科目（立替なら 未払金）',
+    ce_ans_err_credit: '貸方の科目を選んでください',
     ce_sg_same:
       '同じ摘要の明細 {n} 件を「{acc}」で仕訳済み（最近 {last}）——下書きに入れました。確かめて保存',
     ce_sg_similar:
@@ -1587,6 +1631,47 @@ const T = {
 
     /* Auth gate（五个工具页共用） */
     ag_verifying: '验证身份中…',
+    ce_ev_h: '凭证（照片・PDF）',
+    ce_ev_intro:
+      '把收据、请求书、纳付书等的照片或 PDF 放进来，会在这台电脑里识别文字，生成交易日・金额・交易方的草稿（图片不会上传）。核对后点「确认」就登记进索引簿，可以按交易日・金额・交易方检索（电子账簿保存法的检索要件）。原件不改名、不改内容，保存在公司文件夹的 evidence/ 里。',
+    ce_ev_need_folder: '凭证功能要用「打开公司文件夹」打开后才能用（要把原件和索引簿写进文件夹）。',
+    ce_ev_add_paper: '添加纸质凭证（照片・扫描）',
+    ce_ev_add_elec: '添加电子收到的文件',
+    ce_ev_kinds:
+      '「纸质」是拍照或扫描的纸单据；「电子」是通过邮件、下载、网银收到的数据（法律要求按数据原样保存）。',
+    ce_ev_paper_notice:
+      '纸质单据的照片只是工作用的副本。本工具不满足扫描保存的要件（需要认定的时间戳），纸质原件请保存 7 年（国税厅 一问一答【扫描保存】问31・32・59）。',
+    ce_ev_drafts:
+      '有 {n} 条草稿还没确认。请核对交易日・金额・交易方后点「确认」（未确认的不会用于记账）。',
+    ce_ev_q_date: '交易日',
+    ce_ev_q_amount: '金额',
+    ce_ev_q_party: '交易方',
+    ce_ev_q_void: '含已取消',
+    ce_ev_search: '检索',
+    ce_ev_clear: '清除',
+    ce_ev_col_status: '状态',
+    ce_ev_col_doc: '单据',
+    ce_ev_col_file: '文件',
+    ce_ev_col_bank: '对应流水',
+    ce_ev_empty: '还没有凭证。',
+    ce_ev_st_draft: '草稿',
+    ce_ev_st_ok: '已确认',
+    ce_ev_st_void: '已取消',
+    ce_ev_kind_paper: '纸质',
+    ce_ev_kind_elec: '电子',
+    ce_ev_confirm: '确认',
+    ce_ev_fix: '修改',
+    ce_ev_void: '取消',
+    ce_ev_reason_fix: '修改已确认条目的理由（会记入修改删除记录）',
+    ce_ev_reason_void: '取消的理由（条目和原件都不删除，会留下记录）',
+    ce_ev_dup: '{name} 已经导入过了（内容相同）',
+    ce_ev_err_read: '{name} 读取失败：{msg}（原件已保存，请在草稿里手动填写）',
+    ce_ev_reading: '识别中：{name}（第 {i}/{n} 个文件・第 {p}/{pn} 页）——照片每页约 10–60 秒',
+    ce_ev_done: '已识别 {n} 页（{s} 秒）',
+    ce_ev_attached: '已对应到这笔流水',
+    ce_ans_credit_h: '谁付的（贷方）',
+    ce_ans_credit: '贷方科目（垫付就选 未払金）',
+    ce_ans_err_credit: '请选择贷方科目',
     ce_sg_same: '同名流水 {n} 笔以前记作「{acc}」（最近 {last}）——已预填，请确认后保存',
     ce_sg_similar:
       '同一收款方的流水 {n} 笔（例：{desc}）以前记作「{acc}」（最近 {last}）——已预填，请确认后保存',
@@ -2526,6 +2611,51 @@ const T = {
 
     /* Auth gate (shared by the five tool pages) */
     ag_verifying: 'Verifying…',
+    ce_ev_h: 'Evidence (photos & PDFs)',
+    ce_ev_intro:
+      'Add receipts, invoices and tax slips as photos or PDFs. The text is read on this computer (images are never uploaded) and a draft with date, amount and party is made. Confirm it to enter it in the index, searchable by date, amount and party (the search rule of the Electronic Books Act). Originals are kept unchanged in evidence/ in the company folder.',
+    ce_ev_need_folder:
+      'Evidence needs the company folder opened with “Open company folder” (originals and the index are written there).',
+    ce_ev_add_paper: 'Add paper documents (photos/scans)',
+    ce_ev_add_elec: 'Add files received electronically',
+    ce_ev_kinds:
+      '“Paper” is a photo or scan of a paper document; “electronic” is data received by email, download or online banking (it must be kept as data).',
+    ce_ev_paper_notice:
+      'Photos of paper documents are working copies. This tool does not meet the scanner-storage requirements (a certified timestamp), so keep the paper originals for 7 years (NTA Q&A on scanner storage, Q31, Q32, Q59).',
+    ce_ev_drafts:
+      '{n} draft(s) not confirmed yet. Check the date, amount and party and confirm (drafts are not used in the books).',
+    ce_ev_q_date: 'Date',
+    ce_ev_q_amount: 'Amount',
+    ce_ev_q_party: 'Party',
+    ce_ev_q_void: 'Include cancelled',
+    ce_ev_search: 'Search',
+    ce_ev_clear: 'Clear',
+    ce_ev_col_status: 'Status',
+    ce_ev_col_doc: 'Document',
+    ce_ev_col_file: 'File',
+    ce_ev_col_bank: 'Bank row',
+    ce_ev_empty: 'No evidence yet.',
+    ce_ev_st_draft: 'Draft',
+    ce_ev_st_ok: 'Confirmed',
+    ce_ev_st_void: 'Cancelled',
+    ce_ev_kind_paper: 'Paper',
+    ce_ev_kind_elec: 'Electronic',
+    ce_ev_confirm: 'Confirm',
+    ce_ev_fix: 'Edit',
+    ce_ev_void: 'Cancel',
+    ce_ev_reason_fix: 'Reason for changing a confirmed row (kept in the correction log)',
+    ce_ev_reason_void:
+      'Reason for cancelling (the row and the original are kept, and the reason is logged)',
+    ce_ev_dup: '{name} is already in (same content)',
+    ce_ev_err_read:
+      'Could not read {name}: {msg} (the original is saved; fill in the draft by hand)',
+    ce_ev_reading:
+      'Reading {name} (file {i}/{n}, page {p}/{pn}) — photos take about 10–60 s per page',
+    ce_ev_done: 'Read {n} page(s) ({s} s)',
+    ce_ev_attached: 'Linked to this row',
+    ce_ans_credit_h: 'Who paid (credit)',
+    ce_ans_credit: 'Credit account (未払金 for an advance)',
+    ce_ans_err_credit: 'Choose the credit account',
     ce_sg_same:
       'Prefilled from {n} earlier row(s) with the same description, booked to “{acc}” (latest {last}) — check and save',
     ce_sg_similar:

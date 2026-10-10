@@ -120,8 +120,34 @@ import json, jpclose.web
 json.dumps(jpclose.web.month_workpaper(ce_args[0], ce_args[1], ce_args[2]), ensure_ascii=False, default=str)
 `;
 
+// 证凭（索引簿）：op 是 jpclose.webev 的函数名，args 跟在公司目录后面。返回改过的索引簿文本（files），
+// 页面写回文件夹。原件（照片・PDF）页面直接写进文件夹，不进这里
+const EVIDENCE_OPS = new Set(['path', 'add', 'confirm', 'void', 'attach', 'listing']);
+const EVIDENCE = `
+import json, jpclose.webev as _w
+_op, _args = ce_args[0], list(ce_args[1])
+_r = _w.path(*_args) if _op == "path" else getattr(_w, _op)(ce_args[2], *_args)
+json.dumps(_r, ensure_ascii=False, default=str)
+`;
+
 self.onmessage = async (e) => {
   const m = e.data || {};
+  if (m.cmd === 'evidence') {
+    try {
+      const p = await init();
+      if (!EVIDENCE_OPS.has(m.op)) throw new Error(`unknown evidence op ${m.op}`);
+      if (m.files) writeCompany(p, m.files);
+      post({ type: 'evidence', id: m.id, result: callPy(p, [m.op, m.args || [], WORK], EVIDENCE) });
+    } catch (err) {
+      console.error(err);
+      post({
+        type: 'evidence',
+        id: m.id,
+        result: { ok: false, error: String((err && err.message) || err) },
+      });
+    }
+    return;
+  }
   try {
     const p = await init();
     if (m.cmd === 'precheck') {

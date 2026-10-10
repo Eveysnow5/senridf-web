@@ -141,6 +141,14 @@
     .ce-it .act { display:flex;flex-wrap:wrap;gap:8px;align-items:center; }
     .ce-ans-box { background:#f9fafb;border-radius:6px;padding:4px 8px;margin-top:8px; }
     details.ce-acct > summary { cursor:pointer; }
+    /* 证凭 */
+    .ce-ev-q { gap:10px;margin:8px 0;align-items:center; }
+    .ce-ev-table .ce-ev-in { width:100%;min-width:7em; }
+    .ce-ev-st { font-size:11px;font-weight:600;padding:1px 6px;border-radius:9px;white-space:nowrap;background:#fef3c7;color:#92400e; }
+    .ce-ev-st.ok { background:#d1fae5;color:#065f46; }
+    .ce-ev-st.void { background:#f3f4f6;color:#6b7280; }
+    .ce-ev-note td { font-size:11.5px;color:#6b7280;padding-top:0; }
+    .ce-ev-warn { font-size:12.5px;color:#92400e;background:#fffbeb;border-radius:6px;padding:6px 8px;margin:6px 0; }
     @media (max-width: 760px) {
       .ce-duo, .ce-stmts { grid-template-columns:1fr; }
       .ce-it { grid-template-columns:1fr; }
@@ -152,6 +160,7 @@
       .ce-grid2 { grid-template-columns:1fr; }
     }
   </style>
+
 
 
 
@@ -217,6 +226,46 @@
         <p class="ce-hint" style="margin-top:6px" data-i18n="ce_upload_hint"></p>
         <p id="ce-open-hint" class="ce-hint hidden" data-i18n="ce_open_hint"></p>
         <p id="ce-pre" class="ce-status"></p>
+      </section>
+
+      <!-- 1b. 证凭（照片・PDF） -->
+      <section class="ce-card" id="ce-ev">
+        <h2 class="ce-h" data-i18n="ce_ev_h">证凭（照片・PDF）</h2>
+        <p class="ce-hint" data-i18n="ce_ev_intro"></p>
+        <p id="ce-ev-need" class="ce-hint" data-i18n="ce_ev_need_folder"></p>
+        <div id="ce-ev-body" class="hidden">
+          <div class="ce-row" style="margin:10px 0">
+            <label class="ce-btn2" for="ce-ev-paper" data-i18n="ce_ev_add_paper">添加纸质凭证（照片・扫描）</label>
+            <input type="file" id="ce-ev-paper" multiple accept="image/*,application/pdf" class="hidden" title="paper evidence" />
+            <label class="ce-btn2" for="ce-ev-elec" data-i18n="ce_ev_add_elec">添加电子收到的文件</label>
+            <input type="file" id="ce-ev-elec" multiple accept="image/*,application/pdf" class="hidden" title="electronic evidence" />
+            <label class="ce-hint"><span data-i18n="ce_ans_by">判断人</span>
+              <input type="text" id="ce-ev-by" class="ce-input" style="width:9em" title="by" /></label>
+          </div>
+          <p class="ce-hint" data-i18n="ce_ev_kinds"></p>
+          <div id="ce-ev-notices"></div>
+          <p id="ce-ev-progress" class="ce-status"></p>
+          <div class="ce-row ce-ev-q">
+            <label class="ce-hint"><span data-i18n="ce_ev_q_date">交易日</span>
+              <input type="date" id="ce-ev-q-from" class="ce-input" title="from" />〜<input type="date" id="ce-ev-q-to" class="ce-input" title="to" /></label>
+            <label class="ce-hint"><span data-i18n="ce_ev_q_amount">金额</span>
+              <input type="number" id="ce-ev-q-min" class="ce-input" style="width:8em" title="min" />〜<input type="number" id="ce-ev-q-max" class="ce-input" style="width:8em" title="max" /></label>
+            <label class="ce-hint"><span data-i18n="ce_ev_q_party">交易方</span>
+              <input type="text" id="ce-ev-q-party" class="ce-input" style="width:10em" title="party" /></label>
+            <label class="ce-hint"><input type="checkbox" id="ce-ev-q-void" title="include void" /> <span data-i18n="ce_ev_q_void">含已取消</span></label>
+            <button type="button" id="ce-ev-search" class="ce-btn2" data-i18n="ce_ev_search">检索</button>
+            <button type="button" id="ce-ev-clear" class="ce-link" data-i18n="ce_ev_clear">清除</button>
+          </div>
+          <div class="ce-table-wrap">
+            <table class="ce-table ce-ev-table">
+              <thead><tr><th>#</th><th data-i18n="ce_ev_col_status">状态</th><th data-i18n="ce_ev_q_date">交易日</th>
+                <th data-i18n="ce_ev_q_amount">金额</th><th data-i18n="ce_ev_q_party">交易方</th><th data-i18n="ce_ev_col_doc">单据</th>
+                <th data-i18n="ce_ev_col_file">文件</th><th data-i18n="ce_ev_col_bank">对应流水</th><th></th></tr></thead>
+              <tbody id="ce-ev-list"></tbody>
+            </table>
+          </div>
+          <p id="ce-ev-empty" class="ce-hint" data-i18n="ce_ev_empty">还没有凭证。</p>
+        </div>
       </section>
 
       <!-- 2. 结账 -->
@@ -620,12 +669,14 @@
         return;
       }
       dirHandle = null;
+      evConnected();
       window.sdfSetText($('ce-folder-info'), 'ce_upload_count', list.length);
       // webkitRelativePath 的第一段是文件夹本身的名字，去掉
       files = [];
       for (const f of list) {
         const parts = f.webkitRelativePath.split('/').slice(1);
         if (!parts.length || parts[0] === OUT_DIR) continue;
+        if (parts[0] === 'evidence' && !EV_KEEP.test(parts.join('/'))) continue; // 证凭原件不读
         files.push({ path: parts.join('/'), buf: await f.arrayBuffer() });
       }
       afterFiles();
@@ -641,6 +692,7 @@
         if (name.startsWith('.') || name.startsWith('~$') || (!prefix && name === OUT_DIR)) continue;
         const path = prefix ? `${prefix}/${name}` : name;
         if (child.kind === 'directory') out.push(...(await readDir(child, path)));
+        else if (path.startsWith('evidence/') && !EV_KEEP.test(path)) continue; // 证凭原件：引擎只读索引簿
         else out.push({ path, buf: await (await child.getFile()).arrayBuffer() });
       }
       return out;
@@ -723,8 +775,349 @@
         files = await readDir(dirHandle, '');
         window.sdfSetText($('ce-folder-info'), 'ce_fs_connected', { name: dirHandle.name, n: files.length });
         afterFiles();
+        evConnected();
       });
     }
+    // ── 1b. 证凭（照片・PDF）────────────────────────────────────────────────
+    // 电子帐簿保存法：用索引簿（交易日・金额・交易方）检索；原件原样放进 evidence/<导入年月>/，不改名、不移动。
+    // 纸的照片不满足扫描保存的要件（要有认定的时间戳）→ 纸质原件要留着（页面会提示）。
+    // 照片只在这台电脑上识别（closing-ocr-worker.js），不上传。识别出的字交给引擎按模板读，读不准的只当草稿。
+    // 需要「打开公司文件夹」（要把原件和索引簿写回文件夹）。
+    const EV_KEEP = /^evidence\/(索引簿\.csv|訂正削除記録\.csv|templates\/[^/]+\.ya?ml)$/;
+    const EV_PAPER = '紙の写し';
+    const EV_ELEC = '電子取引';
+    const EV_STATUS = { 下書き: 'draft', 確認済: 'ok', 取消: 'void' };
+    let evEntries = [];
+    let evHits = null; // 检索命中的连番（null＝不在检索，显示全部）
+    let evChain = Promise.resolve();
+    let evEditing = new Set(); // 正在修改的已确认行
+    let ocrWorker = null;
+    let ocrSeq = 0;
+    const ocrWait = new Map();
+
+    function evFiles() {
+      return files
+        .filter((f) => !f.path.startsWith('evidence/') || EV_KEEP.test(f.path))
+        .map((f) => ({ path: f.path, buf: f.buf.slice(0) }));
+    }
+    // 引擎的证凭操作（一个接一个）。返回的 files（索引簿・修改记录）写回文件夹，同时更新内存里的 files
+    function evAsk(op, args) {
+      const run = async () => {
+        const copy = evFiles();
+        const m = await ask({ cmd: 'evidence', op, args, files: copy }, copy.map((f) => f.buf));
+        const r = m.result;
+        if (r && r.files && dirHandle) {
+          for (const [path, text] of Object.entries(r.files)) {
+            const bytes = new TextEncoder().encode(`﻿${text}`); // BOM：Excel 打开不乱码
+            await writeFile(path.split('/'), bytes);
+            const rec = { path, buf: bytes.buffer };
+            const i = files.findIndex((f) => f.path === path);
+            if (i >= 0) files[i] = rec;
+            else files.push(rec);
+          }
+        }
+        if (r && r.entries) {
+          evEntries = r.entries;
+          renderEv();
+        }
+        return r;
+      };
+      const p = evChain.then(run, run);
+      evChain = p.catch(() => {
+        // 排队用：失败已由调用方处理（返回 p 给它），这里只是让下一个操作照常开始
+      });
+      return p;
+    }
+
+    function getOcr() {
+      if (!ocrWorker) {
+        ocrWorker = new Worker('closing-ocr-worker.js', { type: 'module' });
+        ocrWorker.onmessage = (e) => {
+          const m = e.data || {};
+          const w = ocrWait.get(m.id);
+          if (!w) return;
+          ocrWait.delete(m.id);
+          if (m.type === 'error') w.reject(new Error(m.message));
+          else w.resolve(m);
+        };
+        ocrWorker.onerror = (ev) => {
+          console.error(ev);
+          for (const w of ocrWait.values()) w.reject(new Error(ev.message || 'ocr'));
+          ocrWait.clear();
+          ocrWorker = null;
+        };
+      }
+      return ocrWorker;
+    }
+    function ocr(bitmap) {
+      return new Promise((resolve, reject) => {
+        const id = ++ocrSeq;
+        ocrWait.set(id, { resolve, reject });
+        getOcr().postMessage({ cmd: 'ocr', id, image: bitmap }, [bitmap]);
+      });
+    }
+
+    // PDF：有文字层（电子收到的 PDF、工资单等）直接取字；扫描件按页渲染成图片再识别。
+    // pdf.js 用站内其他页面同一个版本（SRI 固定），isEvalSupported:false 缓解 CVE-2024-4367
+    let pdfjs = null;
+    async function loadPdfjs() {
+      if (pdfjs) return pdfjs;
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        s.integrity = 'sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e';
+        s.crossOrigin = 'anonymous';
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+      pdfjs = window.pdfjsLib;
+      pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      return pdfjs;
+    }
+    function textLines(items) {
+      const rows = new Map();
+      for (const it of items) {
+        if (!it.str || !it.str.trim()) continue;
+        const y = Math.round(it.transform[5] / 3);
+        if (!rows.has(y)) rows.set(y, []);
+        rows.get(y).push(it);
+      }
+      return [...rows.entries()]
+        .sort((a, b) => b[0] - a[0])
+        .map(([, its]) => its.sort((a, b) => a.transform[4] - b.transform[4]).map((x) => x.str).join(' '));
+    }
+    async function* pagesOf(file, buf) {
+      if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
+        const lib = await loadPdfjs();
+        const doc = await lib.getDocument({ data: new Uint8Array(buf.slice(0)), isEvalSupported: false }).promise;
+        for (let i = 1; i <= doc.numPages; i++) {
+          const page = await doc.getPage(i);
+          const lines = textLines((await page.getTextContent()).items);
+          if (lines.join('').replace(/\s/g, '').length >= 30) {
+            yield { page: i, n: doc.numPages, lines };
+            continue;
+          }
+          const vp0 = page.getViewport({ scale: 1 });
+          const vp = page.getViewport({ scale: Math.min(4, 3000 / Math.max(vp0.width, vp0.height)) });
+          const c = document.createElement('canvas');
+          c.width = Math.ceil(vp.width);
+          c.height = Math.ceil(vp.height);
+          await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+          yield { page: i, n: doc.numPages, bitmap: await createImageBitmap(c) };
+        }
+      } else {
+        yield { page: null, n: 1, bitmap: await createImageBitmap(new Blob([buf], { type: file.type || 'image/jpeg' })) };
+      }
+    }
+    async function sha256hex(buf) {
+      const h = await crypto.subtle.digest('SHA-256', buf);
+      return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function evAdd(list, kind) {
+      if (!dirHandle || !list.length) return;
+      const prog = $('ce-ev-progress');
+      const t0 = performance.now();
+      let pages = 0;
+      let dups = 0;
+      for (const [fi, file] of list.entries()) {
+        const buf = await file.arrayBuffer();
+        const sha = await sha256hex(buf);
+        if (evEntries.some((e) => e.sha === sha && e.status !== '取消')) {
+          window.sdfSetText(prog, 'ce_ev_dup', { name: file.name });
+          dups++;
+          continue;
+        }
+        let rel;
+        try {
+          rel = await evAsk('path', [sha, file.name, today()]);
+          await writeFile(rel.split('/'), buf); // 原件原样写进文件夹（不改内容）
+        } catch (e) {
+          console.error(e);
+          window.sdfSetText(prog, 'ce_ev_err_read', { name: file.name, msg: String((e && e.message) || e) });
+          continue;
+        }
+        let any = false;
+        try {
+          for await (const pg of pagesOf(file, buf)) {
+            window.sdfSetText(prog, 'ce_ev_reading', { name: file.name, i: fi + 1, n: list.length, p: pg.page || 1, pn: pg.n });
+            const lines = pg.lines || (await ocr(pg.bitmap)).lines;
+            const r = await evAsk('add', [rel, sha, kind, today(), [{ page: pg.page, lines }]]);
+            if (r && r.ok === false) throw new Error(r.error);
+            any = true;
+            pages++;
+          }
+        } catch (e) {
+          console.error(e);
+          window.sdfSetText(prog, 'ce_ev_err_read', { name: file.name, msg: String((e && e.message) || e) });
+          if (!any) await evAsk('add', [rel, sha, kind, today(), [{ page: null, lines: [] }]]); // 原件已放进去 → 至少留一行空草稿
+        }
+      }
+      // 全部が取り込み済みだったときは「取り込み済み」の知らせを残す（0 頁を読みました、で上書きしない）
+      if (pages || !dups) window.sdfSetText(prog, 'ce_ev_done', { n: pages, s: Math.round((performance.now() - t0) / 1000) });
+    }
+    $('ce-ev-paper').addEventListener('change', (e) => {
+      const list = [...e.target.files];
+      e.target.value = '';
+      evAdd(list, EV_PAPER);
+    });
+    $('ce-ev-elec').addEventListener('change', (e) => {
+      const list = [...e.target.files];
+      e.target.value = '';
+      evAdd(list, EV_ELEC);
+    });
+
+    function evBy() {
+      const v = $('ce-ev-by').value.trim();
+      if (v) {
+        try {
+          localStorage.setItem('ce_by', v);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      return v;
+    }
+    async function evDo(op, args, errBox) {
+      const r = await evAsk(op, args);
+      if (r && r.ok === false) {
+        delete errBox.dataset.i18n;
+        errBox.textContent = r.error;
+      }
+      return r;
+    }
+    function renderEv() {
+      const on = !!dirHandle;
+      $('ce-ev-body').classList.toggle('hidden', !on);
+      $('ce-ev-need').classList.toggle('hidden', on);
+      if (!on) return;
+      if (!$('ce-ev-by').value) $('ce-ev-by').value = savedBy();
+      const live = evEntries.filter((e) => e.status !== '取消');
+      const notes = $('ce-ev-notices');
+      notes.replaceChildren();
+      if (live.some((e) => e.kind === EV_PAPER)) notes.appendChild(el('p', 'ce-ev-warn', 'ce_ev_paper_notice'));
+      const drafts = live.filter((e) => e.status === '下書き').length;
+      if (drafts) {
+        const p = el('p', 'ce-hint');
+        window.sdfSetText(p, 'ce_ev_drafts', { n: drafts });
+        notes.appendChild(p);
+      }
+      const body = $('ce-ev-list');
+      body.replaceChildren();
+      const rows = evEntries.filter((e) => (evHits ? evHits.includes(e.no) : e.status !== '取消'));
+      $('ce-ev-empty').classList.toggle('hidden', rows.length > 0);
+      for (const e of rows) body.append(...evRow(e));
+    }
+    function evRow(e) {
+      const tr = el('tr');
+      const locked = e.status === '確認済' && !evEditing.has(e.no);
+      const cell = (child) => {
+        const td = el('td');
+        if (child !== undefined) td.append(child);
+        tr.appendChild(td);
+        return td;
+      };
+      cell(String(e.no));
+      const st = el('span', `ce-ev-st ${EV_STATUS[e.status] || ''}`, `ce_ev_st_${EV_STATUS[e.status] || 'draft'}`);
+      cell(st);
+      const date = input(e.date, 'date');
+      date.type = 'date';
+      const amount = input(e.amount ?? '', 'amount');
+      amount.type = 'number';
+      amount.inputMode = 'numeric';
+      const party = input(e.party, 'party');
+      for (const i of [date, amount, party]) {
+        i.disabled = locked || e.status === '取消';
+        i.classList.add('ce-ev-in');
+      }
+      cell(date);
+      cell(amount);
+      cell(party);
+      const doc = el('span');
+      doc.textContent = e.doc || '—';
+      const kind = el('div', 'ce-hint', e.kind === EV_PAPER ? 'ce_ev_kind_paper' : 'ce_ev_kind_elec');
+      cell(doc).appendChild(kind);
+      const name = e.file.split('/').pop().replace(/^[0-9a-f]{8}_/, '');
+      cell(`${name}${e.page ? ` p.${e.page}` : ''}`).title = e.file;
+      cell(e.bank ? e.bank.split(':').slice(2, 4).join(' ') : '—');
+      const act = el('div', 'ce-row');
+      const err = el('div', 'ce-err');
+      const values = () => ({ date: date.value, amount: amount.value === '' ? null : Number(amount.value), party: party.value.trim() });
+      if (e.status === '下書き' || evEditing.has(e.no)) {
+        const ok = el('button', 'ce-btn2', 'ce_ev_confirm');
+        ok.type = 'button';
+        ok.addEventListener('click', async () => {
+          const by = evBy();
+          if (!by) return window.sdfSetText(err, 'ce_ans_err_by');
+          let reason = '';
+          if (e.status === '確認済') {
+            reason = (window.prompt(window.sdfT('ce_ev_reason_fix')) || '').trim();
+            if (!reason) return;
+          }
+          const r = await evDo('confirm', [e.no, values(), by, reason], err);
+          if (r && r.ok) evEditing.delete(e.no);
+        });
+        act.appendChild(ok);
+      } else if (e.status === '確認済') {
+        const fix = el('button', 'ce-link', 'ce_ev_fix');
+        fix.type = 'button';
+        fix.addEventListener('click', () => {
+          evEditing.add(e.no);
+          renderEv();
+        });
+        act.appendChild(fix);
+      }
+      if (e.status !== '取消') {
+        const rm = el('button', 'ce-link', 'ce_ev_void');
+        rm.type = 'button';
+        rm.addEventListener('click', async () => {
+          const by = evBy();
+          if (!by) return window.sdfSetText(err, 'ce_ans_err_by');
+          const reason = (window.prompt(window.sdfT('ce_ev_reason_void')) || '').trim();
+          if (reason) await evDo('void', [e.no, by, reason], err);
+        });
+        act.appendChild(rm);
+      }
+      cell(act).appendChild(err);
+      const out = [tr];
+      if (e.note) {
+        const nr = el('tr', 'ce-ev-note');
+        const td = el('td');
+        td.colSpan = 9;
+        td.textContent = e.note;
+        nr.appendChild(td);
+        out.push(nr);
+      }
+      return out;
+    }
+    $('ce-ev-search').addEventListener('click', async () => {
+      const q = {
+        date_from: $('ce-ev-q-from').value,
+        date_to: $('ce-ev-q-to').value,
+        amount_min: $('ce-ev-q-min').value,
+        amount_max: $('ce-ev-q-max').value,
+        party: $('ce-ev-q-party').value.trim(),
+        include_void: $('ce-ev-q-void').checked,
+      };
+      const r = await evAsk('listing', [q]);
+      evHits = r && r.ok ? r.hits : null;
+      renderEv();
+    });
+    $('ce-ev-clear').addEventListener('click', () => {
+      for (const id of ['ce-ev-q-from', 'ce-ev-q-to', 'ce-ev-q-min', 'ce-ev-q-max', 'ce-ev-q-party']) $(id).value = '';
+      $('ce-ev-q-void').checked = false;
+      evHits = null;
+      renderEv();
+    });
+    // 文件夹接上之后读一次索引簿（没有就是空表）
+    async function evConnected() {
+      evHits = null;
+      evEditing = new Set();
+      renderEv();
+      if (dirHandle) await evAsk('listing', [{}]);
+    }
+
     let autoMonth = false; // 「到」是页面自动填的（用户还没选）
     $('ce-month').addEventListener('change', () => {
       autoMonth = false;
@@ -1203,6 +1596,22 @@
         act.appendChild(fb);
         if (edits[x.key]) act.appendChild(el('span', 'ce-answered', 'ce_fx_saved'));
       }
+      if (x.key.startsWith('evidence_choose:') && x.ev && dirHandle) {
+        const err = el('div', 'ce-err');
+        for (const k of x.ev.candidates || []) {
+          const b = el('button', 'ce-link');
+          b.type = 'button';
+          b.textContent = k.split(':').slice(2).join(' ');
+          b.addEventListener('click', async () => {
+            const by = evBy() || savedBy();
+            if (!by) return window.sdfSetText(err, 'ce_ans_err_by');
+            const r = await evDo('attach', [x.ev.no, k, by], err);
+            if (r && r.ok) act.appendChild(el('span', 'ce-answered', 'ce_ev_attached'));
+          });
+          act.append(b, ' ');
+        }
+        act.appendChild(err);
+      }
       const btn = el('button', 'ce-btn2', answers[x.key] ? 'ce_ans_edit' : 'ce_ans_btn');
       btn.type = 'button';
       btn.addEventListener('click', () => openForm(host, x, btn));
@@ -1306,7 +1715,8 @@
         return;
       }
       const r = lastRun.result;
-      const isBank = x.cat === 'bank_unmatched' || x.cat === 'bank_ambiguous';
+      const isEv = x.key.startsWith('evidence:');
+      const isBank = x.cat === 'bank_unmatched' || x.cat === 'bank_ambiguous' || isEv;
       const prev = answers[x.key] || {};
       const row = el('div', 'ce-ans-box');
       const form = el('div', 'ce-form');
@@ -1390,6 +1800,15 @@
         }
         bookBox.appendChild(note);
       }
+      // 证凭（银行流水里没有）：贷方＝谁付的（立替 → 未払金／垫付人；现金 → 現金 …）
+      const credit = select(accounts, prev.credit || '', 'ce_ans_credit');
+      const creditSub = input(prev.credit_sub, 'credit_sub');
+      creditSub.placeholder = window.sdfT('ce_ans_sub');
+      if (isEv) {
+        const cl = el('div', 'ce-line');
+        cl.append(credit, creditSub);
+        bookBox.append(field('ce_ans_credit_h', cl));
+      }
       form.appendChild(bookBox);
       sumCheck();
 
@@ -1427,6 +1846,11 @@
           const clean = (l) => Object.fromEntries(Object.entries(l).filter(([, v]) => v !== '' && v !== 0));
           if (ls.length === 1) Object.assign(a, clean({ ...ls[0], amount: '' }));
           else a.lines = ls.map(clean);
+          if (isEv) {
+            if (!credit.value) return window.sdfSetText(err, 'ce_ans_err_credit');
+            a.credit = credit.value;
+            if (creditSub.value.trim()) a.credit_sub = creditSub.value.trim();
+          }
         } else if (!a.reason) {
           return window.sdfSetText(err, 'ce_ans_err_reason');
         }
@@ -1568,6 +1992,6 @@
     renderList(null);
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=6ae3842441"></script>
+  <script src="../../js/main.js?v=b675325d6c"></script>
 </body>
 </html>

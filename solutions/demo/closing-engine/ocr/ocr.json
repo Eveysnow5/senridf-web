@@ -1,0 +1,31 @@
+{
+ "model": "PP-OCRv5 mobile（ch：中国語・日本語・英語）",
+ "ort_wasm": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/",
+ "license": "PaddleOCR モデル：Apache-2.0（PaddlePaddle）。ppu-paddle-ocr：MIT。onnxruntime-web：MIT",
+ "files": {
+  "ocr-bundle.mjs": {
+   "sha256": "6e1116b899b7dec7754a784ff766a8acbc41b6b5fecde4d60b67b02e0d014266",
+   "bytes": 460831,
+   "built_from": {
+    "ppu-paddle-ocr": "6.6.1",
+    "onnxruntime-web": "1.30.0",
+    "esbuild": "0.25"
+   }
+  },
+  "det.onnx": {
+   "sha256": "4d97c44a20d30a81aad087d6a396b08f786c4635742afc391f6621f5c6ae78ae",
+   "bytes": 4819576,
+   "source": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.10.0/onnx/PP-OCRv5/det/ch_PP-OCRv5_det_mobile.onnx"
+  },
+  "rec.onnx": {
+   "sha256": "5825fc7ebf84ae7a412be049820b4d86d77620f204a041697b0494669b1742c5",
+   "bytes": 16631306,
+   "source": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.10.0/onnx/PP-OCRv5/rec/ch_PP-OCRv5_rec_mobile.onnx"
+  },
+  "rec.dict.txt": {
+   "sha256": "12d0ca58b72ea4f26bc53cd710d2f52a613421642cd64db00b8159bd74fbd79a",
+   "bytes": 74014,
+   "chars": 18383
+  }
+ }
+}

@@ -1,11 +1,11 @@
 {
  "pyodide": "314.0.7",
- "source_revision": "a508084",
+ "source_revision": "33951d6",
  "bundle": {
   "name": "jpclose-bundle.zip",
-  "sha256": "2cca24d6fd42d6181613ed675313b1356710c981dafaad5b14d948dbd4f48814",
-  "files": 81,
-  "bytes": 321643
+  "sha256": "788aaa7d52a8da8108ab7888c312738a5450cb0223e2b07fdcb15551d6cbe136",
+  "files": 90,
+  "bytes": 351265
  },
  "wheels": [
   {
@@ -32,7 +32,7 @@
  },
  "template_xlsx": {
   "name": "template.xlsx",
-  "sha256": "7d60b78eabd2163fd0cbfd98a4cd2bad4728d937705bda4701c68fab820e6b56"
+  "sha256": "6cfe3943b35cfd1a2981fb5c9534f60ec691d18ad4637b5d2ba8518f1234f236"
  },
  "note": "引擎在浏览器内运行，财务数据不上传。/ エンジンはブラウザ内で動き、財務データは送信されない。"
 }
