@@ -81,6 +81,7 @@
       .ce-grid2 { grid-template-columns:1fr; }
     }
   </style>
+
   <!-- head-meta:start（npm run meta 生成，勿手改） -->
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -540,7 +541,40 @@
       return td;
     }
 
+    /* 引擎の文言（検査名・明細・要確認）は Worker から 3 言語分（r.tr）届く。
+       data-ce-tr="checks.3.name" のように置き場所を記録し、画面の言語を切り替えたら差し替える
+       （表を描き直すと書きかけの回答フォームが消えるので、文字だけ替える）。 */
+    let shown = null;
+    function trSpan(parent, path, text, cls) {
+      const el = document.createElement(cls ? 'div' : 'span');
+      if (cls) el.className = cls;
+      el.dataset.ceTr = path;
+      el.textContent = text;
+      parent.appendChild(el);
+      return el;
+    }
+    function trValue(t, path) {
+      const [list, i, field] = path.split('.');
+      const v = t[list] && t[list][Number(i)] && t[list][Number(i)][field];
+      return Array.isArray(v) ? v.join('\n') : v;
+    }
+    function refreshTr() {
+      const t = shown && shown.tr && shown.tr[ui()];
+      if (!t) return;
+      document.querySelectorAll('#ce-result [data-ce-tr]').forEach((el) => {
+        const v = trValue(t, el.dataset.ceTr);
+        if (typeof v === 'string') el.textContent = v;
+      });
+    }
+    // 事前チェックの文言も画面の言語で出し直す（軽い）。締めの実行中（サンプルのボタンが止まっている間）はしない
+    function onLangChange() {
+      refreshTr();
+      if (files.length && !document.querySelector('[data-sample]').disabled) precheck();
+    }
+    new MutationObserver(onLangChange).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+
     function render(r, isSample) {
+      shown = r;
       $('ce-result').classList.remove('hidden');
       $('ce-sample-banner').classList.toggle('hidden', !isSample);
       const n = r.checks.length;
@@ -553,16 +587,12 @@
 
       const tb = $('ce-checks');
       tb.replaceChildren();
-      for (const c of r.checks) {
+      r.checks.forEach((c, i) => {
         const tr = document.createElement('tr');
         cell(tr, c.id, 'nw');
-        const name = cell(tr, c.name);
-        if (c.details && c.details.length) {
-          const d = document.createElement('div');
-          d.className = 'ce-detail';
-          d.textContent = c.details.join('\n');
-          name.appendChild(d);
-        }
+        const name = cell(tr, '');
+        trSpan(name, `checks.${i}.name`, c.name);
+        if (c.details && c.details.length) trSpan(name, `checks.${i}.details`, c.details.join('\n'), 'ce-detail');
         const st = document.createElement('span');
         st.className = `ce-st ${c.status}`;
         window.sdfSetText(st, `ce_st_${c.status.toLowerCase()}`);
@@ -571,31 +601,30 @@
         tr.appendChild(td);
         cell(tr, String(c.n), 'num');
         tb.appendChild(tr);
-      }
+      });
 
       const na = $('ce-na');
       na.replaceChildren();
-      for (const x of r.not_applicable) {
+      r.not_applicable.forEach((x, i) => {
         const li = document.createElement('li');
-        li.textContent = `${x.id} ${x.name}：${x.reason}`;
+        li.append(`${x.id} `);
+        trSpan(li, `na.${i}.name`, x.name);
+        li.append('：');
+        trSpan(li, `na.${i}.reason`, x.reason);
         na.appendChild(li);
-      }
+      });
       $('ce-na-box').classList.toggle('hidden', !r.not_applicable.length);
 
       window.sdfSetText($('ce-pending-h'), 'ce_pending', r.n_pending);
       const pb = $('ce-pending');
       pb.replaceChildren();
-      for (const x of r.pending) {
+      r.pending.forEach((x, i) => {
         const tr = document.createElement('tr');
         cell(tr, x.qid, 'nw');
-        cell(tr, x.category);
-        const item = cell(tr, x.title);
-        if (x.detail) {
-          const d = document.createElement('div');
-          d.className = 'ce-detail';
-          d.textContent = x.detail;
-          item.appendChild(d);
-        }
+        trSpan(cell(tr, ''), `pending.${i}.category`, x.category);
+        const item = cell(tr, '');
+        trSpan(item, `pending.${i}.title`, x.title);
+        if (x.detail) trSpan(item, `pending.${i}.detail`, x.detail, 'ce-detail');
         cell(tr, x.date, 'nw');
         cell(tr, x.amount === null || x.amount === undefined ? '' : Number(x.amount).toLocaleString(), 'num');
         const act = document.createElement('td');
@@ -614,7 +643,7 @@
         }
         tr.appendChild(act);
         pb.appendChild(tr);
-      }
+      });
       $('ce-dl-box').classList.add('hidden');
 
       $('ce-answers').value = r.answers || '';
