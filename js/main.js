@@ -22,7 +22,7 @@ const T = {
     nav_milestones: '沿革',
     nav_solutions: 'ソリューション',
     nav_products: '製品',
-    nav_demo: 'オンラインデモ',
+    nav_demo: 'アプリ',
     nav_blog: 'ブログ',
 
     /* Hero */
@@ -333,7 +333,7 @@ const T = {
     sol_feat_p3: 'ご相談には1営業日以内にご返信',
     sol_feat_cta: '詳しく見る・無料で試す',
     sol_more_pre: '翻訳・文書分析・日本語学習などのAIツールは',
-    sol_more_link: 'オンラインデモ一覧',
+    sol_more_link: 'アプリ一覧',
     sol_more_post: 'からお試しいただけます。',
     sol_dev_eyebrow: '開発中',
     sol_dev_title: 'AIを組み込んだハードウェア',
@@ -362,11 +362,11 @@ const T = {
     product3_desc: '生成AIと連携した次世代インタラクティブトイ。子どもの創造性と感性を育みます。',
 
     /* Demo page */
-    demo_page_title: '千里同風株式会社 — オンラインデモ',
-    demo_eyebrow: 'オンラインデモ',
-    demo_title: '機能を体験する',
+    demo_page_title: '千里同風株式会社 — アプリストア',
+    demo_eyebrow: 'アプリ',
+    demo_title: 'アプリストア',
     demo_intro:
-      '当社が開発しているAI機能を、ブラウザ上で実際にお試しいただけます。各デモは随時アップデートされます。',
+      '当社が開発したAIアプリを、ブラウザ上でそのままご利用いただけます。各アプリは随時アップデートされます。',
 
     analysis_title: '文書分析 · 比較レポート',
     analysis_desc:
@@ -955,7 +955,7 @@ const T = {
     nav_milestones: '大事记',
     nav_solutions: '解决方案',
     nav_products: '产品',
-    nav_demo: '在线演示',
+    nav_demo: '应用',
     nav_blog: '博客',
 
     hero_corp: '千里同風株式会社',
@@ -1246,7 +1246,7 @@ const T = {
     sol_feat_p3: '咨询在 1 个工作日内回复',
     sol_feat_cta: '查看详情·免费试用',
     sol_more_pre: '翻译、文书分析、日语学习等 AI 工具，可在',
-    sol_more_link: '在线演示一览',
+    sol_more_link: '应用一览',
     sol_more_post: '中试用。',
     sol_dev_eyebrow: '开发中',
     sol_dev_title: '嵌入 AI 的硬件',
@@ -1269,10 +1269,10 @@ const T = {
     product3_name: 'AI互动玩具',
     product3_desc: '与生成式AI联动的新一代互动玩具。培育孩子的创造力与感性。',
 
-    demo_page_title: '千里同風株式会社 — 在线演示',
-    demo_eyebrow: '在线演示',
-    demo_title: '体验功能',
-    demo_intro: '我们开发的 AI 功能，可以在浏览器中直接试用。各演示将持续更新。',
+    demo_page_title: '千里同風株式会社 — 应用商店',
+    demo_eyebrow: '应用',
+    demo_title: '应用商店',
+    demo_intro: '我们开发的 AI 应用，可以在浏览器中直接使用。各应用将持续更新。',
 
     analysis_title: '文件分析 · 对比报告',
     analysis_desc:
@@ -1828,7 +1828,7 @@ const T = {
     nav_milestones: 'Milestones',
     nav_solutions: 'Solutions',
     nav_products: 'Products',
-    nav_demo: 'Online Demo',
+    nav_demo: 'Apps',
     nav_blog: 'Blog',
 
     hero_corp: 'Senridoufuu Co., Ltd.',
@@ -2141,7 +2141,7 @@ const T = {
     sol_feat_p3: 'We reply to inquiries within 1 business day',
     sol_feat_cta: 'Learn more and try it free',
     sol_more_pre: 'Other AI tools (translation, document analysis, Japanese learning) are in the ',
-    sol_more_link: 'online demo list',
+    sol_more_link: 'all apps',
     sol_more_post: '.',
     sol_dev_eyebrow: 'In development',
     sol_dev_title: 'Hardware with AI built in',
@@ -2170,11 +2170,11 @@ const T = {
     product3_desc:
       "A next-generation interactive toy connected to generative AI, nurturing children's creativity and sensibility.",
 
-    demo_page_title: 'Senridoufuu — Online Demo',
-    demo_eyebrow: 'Online Demo',
-    demo_title: 'Experience Our Features',
+    demo_page_title: 'Senridoufuu — App Store',
+    demo_eyebrow: 'Apps',
+    demo_title: 'App Store',
     demo_intro:
-      'Try the AI capabilities we are building, right in your browser. Demos are updated as we go.',
+      'AI apps we build, ready to use right in your browser. Each app is updated as we go.',
 
     analysis_title: 'Document Analysis · Comparison Report',
     analysis_desc:
