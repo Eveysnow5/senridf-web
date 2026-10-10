@@ -1828,7 +1828,7 @@ const T = {
     nav_milestones: 'Milestones',
     nav_solutions: 'Solutions',
     nav_products: 'Products',
-    nav_demo: 'Apps',
+    nav_demo: 'Applications',
     nav_blog: 'Blog',
 
     hero_corp: 'Senridoufuu Co., Ltd.',
@@ -2141,7 +2141,7 @@ const T = {
     sol_feat_p3: 'We reply to inquiries within 1 business day',
     sol_feat_cta: 'Learn more and try it free',
     sol_more_pre: 'Other AI tools (translation, document analysis, Japanese learning) are in the ',
-    sol_more_link: 'all apps',
+    sol_more_link: 'all applications',
     sol_more_post: '.',
     sol_dev_eyebrow: 'In development',
     sol_dev_title: 'Hardware with AI built in',
@@ -2170,9 +2170,9 @@ const T = {
     product3_desc:
       "A next-generation interactive toy connected to generative AI, nurturing children's creativity and sensibility.",
 
-    demo_page_title: 'Senridoufuu — App Store',
-    demo_eyebrow: 'Apps',
-    demo_title: 'App Store',
+    demo_page_title: 'Senridoufuu — Applications',
+    demo_eyebrow: 'Applications',
+    demo_title: 'Applications',
     demo_intro:
       'AI apps we build, ready to use right in your browser. Each app is updated as we go.',
 
