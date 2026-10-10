@@ -677,6 +677,19 @@ const T = {
 
     /* Auth gate (5 つのツールページ共通) */
     ag_verifying: '認証中…',
+    ce_next_h: '次にすること',
+    ce_next_contact:
+      'エンジン内部の検査 {n} 項目（{ids}）が通りません。底稿を添えて連絡してください',
+    ce_next_checks: 'まず通らなかった検査 {n} 項目（{ids}）を片付ける。やり方は各行の「→」',
+    ce_next_answer: 'この画面の「回答」で済む要確認 {n} 件',
+    ce_next_both: '「回答」でも表の修正でも済む要確認 {n} 件（各行の説明を参照）',
+    ce_next_sheet: '表を直してから締め直す要確認 {n} 件',
+    ce_next_sheets: '開く表：{list}（YAML なら {files}）',
+    ce_next_none: 'やることはありません。底稿をダウンロードして確認してください',
+    ce_how_answer: 'この画面で回答',
+    ce_how_sheet: '表を直す',
+    ce_how_both: '回答／表',
+    ce_how_contact: '連絡',
     ce_files_intro:
       '下の一覧の情報を一つのフォルダにまとめます。おすすめは Excel テンプレート（公司资料.xlsx）：表ごとに記入し、ネットバンキングの明細（bank/）と同じフォルダに置くだけです。フォルダを選ぶと、各項目の有無と書式をその場で確認します。',
     ce_tpl_xlsx: 'Excel テンプレート（おすすめ）',
@@ -1456,6 +1469,18 @@ const T = {
 
     /* Auth gate（五个工具页共用） */
     ag_verifying: '验证身份中…',
+    ce_next_h: '下一步',
+    ce_next_contact: '有 {n} 项引擎内部检查未通过（{ids}）——请附上底稿联系我们',
+    ce_next_checks: '先处理 {n} 项未通过的检查（{ids}），做法见各行的「→」',
+    ce_next_answer: '{n} 条待确认可以直接在本页点「回答」处理',
+    ce_next_both: '{n} 条待确认可以回答，也可以改表（看每行说明）',
+    ce_next_sheet: '{n} 条待确认需要先改表，再重新结账',
+    ce_next_sheets: '需要打开的表：{list}（用 YAML 的话是 {files}）',
+    ce_next_none: '没有需要处理的事项。请下载底稿核对',
+    ce_how_answer: '本页回答',
+    ce_how_sheet: '改表',
+    ce_how_both: '回答或改表',
+    ce_how_contact: '联系我们',
     ce_files_intro:
       '把下面清单里的资料放进同一个文件夹。推荐用 Excel 模板（公司资料.xlsx）：按表填写，和网银下载的流水（bank/ 文件夹）放在一起即可。选好文件夹后，会当场检查每一项是否齐全、格式是否正确。',
     ce_tpl_xlsx: '下载 Excel 模板（推荐）',
@@ -2269,6 +2294,18 @@ const T = {
 
     /* Auth gate (shared by the five tool pages) */
     ag_verifying: 'Verifying…',
+    ce_next_h: 'Next steps',
+    ce_next_contact: 'Internal check(s) {ids} failed — please contact us with the workpaper',
+    ce_next_checks: 'First deal with the failed check(s) {ids} — see the → line on each',
+    ce_next_answer: 'Pending items you can answer on this page: {n}',
+    ce_next_both: 'Pending items you can answer or fix in a sheet (see each line): {n}',
+    ce_next_sheet: 'Pending items that need a sheet fixed, then a new run: {n}',
+    ce_next_sheets: 'Sheets to open: {list} (YAML: {files})',
+    ce_next_none: 'Nothing to do. Download the workpaper and review it',
+    ce_how_answer: 'Answer here',
+    ce_how_sheet: 'Fix a sheet',
+    ce_how_both: 'Answer or sheet',
+    ce_how_contact: 'Contact us',
     ce_files_intro:
       'Put the information below into one folder. Recommended: the Excel template (公司资料.xlsx) — fill in each sheet and keep it with your bank downloads (bank/). When you choose the folder, each item is checked on the spot.',
     ce_tpl_xlsx: 'Excel template (recommended)',

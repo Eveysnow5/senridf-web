@@ -44,6 +44,11 @@
     #logout-btn, #user-email { white-space:nowrap; }
     .ce-path { font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#4b5563;white-space:nowrap; }
     .ce-detail { color:#6b7280;font-size:11px;margin-top:2px;white-space:pre-wrap;word-break:break-all; }
+    .ce-next { font-size:11px;color:#1e40af;margin-top:4px;line-height:1.6; }
+    .ce-how { display:inline-block;font-size:10px;padding:0 6px;border-radius:9px;margin-right:6px;background:#e0e7ff;color:#3730a3;white-space:nowrap; }
+    .ce-how.contact { background:#fee2e2;color:#991b1b; }
+    .ce-steps { margin-top:10px;padding:10px 12px;border-radius:8px;background:#eff6ff;font-size:13px;line-height:1.8;color:#1f2937; }
+    .ce-steps ol { margin:4px 0 0 18px;padding:0;list-style:decimal; }
     .ce-st { display:inline-block;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;white-space:nowrap; }
     .ce-st.PASS, .ce-st.ok { background:#d1fae5;color:#047857; }
     .ce-st.FAIL, .ce-st.missing, .ce-st.error { background:#fee2e2;color:#b91c1c; }
@@ -81,6 +86,7 @@
       .ce-grid2 { grid-template-columns:1fr; }
     }
   </style>
+
 
   <!-- head-meta:start（npm run meta 生成，勿手改） -->
   <link rel="icon" href="/favicon.ico" sizes="any">
@@ -166,6 +172,10 @@
           <p id="ce-sample-banner" class="ce-banner hidden" data-i18n="ce_sample_banner"></p>
           <p id="ce-summary" class="ce-summary"></p>
           <p id="ce-company" class="ce-hint"></p>
+          <div id="ce-steps" class="ce-steps hidden">
+            <strong data-i18n="ce_next_h">下一步</strong>
+            <ol id="ce-steps-list"></ol>
+          </div>
           <div class="ce-row" style="margin-top:10px">
             <button type="button" id="ce-download" class="ce-btn" data-i18n="ce_download">下载底稿</button>
           </div>
@@ -556,6 +566,7 @@
     function trValue(t, path) {
       const [list, i, field] = path.split('.');
       const v = t[list] && t[list][Number(i)] && t[list][Number(i)][field];
+      if (v && typeof v === 'object' && !Array.isArray(v)) return v.text; // 「次にすること」
       return Array.isArray(v) ? v.join('\n') : v;
     }
     function refreshTr() {
@@ -573,6 +584,48 @@
     }
     new MutationObserver(onLangChange).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
 
+    // 各行の「→ 次にすること」：どこで直すか（この画面／表／連絡）の札＋一行
+    function nextLine(parent, path, nx) {
+      if (!nx) return;
+      const d = document.createElement('div');
+      d.className = 'ce-next';
+      const b = document.createElement('span');
+      b.className = `ce-how ${nx.how}`;
+      window.sdfSetText(b, `ce_how_${nx.how}`);
+      d.append(b, '→ ');
+      trSpan(d, path, nx.text);
+      parent.appendChild(d);
+    }
+    // 結果の上の「次にすること」：検査を先に、要確認はどこで済むかで数え、開く表を並べる
+    function renderSteps(r) {
+      const ol = $('ce-steps-list');
+      ol.replaceChildren();
+      const add = (key, arg) => {
+        const li = document.createElement('li');
+        window.sdfSetText(li, key, arg);
+        ol.appendChild(li);
+      };
+      const failed = r.checks.filter((c) => c.status === 'FAIL' && c.next);
+      const contact = failed.filter((c) => c.next.how === 'contact');
+      const fix = failed.filter((c) => c.next.how !== 'contact');
+      if (contact.length) add('ce_next_contact', { n: contact.length, ids: contact.map((c) => c.id).join('・') });
+      if (fix.length) add('ce_next_checks', { n: fix.length, ids: fix.map((c) => c.id).join('・') });
+      const count = (how) => r.pending.filter((x) => x.next && x.next.how === how).length;
+      if (count('answer')) add('ce_next_answer', count('answer'));
+      if (count('both')) add('ce_next_both', count('both'));
+      if (count('sheet')) add('ce_next_sheet', count('sheet'));
+      const sheets = [];
+      const files = [];
+      for (const x of [...fix, ...r.pending]) {
+        if (!x.next || x.next.how === 'answer') continue;
+        for (const s of x.next.sheets) if (!sheets.includes(s)) sheets.push(s);
+        for (const f of x.next.files) if (!files.includes(f)) files.push(f);
+      }
+      if (sheets.length) add('ce_next_sheets', { list: sheets.map((s) => `「${s}」`).join(''), files: files.join('・') });
+      if (!ol.children.length) add('ce_next_none');
+      $('ce-steps').classList.remove('hidden');
+    }
+
     function render(r, isSample) {
       shown = r;
       $('ce-result').classList.remove('hidden');
@@ -584,6 +637,7 @@
       sum.className = `ce-summary ${r.ok ? 'ok' : 'ng'}`;
       window.sdfSetText(sum, 'ce_summary', { pass: n - fail - skip, n, fail, skip, na: r.not_applicable.length });
       $('ce-company').textContent = `${r.company} · ${r.month}`;
+      renderSteps(r);
 
       const tb = $('ce-checks');
       tb.replaceChildren();
@@ -593,6 +647,7 @@
         const name = cell(tr, '');
         trSpan(name, `checks.${i}.name`, c.name);
         if (c.details && c.details.length) trSpan(name, `checks.${i}.details`, c.details.join('\n'), 'ce-detail');
+        nextLine(name, `checks.${i}.next`, c.next);
         const st = document.createElement('span');
         st.className = `ce-st ${c.status}`;
         window.sdfSetText(st, `ce_st_${c.status.toLowerCase()}`);
@@ -625,6 +680,7 @@
         const item = cell(tr, '');
         trSpan(item, `pending.${i}.title`, x.title);
         if (x.detail) trSpan(item, `pending.${i}.detail`, x.detail, 'ce-detail');
+        nextLine(item, `pending.${i}.next`, x.next);
         cell(tr, x.date, 'nw');
         cell(tr, x.amount === null || x.amount === undefined ? '' : Number(x.amount).toLocaleString(), 'num');
         const act = document.createElement('td');
@@ -865,6 +921,6 @@
     renderList(null);
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=09cf1d7004"></script>
+  <script src="../../js/main.js?v=eecbe50d5d"></script>
 </body>
 </html>
