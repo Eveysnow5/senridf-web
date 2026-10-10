@@ -124,6 +124,7 @@
     .ce-it .r b { display:block;font-size:11px;color:#6b7280;font-weight:500;margin-top:6px; }
     .ce-it .r b:first-child { margin-top:0; }
     .ce-it .r .p { white-space:pre-wrap;word-break:break-all; }
+    .ce-it .r .hints { color:#1e40af;margin-top:4px; }
     .ce-it .act { display:flex;flex-wrap:wrap;gap:8px;align-items:center; }
     .ce-ans-box { background:#f9fafb;border-radius:6px;padding:4px 8px;margin-top:8px; }
     details.ce-acct > summary { cursor:pointer; }
@@ -138,6 +139,7 @@
       .ce-grid2 { grid-template-columns:1fr; }
     }
   </style>
+
 
 
 
@@ -243,6 +245,7 @@
               <h3 class="ce-h3" data-i18n="ce_out_h">结账产物</h3>
               <div class="ce-row">
                 <button type="button" id="ce-download" class="ce-btn2" data-i18n="ce_download">下载底稿</button>
+                <span id="ce-dl-reports" class="ce-row"></span>
               </div>
               <div id="ce-fs-out" class="ce-hint" style="margin-top:6px"></div>
             </div>
@@ -279,6 +282,7 @@
             <div class="ce-row">
               <button type="button" id="ce-dl-book" class="ce-btn2 hidden" data-i18n="ce_dl_book">下载更新后的公司资料.xlsx</button>
               <button type="button" id="ce-dl-dec" class="ce-btn2 hidden" data-i18n="ce_dl_decisions">下载回答文件</button>
+              <span id="ce-dl-files" class="ce-row"></span>
             </div>
             <p class="ce-hint" style="margin-top:4px" data-i18n="ce_dl_note"></p>
           </div>
@@ -371,6 +375,7 @@
     let lastDecisions = ''; // 合并后的 decisions.yaml
     let dirHandle = null; // 「打开公司文件夹」で得た読み書きできるフォルダ（Chrome / Edge）。無ければ従来の選択＋下载
     let bucketOn = 'ask'; // 事項の表示中の分類
+    let edits = {}; // 画面で直した「待処理」の値 {key: {…, by}}（回答と同じく、带着回答重新结账で資料に書く）
     const ui = () => (window.sdfLang ? window.sdfLang() : 'ja');
     let timer = null;
     let t0 = 0;
@@ -617,18 +622,33 @@
         const out = [OUT_DIR, r.month, `底稿_${lang}.xlsx`];
         await writeFile(out, xlsx);
         notes.push(['ce_fs_out', { path: out.join('/') }]);
-        if (usedAnswers && (lastBook || lastDecisions)) {
-          const name = lastBook ? '公司资料.xlsx' : 'decisions.yaml';
-          const old = files.find((f) => f.path === name);
-          let bk = '—';
-          if (old) {
-            const parts = [OUT_DIR, '备份', `${stamp()}_${name}`];
-            await writeFile(parts, old.buf);
-            bk = parts.join('/');
+        for (const x of Object.values(r.reports || {})) {
+          const rp = [OUT_DIR, r.month, x.name];
+          await writeFile(rp, new TextEncoder().encode(x.html));
+          notes.push(['ce_fs_out', { path: rp.join('/') }]);
+        }
+        if (usedAnswers) {
+          const enc = (t) => new TextEncoder().encode(t);
+          const targets = [];
+          if (lastBook) targets.push(['公司资料.xlsx', lastBook]);
+          else {
+            if (lastDecisions && Object.keys(answers).length) targets.push(['decisions.yaml', enc(lastDecisions)]);
+            for (const [n, t] of Object.entries(r.changed_files || {})) targets.push([n, enc(t)]);
           }
-          await writeFile([name], lastBook || new TextEncoder().encode(lastDecisions));
-          notes.push([lastBook ? 'ce_fs_book' : 'ce_fs_dec', { path: bk }]);
+          const st = stamp();
+          for (const [name, bytes] of targets) {
+            const old = files.find((f) => f.path === name);
+            let bk = '—';
+            if (old) {
+              const parts = [OUT_DIR, '备份', `${st}_${name}`];
+              await writeFile(parts, old.buf);
+              bk = parts.join('/');
+            }
+            await writeFile([name], bytes);
+            notes.push(['ce_fs_written', { name, path: bk }]);
+          }
           answers = {}; // 已经写进文件夹了，下次结账直接读到
+          edits = {};
           files = await readDir(dirHandle, '');
         }
       } catch (e) {
@@ -670,7 +690,10 @@
 
     async function run(source, withAnswers) {
       const month = source === 'upload' ? $('ce-month').value : SAMPLE_MONTH[source];
-      if (!withAnswers) answers = {};
+      if (!withAnswers) {
+        answers = {};
+        edits = {};
+      }
       if (!month) return setStatus($('ce-status'), 'ce_err_no_month', '', true);
       $('ce-run').disabled = true;
       document.querySelectorAll('[data-sample]').forEach((b) => (b.disabled = true));
@@ -688,10 +711,11 @@
           await ask({ cmd: 'precheck', files: copy, month, ui: ui() }, copy.map((f) => f.buf));
         }
         const ans = withAnswers && Object.keys(answers).length ? answers : null;
-        const m = await ask({ cmd: 'run', source, month, lang, today: today(), answers: ans, ui: ui() });
+        const ed = withAnswers && Object.keys(edits).length ? edits : null;
+        const m = await ask({ cmd: 'run', source, month, lang, today: today(), answers: ans, ui: ui(), edits: ed });
         const r = m.result;
         if (r.error) {
-          const key = { company: 'ce_err_company', close: 'ce_err_close' }[r.kind] || 'ce_err_runtime';
+          const key = { company: 'ce_err_company', close: 'ce_err_close', fix: 'ce_err_fix' }[r.kind] || 'ce_err_runtime';
           return setStatus($('ce-status'), key, ` ${r.error}`, true);
         }
         setBar(100, 'ce_status_done');
@@ -702,8 +726,31 @@
         setStatus($('ce-status'), 'ce_status_done');
         render(r, source !== 'upload');
         const saveHere = source === 'upload' && dirHandle;
-        if (saveHere) await saveToFolder(r, m.xlsx, lang, !!ans);
-        $('ce-dl-box').classList.toggle('hidden', !!saveHere || (!lastBook && !lastDecisions));
+        const rp = $('ce-dl-reports');
+        rp.replaceChildren();
+        if (!saveHere) {
+          for (const x of Object.values(r.reports || {})) {
+            const b = el('button', 'ce-btn2');
+            b.type = 'button';
+            window.sdfSetText(b, 'ce_dl_report', { name: x.name.replace(/[.]html$/, '') });
+            b.addEventListener('click', () => download(x.html, x.name, 'text/html'));
+            rp.appendChild(b);
+          }
+        }
+        if (saveHere) await saveToFolder(r, m.xlsx, lang, !!(ans || ed));
+        const changed = Object.entries(r.changed_files || {});
+        $('ce-dl-box').classList.toggle('hidden', !!saveHere || (!lastBook && !lastDecisions && !changed.length));
+        const dl = $('ce-dl-files');
+        dl.replaceChildren();
+        if (!saveHere && !lastBook) {
+          for (const [name, text] of changed) {
+            const b = el('button', 'ce-btn2');
+            b.type = 'button';
+            window.sdfSetText(b, 'ce_dl_file', { name });
+            b.addEventListener('click', () => download(text, name, 'text/yaml'));
+            dl.appendChild(b);
+          }
+        }
         $('ce-dl-book').classList.toggle('hidden', !lastBook);
         $('ce-dl-dec').classList.toggle('hidden', !!lastBook || !lastDecisions);
       } catch (err) {
@@ -741,6 +788,7 @@
       const [list, i, field] = path.split('.');
       const v = t[list] && t[list][Number(i)] && t[list][Number(i)][field];
       if (v && typeof v === 'object' && !Array.isArray(v)) return v.text; // 「次にすること」
+      if (field === 'hints' && Array.isArray(v)) return v.map((h) => `· ${h}`).join(String.fromCharCode(10));
       return Array.isArray(v) ? v.join('\n') : v;
     }
     function refreshTr() {
@@ -983,6 +1031,13 @@
       trSpan(src, `pending.${i}.category`, x.category);
       const act = el('div', 'act');
       const host = el('div');
+      if (x.fix) {
+        const fb = el('button', 'ce-btn', 'ce_fx_btn');
+        fb.type = 'button';
+        fb.addEventListener('click', () => openFix(host, x, fb));
+        act.appendChild(fb);
+        if (edits[x.key]) act.appendChild(el('span', 'ce-answered', 'ce_fx_saved'));
+      }
       const btn = el('button', 'ce-btn2', answers[x.key] ? 'ce_ans_edit' : 'ce_ans_btn');
       btn.type = 'button';
       btn.addEventListener('click', () => openForm(host, x, btn));
@@ -991,6 +1046,8 @@
       L.append(h, src, act, host);
       R.appendChild(el('b', null, 'ce_an'));
       trSpan(R, `pending.${i}.detail`, x.detail, 'p');
+      // 推論（引擎が帳簿と明細から計算した候補。答えではない）
+      if (x.hints && x.hints.length) trSpan(R, `pending.${i}.hints`, x.hints.map((h) => `· ${h}`).join(String.fromCharCode(10)), 'p hints');
       adviceBlock(R, `pending.${i}.next`, x.next);
       a.append(L, R);
       return a;
@@ -1190,8 +1247,78 @@
       host.appendChild(row);
     }
 
+    // ── 页面上直接填写「待处理」（住民税月额・通勤方式・标准报酬依据・劳动保险年度更新）──────────
+    // 字段由引擎给（x.fix.fields）。这里先做最低限度的检查（必填・非负数）；引擎还会再验一遍。
+    function openFix(host, x, btn) {
+      const open = host.querySelector('.ce-ans-box');
+      if (open) {
+        open.remove();
+        return;
+      }
+      const prev = edits[x.key] || {};
+      const box = el('div', 'ce-ans-box');
+      const form = el('div', 'ce-form');
+      const inputs = {};
+      for (const f of x.fix.fields) {
+        let i;
+        if (f.kind === 'select') {
+          i = select(f.options, prev[f.name] || f.options[0]);
+          [...i.options].forEach((o) => window.sdfSetText(o, `ce_fx_opt_${o.value}`));
+        } else if (f.kind === 'bool') {
+          i = el('input');
+          i.type = 'checkbox';
+          i.checked = !!prev[f.name];
+          i.title = f.name;
+        } else {
+          i = input(prev[f.name] ?? '', f.name);
+          if (f.kind !== 'text') i.inputMode = 'decimal';
+        }
+        inputs[f.name] = i;
+        form.appendChild(field(`ce_fx_${f.name}`, i));
+      }
+      const by = input(prev.by || savedBy(), 'by');
+      form.appendChild(field('ce_ans_by', by));
+      const err = el('div', 'ce-err');
+      const save = el('button', 'ce-btn', 'ce_fx_save');
+      save.type = 'button';
+      const cancel = el('button', 'ce-btn2', 'ce_ans_cancel');
+      cancel.type = 'button';
+      const btns = el('div', 'ce-row');
+      btns.append(save, cancel);
+      form.append(err, btns);
+      cancel.addEventListener('click', () => box.remove());
+      save.addEventListener('click', () => {
+        const v = { by: by.value.trim() };
+        for (const f of x.fix.fields) {
+          const i = inputs[f.name];
+          const raw = f.kind === 'bool' ? i.checked : String(i.value).trim();
+          const label = window.sdfT(`ce_fx_${f.name}`);
+          if (f.required && raw === '') return window.sdfSetText(err, 'ce_fx_err_required', { f: label });
+          if ((f.kind === 'int' || f.kind === 'num') && raw !== '') {
+            const n = Number(raw.replace(/,/g, ''));
+            if (!Number.isFinite(n) || n < 0 || (f.kind === 'int' && !Number.isInteger(n)))
+              return window.sdfSetText(err, 'ce_fx_err_num', { f: label });
+            v[f.name] = n;
+          } else if (raw !== '') v[f.name] = raw;
+        }
+        if (!v.by) return window.sdfSetText(err, 'ce_ans_err_by');
+        try {
+          localStorage.setItem('ce_by', v.by);
+        } catch (e) {
+          console.error(e);
+        }
+        edits[x.key] = v;
+        box.remove();
+        if (!btn.nextElementSibling || !btn.nextElementSibling.classList.contains('ce-answered'))
+          btn.after(el('span', 'ce-answered', 'ce_fx_saved'));
+        updateRerun();
+      });
+      box.appendChild(form);
+      host.appendChild(box);
+    }
+
     function updateRerun() {
-      const n = Object.keys(answers).length;
+      const n = Object.keys(answers).length + Object.keys(edits).length;
       window.sdfSetText($('ce-rerun'), 'ce_rerun', n);
       $('ce-rerun').disabled = !n || !lastRun;
     }
@@ -1240,6 +1367,6 @@
     renderList(null);
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=7fc0de09c9"></script>
+  <script src="../../js/main.js?v=bda1097342"></script>
 </body>
 </html>

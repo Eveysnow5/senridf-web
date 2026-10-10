@@ -9,7 +9,7 @@
  * 这里再按 manifest 的 sha256 核对一次。
  *
  * 消息（页面 → Worker）：{cmd:'init'} / {cmd:'precheck', files, month, ui}
- *                       / {cmd:'run', source, month, lang, today, answers, ui}
+ *                       / {cmd:'run', source, month, lang, today, answers, ui, edits}
  * 消息（Worker → 页面）：{type:'stage', stage} / {type:'progress', stage, i, n, label}
  *                       / {type:'precheck', result} / {type:'result', result, xlsx, book} / {type:'error', kind, message}
  */
@@ -106,7 +106,7 @@ json.dumps(jpclose.web.precheck(ce_args[0], ce_args[1], ui=ce_args[2]), ensure_a
 const RUN = `
 import json, traceback, jpclose.web
 try:
-    _r = jpclose.web.run(*ce_args[:5], progress=ce_progress, answers=ce_args[5], ui=ce_args[6])
+    _r = jpclose.web.run(*ce_args[:5], progress=ce_progress, answers=ce_args[5], ui=ce_args[6], edits=ce_args[7])
 except Exception as _e:
     _r = dict(ok=False, kind="runtime", error=f"{type(_e).__name__}: {_e}", trace=traceback.format_exc())
 json.dumps(_r, ensure_ascii=False, default=str)
@@ -126,10 +126,10 @@ self.onmessage = async (e) => {
       p.globals.set('ce_progress', (stage, i, n, label) =>
         post({ type: 'progress', stage, i, n, label }),
       );
-      // answers：画面で入力した回答（無ければ null）。ui：画面の言語（エラーの訳に使う）
+      // answers：画面で入力した回答、edits：画面で直した待処理の値（無ければ null）。ui：画面の言語（エラーの訳に使う）
       const r = callPy(
         p,
-        [dir, m.month, m.today, m.lang, out, m.answers || null, m.ui || 'ja'],
+        [dir, m.month, m.today, m.lang, out, m.answers || null, m.ui || 'ja', m.edits || null],
         RUN,
       );
       if (r.trace) console.error(r.trace);
