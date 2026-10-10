@@ -694,6 +694,7 @@ const T = {
     an_btn_clear: 'クリア',
     an_result_header: '分析レポート',
     an_loading: '分析中…',
+    auto_hero_subtitle: '毎日の手作業を AI に任せて、チームは本来の仕事に集中。1 回のクリック、1 つの動作で完了。',
   },
 
   zh: {
@@ -1325,6 +1326,7 @@ const T = {
     an_btn_clear: '清空',
     an_result_header: '分析报告',
     an_loading: '分析中…',
+    auto_hero_subtitle: '毎日の手作業を AI に任せて、チームは本来の仕事に集中。1 回のクリック、1 つの動作で完了。',
   },
 
   en: {
@@ -2000,6 +2002,7 @@ const T = {
     an_btn_clear: 'Clear',
     an_result_header: 'Analysis Report',
     an_loading: 'Analysing…',
+    auto_hero_subtitle: 'Entrust daily manual work to AI, and let your team focus on what truly matters. One click, one action—done.',
   },
 };
 
