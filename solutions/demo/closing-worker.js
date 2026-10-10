@@ -101,15 +101,23 @@ function callPy(p, args, code) {
 
 const PRECHECK = `
 import json, jpclose.web
-json.dumps(jpclose.web.precheck(ce_args[0], ce_args[1], ui=ce_args[2]), ensure_ascii=False, default=str)
+json.dumps(jpclose.web.precheck(ce_args[0], ce_args[1], ui=ce_args[2], month_from=ce_args[3]),
+           ensure_ascii=False, default=str)
 `;
 const RUN = `
 import json, traceback, jpclose.web
 try:
-    _r = jpclose.web.run(*ce_args[:5], progress=ce_progress, answers=ce_args[5], ui=ce_args[6], edits=ce_args[7])
+    _r = jpclose.web.run(*ce_args[:5], progress=ce_progress, answers=ce_args[5], ui=ce_args[6], edits=ce_args[7],
+                         month_from=ce_args[8])
 except Exception as _e:
     _r = dict(ok=False, kind="runtime", error=f"{type(_e).__name__}: {_e}", trace=traceback.format_exc())
 json.dumps(_r, ensure_ascii=False, default=str)
+`;
+
+// 期间内别的月份的底稿：用上一次 run 留下的账（jpclose.web._LAST），不重新结账
+const WORKPAPER = `
+import json, jpclose.web
+json.dumps(jpclose.web.month_workpaper(ce_args[0], ce_args[1], ce_args[2]), ensure_ascii=False, default=str)
 `;
 
 self.onmessage = async (e) => {
@@ -118,7 +126,10 @@ self.onmessage = async (e) => {
     const p = await init();
     if (m.cmd === 'precheck') {
       writeCompany(p, m.files);
-      post({ type: 'precheck', result: callPy(p, [WORK, m.month, m.ui || 'ja'], PRECHECK) });
+      post({
+        type: 'precheck',
+        result: callPy(p, [WORK, m.month, m.ui || 'ja', m.month_from || null], PRECHECK),
+      });
     } else if (m.cmd === 'run') {
       const dir = m.source === 'upload' ? WORK : `${ROOT}/samples/${m.source}_sample`;
       const out = '/tmp/workpaper.xlsx';
@@ -129,7 +140,17 @@ self.onmessage = async (e) => {
       // answers：画面で入力した回答、edits：画面で直した待処理の値（無ければ null）。ui：画面の言語（エラーの訳に使う）
       const r = callPy(
         p,
-        [dir, m.month, m.today, m.lang, out, m.answers || null, m.ui || 'ja', m.edits || null],
+        [
+          dir,
+          m.month,
+          m.today,
+          m.lang,
+          out,
+          m.answers || null,
+          m.ui || 'ja',
+          m.edits || null,
+          m.month_from || null,
+        ],
         RUN,
       );
       if (r.trace) console.error(r.trace);
@@ -145,6 +166,16 @@ self.onmessage = async (e) => {
         transfer.push(book.buffer);
       }
       post({ type: 'result', result: r, xlsx: bytes, book }, transfer);
+    } else if (m.cmd === 'workpaper') {
+      const out = `/tmp/workpaper_${m.month}.xlsx`;
+      const r = callPy(p, [m.month, m.lang, out], WORKPAPER);
+      if (r.error) {
+        post({ type: 'workpaper', result: r });
+        return;
+      }
+      const bytes = p.FS.readFile(out);
+      p.FS.unlink(out);
+      post({ type: 'workpaper', result: r, xlsx: bytes }, [bytes.buffer]);
     }
   } catch (err) {
     console.error(err);

@@ -85,6 +85,16 @@
     .ce-chip.ng { background:#fee2e2;color:#b91c1c; }
     .ce-chip.warn { background:#fef3c7;color:#92400e; }
     .ce-chip.muted { background:#f3f4f6;color:#6b7280; }
+    /* 结账期间：会计年度的快捷按钮・结果的月份切换 */
+    .ce-fy, .ce-months { display:flex;flex-wrap:wrap;gap:6px;align-items:center; }
+    .ce-fy { margin-top:8px; }
+    .ce-months { margin-bottom:10px; }
+    .ce-fy.hidden, .ce-months.hidden { display:none; }
+    .ce-pill { border:1px solid #d1d5db;border-radius:14px;padding:2px 10px;font-size:12.5px;background:#fff;color:#374151;cursor:pointer; }
+    .ce-pill:hover { border-color:#6366f1; }
+    .ce-pill.on { border-color:#4f46e5;color:#4f46e5;font-weight:600;background:#eef2ff; }
+    .ce-pill .dot { display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;background:#16a34a;vertical-align:1px; }
+    .ce-pill .dot.ng { background:#dc2626; }
     .ce-chip.hidden { display:none; } /* .ce-chip の display が .hidden より後ろにあるので明示（無いと前の結果の暫記が残って見える） */
     .ce-kpis { display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:10px; }
     .ce-kpi { border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px; }
@@ -139,6 +149,7 @@
       .ce-grid2 { grid-template-columns:1fr; }
     }
   </style>
+
 
 
 
@@ -207,8 +218,10 @@
       <section class="ce-card">
         <h2 class="ce-h" data-i18n="ce_step_run">2. 结账</h2>
         <div class="ce-row">
-          <label class="ce-hint"><span data-i18n="ce_step_month">结账月份</span>
-            <input type="month" id="ce-month" class="ce-input" title="month" /></label>
+          <label class="ce-hint"><span data-i18n="ce_step_from">结账期间：从</span>
+            <input type="month" id="ce-from" class="ce-input" title="period start" /></label>
+          <label class="ce-hint"><span data-i18n="ce_step_to">到</span>
+            <input type="month" id="ce-month" class="ce-input" title="period end" /></label>
           <label class="ce-hint"><span data-i18n="ce_step_lang">底稿语言</span>
             <select id="ce-wp-lang" class="ce-input" title="workpaper language">
               <option value="zh" data-i18n="ce_lang_zh">中文</option>
@@ -216,6 +229,9 @@
             </select></label>
           <button type="button" id="ce-run" class="ce-btn" data-i18n="ce_run" disabled>执行结账</button>
         </div>
+        <!-- 会计年度（按公司的决算月）：点一下填好起止 -->
+        <div id="ce-fy" class="ce-fy hidden"></div>
+        <p id="ce-period-note" class="ce-hint hidden" style="margin-top:4px"></p>
         <div id="ce-progress" class="ce-progress hidden">
           <div class="ce-bar"><div id="ce-bar"></div></div>
           <div class="ce-progress-text"><span id="ce-stage"></span><span id="ce-elapsed"></span></div>
@@ -227,6 +243,9 @@
 
       <!-- 结果：汇总 → 资产负债表・利润表 → 三类事项；检查明细收在最后（会计用） -->
       <section id="ce-result" class="hidden">
+        <div id="ce-months" class="ce-months hidden">
+          <span class="ce-hint" data-i18n="ce_months_h">查看月份</span>
+        </div>
         <div class="ce-card">
           <p id="ce-sample-banner" class="ce-banner hidden" data-i18n="ce_sample_banner"></p>
           <div class="ce-sumhead">
@@ -357,7 +376,8 @@
       ['labor_insurance', 'labor_insurance.yaml', 'season', '劳动保险'],
       ['corporate_tax', 'corporate_tax.yaml', 'year_end', '法人税・法人税调整・中间纳付'],
     ];
-    const SAMPLE_MONTH = { tokyo: '2026-06', osaka: '2026-07' };
+    // 示例公司的结账期间 [从, 到]
+    const SAMPLE_PERIOD = { tokyo: ['2026-04', '2026-06'], osaka: ['2026-05', '2026-07'] };
     // 进度条：每个阶段占的区间（月份按 i/n 在 50→95 之间推进）
     const STAGE_PCT = { runtime: 5, packages: 30, engine: 40, ready: 50, workpaper: 96 };
     const LOAD_TIMEOUT_MS = 180000;
@@ -371,6 +391,9 @@
     let lastXlsx = null;
     let pending = null; // {resolve, reject, kind}
     let lastRun = null; // {source, result}：最后一次结账（重新结账用）
+    let monthOn = null; // 结果里正在看的月份（结账期间内）
+    let lastLang = 'zh'; // 最后一次结账的底稿语言
+    let wpCache = {}; // 「月份|语言」→ 底稿 xlsx（期间末的月份结账时就有，其他月份点到才生成）
     let answers = {}; // 页面上填的回答 {key: {...}}（本次会话内保留）
     let lastBook = null; // 回答写回后的公司资料.xlsx（Uint8Array）
     let lastDecisions = ''; // 合并后的 decisions.yaml
@@ -528,6 +551,7 @@
     // ── 1. 选文件夹 → 预检 ───────────────────────────────────────────────────
     async function precheck() {
       const month = $('ce-month').value;
+      const from = $('ce-from').value || month;
       prechecked = false;
       $('ce-run').disabled = true;
       if (!files.length || !month) return;
@@ -536,8 +560,19 @@
       try {
         // 文件内容各给 Worker 一份拷贝（Worker 每次重写内存文件系统）
         const copy = files.map((f) => ({ path: f.path, buf: f.buf.slice(0) }));
-        const m = await ask({ cmd: 'precheck', files: copy, month, ui: ui() }, copy.map((f) => f.buf));
+        const m = await ask({ cmd: 'precheck', files: copy, month, month_from: from, ui: ui() }, copy.map((f) => f.buf));
         const r = m.result;
+        renderPeriod(r.period);
+        // 「从」还空着：取包含「到」的会计年度的第一个月。「到」是页面自动填的（不是用户选的）时，
+        // 期间默认取最新的会计年度（到＝流水的最后一个月）
+        const fys = (r.period && r.period.fiscal_years) || [];
+        if (!$('ce-from').value && fys.length) {
+          const fy = autoMonth ? fys[0] : fys.find((x) => x.start <= month && month <= x.end) || fys[0];
+          $('ce-from').value = fy.from;
+          if (autoMonth) $('ce-month').value = fy.to;
+          autoMonth = false;
+          return await precheck();
+        }
         renderList(r);
         prechecked = !!r.ready;
         if (r.ready) setStatus($('ce-pre'), 'ce_pre_ok');
@@ -567,7 +602,8 @@
           .filter(Boolean)
           .map((m) => m[1])
           .sort();
-        if (months.length) $('ce-month').value = months[months.length - 1];
+        $('ce-month').value = months.length ? months[months.length - 1] : today().slice(0, 7);
+        autoMonth = true;
       }
       precheck();
     }
@@ -620,14 +656,18 @@
     async function saveToFolder(r, xlsx, lang, usedAnswers) {
       const notes = [];
       try {
-        const out = [OUT_DIR, r.month, `底稿_${lang}.xlsx`];
-        await writeFile(out, xlsx);
-        notes.push(['ce_fs_out', { path: out.join('/') }]);
-        for (const x of Object.values(r.reports || {})) {
-          const rp = [OUT_DIR, r.month, x.name];
-          await writeFile(rp, new TextEncoder().encode(x.html));
-          notes.push(['ce_fs_out', { path: rp.join('/') }]);
+        // 结账期间内每个月：结账结果/YYYY-MM/ 里放底稿和两份汇总（期间末以外的底稿逐月生成）
+        for (const p of r.periods) {
+          setBar(STAGE_PCT.workpaper, 'ce_p_save', { m: p.month });
+          const bytes = p.month === r.month ? xlsx : await monthWorkpaper(p.month, lang);
+          await writeFile([OUT_DIR, p.month, `底稿_${lang}.xlsx`], bytes);
+          for (const x of Object.values(p.reports || {})) {
+            await writeFile([OUT_DIR, p.month, x.name], new TextEncoder().encode(x.html));
+          }
         }
+        const ps = r.periods;
+        if (ps.length === 1) notes.push(['ce_fs_out_month', { path: `${OUT_DIR}/${ps[0].month}/` }]);
+        else notes.push(['ce_fs_out_range', { root: OUT_DIR, a: ps[0].month, b: ps[ps.length - 1].month, n: ps.length }]);
         if (usedAnswers) {
           const enc = (t) => new TextEncoder().encode(t);
           const targets = [];
@@ -680,7 +720,45 @@
         afterFiles();
       });
     }
-    $('ce-month').addEventListener('change', () => precheck());
+    let autoMonth = false; // 「到」是页面自动填的（用户还没选）
+    $('ce-month').addEventListener('change', () => {
+      autoMonth = false;
+      precheck();
+    });
+    $('ce-from').addEventListener('change', () => precheck());
+
+    // 会计年度的快捷按钮（日本的决算月由公司自己定，不一定是 12 月）。period 来自引擎的预检
+    function renderPeriod(period) {
+      const box = $('ce-fy');
+      box.replaceChildren();
+      const note = $('ce-period-note');
+      const fys = (period && period.fiscal_years) || [];
+      box.classList.toggle('hidden', !fys.length);
+      note.classList.toggle('hidden', !fys.length);
+      if (!fys.length) return;
+      const pick = (a, b) => {
+        $('ce-from').value = a;
+        $('ce-month').value = b;
+        precheck();
+      };
+      for (const fy of fys) {
+        const b = el('button', 'ce-pill');
+        b.type = 'button';
+        const [y, mm] = fy.end.split('-');
+        window.sdfSetText(b, 'ce_fy_chip', { y, m: Number(mm), mm, from: fy.from, to: fy.to });
+        b.classList.toggle('on', $('ce-from').value === fy.from && $('ce-month').value === fy.to);
+        b.addEventListener('click', () => pick(fy.from, fy.to));
+        box.appendChild(b);
+      }
+      if (period.last) {
+        const b = el('button', 'ce-pill', 'ce_period_latest');
+        b.type = 'button';
+        b.classList.toggle('on', $('ce-from').value === period.last && $('ce-month').value === period.last);
+        b.addEventListener('click', () => pick(period.last, period.last));
+        box.appendChild(b);
+      }
+      window.sdfSetText(note, 'ce_period_note', { m: period.fy_end_month, start: period.start, last: period.last || '—' });
+    }
 
     // ── 2. 结账 ──────────────────────────────────────────────────────────────
     function today() {
@@ -690,7 +768,8 @@
     }
 
     async function run(source, withAnswers) {
-      const month = source === 'upload' ? $('ce-month').value : SAMPLE_MONTH[source];
+      const month = source === 'upload' ? $('ce-month').value : SAMPLE_PERIOD[source][1];
+      const from = source === 'upload' ? $('ce-from').value || month : SAMPLE_PERIOD[source][0];
       if (!withAnswers) {
         answers = {};
         edits = {};
@@ -709,36 +788,44 @@
         if (source === 'upload') {
           // 每次都从选好的文件重新写入（上一次带回答的结账改过的 decisions 不留在 Worker 里）
           const copy = files.map((f) => ({ path: f.path, buf: f.buf.slice(0) }));
-          await ask({ cmd: 'precheck', files: copy, month, ui: ui() }, copy.map((f) => f.buf));
+          await ask({ cmd: 'precheck', files: copy, month, month_from: from, ui: ui() }, copy.map((f) => f.buf));
         }
         const ans = withAnswers && Object.keys(answers).length ? answers : null;
         const ed = withAnswers && Object.keys(edits).length ? edits : null;
-        const m = await ask({ cmd: 'run', source, month, lang, today: today(), answers: ans, ui: ui(), edits: ed });
+        const m = await ask({
+          cmd: 'run',
+          source,
+          month,
+          month_from: from,
+          lang,
+          today: today(),
+          answers: ans,
+          ui: ui(),
+          edits: ed,
+        });
         const r = m.result;
         if (r.error) {
-          const key = { company: 'ce_err_company', close: 'ce_err_close', fix: 'ce_err_fix' }[r.kind] || 'ce_err_runtime';
+          const key =
+            { company: 'ce_err_company', close: 'ce_err_close', fix: 'ce_err_fix', period: 'ce_err_period' }[r.kind] ||
+            'ce_err_runtime';
           return setStatus($('ce-status'), key, ` ${r.error}`, true);
         }
-        setBar(100, 'ce_status_done');
+        lastLang = lang;
+        wpCache = { [`${r.month}|${lang}`]: m.xlsx };
+        const keep = monthOn && r.periods.some((p) => p.month === monthOn) && withAnswers;
+        monthOn = keep ? monthOn : r.month;
         lastXlsx = { bytes: m.xlsx, name: `workpaper_${r.month}_${lang}.xlsx` };
         lastBook = m.book || null;
         lastDecisions = r.decisions_yaml || '';
         lastRun = { source, result: r };
         setStatus($('ce-status'), 'ce_status_done');
-        render(r, source !== 'upload');
         const saveHere = source === 'upload' && dirHandle;
-        const rp = $('ce-dl-reports');
-        rp.replaceChildren();
-        if (!saveHere) {
-          for (const x of Object.values(r.reports || {})) {
-            const b = el('button', 'ce-btn2');
-            b.type = 'button';
-            window.sdfSetText(b, 'ce_dl_report', { name: x.name.replace(/[.]html$/, '') });
-            b.addEventListener('click', () => download(x.html, x.name, 'text/html'));
-            rp.appendChild(b);
-          }
-        }
+        isSampleRun = source !== 'upload';
+        reportsInFolder = !!saveHere;
+        renderMonths(r);
+        render(forMonth(r, monthOn), isSampleRun);
         if (saveHere) await saveToFolder(r, m.xlsx, lang, !!(ans || ed));
+        setBar(100, 'ce_status_done');
         const changed = Object.entries(r.changed_files || {});
         $('ce-dl-box').classList.toggle('hidden', !!saveHere || (!lastBook && !lastDecisions && !changed.length));
         const dl = $('ce-dl-files');
@@ -763,6 +850,69 @@
         document.querySelectorAll('[data-sample]').forEach((b) => (b.disabled = false));
         updateRerun();
       }
+    }
+
+    let isSampleRun = false;
+    let reportsInFolder = false;
+    function forMonth(r, month) {
+      const p = (r.periods || []).find((x) => x.month === month);
+      if (!p) return r;
+      const t = ui();
+      const tr = {};
+      for (const [l, v] of Object.entries(r.tr)) tr[l] = { ...v, checks: p.tr[l].checks, na: p.tr[l].na };
+      return {
+        ...r,
+        month: p.month,
+        ok: p.ok,
+        summary: p.summary,
+        view: p.view,
+        reports: p.reports,
+        checks: p.checks.map((c, i) => ({ ...c, ...p.tr[t].checks[i] })),
+        not_applicable: p.not_applicable.map((x, i) => ({ ...x, ...p.tr[t].na[i] })),
+        tr,
+      };
+    }
+    function renderMonths(r) {
+      const box = $('ce-months');
+      [...box.querySelectorAll('.ce-pill')].forEach((b) => b.remove());
+      const ps = r.periods || [];
+      box.classList.toggle('hidden', ps.length < 2);
+      for (const p of ps) {
+        const b = el('button', `ce-pill${p.month === monthOn ? ' on' : ''}`);
+        b.type = 'button';
+        b.dataset.month = p.month;
+        const dot = el('span', `dot${p.ok ? '' : ' ng'}`);
+        b.append(dot, p.month);
+        b.addEventListener('click', () => {
+          monthOn = p.month;
+          box.querySelectorAll('.ce-pill').forEach((x) => x.classList.toggle('on', x.dataset.month === monthOn));
+          render(forMonth(lastRun.result, monthOn), isSampleRun, true);
+        });
+        box.appendChild(b);
+      }
+    }
+    // 汇总的下载按钮（没有连接文件夹时）：跟着正在看的月份
+    function renderReportButtons(r) {
+      const rp = $('ce-dl-reports');
+      rp.replaceChildren();
+      if (reportsInFolder) return;
+      for (const x of Object.values(r.reports || {})) {
+        const b = el('button', 'ce-btn2');
+        b.type = 'button';
+        window.sdfSetText(b, 'ce_dl_report', { name: `${x.name.replace(/[.]html$/, '')}（${r.month}）` });
+        b.addEventListener('click', () => download(x.html, x.name.replace(/[.]html$/, `_${r.month}.html`), 'text/html'));
+        rp.appendChild(b);
+      }
+    }
+    // 期间内别的月份的底稿：Worker 里留着上一次结账的账，不用重新结账
+    async function monthWorkpaper(month, lang) {
+      const k = `${month}|${lang}`;
+      if (!wpCache[k]) {
+        const m = await ask({ cmd: 'workpaper', month, lang });
+        if (m.result.error) throw Object.assign(new Error(m.result.error), { kind: 'runtime' });
+        wpCache[k] = m.xlsx;
+      }
+      return wpCache[k];
     }
 
     function cell(tr, text, cls) {
@@ -850,7 +1000,7 @@
       $('ce-steps').classList.remove('hidden');
     }
 
-    function render(r, isSample) {
+    function render(r, isSample, switching) {
       shown = r;
       $('ce-result').classList.remove('hidden');
       $('ce-sample-banner').classList.toggle('hidden', !isSample);
@@ -894,9 +1044,14 @@
       });
       $('ce-na-box').classList.toggle('hidden', !r.not_applicable.length);
 
-      $('ce-fs-out').replaceChildren();
       renderSummary(r);
       renderStatements(r.view);
+      renderReportButtons(r);
+      if (switching) {
+        renderItems(r);
+        return;
+      }
+      $('ce-fs-out').replaceChildren();
       const cnt = counts(r);
       bucketOn = ['ask', 'todo', 'err'].find((b) => cnt[b]) || 'ask';
       renderItems(r);
@@ -1080,6 +1235,7 @@
       const list = itemList(r).filter((it) => it.bucket === bucketOn);
       if (!list.length) box.appendChild(el('p', 'ce-hint', 'ce_items_none'));
       for (const it of list) box.appendChild(it.kind === 'p' ? pendingItem(it.x, it.i) : checkItem(it.x, it.i));
+      refreshTr(); // 卡片用的是结账时的语言；切换过语言后再画（换分类・换月份）要换成现在的语言
     }
     document.querySelectorAll('[data-bucket]').forEach((b) =>
       b.addEventListener('click', () => {
@@ -1341,18 +1497,20 @@
     // ── 交互 ────────────────────────────────────────────────────────────────
     $('ce-run').addEventListener('click', () => run('upload'));
     document.querySelectorAll('[data-sample]').forEach((b) => b.addEventListener('click', () => run(b.dataset.sample)));
-    $('ce-download').addEventListener('click', () => {
-      if (!lastXlsx) return;
-      const blob = new Blob([lastXlsx.bytes], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = lastXlsx.name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    $('ce-download').addEventListener('click', async () => {
+      if (!lastXlsx || !monthOn) return;
+      const btn = $('ce-download');
+      btn.disabled = true;
+      try {
+        const bytes = await monthWorkpaper(monthOn, lastLang);
+        download(bytes, `workpaper_${monthOn}_${lastLang}.xlsx`,
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      } catch (err) {
+        console.error(err);
+        setStatus($('ce-status'), errKey(err), ` ${err.message}`, true);
+      } finally {
+        btn.disabled = false;
+      }
     });
     $('ce-copy').addEventListener('click', async () => {
       try {
@@ -1368,6 +1526,6 @@
     renderList(null);
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=3d681e3510"></script>
+  <script src="../../js/main.js?v=b06bf65e9c"></script>
 </body>
 </html>

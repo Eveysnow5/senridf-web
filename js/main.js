@@ -677,6 +677,17 @@ const T = {
 
     /* Auth gate (5 つのツールページ共通) */
     ag_verifying: '認証中…',
+    ce_step_from: '締める期間：開始',
+    ce_step_to: '終了',
+    ce_fy_chip: '{y}年{m}月期（{from}〜{to}）',
+    ce_period_latest: '最新の 1 か月だけ',
+    ce_period_note:
+      '決算月：{m} 月 ・ 帳簿の開始：{start}（期首残高はその前月末）・ 銀行明細：{last} まで',
+    ce_months_h: '表示する月',
+    ce_err_period: '締める期間に誤りがあります：',
+    ce_p_save: '{m} の成果物を書き出し中…',
+    ce_fs_out_month: '書き出し：{path}（ワークペーパー・汇总 2 件）',
+    ce_fs_out_range: '書き出し：{root}/ の {a}〜{b}（{n} か月、各月にワークペーパーと汇总 2 件）',
     ce_fx_btn: 'ここで入力',
     ce_fx_amount: '月額',
     ce_fx_until_may: '同じ額を翌年 5 月まで入れる',
@@ -1561,6 +1572,17 @@ const T = {
 
     /* Auth gate（五个工具页共用） */
     ag_verifying: '验证身份中…',
+    ce_step_from: '结账期间：从',
+    ce_step_to: '到',
+    ce_fy_chip: '{y}年{m}月期（{from}〜{to}）',
+    ce_period_latest: '只结最新一个月',
+    ce_period_note:
+      '决算月：{m} 月 · 账从 {start} 开始（期初余额是前一个月末的）· 银行流水到 {last}',
+    ce_months_h: '查看月份',
+    ce_err_period: '结账期间有误：',
+    ce_p_save: '正在写出 {m} 的结账产物…',
+    ce_fs_out_month: '已写入：{path}（底稿和两份汇总）',
+    ce_fs_out_range: '已写入：{root}/ 下 {a}〜{b} 共 {n} 个月的文件夹（每月底稿和两份汇总）',
     ce_fx_btn: '直接填写',
     ce_fx_amount: '月额',
     ce_fx_until_may: '同额填到明年 5 月',
@@ -2476,6 +2498,18 @@ const T = {
 
     /* Auth gate (shared by the five tool pages) */
     ag_verifying: 'Verifying…',
+    ce_step_from: 'Period: from',
+    ce_step_to: 'to',
+    ce_fy_chip: 'FY ending {y}-{mm} ({from} – {to})',
+    ce_period_latest: 'Latest month only',
+    ce_period_note:
+      'Year-end month: {m} · Books start {start} (opening balances as of the month before) · Bank statements to {last}',
+    ce_months_h: 'Month',
+    ce_err_period: 'Problem with the period: ',
+    ce_p_save: 'Writing outputs for {m}…',
+    ce_fs_out_month: 'Written: {path} (workpaper and two summaries)',
+    ce_fs_out_range:
+      'Written: {a} to {b} under {root}/ ({n} months, each with a workpaper and two summaries)',
     ce_fx_btn: 'Fill in here',
     ce_fx_amount: 'Monthly amount',
     ce_fx_until_may: 'Same amount through next May',
