@@ -156,6 +156,7 @@
 
 
 
+
   <!-- head-meta:start（npm run meta 生成，勿手改） -->
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -1127,8 +1128,11 @@
       $('ce-company').textContent = `${r.company} · ${r.month}`;
       window.sdfSetText($('ce-asof'), 'ce_asof', { d: s.as_of });
       const bank = $('ce-chip-bank');
-      bank.className = `ce-chip ${s.bank_ok ? 'ok' : 'ng'}`;
-      window.sdfSetText(bank, s.bank_ok ? 'ce_chip_bank_ok' : 'ce_chip_bank_ng');
+      // 流水没覆盖到月末时，「银行与账面一致」只到流水的最后一天——直接说流水只到哪天
+      const short = s.bank_covered === false;
+      bank.className = `ce-chip ${s.bank_ok && !short ? 'ok' : 'ng'}`;
+      if (short) window.sdfSetText(bank, 'ce_chip_bank_short', { d: s.bank_through });
+      else window.sdfSetText(bank, s.bank_ok ? 'ce_chip_bank_ok' : 'ce_chip_bank_ng');
       const sus = $('ce-chip-sus');
       sus.classList.toggle('hidden', !s.suspense_rows);
       if (s.suspense_rows) window.sdfSetText(sus, 'ce_chip_sus', { n: s.suspense_rows, v: yen(s.suspense_amount) });
@@ -1146,7 +1150,8 @@
       };
       kpi('ce_k_rev', s.revenue_month, 'ce_k_ytd', { v: yen(s.revenue_ytd) });
       kpi('ce_k_profit', s.profit_month, 'ce_k_ytd', { v: yen(s.profit_ytd) });
-      kpi('ce_k_cash', s.cash, s.bank_ok ? 'ce_k_cash_ok' : 'ce_k_cash_ng', null, s.bank_ok ? 'ok' : 'ng');
+      if (short) kpi('ce_k_cash', s.cash, 'ce_k_cash_short', { d: s.bank_through }, 'ng');
+      else kpi('ce_k_cash', s.cash, s.bank_ok ? 'ce_k_cash_ok' : 'ce_k_cash_ng', null, s.bank_ok ? 'ok' : 'ng');
       kpi('ce_k_items', cnt.ask + cnt.todo + cnt.err, 'ce_k_counts', cnt);
       const up = $('ce-up');
       up.replaceChildren();
@@ -1420,6 +1425,7 @@
         let i;
         if (f.kind === 'select') {
           i = select(f.options, prev[f.name] || f.options[0]);
+          i.title = f.name;
           [...i.options].forEach((o) => window.sdfSetText(o, `ce_fx_opt_${o.value}`));
         } else if (f.kind === 'bool') {
           i = el('input');
@@ -1526,6 +1532,6 @@
     renderList(null);
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=b06bf65e9c"></script>
+  <script src="../../js/main.js?v=4afdc8223d"></script>
 </body>
 </html>

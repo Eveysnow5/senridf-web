@@ -677,6 +677,12 @@ const T = {
 
     /* Auth gate (5 つのツールページ共通) */
     ag_verifying: '認証中…',
+    ce_chip_bank_short: '明細は {d} まで（月末は未照合）',
+    ce_k_cash_short: '明細は {d} まで・月末残高は未照合',
+    ce_fx_jm_mode: '住民税の特別徴収',
+    ce_fx_opt_special: 'あり（決定通知書の月額を入れる）',
+    ce_fx_opt_none: 'なし（普通徴収・前年の所得なし等）',
+    ce_fx_from_month: '開始月（YYYY-MM、例 2026-06。翌 5 月まで同額）',
     ce_step_from: '締める期間：開始',
     ce_step_to: '終了',
     ce_fy_chip: '{y}年{m}月期（{from}〜{to}）',
@@ -1572,6 +1578,12 @@ const T = {
 
     /* Auth gate（五个工具页共用） */
     ag_verifying: '验证身份中…',
+    ce_chip_bank_short: '流水只到 {d}（月末未核对）',
+    ce_k_cash_short: '流水只到 {d}，月末余额未核对',
+    ce_fx_jm_mode: '住民税的特别征收',
+    ce_fx_opt_special: '有（填决定通知书上的月额）',
+    ce_fx_opt_none: '没有（普通征收、上年没有收入等）',
+    ce_fx_from_month: '开始月（YYYY-MM，例 2026-06；同额填到下一个 5 月）',
     ce_step_from: '结账期间：从',
     ce_step_to: '到',
     ce_fy_chip: '{y}年{m}月期（{from}〜{to}）',
@@ -2498,6 +2510,12 @@ const T = {
 
     /* Auth gate (shared by the five tool pages) */
     ag_verifying: 'Verifying…',
+    ce_chip_bank_short: 'Statement ends {d} (month end not checked)',
+    ce_k_cash_short: 'Statement ends {d}; month end not checked',
+    ce_fx_jm_mode: 'Resident tax through payroll',
+    ce_fx_opt_special: 'Yes (enter the monthly amount on the notice)',
+    ce_fx_opt_none: 'No (ordinary collection, no income last year…)',
+    ce_fx_from_month: 'First month (YYYY-MM, e.g. 2026-06; same amount through next May)',
     ce_step_from: 'Period: from',
     ce_step_to: 'to',
     ce_fy_chip: 'FY ending {y}-{mm} ({from} – {to})',
