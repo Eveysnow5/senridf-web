@@ -95,6 +95,9 @@
     .ce-pill.on { border-color:#4f46e5;color:#4f46e5;font-weight:600;background:#eef2ff; }
     .ce-pill .dot { display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;background:#16a34a;vertical-align:1px; }
     .ce-pill .dot.ng { background:#dc2626; }
+    /* 回答の下書き（以前の同じ明細の科目） */
+    .ce-sg { font-size:12.5px;color:#1e40af;background:#eff6ff;border-radius:6px;padding:4px 8px; }
+    .ce-sg.far { color:#92400e;background:#fffbeb; }
     .ce-chip.hidden { display:none; } /* .ce-chip の display が .hidden より後ろにあるので明示（無いと前の結果の暫記が残って見える） */
     .ce-kpis { display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:10px; }
     .ce-kpi { border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px; }
@@ -149,6 +152,7 @@
       .ce-grid2 { grid-template-columns:1fr; }
     }
   </style>
+
 
 
 
@@ -1344,7 +1348,11 @@
         diff.classList.toggle('bad', d !== 0);
         window.sdfSetText(diff, 'ce_ans_diff', d.toLocaleString());
       }
-      const prevLines = prev.lines || (prev.account ? [{ ...prev, amount }] : [{ amount }]);
+      // 回答の下書き：以前の同じ明細（同じ相手）の科目。金額が以前と桁違いなら入れずに案内だけ（ボタンで入れられる）
+      const sg = isBank && !prev.action ? x.suggest : null;
+      const sgLine = sg ? { account: sg.account, sub: sg.sub, tax: sg.tax, amount } : null;
+      const sgSure = sg && !sg.far && !sg.ambiguous; // 手本が全部同じ科目・金額も同程度のときだけ下書きに入れる
+      const prevLines = prev.lines || (prev.account ? [{ ...prev, amount }] : sgSure ? [sgLine] : [{ amount }]);
       prevLines.forEach(addLine);
       const split = el('button', 'ce-link', 'ce_ans_split');
       split.type = 'button';
@@ -1354,6 +1362,34 @@
       });
       const bookBox = el('div', 'ce-form');
       bookBox.append(linesBox, diff, split);
+      if (sg) {
+        const note = el('div', `ce-sg${sgSure ? '' : ' far'}`);
+        const txt = el('span');
+        const key = sg.ambiguous ? 'ce_sg_alts' : sg.far ? 'ce_sg_far' : sg.basis === 'same' ? 'ce_sg_same' : 'ce_sg_similar';
+        window.sdfSetText(txt, key, {
+          n: sg.n,
+          acc: sg.sub ? `${sg.account}／${sg.sub}` : sg.account,
+          last: sg.last,
+          desc: sg.last_desc,
+          amounts: sg.amounts.map((a) => a.toLocaleString()).join('・'),
+        });
+        note.appendChild(txt);
+        if (!sgSure) {
+          // 候補ごとにボタン（押すとその科目で下書き）。候補が一つ（金額が桁違い）なら「この科目で入れる」
+          for (const alt of sg.ambiguous ? sg.alts : [sg]) {
+            const use = el('button', 'ce-link', sg.ambiguous ? null : 'ce_sg_use');
+            use.type = 'button';
+            if (sg.ambiguous) use.textContent = `${alt.sub ? `${alt.account}／${alt.sub}` : alt.account}（${alt.n}）`;
+            use.addEventListener('click', () => {
+              linesBox.replaceChildren();
+              addLine({ account: alt.account, sub: alt.sub, tax: alt.tax, amount });
+              sumCheck();
+            });
+            note.append(' ', use);
+          }
+        }
+        bookBox.appendChild(note);
+      }
       form.appendChild(bookBox);
       sumCheck();
 
@@ -1532,6 +1568,6 @@
     renderList(null);
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=4afdc8223d"></script>
+  <script src="../../js/main.js?v=6ae3842441"></script>
 </body>
 </html>

@@ -677,6 +677,15 @@ const T = {
 
     /* Auth gate (5 つのツールページ共通) */
     ag_verifying: '認証中…',
+    ce_sg_same:
+      '同じ摘要の明細 {n} 件を「{acc}」で仕訳済み（最近 {last}）——下書きに入れました。確かめて保存',
+    ce_sg_similar:
+      '同じ相手の明細 {n} 件（例：{desc}）を「{acc}」で仕訳済み（最近 {last}）——下書きに入れました。確かめて保存',
+    ce_sg_far:
+      '同じ相手の明細は「{acc}」で仕訳していますが、金額（以前 {amounts}）と大きく違うので下書きには入れていません。別の取引かもしれません',
+    ce_sg_use: 'この科目で入れる',
+    ce_sg_alts:
+      '同じ摘要（相手）の明細は以前いくつかの科目で仕訳されていて、今回どれかは決められません。選んでください：',
     ce_chip_bank_short: '明細は {d} まで（月末は未照合）',
     ce_k_cash_short: '明細は {d} まで・月末残高は未照合',
     ce_fx_jm_mode: '住民税の特別徴収',
@@ -1578,6 +1587,13 @@ const T = {
 
     /* Auth gate（五个工具页共用） */
     ag_verifying: '验证身份中…',
+    ce_sg_same: '同名流水 {n} 笔以前记作「{acc}」（最近 {last}）——已预填，请确认后保存',
+    ce_sg_similar:
+      '同一收款方的流水 {n} 笔（例：{desc}）以前记作「{acc}」（最近 {last}）——已预填，请确认后保存',
+    ce_sg_far:
+      '同一收款方以前记作「{acc}」，但金额和以前（{amounts}）差很多，可能是别的交易，所以没有预填',
+    ce_sg_use: '仍用这个科目',
+    ce_sg_alts: '同名（同一收款方）的流水以前记过不同的科目，判断不了这次是哪一个，请选择：',
     ce_chip_bank_short: '流水只到 {d}（月末未核对）',
     ce_k_cash_short: '流水只到 {d}，月末余额未核对',
     ce_fx_jm_mode: '住民税的特别征收',
@@ -2510,6 +2526,15 @@ const T = {
 
     /* Auth gate (shared by the five tool pages) */
     ag_verifying: 'Verifying…',
+    ce_sg_same:
+      'Prefilled from {n} earlier row(s) with the same description, booked to “{acc}” (latest {last}) — check and save',
+    ce_sg_similar:
+      'Prefilled from {n} earlier row(s) to the same party (e.g. {desc}), booked to “{acc}” (latest {last}) — check and save',
+    ce_sg_far:
+      'Rows to this party were booked to “{acc}”, but the amount is far from before ({amounts}) — it may be a different kind of payment, so nothing was prefilled',
+    ce_sg_use: 'Use this account',
+    ce_sg_alts:
+      'Rows like this were booked to different accounts before, so this one cannot be decided — choose:',
     ce_chip_bank_short: 'Statement ends {d} (month end not checked)',
     ce_k_cash_short: 'Statement ends {d}; month end not checked',
     ce_fx_jm_mode: 'Resident tax through payroll',
