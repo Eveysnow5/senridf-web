@@ -52,3 +52,18 @@ test('加载器是 ES 模块版，文件在、且与清单的 sha256 一致', ()
     '旧的经典版 pyodide.js 还在',
   );
 });
+
+// 2026-10-11：连接文件夹时「检查资料」和「读证凭索引」同时发出，检查永远停在「正在检查文件…」。
+// 两个原因叠在一起：页面的等待位只有一个却不排队（后一个把前一个顶掉）；Worker 的 init() 可以并发进入
+// （运行环境被装两遍）。用浏览器自带的文件夹接口（OPFS）实测才发现——此前的测试用的是示例公司，不走这条路。
+test('页面发给 Worker 的请求要排队（等待位只有一个）', () => {
+  assert.match(
+    html,
+    /function ask\(msg, transfer\) \{\s*const run = \(\) => askOne\(msg, transfer\);/,
+  );
+  assert.match(html, /askChain\.then\(run, run\)/);
+});
+
+test('Worker 的初始化只做一次（记住 Promise，不是结果）', () => {
+  assert.match(worker, /function init\(\) \{\s*if \(!initing\)/);
+});

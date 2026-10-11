@@ -43,7 +43,20 @@ async function fetchChecked(name, sha) {
   return buf;
 }
 
-async function init() {
+// 初始化只做一次。连接文件夹时页面会同时发「检查资料」和「读证凭索引」两个请求：各自 await init() 的话，
+// 运行环境会被装两遍、互相踩，卡在「正在加载组件」（2026-10-11 用真实的文件夹接口实测发现）。
+// 所以记住的是那个 Promise，不是结果；失败了清掉，下一次请求可以重来。
+let initing = null;
+function init() {
+  if (!initing)
+    initing = load().catch((err) => {
+      initing = null;
+      throw err;
+    });
+  return initing;
+}
+
+async function load() {
   if (py) return py;
   post({ type: 'stage', stage: 'runtime' });
   manifest = await (await fetch(ENGINE + 'manifest.json', { cache: 'no-cache' })).json();

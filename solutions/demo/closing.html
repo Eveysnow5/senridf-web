@@ -179,6 +179,74 @@
       .ce-line { grid-template-columns:1fr 1fr; }
       .ce-grid2 { grid-template-columns:1fr; }
     }
+    /* ── 视觉层（2026-10-11）：只调外观，不改结构和行为。写在最后，覆盖上面的同名规则 ── */
+    .ce-card { border-radius:12px;padding:20px 22px;margin-bottom:16px;box-shadow:0 1px 2px rgba(16,24,40,.04); }
+    .ce-h { font-size:15px;color:#111827;margin-bottom:10px; }
+    .ce-h3 { font-size:13.5px;color:#1f2937; }
+    .ce-hint { font-size:12.5px;color:#4b5563; }
+    .ce-step { display:flex;align-items:center;gap:10px; }
+    .ce-no { display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#4f46e5;color:#fff;font-size:12.5px;font-weight:600;flex:none;font-variant-numeric:tabular-nums; }
+    .ce-opt { font-size:11px;font-weight:500;color:#4b5563;background:#f3f4f6;border-radius:9px;padding:1px 8px; }
+    .ce-btn, .ce-btn2, .ce-link, .ce-pill, .ce-tab, .lang-btn, label.ce-btn2 { cursor:pointer; }
+    .ce-btn { border-radius:8px;padding:9px 18px;transition:background-color .15s ease; }
+    .ce-btn:hover { background:#4338ca; }
+    .ce-btn:active { background:#3730a3; }
+    .ce-btn:disabled { background:#c7d2fe;cursor:not-allowed; }
+    .ce-btn2 { border-radius:8px;padding:7px 14px;font-size:12.5px;transition:background-color .15s ease,border-color .15s ease; }
+    .ce-btn2:hover { border-color:#9ca3af;background:#f9fafb; }
+    .ce-btn2:active { background:#f3f4f6; }
+    .ce-link { font-size:12.5px;text-underline-offset:2px; }
+    .ce-link:hover { color:#3730a3; }
+    .ce-input { border-radius:8px;padding:6px 10px;min-height:34px;background:#fff;color:#111827; }
+    .ce-input:hover { border-color:#9ca3af; }
+    .ce-input:focus-visible { outline:2px solid #818cf8;outline-offset:1px;border-color:#6366f1; }
+    #app button:focus-visible, #app a:focus-visible, #app summary:focus-visible, #app label.ce-btn2:focus-within { outline:2px solid #818cf8;outline-offset:2px;border-radius:6px; }
+    .lang-btn { min-width:30px;min-height:30px;border-radius:6px; }
+    .lang-btn:hover { background:#f3f4f6; }
+    #logout-btn { min-height:30px;padding:0 8px;border-radius:6px; }
+    #logout-btn:hover { background:#f3f4f6; }
+    .ce-privacy { display:flex;gap:10px;align-items:flex-start;border-radius:10px;padding:10px 14px;font-size:12.5px;margin-bottom:12px; }
+    .ce-privacy svg { flex:none;margin-top:2px; }
+    .ce-sample { display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:flex-start;margin:0 0 16px;padding:8px 14px;border:1px dashed #d1d5db;border-radius:10px;background:#fff;font-size:12.5px;color:#4b5563;text-align:left; }
+    .ce-sample .ce-btn2 { padding:4px 12px; }
+    .ce-two { gap:12px;margin:14px 0; }
+    .ce-need-card { display:grid;grid-template-columns:auto 1fr;gap:2px 12px;border-radius:10px;padding:12px 14px; }
+    .ce-need-card > svg { grid-row:1 / span 4;margin-top:1px;color:#6366f1; }
+    .ce-need-card.ok > svg { color:#059669; }
+    .ce-need-card.ng > svg { color:#dc2626; }
+    .ce-need-card > :not(svg) { grid-column:2;min-width:0; }
+    .ce-need-card .t { font-size:14px; }
+    .ce-need-card .d { font-size:12.5px;margin-top:2px; }
+    .ce-need-card .ce-link { margin-top:4px;justify-self:start; }
+    .ce-st { border-radius:9px;padding:1px 8px; }
+    .ce-status:empty { min-height:0;margin-top:0; }
+    details.ce-listbox > summary, details.ce-acct > summary, details.ce-adv summary { border-radius:6px; }
+    details.ce-listbox > summary:hover, details.ce-adv summary:hover { color:#111827; }
+    .ce-table th { font-size:11.5px;letter-spacing:.02em; }
+    .ce-table tbody tr:hover td { background:#fafafa; }
+    .ce-kpis { gap:12px;margin-top:12px; }
+    .ce-kpi { border-radius:10px;padding:10px 14px;background:#fff; }
+    .ce-kpi .v { font-size:21px;letter-spacing:-.01em;margin:1px 0; }
+    .ce-chip { padding:2px 10px; }
+    .ce-pill { min-height:28px;padding:3px 12px;transition:border-color .15s ease,background-color .15s ease; }
+    .ce-tab { min-height:30px;padding:4px 14px;transition:border-color .15s ease,background-color .15s ease; }
+    .ce-tab:hover { border-color:#9ca3af; }
+    .ce-it { border-radius:10px; }
+    .ce-it .r { border-radius:0 10px 10px 0; }
+    .ce-bar { height:6px; }
+    .ce-progress-text { color:#4b5563; }
+    .ce-fs td { padding:4px 4px; }
+    .ce-fs tbody tr.i:hover td { background:#fafafa; }
+    @media (max-width: 760px) {
+      .ce-card { padding:16px 14px; }
+      .ce-it .r { border-radius:0 0 10px 10px; }
+    }
+    @media (max-width: 640px) {
+      #app > header p { display:none; } /* 手机上副标题把标题挤成三行 */
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ce-btn, .ce-btn2, .ce-pill, .ce-tab { transition:none; }
+    }
   </style>
 
 
@@ -221,20 +289,27 @@
     </header>
 
     <main class="max-w-5xl mx-auto px-4 py-6">
-      <div class="ce-privacy" data-i18n="ce_privacy">数据只在这个浏览器里处理，不会发送到服务器。</div>
+      <div class="ce-privacy"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span data-i18n="ce_privacy">数据只在这个浏览器里处理，不会发送到服务器。</span></div>
+      <p class="ce-sample">
+        <span data-i18n="ce_sample_line">先看示例结果：</span>
+        <button type="button" class="ce-btn2" data-sample="tokyo" data-i18n="ce_sample_tokyo">东京虚构公司</button>
+        <button type="button" class="ce-btn2" data-sample="osaka" data-i18n="ce_sample_osaka">大阪虚构公司</button>
+      </p>
 
       <!-- 1. 准备并选择公司资料 -->
       <section class="ce-card">
-        <h2 class="ce-h" data-i18n="ce_step_files">1. 准备公司资料</h2>
+        <h2 class="ce-h ce-step"><span class="ce-no" aria-hidden="true">1</span><span data-i18n="ce_step_files">指定工作文件夹</span></h2>
         <p class="ce-hint" data-i18n="ce_files_intro"></p>
         <div class="ce-two">
           <div class="ce-need-card" id="ce-c-book">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6M12 11v8"/></svg>
             <div class="t"><span translate="no">公司资料.xlsx</span><span class="ce-st wait" data-i18n="ce_s_wait">未检查</span></div>
             <div class="d" data-i18n="ce_c_book_d">公司・员工・期初余额・固定资产等，一张表填一类。</div>
             <div class="x hidden"></div>
             <a class="ce-link" href="closing-engine/template.xlsx" download="公司资料.xlsx" data-i18n="ce_tpl_xlsx">下载空白模板</a>
           </div>
           <div class="ce-need-card" id="ce-c-bank">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-6 9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 20h18"/></svg>
             <div class="t"><span data-i18n="ce_c_bank_t">bank 文件夹（银行流水）</span><span class="ce-st wait" data-i18n="ce_s_wait">未检查</span></div>
             <div class="d" data-i18n="ce_c_bank_d">网银下载的 CSV・Excel 原样放进去，要覆盖到结账月份的月末。</div>
             <div class="x hidden"></div>
@@ -266,7 +341,7 @@
 
       <!-- 1b. 证凭（照片・PDF） -->
       <section class="ce-card" id="ce-ev">
-        <h2 class="ce-h" data-i18n="ce_ev_h">证凭（照片・PDF）</h2>
+        <h2 class="ce-h ce-step"><span class="ce-no" aria-hidden="true">2</span><span data-i18n="ce_ev_h">证凭（照片・PDF）</span><span class="ce-opt" data-i18n="ce_optional">可选</span></h2>
         <p class="ce-hint" data-i18n="ce_ev_intro"></p>
         <p id="ce-ev-need" class="ce-hint" data-i18n="ce_ev_need_folder"></p>
         <div id="ce-ev-body" class="hidden">
@@ -306,7 +381,7 @@
 
       <!-- 2. 结账 -->
       <section class="ce-card">
-        <h2 class="ce-h" data-i18n="ce_step_run">2. 结账</h2>
+        <h2 class="ce-h ce-step"><span class="ce-no" aria-hidden="true">3</span><span data-i18n="ce_step_run">结账</span></h2>
         <div class="ce-row">
           <label class="ce-hint"><span data-i18n="ce_step_from">结账期间：从</span>
             <input type="month" id="ce-from" class="ce-input" title="period start" /></label>
@@ -428,12 +503,6 @@
         </details>
       </section>
 
-      <p class="ce-sample">
-        <span data-i18n="ce_sample_line">还没准备好？先看示例结果：</span>
-        <button type="button" class="ce-link" data-sample="tokyo" data-i18n="ce_sample_tokyo">东京虚构公司</button>
-        ·
-        <button type="button" class="ce-link" data-sample="osaka" data-i18n="ce_sample_osaka">大阪虚构公司</button>
-      </p>
     </main>
   </div>
 
@@ -502,8 +571,10 @@
     function renderList(result) {
       const byId = Object.fromEntries((result?.items || []).map((x) => [x.id, x]));
       const BAD = ['missing', 'error', 'warn'];
-      // 有哪一项缺・格式不对时才展开明细；结账出结果时 render() 会收起
-      $('ce-listbox').open = (result?.items || []).some((x) => BAD.includes(x.status));
+      // 缺・格式不对（结不了账）时才展开明细。提醒（warn）已经写在上面的卡片里，不为它展开；
+      // 结果已经在下面显示着的时候也不动——排在结账后面的检查回来时再展开，会把结果往下顶几百像素
+      if ($('ce-result').classList.contains('hidden'))
+        $('ce-listbox').open = (result?.items || []).some((x) => ['missing', 'error'].includes(x.status));
       // 上面的两张卡片：公司资料.xlsx ＝ 公司・员工・期初余额三项里最差的；bank ＝ 银行流水那一项
       const card = (elId, ids) => {
         const xs = ids.map((i) => byId[i]).filter(Boolean);
@@ -629,7 +700,7 @@
     function getWorker() {
       if (!worker) {
         // ?v=：线上给这个文件 4 小时缓存。Worker 的加载方式变了（经典→module）时改这个值，免得新页面配上缓存里的旧 Worker
-        worker = new Worker('closing-worker.js?v=2', { type: 'module' });
+        worker = new Worker('closing-worker.js?v=3', { type: 'module' });
         worker.onmessage = onWorkerMessage;
         worker.onerror = (ev) => {
           console.error(ev);
@@ -643,8 +714,20 @@
       return worker;
     }
 
-    // 一次只发一个请求。运行环境还没加载完时加时限：被网络/CSP/扩展拦住时 Pyodide 不会报错，只会一直等
+    // 一次只发一个请求——等待位（pending）只有一个，所以请求要排队。以前这句只写在注释里：连接文件夹时
+    // 「检查资料」和「读证凭索引」同时发出，后一个把前一个的等待位顶掉，检查永远停在「正在检查文件…」
+    // （2026-10-11 用真实的文件夹接口实测发现）。
+    let askChain = Promise.resolve();
     function ask(msg, transfer) {
+      const run = () => askOne(msg, transfer);
+      const p = askChain.then(run, run);
+      askChain = p.catch(() => {
+        // 排队用：失败由调用方处理（p 已返回给它），这里只是让下一个请求照常开始
+      });
+      return p;
+    }
+    // 运行环境还没加载完时加时限：被网络/CSP/扩展拦住时 Pyodide 不会报错，只会一直等
+    function askOne(msg, transfer) {
       return new Promise((resolve, reject) => {
         let limit = null;
         if (!ready) {
@@ -1168,7 +1251,11 @@
             if (!reason) return;
           }
           const r = await evDo('confirm', [e.no, values(), by, reason], err);
-          if (r && r.ok) evEditing.delete(e.no);
+          if (r && r.ok !== false) {
+            // 列表是在 evDo 里面重画的，那时这一行还算「修改中」；这里退出修改后再画一次，否则订正成功了行还开着
+            evEditing.delete(e.no);
+            renderEv();
+          }
         });
         act.appendChild(ok);
       } else if (e.status === '確認済') {
@@ -2114,6 +2201,6 @@
     renderList(null);
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=97df39f73e"></script>
+  <script src="../../js/main.js?v=4be2063e02"></script>
 </body>
 </html>

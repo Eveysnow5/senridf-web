@@ -679,9 +679,9 @@ const T = {
     ag_verifying: '認証中…',
     ce_ev_h: '証憑（写真・PDF）',
     ce_ev_intro:
-      '領収書・請求書・納付書などを写真や PDF のまま入れると、このパソコンの中で文字を読み取り、日付・金額・取引先の下書きを作ります（画像は外に送りません）。確かめて「確認」すると索引簿に載り、日付・金額・取引先で検索できます（電子帳簿保存法の検索要件）。原本は名前も中身も変えずに会社フォルダの evidence/ に保存します。',
+      '領収書・請求書・納付書などを写真や PDF のまま入れると、このパソコンの中で文字を読み取り、日付・金額・取引先の下書きを作ります（画像は外に送りません）。確かめて「確認」すると索引簿に載り、日付・金額・取引先で検索できます（電子帳簿保存法の検索要件）。原本は名前も中身も変えずに作業フォルダの evidence/ に保存します。',
     ce_ev_need_folder:
-      '証憑は「会社フォルダを開く」で開いたときに使えます（原本と索引簿をフォルダに書くため）。',
+      '証憑は「作業フォルダを選ぶ」でフォルダを開いたときに使えます（原本と索引簿をフォルダに書くため）。',
     ce_ev_add_paper: '紙の証憑を追加（写真・スキャン）',
     ce_ev_add_elec: '電子で受け取ったファイルを追加',
     ce_ev_kinds:
@@ -902,7 +902,8 @@ const T = {
     ce_logout: 'ログアウト',
     ce_privacy:
       '財務データはこのブラウザの中だけで処理され、サーバーには送信されません。読み込むのは実行環境とエンジン本体だけです。',
-    ce_step_files: '1. 作業フォルダを指定する',
+    ce_optional: '任意',
+    ce_step_files: '作業フォルダを指定する',
     ce_col_file: 'ファイル',
     ce_col_need: '必要なとき',
     ce_col_state: '状態',
@@ -951,7 +952,7 @@ const T = {
     ce_pre_block:
       '不足または書式の誤りがあります。上の一覧に沿って直し、フォルダを選び直してください。',
     ce_pre_engine_err: 'エンジンが読み込みで問題を見つけました：',
-    ce_step_run: '2. 締める',
+    ce_step_run: '締める',
     ce_step_month: '締める月',
     ce_step_lang: 'ワークペーパーの言語',
     ce_lang_zh: '中国語',
@@ -1000,7 +1001,7 @@ const T = {
     ce_answers_none: '未照合の銀行明細はありません。',
     ce_copy: 'コピー',
     ce_copied: 'コピーしました',
-    ce_sample_line: 'まだ準備できていませんか？ 結果の例を見る：',
+    ce_sample_line: 'まず結果の例を見る：',
     ce_sample_tokyo: '東京の架空会社',
     ce_sample_osaka: '大阪の架空会社',
     ce_sample_banner: 'これは架空の会社のサンプルの結果です（実在の会社とは関係ありません）。',
@@ -1643,8 +1644,9 @@ const T = {
     ag_verifying: '验证身份中…',
     ce_ev_h: '凭证（照片・PDF）',
     ce_ev_intro:
-      '把收据、请求书、纳付书等的照片或 PDF 放进来，会在这台电脑里识别文字，生成交易日・金额・交易方的草稿（图片不会上传）。核对后点「确认」就登记进索引簿，可以按交易日・金额・交易方检索（电子账簿保存法的检索要件）。原件不改名、不改内容，保存在公司文件夹的 evidence/ 里。',
-    ce_ev_need_folder: '凭证功能要用「打开公司文件夹」打开后才能用（要把原件和索引簿写进文件夹）。',
+      '把收据、请求书、纳付书等的照片或 PDF 放进来，会在这台电脑里识别文字，生成交易日・金额・交易方的草稿（图片不会上传）。核对后点「确认」就登记进索引簿，可以按交易日・金额・交易方检索（电子账簿保存法的检索要件）。原件不改名、不改内容，保存在工作文件夹的 evidence/ 里。',
+    ce_ev_need_folder:
+      '凭证功能要先用「选择工作文件夹」打开文件夹才能用（要把原件和索引簿写进文件夹）。',
     ce_ev_add_paper: '添加纸质凭证（照片・扫描）',
     ce_ev_add_elec: '添加电子收到的文件',
     ce_ev_kinds:
@@ -1856,7 +1858,8 @@ const T = {
     ce_subtitle: '工资 · 社保 · 源泉 · 银行对账 · 消费税 → 底稿',
     ce_logout: '退出',
     ce_privacy: '财务数据只在这个浏览器里处理，不会发送到服务器。页面只下载运行环境和引擎本身。',
-    ce_step_files: '1. 指定工作文件夹',
+    ce_optional: '可选',
+    ce_step_files: '指定工作文件夹',
     ce_col_file: '文件',
     ce_col_need: '何时需要',
     ce_col_state: '状态',
@@ -1903,7 +1906,7 @@ const T = {
     ce_pre_ok: '文件齐全，可以结账。',
     ce_pre_block: '有缺少或格式错误的文件。请按上面的清单修正后，重新选择文件夹。',
     ce_pre_engine_err: '引擎读取时发现问题：',
-    ce_step_run: '2. 结账',
+    ce_step_run: '结账',
     ce_step_month: '结账月份',
     ce_step_lang: '底稿语言',
     ce_lang_zh: '中文',
@@ -1948,7 +1951,7 @@ const T = {
     ce_answers_none: '没有未匹配的银行流水。',
     ce_copy: '复制',
     ce_copied: '已复制',
-    ce_sample_line: '还没准备好？先看示例结果：',
+    ce_sample_line: '先看示例结果：',
     ce_sample_tokyo: '东京虚构公司',
     ce_sample_osaka: '大阪虚构公司',
     ce_sample_banner: '这是虚构公司样本的结果（与真实公司无关）。',
@@ -2633,9 +2636,9 @@ const T = {
     ag_verifying: 'Verifying…',
     ce_ev_h: 'Evidence (photos & PDFs)',
     ce_ev_intro:
-      'Add receipts, invoices and tax slips as photos or PDFs. The text is read on this computer (images are never uploaded) and a draft with date, amount and party is made. Confirm it to enter it in the index, searchable by date, amount and party (the search rule of the Electronic Books Act). Originals are kept unchanged in evidence/ in the company folder.',
+      'Add receipts, invoices and tax slips as photos or PDFs. The text is read on this computer (images are never uploaded) and a draft with date, amount and party is made. Confirm it to enter it in the index, searchable by date, amount and party (the search rule of the Electronic Books Act). Originals are kept unchanged in evidence/ in the working folder.',
     ce_ev_need_folder:
-      'Evidence needs the company folder opened with “Open company folder” (originals and the index are written there).',
+      'Evidence needs the folder opened with “Choose working folder” (originals and the index are written there).',
     ce_ev_add_paper: 'Add paper documents (photos/scans)',
     ce_ev_add_elec: 'Add files received electronically',
     ce_ev_kinds:
@@ -2860,7 +2863,8 @@ const T = {
     ce_logout: 'Sign out',
     ce_privacy:
       'Your financial data is processed only inside this browser and is never sent to a server. The page downloads only the runtime and the engine itself.',
-    ce_step_files: '1. Choose the working folder',
+    ce_optional: 'Optional',
+    ce_step_files: 'Choose the working folder',
     ce_col_file: 'File',
     ce_col_need: 'When needed',
     ce_col_state: 'Status',
@@ -2913,7 +2917,7 @@ const T = {
     ce_pre_block:
       'Some files are missing or malformed. Fix them following the list above and choose the folder again.',
     ce_pre_engine_err: 'The engine found a problem:',
-    ce_step_run: '2. Close the month',
+    ce_step_run: 'Close the month',
     ce_step_month: 'Month',
     ce_step_lang: 'Workpaper language',
     ce_lang_zh: 'Chinese',
@@ -2961,7 +2965,7 @@ const T = {
     ce_answers_none: 'No unmatched bank rows.',
     ce_copy: 'Copy',
     ce_copied: 'Copied',
-    ce_sample_line: 'Not ready yet? See an example result:',
+    ce_sample_line: 'See an example result first:',
     ce_sample_tokyo: 'Fictional Tokyo company',
     ce_sample_osaka: 'Fictional Osaka company',
     ce_sample_banner: 'This is the result for a fictional sample company.',
