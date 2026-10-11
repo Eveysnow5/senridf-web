@@ -562,7 +562,8 @@
 
     function getWorker() {
       if (!worker) {
-        worker = new Worker('closing-worker.js');
+        // ?v=：线上给这个文件 4 小时缓存。Worker 的加载方式变了（经典→module）时改这个值，免得新页面配上缓存里的旧 Worker
+        worker = new Worker('closing-worker.js?v=2', { type: 'module' });
         worker.onmessage = onWorkerMessage;
         worker.onerror = (ev) => {
           console.error(ev);

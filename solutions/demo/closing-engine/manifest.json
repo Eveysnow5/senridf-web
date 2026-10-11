@@ -1,6 +1,6 @@
 {
  "pyodide": "314.0.7",
- "source_revision": "3ef20fe",
+ "source_revision": "57b5f48",
  "bundle": {
   "name": "jpclose-bundle.zip",
   "sha256": "b8a5ddee3dd19f081c8898152b744ef04a4e1ec831a7450862f9fa996acef8e0",
@@ -22,9 +22,9 @@
   }
  ],
  "loader": {
-  "name": "pyodide.js",
-  "sha256": "3141b814715a72e59b51b1b18b9ceae5bf19f7c852417e431bb0a34feadf825c",
-  "sri": "sha384-hYKrcQ7FiKU7f1c92md9N2eh7BoBVX4CPkNDfQyyVclsjZevvDOBUkajGcYk1EF8"
+  "name": "pyodide.mjs",
+  "sha256": "6f1d60f7bf529beb300f0f47983c921d3982363640ba20af0e38efdddbc66109",
+  "sri": "sha384-Lp79fMwxa4n2BLtugpUAoQMlbxIdg8iCUiP1r3h7nJLkQjwlXT1JzZTeHVL+f4Dg"
  },
  "template": {
   "name": "template.zip",
@@ -32,7 +32,7 @@
  },
  "template_xlsx": {
   "name": "template.xlsx",
-  "sha256": "160fdc898947e602cfbd3ca6643c8b4d3e864dada469581a730ed8603e97eeab"
+  "sha256": "e7fd64bf99cd865acd161843db8b95e533d9a8b4de38381bc966cc52a7d371a1"
  },
  "note": "引擎在浏览器内运行，财务数据不上传。/ エンジンはブラウザ内で動き、財務データは送信されない。"
 }

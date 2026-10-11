@@ -4,17 +4,20 @@
  * 用户会以为卡死（作者 2026-10-09）。放到 Worker 后主线程空闲，进度条和计时可以实时更新。
  *
  * 数据：公司文件只写进 Pyodide 的内存文件系统，不发任何网络请求。
- * 网络只有三类：Pyodide 运行时（jsdelivr，wasm/标准库/pyyaml）、本站的引擎包与 wheel、本站的 pyodide.js。
- * pyodide.js 放在本站而不是 CDN：Worker 的 importScripts 不能带 SRI，所以由构建脚本核对公开版哈希后同源发布，
+ * 网络只有三类：Pyodide 运行时（jsdelivr，wasm/标准库/pyyaml）、本站的引擎包与 wheel、本站的 pyodide.mjs。
+ * pyodide.mjs 放在本站而不是 CDN：Worker 里的 import() 不能带 SRI，所以由构建脚本核对公开版哈希后同源发布，
  * 这里再按 manifest 的 sha256 核对一次。
+ *
+ * 必须是 module Worker（closing.html 用 new Worker(url, { type: 'module' }) 起）：这一版 Pyodide 不支持经典 Worker，
+ * 加载器用「importScripts('data:…') 能不能成功」来判断，能成功就直接抛错。CSP 强制拦截时那一句被拦下、
+ * 判断失灵，经典 Worker 反而能跑——而线上的 CSP 只是 Report-Only。2026-10-11 之前的浏览器实测全在强制拦截的
+ * 预览环境里做，所以一直是绿的，线上却是坏的。tests/closing-worker-module.test.mjs 钉住这一条。
  *
  * 消息（页面 → Worker）：{cmd:'init'} / {cmd:'precheck', files, month, ui}
  *                       / {cmd:'run', source, month, lang, today, answers, ui, edits}
  * 消息（Worker → 页面）：{type:'stage', stage} / {type:'progress', stage, i, n, label}
  *                       / {type:'precheck', result} / {type:'result', result, xlsx, book} / {type:'error', kind, message}
  */
-'use strict';
-
 const ENGINE = 'closing-engine/';
 const ROOT = '/opt/jpclose';
 const WORK = '/work/company';
@@ -46,7 +49,9 @@ async function init() {
   manifest = await (await fetch(ENGINE + 'manifest.json', { cache: 'no-cache' })).json();
   // 引擎包、wheel、加载器都按 manifest 的 sha256 校验：部署到一半或缓存串版时停下，而不是跑出错的数
   await fetchChecked(manifest.loader.name, manifest.loader.sha256);
-  importScripts(ENGINE + manifest.loader.name);
+  const { loadPyodide } = await import(
+    new URL(ENGINE + manifest.loader.name, self.location.href).href
+  );
   const p = await loadPyodide({
     indexURL: `https://cdn.jsdelivr.net/pyodide/v${manifest.pyodide}/full/`,
   });

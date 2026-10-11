@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 //   2. 那三处修好的地方不许退回去。
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-// closing-engine：月结引擎的构建产物（含第三方 pyodide.js 原样副本，由 build_web_bundle.py 按公开版哈希核对后发布），
+// closing-engine：月结引擎的构建产物（含第三方 pyodide.mjs 原样副本，由 build_web_bundle.py 按公开版哈希核对后发布），
 // 不是本站手写的代码，改它等于改第三方库。
 const SKIP = new Set([
   'node_modules',
