@@ -17,8 +17,8 @@
     .ag-spinner { width:28px;height:28px;border:2px solid #e5e7eb;border-top-color:#6366f1;border-radius:50%;animation:ag-s .8s linear infinite;margin:0 auto; }
     .ag-text { color:#9ca3af;font-size:13px;margin-top:12px;font-family:sans-serif; }
     @keyframes ag-s { to { transform: rotate(360deg); } }
-    .lang-btn { color:#9ca3af; }
-    .lang-btn:hover { color:#4b5563; }
+    .lang-btn { color:#6b7280; }
+    .lang-btn:hover { color:#374151; }
     .lang-btn.active { color:#4f46e5;font-weight:600; }
     /* 页面局部样式（不进 Tailwind 构建） */
     .ce-card { background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px 18px;margin-bottom:14px; }
@@ -52,7 +52,7 @@
     .ce-st { display:inline-block;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;white-space:nowrap; }
     .ce-st.PASS, .ce-st.ok { background:#d1fae5;color:#047857; }
     .ce-st.FAIL, .ce-st.missing, .ce-st.error { background:#fee2e2;color:#b91c1c; }
-    .ce-st.SKIP, .ce-st.absent, .ce-st.wait { background:#f3f4f6;color:#6b7280; }
+    .ce-st.SKIP, .ce-st.absent, .ce-st.wait { background:#f3f4f6;color:#4b5563; }
     .ce-st.warn { background:#fef3c7;color:#92400e; }
     .ce-need { font-size:11px;color:#6b7280;white-space:nowrap; }
     .ce-need.required { color:#b91c1c;font-weight:600; }
@@ -66,7 +66,7 @@
     .ce-progress-text { display:flex;justify-content:space-between;gap:12px;font-size:12px;color:#374151;margin-top:6px; }
     .ce-sample { font-size:12px;color:#6b7280;margin:18px 0 6px;text-align:center; }
     .ce-banner { background:#eef2ff;color:#3730a3;border-radius:6px;padding:6px 10px;font-size:12px;margin-bottom:10px; }
-    .ce-sheets { font-size:11px;color:#6366f1;margin-top:1px; }
+    .ce-sheets { font-size:11px;color:#4f46e5;margin-top:1px; }
     .ce-ans-row td { background:#f9fafb; }
     .ce-form { display:grid;gap:8px;padding:6px 0; }
     .ce-form label { font-size:11px;color:#6b7280; }
@@ -98,6 +98,14 @@
     /* 回答の下書き（以前の同じ明細の科目） */
     .ce-sg { font-size:12.5px;color:#1e40af;background:#eff6ff;border-radius:6px;padding:4px 8px; }
     .ce-sg.far { color:#92400e;background:#fffbeb; }
+    /* 结账后滚到结果：顶栏是 sticky（约 65px），不留出来会盖住公司名和月份切换 */
+    #ce-result { scroll-margin-top:78px; }
+    /* 资料清单：出结果后收成一行（11 行约 1000px，每次回看结果都要滚过去） */
+    details.ce-listbox > summary { cursor:pointer;font-size:12.5px;color:#374151;padding:4px 0; }
+    /* 理由（取消・订正）：页面内的小表单，代替 window.prompt */
+    .ce-reason { display:grid;gap:6px;margin-top:6px;padding:8px;border:1px solid #e5e7eb;border-radius:6px;background:#f9fafb;min-width:16em; }
+    .ce-reason label { font-size:11.5px;color:#374151;white-space:normal; }
+    @media (prefers-reduced-motion: reduce) { .ce-bar > div { transition:none; } }
     .ce-chip.hidden { display:none; } /* .ce-chip の display が .hidden より後ろにあるので明示（無いと前の結果の暫記が残って見える） */
     .ce-kpis { display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:10px; }
     .ce-kpi { border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px; }
@@ -118,7 +126,7 @@
     .ce-fs tr.h td { font-weight:600;color:#111827;padding-top:9px;border-bottom:1px solid #9ca3af; }
     .ce-fs tr.i td:first-child { padding-left:16px; }
     .ce-fs tr.t td { font-weight:600;color:#111827;border-top:1px solid #9ca3af; }
-    .ce-fs .cn { color:#9ca3af;font-size:11px;margin-left:4px; }
+    .ce-fs .cn { color:#6b7280;font-size:11px;margin-left:4px; }
     .ce-tabs { display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px; }
     .ce-tab { border:1px solid #d1d5db;background:#fff;color:#374151;border-radius:16px;padding:3px 14px;font-size:13px;display:inline-flex;gap:8px;align-items:center; }
     .ce-tab .n { font-size:11px;border-radius:9px;padding:0 7px;background:#f3f4f6;font-variant-numeric:tabular-nums; }
@@ -211,12 +219,15 @@
           <a class="ce-btn" href="closing-engine/template.xlsx" download="公司资料.xlsx" data-i18n="ce_tpl_xlsx">下载 Excel 模板（推荐）</a>
           <a class="ce-btn2" href="closing-engine/template.zip" download="公司资料模板.zip" data-i18n="ce_tpl_yaml">YAML 模板（进阶）</a>
         </div>
+        <details id="ce-listbox" class="ce-listbox" open>
+        <summary data-i18n="ce_list_toggle">资料清单（11 项）</summary>
         <div class="ce-table-wrap">
           <table class="ce-table">
             <thead><tr><th>#</th><th data-i18n="ce_col_file">文件</th><th data-i18n="ce_col_need">何时需要</th><th data-i18n="ce_col_state">状态</th></tr></thead>
             <tbody id="ce-list"></tbody>
           </table>
         </div>
+        </details>
         <div class="ce-row" style="margin-top:12px">
           <button type="button" id="ce-open" class="ce-btn hidden" data-i18n="ce_open_folder">打开公司文件夹</button>
           <label class="ce-btn2" for="ce-folder" data-i18n="ce_pick_folder">选择公司资料文件夹</label>
@@ -225,7 +236,7 @@
         </div>
         <p class="ce-hint" style="margin-top:6px" data-i18n="ce_upload_hint"></p>
         <p id="ce-open-hint" class="ce-hint hidden" data-i18n="ce_open_hint"></p>
-        <p id="ce-pre" class="ce-status"></p>
+        <p id="ce-pre" class="ce-status" aria-live="polite"></p>
       </section>
 
       <!-- 1b. 证凭（照片・PDF） -->
@@ -244,7 +255,7 @@
           </div>
           <p class="ce-hint" data-i18n="ce_ev_kinds"></p>
           <div id="ce-ev-notices"></div>
-          <p id="ce-ev-progress" class="ce-status"></p>
+          <p id="ce-ev-progress" class="ce-status" aria-live="polite"></p>
           <div class="ce-row ce-ev-q">
             <label class="ce-hint"><span data-i18n="ce_ev_q_date">交易日</span>
               <input type="date" id="ce-ev-q-from" class="ce-input" title="from" />〜<input type="date" id="ce-ev-q-to" class="ce-input" title="to" /></label>
@@ -291,7 +302,7 @@
           <div class="ce-progress-text"><span id="ce-stage"></span><span id="ce-elapsed"></span></div>
           <p class="ce-hint" data-i18n="ce_p_note"></p>
         </div>
-        <p id="ce-status" class="ce-status"></p>
+        <p id="ce-status" class="ce-status" aria-live="polite"></p>
         <p class="ce-hint" data-i18n="ce_disclaimer"></p>
       </section>
 
@@ -334,7 +345,7 @@
           <div class="ce-card">
             <h2 class="ce-h3" data-i18n="ce_pl_h">利润表</h2>
             <table class="ce-fs">
-              <thead><tr><th></th><th data-i18n="ce_pl_month">本月</th><th data-i18n="ce_pl_ytd">本期累计</th></tr></thead>
+              <thead><tr><td></td><th data-i18n="ce_pl_month">本月</th><th data-i18n="ce_pl_ytd">本期累计</th></tr></thead>
               <tbody id="ce-pl"></tbody>
             </table>
           </div>
@@ -449,6 +460,10 @@
     let lastLang = 'zh'; // 最后一次结账的底稿语言
     let wpCache = {}; // 「月份|语言」→ 底稿 xlsx（期间末的月份结账时就有，其他月份点到才生成）
     let answers = {}; // 页面上填的回答 {key: {...}}（本次会话内保留）
+    // 回答只在内存里（写进公司文件夹后会清空，见 answers = {}）。还有没写出去的就在离开前提醒一次
+    window.addEventListener('beforeunload', (ev) => {
+      if (Object.keys(answers).length) ev.preventDefault();
+    });
     let lastBook = null; // 回答写回后的公司资料.xlsx（Uint8Array）
     let lastDecisions = ''; // 合并后的 decisions.yaml
     let dirHandle = null; // 「打开公司文件夹」で得た読み書きできるフォルダ（Chrome / Edge）。無ければ従来の選択＋下载
@@ -460,6 +475,8 @@
 
     // ── 清单渲染 ─────────────────────────────────────────────────────────────
     function renderList(result) {
+      // 选了文件夹、有检查结果时展开（要看哪一项缺）；结账出结果时 render() 会收起
+      if (result) $('ce-listbox').open = true;
       const byId = Object.fromEntries((result?.items || []).map((x) => [x.id, x]));
       const tb = $('ce-list');
       tb.replaceChildren();
@@ -980,6 +997,49 @@
       }
       return v;
     }
+    // 取消・订正的理由：在那一行里展开一个小表单（window.prompt 会被「禁止此页面再弹窗」关掉，关掉后点了没反应）。
+    // 返回理由；点「取消」或按 Esc 返回 ''。同一行已经开着就不再开第二个
+    function askReason(host, labelKey) {
+      return new Promise((resolve) => {
+        if (host.querySelector('.ce-reason')) return resolve('');
+        const box = el('div', 'ce-reason');
+        const id = `ce-reason-${++reasonSeq}`;
+        const label = el('label', '', labelKey);
+        label.htmlFor = id;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = id;
+        input.className = 'ce-input';
+        input.autocomplete = 'off';
+        const err = el('div', 'ce-err');
+        err.setAttribute('aria-live', 'polite');
+        const ok = el('button', 'ce-btn2', 'ce_ev_reason_ok');
+        const cancel = el('button', 'ce-link', 'ce_ans_cancel');
+        ok.type = cancel.type = 'button';
+        const row = el('div', 'ce-row');
+        row.append(ok, cancel);
+        box.append(label, input, err, row);
+        const done = (v) => {
+          box.remove();
+          resolve(v);
+        };
+        const submit = () => {
+          const v = input.value.trim();
+          if (!v) return window.sdfSetText(err, 'ce_ev_reason_need');
+          done(v);
+        };
+        ok.addEventListener('click', submit);
+        cancel.addEventListener('click', () => done(''));
+        input.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter') submit();
+          if (ev.key === 'Escape') done('');
+        });
+        host.appendChild(box);
+        input.focus();
+      });
+    }
+    let reasonSeq = 0;
+
     async function evDo(op, args, errBox) {
       const r = await evAsk(op, args);
       if (r && r.ok === false) {
@@ -1053,7 +1113,7 @@
           if (!by) return window.sdfSetText(err, 'ce_ans_err_by');
           let reason = '';
           if (e.status === '確認済') {
-            reason = (window.prompt(window.sdfT('ce_ev_reason_fix')) || '').trim();
+            reason = await askReason(act, 'ce_ev_reason_fix');
             if (!reason) return;
           }
           const r = await evDo('confirm', [e.no, values(), by, reason], err);
@@ -1075,7 +1135,7 @@
         rm.addEventListener('click', async () => {
           const by = evBy();
           if (!by) return window.sdfSetText(err, 'ce_ans_err_by');
-          const reason = (window.prompt(window.sdfT('ce_ev_reason_void')) || '').trim();
+          const reason = await askReason(act, 'ce_ev_reason_void');
           if (reason) await evDo('void', [e.no, by, reason], err);
         });
         act.appendChild(rm);
@@ -1245,6 +1305,13 @@
         setStatus($('ce-status'), errKey(err), err.kind === 'runtime' ? ` ${err.message}` : '', true);
       } finally {
         showProgress(false);
+        if (scrollPending) {
+          scrollPending = false;
+          $('ce-result').scrollIntoView({
+            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+            block: 'start',
+          });
+        }
         $('ce-run').disabled = !prechecked;
         document.querySelectorAll('[data-sample]').forEach((b) => (b.disabled = false));
         updateRerun();
@@ -1252,6 +1319,7 @@
     }
 
     let isSampleRun = false;
+    let scrollPending = false;
     let reportsInFolder = false;
     function forMonth(r, month) {
       const p = (r.periods || []).find((x) => x.month === month);
@@ -1459,7 +1527,8 @@
       $('ce-answers').value = r.answers || '';
       $('ce-answers-box').classList.toggle('hidden', !r.answers);
       $('ce-answers-none').classList.toggle('hidden', !!r.answers);
-      $('ce-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      $('ce-listbox').open = false;
+      scrollPending = true; // 滚动留到进度条收起之后（run 的 finally）：先滚的话，进度条一收页面又短 65px，结果的头被顶栏盖住
     }
 
     // ── 结果：汇总・报表・事项 ─────────────────────────────────────────────────
@@ -1647,6 +1716,7 @@
       document.querySelectorAll('[data-bucket]').forEach((b) => {
         b.querySelector('.n').textContent = String(cnt[b.dataset.bucket]);
         b.classList.toggle('on', b.dataset.bucket === bucketOn);
+        b.setAttribute('aria-selected', String(b.dataset.bucket === bucketOn));
       });
       window.sdfSetText($('ce-b-lead'), `ce_lead_${bucketOn}`);
       const box = $('ce-items');
@@ -1993,6 +2063,6 @@
     renderList(null);
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=b675325d6c"></script>
+  <script src="../../js/main.js?v=32ad7f99e7"></script>
 </body>
 </html>
