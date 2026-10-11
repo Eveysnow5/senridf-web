@@ -711,7 +711,13 @@ const T = {
     ce_ev_void: '取消',
     ce_ev_reason_ok: '決定',
     ce_ev_reason_need: '理由を入力してください',
-    ce_list_toggle: '資料チェックリスト（11 項目）',
+    ce_s_note: '⚠ 下の説明を確認',
+    ce_c_book_d: '会社・従業員・期首残高・固定資産など、シートごとに記入します。',
+    ce_c_bank_t: 'bank フォルダ（銀行明細）',
+    ce_c_bank_d: 'ネットバンキングの CSV・Excel をそのまま入れます。決算する月の月末まで必要です。',
+    ce_pick_tip:
+      'フォルダを選ぶ画面にはフォルダだけが表示されます（中のファイルが見えないのは正常です）。作業フォルダを開いてから「フォルダーの選択」を押してください。',
+    ce_list_toggle: '項目ごとの確認結果（11 項目）',
     ce_ev_reason_fix: '確認済の行を直す理由（訂正削除記録に残ります）',
     ce_ev_reason_void: '取り消す理由（行も原本も消さず、記録に残ります）',
     ce_ev_dup: '{name} は取り込み済みです（同じ中身）',
@@ -773,7 +779,7 @@ const T = {
     ce_fs_written: '{name} に書き込みました（元のファイルの控え：{path}）',
     ce_dl_file: '{name} をダウンロード',
     ce_dl_report: '{name}',
-    ce_open_folder: '会社フォルダを開く',
+    ce_open_folder: '作業フォルダを選ぶ',
     ce_open_hint:
       'Chrome・Edge では、フォルダを直接読み書きできます：締めの結果と回答が自動でフォルダに保存されます（毎回、ブラウザが許可を確認します）。他のブラウザは「フォルダを選ぶ」（読み取りのみ、ダウンロードが必要）。',
     ce_fs_connected: '接続済み：{name}（読み書き・{n} ファイル）',
@@ -854,9 +860,9 @@ const T = {
     ce_how_both: '回答／表',
     ce_how_contact: '連絡',
     ce_files_intro:
-      '下の一覧の情報を一つのフォルダにまとめます。おすすめは Excel テンプレート（公司资料.xlsx）：表ごとに記入し、ネットバンキングの明細（bank/）と同じフォルダに置くだけです。フォルダを選ぶと、各項目の有無と書式をその場で確認します。',
-    ce_tpl_xlsx: 'Excel テンプレート（おすすめ）',
-    ce_tpl_yaml: 'YAML テンプレート（上級）',
+      '作業フォルダに入れるものは 2 つです。シートに記入した「公司资料.xlsx」と、ネットバンキングからダウンロードした明細（bank サブフォルダへ）。フォルダを選ぶと、その場で不足や形式を確認します。決算の結果と回答もこのフォルダに保存されます。',
+    ce_tpl_xlsx: '空のテンプレートをダウンロード',
+    ce_tpl_yaml: '上級者向け：YAML テンプレート',
     ce_wb_sheets: 'Excel の表：',
     ce_fd_decisions:
       '締めたあと、この画面の「回答」ボタンで答えればよい（Excel の「回答」表に書き戻せます）',
@@ -896,7 +902,7 @@ const T = {
     ce_logout: 'ログアウト',
     ce_privacy:
       '財務データはこのブラウザの中だけで処理され、サーバーには送信されません。読み込むのは実行環境とエンジン本体だけです。',
-    ce_step_files: '1. 会社の資料を用意する',
+    ce_step_files: '1. 作業フォルダを指定する',
     ce_col_file: 'ファイル',
     ce_col_need: '必要なとき',
     ce_col_state: '状態',
@@ -935,7 +941,7 @@ const T = {
     ce_s_error: '✗ 書式の誤り',
     ce_s_absent: '— なし',
     ce_s_warn: '⚠ 今月は必要',
-    ce_pick_folder: '会社資料のフォルダを選ぶ',
+    ce_pick_folder: '作業フォルダを選ぶ',
     ce_upload_none: 'フォルダが選ばれていません',
     ce_upload_count: '{n} ファイルを選択済み',
     ce_upload_hint:
@@ -967,7 +973,8 @@ const T = {
       'エンジンのファイルが壊れているか、更新の途中です。ページを再読み込みしてください。',
     ce_err_load:
       '実行環境を読み込めませんでした。ネットワーク、または広告ブロックなどの拡張機能を確認してから再読み込みしてください。',
-    ce_err_no_company: '選んだフォルダに company.yaml がありません。',
+    ce_err_no_company:
+      '選んだフォルダに「公司资料.xlsx」がありません。このファイルが入っているフォルダそのものを選んでください（1 つ上のフォルダや bank フォルダではありません）。',
     ce_err_no_month: '月を選んでください。',
     ce_err_company: '会社データに問題があります：',
     ce_err_close: '締め処理が止まりました：',
@@ -1667,7 +1674,13 @@ const T = {
     ce_ev_void: '取消',
     ce_ev_reason_ok: '确定',
     ce_ev_reason_need: '请填写理由',
-    ce_list_toggle: '资料清单（11 项）',
+    ce_s_note: '⚠ 请看下面的说明',
+    ce_c_book_d: '公司・员工・期初余额・固定资产等，一张表填一类。',
+    ce_c_bank_t: 'bank 文件夹（银行流水）',
+    ce_c_bank_d: '网银下载的 CSV・Excel 原样放进去，要覆盖到结账月份的月末。',
+    ce_pick_tip:
+      '选文件夹的对话框里只显示文件夹，看不到里面的文件是正常的：点进工作文件夹后，按「选择文件夹」。',
+    ce_list_toggle: '各项检查明细（11 项）',
     ce_ev_reason_fix: '修改已确认条目的理由（会记入修改删除记录）',
     ce_ev_reason_void: '取消的理由（条目和原件都不删除，会留下记录）',
     ce_ev_dup: '{name} 已经导入过了（内容相同）',
@@ -1725,7 +1738,7 @@ const T = {
     ce_fs_written: '已写进 {name}（原文件备份：{path}）',
     ce_dl_file: '下载 {name}',
     ce_dl_report: '{name}',
-    ce_open_folder: '打开公司文件夹',
+    ce_open_folder: '选择工作文件夹',
     ce_open_hint:
       'Chrome、Edge 可以直接读写这个文件夹：结账结果和回答会自动存回去（每次浏览器都会确认权限）。其他浏览器请用「选择文件夹」（只读，需要下载）。',
     ce_fs_connected: '已连接：{name}（读写・{n} 个文件）',
@@ -1803,9 +1816,9 @@ const T = {
     ce_how_both: '回答或改表',
     ce_how_contact: '联系我们',
     ce_files_intro:
-      '把下面清单里的资料放进同一个文件夹。推荐用 Excel 模板（公司资料.xlsx）：按表填写，和网银下载的流水（bank/ 文件夹）放在一起即可。选好文件夹后，会当场检查每一项是否齐全、格式是否正确。',
-    ce_tpl_xlsx: '下载 Excel 模板（推荐）',
-    ce_tpl_yaml: 'YAML 模板（进阶）',
+      '工作文件夹里放两样东西：按表填好的「公司资料.xlsx」，和网银下载的流水（放进 bank 子文件夹）。选好文件夹后会当场检查是否齐全；结账结果和回答也存回这个文件夹。',
+    ce_tpl_xlsx: '下载空白模板',
+    ce_tpl_yaml: '进阶：YAML 模板',
     ce_wb_sheets: 'Excel 表：',
     ce_fd_decisions: '结账后直接在本页点「回答」即可（可写回 Excel 的「回答」表）',
     ce_col_answer: '回答',
@@ -1843,7 +1856,7 @@ const T = {
     ce_subtitle: '工资 · 社保 · 源泉 · 银行对账 · 消费税 → 底稿',
     ce_logout: '退出',
     ce_privacy: '财务数据只在这个浏览器里处理，不会发送到服务器。页面只下载运行环境和引擎本身。',
-    ce_step_files: '1. 准备公司资料',
+    ce_step_files: '1. 指定工作文件夹',
     ce_col_file: '文件',
     ce_col_need: '何时需要',
     ce_col_state: '状态',
@@ -1881,7 +1894,7 @@ const T = {
     ce_s_error: '✗ 格式错误',
     ce_s_absent: '— 未提供',
     ce_s_warn: '⚠ 本月需要',
-    ce_pick_folder: '选择公司资料文件夹',
+    ce_pick_folder: '选择工作文件夹',
     ce_upload_none: '尚未选择文件夹',
     ce_upload_count: '已选择 {n} 个文件',
     ce_upload_hint:
@@ -1908,7 +1921,8 @@ const T = {
     ce_status_done: '完成',
     ce_err_bundle: '引擎文件损坏或正在更新，请刷新页面。',
     ce_err_load: '运行环境加载失败。请检查网络，或广告拦截等浏览器扩展后刷新页面。',
-    ce_err_no_company: '所选文件夹里没有 company.yaml。',
+    ce_err_no_company:
+      '所选文件夹里没有「公司资料.xlsx」。请选放着这个文件的那一层文件夹（不是它的上一级，也不是 bank 文件夹）。',
     ce_err_no_month: '请选择月份。',
     ce_err_company: '公司数据有问题：',
     ce_err_close: '结账处理中止：',
@@ -2651,7 +2665,15 @@ const T = {
     ce_ev_void: 'Cancel',
     ce_ev_reason_ok: 'OK',
     ce_ev_reason_need: 'Enter a reason',
-    ce_list_toggle: 'File checklist (11 items)',
+    ce_s_note: '⚠ See the note below',
+    ce_c_book_d:
+      'Company, employees, opening balances, fixed assets and so on, one sheet per topic.',
+    ce_c_bank_t: '“bank” folder (bank statements)',
+    ce_c_bank_d:
+      'Put the CSV or Excel files from online banking in as they are. They must run to the end of the month you are closing.',
+    ce_pick_tip:
+      'The folder dialog shows folders only, so not seeing your files there is normal. Open the working folder, then press “Select Folder”.',
+    ce_list_toggle: 'Check details (11 items)',
     ce_ev_reason_fix: 'Reason for changing a confirmed row (kept in the correction log)',
     ce_ev_reason_void:
       'Reason for cancelling (the row and the original are kept, and the reason is logged)',
@@ -2715,7 +2737,7 @@ const T = {
     ce_fs_written: 'Written into {name} (backup of the old file: {path})',
     ce_dl_file: 'Download {name}',
     ce_dl_report: '{name}',
-    ce_open_folder: 'Open company folder',
+    ce_open_folder: 'Choose working folder',
     ce_open_hint:
       'In Chrome or Edge the folder is read and written directly: results and answers are saved back automatically (the browser asks for permission each time). Other browsers: “Choose folder” (read-only, downloads needed).',
     ce_fs_connected: 'Connected: {name} (read/write, {n} files)',
@@ -2795,9 +2817,9 @@ const T = {
     ce_how_both: 'Answer or sheet',
     ce_how_contact: 'Contact us',
     ce_files_intro:
-      'Put the information below into one folder. Recommended: the Excel template (公司资料.xlsx) — fill in each sheet and keep it with your bank downloads (bank/). When you choose the folder, each item is checked on the spot.',
-    ce_tpl_xlsx: 'Excel template (recommended)',
-    ce_tpl_yaml: 'YAML templates (advanced)',
+      'The working folder holds two things: the filled-in workbook “公司资料.xlsx”, and the bank statements downloaded from online banking (in a “bank” subfolder). Once you choose the folder, the page checks right away that everything is there. Results and answers are saved back to the same folder.',
+    ce_tpl_xlsx: 'Download the blank workbook',
+    ce_tpl_yaml: 'Advanced: YAML templates',
     ce_wb_sheets: 'Excel sheets:',
     ce_fd_decisions:
       'After a run, answer with the buttons on this page (they can be written back to the Excel sheet)',
@@ -2838,7 +2860,7 @@ const T = {
     ce_logout: 'Sign out',
     ce_privacy:
       'Your financial data is processed only inside this browser and is never sent to a server. The page downloads only the runtime and the engine itself.',
-    ce_step_files: '1. Prepare your company files',
+    ce_step_files: '1. Choose the working folder',
     ce_col_file: 'File',
     ce_col_need: 'When needed',
     ce_col_state: 'Status',
@@ -2881,7 +2903,7 @@ const T = {
     ce_s_error: '✗ Format error',
     ce_s_absent: '— Not provided',
     ce_s_warn: '⚠ Needed this month',
-    ce_pick_folder: 'Choose the company folder',
+    ce_pick_folder: 'Choose working folder',
     ce_upload_none: 'No folder selected',
     ce_upload_count: '{n} files selected',
     ce_upload_hint:
@@ -2912,7 +2934,8 @@ const T = {
     ce_err_bundle: 'The engine files are damaged or mid-update. Please reload the page.',
     ce_err_load:
       'Could not load the runtime. Check your network or browser extensions such as ad blockers, then reload.',
-    ce_err_no_company: 'The selected folder has no company.yaml.',
+    ce_err_no_company:
+      'The selected folder has no “公司资料.xlsx”. Choose the folder that holds this file itself (not its parent, and not the “bank” folder).',
     ce_err_no_month: 'Please choose a month.',
     ce_err_company: 'Problem in the company data:',
     ce_err_close: 'The close stopped:',

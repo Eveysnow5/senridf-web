@@ -101,12 +101,24 @@
     /* 结账后滚到结果：顶栏是 sticky（约 65px），不留出来会盖住公司名和月份切换 */
     #ce-result { scroll-margin-top:78px; }
     /* 资料清单：出结果后收成一行（11 行约 1000px，每次回看结果都要滚过去） */
-    details.ce-listbox > summary { cursor:pointer;font-size:12.5px;color:#374151;padding:4px 0; }
+    details.ce-listbox { margin-top:12px; }
+    details.ce-listbox > summary { cursor:pointer;font-size:12.5px;color:#4b5563;padding:4px 0; }
+    /* 第 1 步：工作文件夹里要放的两样东西 */
+    .ce-two { display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0; }
+    .ce-need-card { border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;min-width:0; }
+    .ce-need-card.ok { border-color:#a7f3d0;background:#f0fdf4; }
+    .ce-need-card.ng { border-color:#fecaca;background:#fef2f2; }
+    .ce-need-card .t { display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13.5px;font-weight:600;color:#111827; }
+    .ce-need-card .d { font-size:12px;color:#4b5563;line-height:1.7;margin-top:4px; }
+    .ce-need-card .x { font-size:12px;color:#b91c1c;margin-top:4px;white-space:pre-wrap;word-break:break-all; }
+    .ce-need-card .x.warn { color:#92400e; }
+    .ce-need-card .ce-link { display:inline-block;margin-top:6px; }
     /* 理由（取消・订正）：页面内的小表单，代替 window.prompt */
     .ce-reason { display:grid;gap:6px;margin-top:6px;padding:8px;border:1px solid #e5e7eb;border-radius:6px;background:#f9fafb;min-width:16em; }
     .ce-reason label { font-size:11.5px;color:#374151;white-space:normal; }
     @media (prefers-reduced-motion: reduce) { .ce-bar > div { transition:none; } }
-    .ce-chip.hidden { display:none; } /* .ce-chip の display が .hidden より後ろにあるので明示（無いと前の結果の暫記が残って見える） */
+    .ce-chip.hidden { display:none; }
+    .ce-btn2.hidden { display:none; } /* 同上：.ce-btn2 的 display 写在 .hidden 后面 */ /* .ce-chip の display が .hidden より後ろにあるので明示（無いと前の結果の暫記が残って見える） */
     .ce-kpis { display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:10px; }
     .ce-kpi { border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px; }
     .ce-kpi .k { font-size:12px;color:#6b7280; }
@@ -158,7 +170,7 @@
     .ce-ev-note td { font-size:11.5px;color:#6b7280;padding-top:0; }
     .ce-ev-warn { font-size:12.5px;color:#92400e;background:#fffbeb;border-radius:6px;padding:6px 8px;margin:6px 0; }
     @media (max-width: 760px) {
-      .ce-duo, .ce-stmts { grid-template-columns:1fr; }
+      .ce-duo, .ce-stmts, .ce-two { grid-template-columns:1fr; }
       .ce-it { grid-template-columns:1fr; }
       .ce-it .r { border-left:0;border-top:1px solid #e5e7eb;border-radius:0 0 8px 8px; }
     }
@@ -215,11 +227,29 @@
       <section class="ce-card">
         <h2 class="ce-h" data-i18n="ce_step_files">1. 准备公司资料</h2>
         <p class="ce-hint" data-i18n="ce_files_intro"></p>
-        <div class="ce-row" style="margin:10px 0 12px">
-          <a class="ce-btn" href="closing-engine/template.xlsx" download="公司资料.xlsx" data-i18n="ce_tpl_xlsx">下载 Excel 模板（推荐）</a>
-          <a class="ce-btn2" href="closing-engine/template.zip" download="公司资料模板.zip" data-i18n="ce_tpl_yaml">YAML 模板（进阶）</a>
+        <div class="ce-two">
+          <div class="ce-need-card" id="ce-c-book">
+            <div class="t"><span translate="no">公司资料.xlsx</span><span class="ce-st wait" data-i18n="ce_s_wait">未检查</span></div>
+            <div class="d" data-i18n="ce_c_book_d">公司・员工・期初余额・固定资产等，一张表填一类。</div>
+            <div class="x hidden"></div>
+            <a class="ce-link" href="closing-engine/template.xlsx" download="公司资料.xlsx" data-i18n="ce_tpl_xlsx">下载空白模板</a>
+          </div>
+          <div class="ce-need-card" id="ce-c-bank">
+            <div class="t"><span data-i18n="ce_c_bank_t">bank 文件夹（银行流水）</span><span class="ce-st wait" data-i18n="ce_s_wait">未检查</span></div>
+            <div class="d" data-i18n="ce_c_bank_d">网银下载的 CSV・Excel 原样放进去，要覆盖到结账月份的月末。</div>
+            <div class="x hidden"></div>
+          </div>
         </div>
-        <details id="ce-listbox" class="ce-listbox" open>
+        <div class="ce-row">
+          <button type="button" id="ce-open" class="ce-btn hidden" data-i18n="ce_open_folder">选择工作文件夹</button>
+          <label class="ce-btn2" id="ce-pick" for="ce-folder" data-i18n="ce_pick_folder">选择工作文件夹</label>
+          <input type="file" id="ce-folder" webkitdirectory multiple class="hidden" title="company folder" />
+          <span id="ce-folder-info" class="ce-hint" data-i18n="ce_upload_none">尚未选择文件夹</span>
+        </div>
+        <p class="ce-hint" style="margin-top:6px" data-i18n="ce_pick_tip"></p>
+        <p id="ce-open-hint" class="ce-hint hidden" data-i18n="ce_open_hint"></p>
+        <p id="ce-pre" class="ce-status" aria-live="polite"></p>
+        <details id="ce-listbox" class="ce-listbox">
         <summary data-i18n="ce_list_toggle">资料清单（11 项）</summary>
         <div class="ce-table-wrap">
           <table class="ce-table">
@@ -228,15 +258,10 @@
           </table>
         </div>
         </details>
-        <div class="ce-row" style="margin-top:12px">
-          <button type="button" id="ce-open" class="ce-btn hidden" data-i18n="ce_open_folder">打开公司文件夹</button>
-          <label class="ce-btn2" for="ce-folder" data-i18n="ce_pick_folder">选择公司资料文件夹</label>
-          <input type="file" id="ce-folder" webkitdirectory multiple class="hidden" title="company folder" />
-          <span id="ce-folder-info" class="ce-hint" data-i18n="ce_upload_none">尚未选择文件夹</span>
-        </div>
-        <p class="ce-hint" style="margin-top:6px" data-i18n="ce_upload_hint"></p>
-        <p id="ce-open-hint" class="ce-hint hidden" data-i18n="ce_open_hint"></p>
-        <p id="ce-pre" class="ce-status" aria-live="polite"></p>
+        <p class="ce-hint" style="margin-top:6px">
+          <span data-i18n="ce_upload_hint"></span>
+          <a class="ce-link" href="closing-engine/template.zip" download="公司资料模板.zip" data-i18n="ce_tpl_yaml">进阶：YAML 模板</a>
+        </p>
       </section>
 
       <!-- 1b. 证凭（照片・PDF） -->
@@ -475,9 +500,31 @@
 
     // ── 清单渲染 ─────────────────────────────────────────────────────────────
     function renderList(result) {
-      // 选了文件夹、有检查结果时展开（要看哪一项缺）；结账出结果时 render() 会收起
-      if (result) $('ce-listbox').open = true;
       const byId = Object.fromEntries((result?.items || []).map((x) => [x.id, x]));
+      const BAD = ['missing', 'error', 'warn'];
+      // 有哪一项缺・格式不对时才展开明细；结账出结果时 render() 会收起
+      $('ce-listbox').open = (result?.items || []).some((x) => BAD.includes(x.status));
+      // 上面的两张卡片：公司资料.xlsx ＝ 公司・员工・期初余额三项里最差的；bank ＝ 银行流水那一项
+      const card = (elId, ids) => {
+        const xs = ids.map((i) => byId[i]).filter(Boolean);
+        const worst = ['error', 'missing', 'warn'].find((s) => xs.some((x) => x.status === s));
+        const status = !xs.length ? 'wait' : worst || 'ok';
+        const box = $(elId);
+        box.classList.toggle('ok', status === 'ok');
+        box.classList.toggle('ng', status === 'error' || status === 'missing');
+        const st = box.querySelector('.ce-st');
+        st.className = `ce-st ${status}`;
+        window.sdfSetText(st, status === 'warn' ? 'ce_s_note' : `ce_s_${status}`);
+        const why = box.querySelector('.x');
+        why.classList.toggle('warn', status === 'warn');
+        why.textContent = xs
+          .filter((x) => BAD.includes(x.status) && x.detail)
+          .map((x) => x.detail)
+          .join('\n');
+        why.classList.toggle('hidden', !why.textContent);
+      };
+      card('ce-c-book', ['company', 'employees', 'opening']);
+      card('ce-c-bank', ['bank']);
       const tb = $('ce-list');
       tb.replaceChildren();
       CHECKLIST.forEach(([id, path, need, sheets], i) => {
@@ -495,7 +542,9 @@
         const d = document.createElement('div');
         d.className = 'ce-detail';
         window.sdfSetText(d, `ce_fd_${id}`);
-        f.append(name, p);
+        const bad = BAD.includes(byId[id]?.status);
+        f.append(name);
+        if (bad) f.append(p);
         if (sheets) {
           const sh = document.createElement('div');
           sh.className = 'ce-sheets';
@@ -504,7 +553,7 @@
           sh.append(lab, document.createTextNode(` ${sheets}`));
           f.append(sh);
         }
-        f.append(d);
+        if (bad) f.append(d);
         tr.appendChild(f);
         const n = document.createElement('td');
         const ns = document.createElement('span');
@@ -663,7 +712,8 @@
     // （以前只认 company.yaml——只放了公司资料.xlsx 的文件夹会被拒绝，2026-10-10 修）
     async function afterFiles() {
       if (!files.some((f) => f.path === 'company.yaml' || f.path === '公司资料.xlsx')) {
-        renderList(null);
+        renderList({ items: [{ id: 'company', status: 'missing' }] });
+        $('ce-listbox').open = false; // 只知道缺公司资料，其余没检查，展开也全是「未检查」
         setStatus($('ce-pre'), 'ce_err_no_company', '', true);
         $('ce-run').disabled = true;
         return;
@@ -783,6 +833,7 @@
     if ('showDirectoryPicker' in window) {
       $('ce-open').classList.remove('hidden');
       $('ce-open-hint').classList.remove('hidden');
+      $('ce-pick').classList.add('hidden');
       $('ce-open').addEventListener('click', async () => {
         try {
           dirHandle = await window.showDirectoryPicker({ mode: 'readwrite', id: 'ce-company' });
@@ -2063,6 +2114,6 @@
     renderList(null);
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=32ad7f99e7"></script>
+  <script src="../../js/main.js?v=97df39f73e"></script>
 </body>
 </html>
