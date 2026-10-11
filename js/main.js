@@ -685,7 +685,7 @@ const T = {
     ce_ev_add_paper: '紙の証憑を追加（写真・スキャン）',
     ce_ev_add_elec: '電子で受け取ったファイルを追加',
     ce_ev_kinds:
-      '「紙」はその場で撮った・スキャンした紙。「電子」はメール・ダウンロード・ネットバンキングで受け取ったデータ（データのまま保存する義務があります）。',
+      '「紙」は撮影・スキャンした紙の書類、「電子」はメール・ダウンロード・ネットバンキングで受け取ったデータです（データのまま保存する義務があります）。区分はファイルの作りから仮に判定しています。スキャンしてメールで届いた請求書は見た目が紙でも「電子」です。確認のときに直してください。確認すると、原本はその区分のフォルダに移ります。',
     ce_ev_paper_notice:
       '紙の写しは作業用です。このツールはスキャナ保存の要件（認定タイムスタンプ）を満たさないので、紙の原本を 7 年間保存してください（国税庁 一問一答【スキャナ保存関係】問31・32・59）。',
     ce_ev_drafts:
@@ -713,7 +713,7 @@ const T = {
     ce_ev_reason_need: '理由を入力してください',
     ce_s_note: '⚠ 下の説明を確認',
     ce_c_book_d: '会社・従業員・期首残高・固定資産など、シートごとに記入します。',
-    ce_c_bank_t: 'bank フォルダ（銀行明細）',
+    ce_c_bank_t: '銀行明細',
     ce_c_bank_d: 'ネットバンキングの CSV・Excel をそのまま入れます。決算する月の月末まで必要です。',
     ce_pick_tip:
       'フォルダを選ぶ画面にはフォルダだけが表示されます（中のファイルが見えないのは正常です）。作業フォルダを開いてから「フォルダーの選択」を押してください。',
@@ -860,7 +860,7 @@ const T = {
     ce_how_both: '回答／表',
     ce_how_contact: '連絡',
     ce_files_intro:
-      '作業フォルダに入れるものは 2 つです。シートに記入した「公司资料.xlsx」と、ネットバンキングからダウンロードした明細（bank サブフォルダへ）。フォルダを選ぶと、その場で不足や形式を確認します。決算の結果と回答もこのフォルダに保存されます。',
+      'まず作業フォルダを 1 つ選びます（空のフォルダでかまいません）。次に、下の 2 つの入口に資料を入れます。中身を見て、こちらで仕分けてフォルダに保存します。決算の結果と回答も同じフォルダに保存されます。',
     ce_tpl_xlsx: '空のテンプレートをダウンロード',
     ce_tpl_yaml: '上級者向け：YAML テンプレート',
     ce_wb_sheets: 'Excel の表：',
@@ -903,7 +903,42 @@ const T = {
     ce_privacy:
       '財務データはこのブラウザの中だけで処理され、サーバーには送信されません。読み込むのは実行環境とエンジン本体だけです。',
     ce_optional: '任意',
-    ce_step_files: '作業フォルダを指定する',
+    ce_z_tab_t: '表（Excel・CSV）',
+    ce_z_tab_d: '会社の資料と銀行明細。ここにドラッグするか、「ファイルを選ぶ」を押してください。',
+    ce_z_ev_t: '証憑（写真・PDF）',
+    ce_z_ev_d:
+      '領収書・請求書・納付書など。このパソコンの中で日付・金額・取引先を読み取ります（画像は外に送りません）。',
+    ce_z_pick: 'ファイルを選ぶ',
+    ce_z_need_folder:
+      '先に作業フォルダを選ぶと、2 つの入口が使えるようになります（保存先が必要なため）。',
+    ce_z_looking: '確認中：{name}',
+    ce_z_wb_ok: '✓ {name} → 会社の資料（公司资料.xlsx）',
+    ce_z_wb_replaced: '✓ {name} → 会社の資料を入れ替えました（前のファイル：{path}）',
+    ce_z_bank_ok: '✓ {name} → 銀行明細（bank フォルダ）',
+    ce_z_bank_unchecked:
+      '✓ {name} → 銀行明細（bank フォルダ）。会社の資料がまだ無いので、列名は未確認です',
+    ce_z_bank_other:
+      '✗ {name}：銀行明細のようですが、見出し（{found}）が、会社の資料の「银行账户」シートに登録した列名（{want}）と違います。登録の列名をファイルの書き方に合わせてから、もう一度入れてください',
+    ce_z_unknown: '✗ {name}：会社の資料でも銀行明細でもないため、保存していません',
+    ce_z_err: '✗ {name}：読めませんでした（{msg}）',
+    ce_z_skip: '✗ {name}：この種類のファイルは扱えません（表は Excel・CSV、証憑は画像・PDF）',
+    ce_ev_box: '証憑の一覧と確認',
+    ce_ev_count: '{n} 件（未確認 {d} 件）',
+    ce_ev_count_none: 'まだありません',
+    ce_ev_col_kind: '区分',
+    ce_ev_basis_photo: '画像ファイル → 仮に「紙」',
+    ce_ev_basis_scan: '文字の無いスキャン PDF → 仮に「紙」',
+    ce_ev_basis_text: '文字の入った PDF → 仮に「電子」',
+    ce_ev_basis_vector: 'ソフトで作られた PDF → 仮に「電子」',
+    ce_how_h: '入れ方（クリックで拡大）',
+    ce_how_1: '月末。資料があちこちに散らばっています',
+    ce_how_2: '表は 1 か所に：会社の資料と銀行明細',
+    ce_how_3: '写真と PDF も 1 か所に：領収書・請求書',
+    ce_how_4: 'フォルダを選べば、決算の結果が出てきます',
+    ce_how_prev: '前へ',
+    ce_how_next: '次へ',
+    ce_close: '閉じる',
+    ce_step_files: '作業フォルダを選び、資料を入れる',
     ce_col_file: 'ファイル',
     ce_col_need: '必要なとき',
     ce_col_state: '状態',
@@ -975,7 +1010,7 @@ const T = {
     ce_err_load:
       '実行環境を読み込めませんでした。ネットワーク、または広告ブロックなどの拡張機能を確認してから再読み込みしてください。',
     ce_err_no_company:
-      '選んだフォルダに「公司资料.xlsx」がありません。このファイルが入っているフォルダそのものを選んでください（1 つ上のフォルダや bank フォルダではありません）。',
+      'このフォルダにはまだ会社の資料がありません。下の「表」の入口に「公司资料.xlsx」を入れてください（すでに資料を入れたフォルダがあるなら、そのフォルダを選び直してください。1 つ上のフォルダや bank フォルダではありません）。',
     ce_err_no_month: '月を選んでください。',
     ce_err_company: '会社データに問題があります：',
     ce_err_close: '締め処理が止まりました：',
@@ -1650,7 +1685,7 @@ const T = {
     ce_ev_add_paper: '添加纸质凭证（照片・扫描）',
     ce_ev_add_elec: '添加电子收到的文件',
     ce_ev_kinds:
-      '「纸质」是拍照或扫描的纸单据；「电子」是通过邮件、下载、网银收到的数据（法律要求按数据原样保存）。',
+      '「纸质」是拍照或扫描的纸单据；「电子」是通过邮件、下载、网银收到的数据（法律要求按数据原样保存）。区分是页面按文件的样子先判的：对方扫描后用邮件发来的请求书，看着是纸质，其实算「电子」。请在确认时改对。确认后，原件会归进对应的文件夹。',
     ce_ev_paper_notice:
       '纸质单据的照片只是工作用的副本。本工具不满足扫描保存的要件（需要认定的时间戳），纸质原件请保存 7 年（国税厅 一问一答【扫描保存】问31・32・59）。',
     ce_ev_drafts:
@@ -1678,7 +1713,7 @@ const T = {
     ce_ev_reason_need: '请填写理由',
     ce_s_note: '⚠ 请看下面的说明',
     ce_c_book_d: '公司・员工・期初余额・固定资产等，一张表填一类。',
-    ce_c_bank_t: 'bank 文件夹（银行流水）',
+    ce_c_bank_t: '银行流水',
     ce_c_bank_d: '网银下载的 CSV・Excel 原样放进去，要覆盖到结账月份的月末。',
     ce_pick_tip:
       '选文件夹的对话框里只显示文件夹，看不到里面的文件是正常的：点进工作文件夹后，按「选择文件夹」。',
@@ -1818,7 +1853,7 @@ const T = {
     ce_how_both: '回答或改表',
     ce_how_contact: '联系我们',
     ce_files_intro:
-      '工作文件夹里放两样东西：按表填好的「公司资料.xlsx」，和网银下载的流水（放进 bank 子文件夹）。选好文件夹后会当场检查是否齐全；结账结果和回答也存回这个文件夹。',
+      '先选一个工作文件夹（空的也可以），再把资料放进下面两个入口。页面会看文件的内容，自己归类并存进这个文件夹。结账结果和回答也存在这里。',
     ce_tpl_xlsx: '下载空白模板',
     ce_tpl_yaml: '进阶：YAML 模板',
     ce_wb_sheets: 'Excel 表：',
@@ -1859,7 +1894,39 @@ const T = {
     ce_logout: '退出',
     ce_privacy: '财务数据只在这个浏览器里处理，不会发送到服务器。页面只下载运行环境和引擎本身。',
     ce_optional: '可选',
-    ce_step_files: '指定工作文件夹',
+    ce_z_tab_t: '表格（Excel・CSV）',
+    ce_z_tab_d: '公司资料和银行流水。拖到这里，或点「选择文件」。',
+    ce_z_ev_t: '凭证（照片・PDF）',
+    ce_z_ev_d: '收据、请求书、纳付书等。在这台电脑里读出日期・金额・交易方，图片不会上传。',
+    ce_z_pick: '选择文件',
+    ce_z_need_folder: '先选择工作文件夹，两个入口才能用（需要有地方存）。',
+    ce_z_looking: '正在看：{name}',
+    ce_z_wb_ok: '✓ {name} → 公司资料（公司资料.xlsx）',
+    ce_z_wb_replaced: '✓ {name} → 已替换公司资料（原文件备份：{path}）',
+    ce_z_bank_ok: '✓ {name} → 银行流水（bank 文件夹）',
+    ce_z_bank_unchecked: '✓ {name} → 银行流水（bank 文件夹）。还没有公司资料，列名尚未核对',
+    ce_z_bank_other:
+      '✗ {name}：看起来是银行流水，但表头（{found}）和公司资料「银行账户」表里登记的列名（{want}）不一样。请把登记的列名改成文件里的写法，再放一次',
+    ce_z_unknown: '✗ {name}：不是公司资料，也不是银行流水，没有保存',
+    ce_z_err: '✗ {name}：没能读取（{msg}）',
+    ce_z_skip: '✗ {name}：这种文件处理不了（表格要 Excel・CSV，凭证要图片・PDF）',
+    ce_ev_box: '凭证明细与确认',
+    ce_ev_count: '已有 {n} 张，其中 {d} 张待确认',
+    ce_ev_count_none: '还没有凭证',
+    ce_ev_col_kind: '区分',
+    ce_ev_basis_photo: '图片文件 → 暂判为纸质',
+    ce_ev_basis_scan: '没有文字的扫描 PDF → 暂判为纸质',
+    ce_ev_basis_text: '带文字的 PDF → 暂判为电子',
+    ce_ev_basis_vector: '软件生成的 PDF → 暂判为电子',
+    ce_how_h: '怎么放（点图放大）',
+    ce_how_1: '月底了，资料散在各处',
+    ce_how_2: '表格放一处：公司资料和银行流水',
+    ce_how_3: '照片和 PDF 放一处：收据、请求书',
+    ce_how_4: '选这个文件夹，结账结果自己出来',
+    ce_how_prev: '上一格',
+    ce_how_next: '下一格',
+    ce_close: '关闭',
+    ce_step_files: '选工作文件夹，放入资料',
     ce_col_file: '文件',
     ce_col_need: '何时需要',
     ce_col_state: '状态',
@@ -1925,7 +1992,7 @@ const T = {
     ce_err_bundle: '引擎文件损坏或正在更新，请刷新页面。',
     ce_err_load: '运行环境加载失败。请检查网络，或广告拦截等浏览器扩展后刷新页面。',
     ce_err_no_company:
-      '所选文件夹里没有「公司资料.xlsx」。请选放着这个文件的那一层文件夹（不是它的上一级，也不是 bank 文件夹）。',
+      '这个文件夹里还没有公司资料。请把「公司资料.xlsx」放进下面的「表格」入口（如果已经有放好资料的文件夹，请重新选那一层：不是它的上一级，也不是 bank 文件夹）。',
     ce_err_no_month: '请选择月份。',
     ce_err_company: '公司数据有问题：',
     ce_err_close: '结账处理中止：',
@@ -2642,7 +2709,7 @@ const T = {
     ce_ev_add_paper: 'Add paper documents (photos/scans)',
     ce_ev_add_elec: 'Add files received electronically',
     ce_ev_kinds:
-      '“Paper” is a photo or scan of a paper document; “electronic” is data received by email, download or online banking (it must be kept as data).',
+      '“Paper” is a photo or scan of a paper document; “electronic” is data received by email, download or online banking (it must be kept as data). The page guesses the type from how the file is built: an invoice someone scanned and emailed looks like paper but counts as electronic. Correct it when you confirm. On confirmation the original moves into the folder for its type.',
     ce_ev_paper_notice:
       'Photos of paper documents are working copies. This tool does not meet the scanner-storage requirements (a certified timestamp), so keep the paper originals for 7 years (NTA Q&A on scanner storage, Q31, Q32, Q59).',
     ce_ev_drafts:
@@ -2671,7 +2738,7 @@ const T = {
     ce_s_note: '⚠ See the note below',
     ce_c_book_d:
       'Company, employees, opening balances, fixed assets and so on, one sheet per topic.',
-    ce_c_bank_t: '“bank” folder (bank statements)',
+    ce_c_bank_t: 'Bank statements',
     ce_c_bank_d:
       'Put the CSV or Excel files from online banking in as they are. They must run to the end of the month you are closing.',
     ce_pick_tip:
@@ -2820,7 +2887,7 @@ const T = {
     ce_how_both: 'Answer or sheet',
     ce_how_contact: 'Contact us',
     ce_files_intro:
-      'The working folder holds two things: the filled-in workbook “公司资料.xlsx”, and the bank statements downloaded from online banking (in a “bank” subfolder). Once you choose the folder, the page checks right away that everything is there. Results and answers are saved back to the same folder.',
+      'First choose one working folder (an empty one is fine). Then add your files through the two inboxes below. The page reads each file, sorts it and saves it into the folder. Results and answers are saved there too.',
     ce_tpl_xlsx: 'Download the blank workbook',
     ce_tpl_yaml: 'Advanced: YAML templates',
     ce_wb_sheets: 'Excel sheets:',
@@ -2864,7 +2931,42 @@ const T = {
     ce_privacy:
       'Your financial data is processed only inside this browser and is never sent to a server. The page downloads only the runtime and the engine itself.',
     ce_optional: 'Optional',
-    ce_step_files: 'Choose the working folder',
+    ce_z_tab_t: 'Tables (Excel, CSV)',
+    ce_z_tab_d: 'Company workbook and bank statements. Drag them here, or press “Choose files”.',
+    ce_z_ev_t: 'Evidence (photos, PDFs)',
+    ce_z_ev_d:
+      'Receipts, invoices, tax slips. Date, amount and party are read on this computer; images are never uploaded.',
+    ce_z_pick: 'Choose files',
+    ce_z_need_folder: 'Choose the working folder first; the two inboxes need somewhere to save.',
+    ce_z_looking: 'Reading: {name}',
+    ce_z_wb_ok: '✓ {name} → company workbook (公司资料.xlsx)',
+    ce_z_wb_replaced: '✓ {name} → company workbook replaced (previous file: {path})',
+    ce_z_bank_ok: '✓ {name} → bank statements (“bank” folder)',
+    ce_z_bank_unchecked:
+      '✓ {name} → bank statements (“bank” folder). No company workbook yet, so the column names are unchecked',
+    ce_z_bank_other:
+      '✗ {name}: this looks like a bank statement, but its headings ({found}) differ from the column names registered on the “银行账户” sheet of the company workbook ({want}). Change the registered names to match the file, then add it again',
+    ce_z_unknown: '✗ {name}: neither a company workbook nor a bank statement, so it was not saved',
+    ce_z_err: '✗ {name}: could not be read ({msg})',
+    ce_z_skip:
+      '✗ {name}: this file type is not supported (tables: Excel or CSV; evidence: images or PDF)',
+    ce_ev_box: 'Evidence list and confirmation',
+    ce_ev_count: '{n} on file, {d} to confirm',
+    ce_ev_count_none: 'None yet',
+    ce_ev_col_kind: 'Type',
+    ce_ev_basis_photo: 'Image file → guessed paper',
+    ce_ev_basis_scan: 'Scanned PDF without text → guessed paper',
+    ce_ev_basis_text: 'PDF with text → guessed electronic',
+    ce_ev_basis_vector: 'Software-made PDF → guessed electronic',
+    ce_how_h: 'How it works (click to enlarge)',
+    ce_how_1: 'Month-end, and the paperwork is everywhere',
+    ce_how_2: 'Tables in one place: company workbook and bank statements',
+    ce_how_3: 'Photos and PDFs in one place: receipts and invoices',
+    ce_how_4: 'Choose the folder and the closing results appear',
+    ce_how_prev: 'Previous',
+    ce_how_next: 'Next',
+    ce_close: 'Close',
+    ce_step_files: 'Choose the working folder and add your files',
     ce_col_file: 'File',
     ce_col_need: 'When needed',
     ce_col_state: 'Status',
@@ -2939,7 +3041,7 @@ const T = {
     ce_err_load:
       'Could not load the runtime. Check your network or browser extensions such as ad blockers, then reload.',
     ce_err_no_company:
-      'The selected folder has no “公司资料.xlsx”. Choose the folder that holds this file itself (not its parent, and not the “bank” folder).',
+      'This folder has no company workbook yet. Add “公司资料.xlsx” through the “Tables” inbox below (if you already have a folder with your files, choose that folder itself: not its parent, and not the “bank” folder).',
     ce_err_no_month: 'Please choose a month.',
     ce_err_company: 'Problem in the company data:',
     ce_err_close: 'The close stopped:',

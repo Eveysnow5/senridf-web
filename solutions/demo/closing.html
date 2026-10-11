@@ -220,6 +220,48 @@
     .ce-need-card .ce-link { margin-top:4px;justify-self:start; }
     .ce-st { border-radius:9px;padding:1px 8px; }
     .ce-status:empty { min-height:0;margin-top:0; }
+    /* 两个入口（表格／凭证）。没选工作文件夹时是灰的（.off） */
+    .ce-zones { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0 6px; }
+    .ce-zone { border:1.5px dashed #c7d2fe;border-radius:12px;padding:14px 16px;background:#fafaff;min-width:0;transition:border-color .15s ease,background-color .15s ease; }
+    .ce-zone.over { border-color:#4f46e5;background:#eef2ff; }
+    .ce-zones.off .ce-zone { border-color:#e5e7eb;background:#fafafa; }
+    .ce-zones.off .ce-zone .ce-btn2 { color:#6b7280;cursor:not-allowed; }
+    .ce-zone .zh { display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#111827; }
+    .ce-zone .zh svg { color:#6366f1;flex:none; }
+    .ce-zone .d { font-size:12.5px;color:#4b5563;line-height:1.7;margin:4px 0 8px; }
+    .ce-need { display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:13px;color:#111827;padding:3px 0; }
+    .ce-need .n { font-weight:500; }
+    .ce-need .x { flex-basis:100%;font-size:12px;color:#b91c1c;white-space:pre-wrap;word-break:break-all; }
+    .ce-need .x.warn { color:#92400e; }
+    .ce-zone label.ce-btn2 { margin-top:8px; }
+    .ce-zlog { list-style:none;margin:8px 0 0;padding:0;font-size:12.5px;line-height:1.7;color:#374151; }
+    .ce-zlog li { word-break:break-all; }
+    .ce-zlog li.ng { color:#b91c1c; }
+    .ce-zlog li.ok { color:#047857; }
+    details.ce-listbox.hidden { display:none; }
+    .ce-ev-kind { min-width:5.5em; }
+    .ce-ev-basis { font-size:11px;color:#6b7280;margin-top:2px;white-space:normal;max-width:14em; }
+    /* 四格图解 */
+    .ce-howto { margin:12px 0 4px; }
+    .ce-howto-row { display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:6px; }
+    .ce-how { display:block;padding:0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff;text-align:left;cursor:zoom-in;transition:border-color .15s ease,box-shadow .15s ease; }
+    .ce-how:hover { border-color:#6366f1;box-shadow:0 2px 8px rgba(79,70,229,.12); }
+    .ce-how img { display:block;width:100%;height:auto;aspect-ratio:1 / 1; }
+    .ce-how .c { display:flex;gap:6px;padding:6px 8px;font-size:12px;line-height:1.5;color:#374151; }
+    .ce-how .c b { color:#4f46e5;font-variant-numeric:tabular-nums; }
+    dialog.ce-dlg { border:0;border-radius:14px;padding:16px;max-width:min(680px,94vw);box-shadow:0 20px 50px rgba(16,24,40,.25);overscroll-behavior:contain; }
+    dialog.ce-dlg::backdrop { background:rgba(17,24,39,.55); }
+    dialog.ce-dlg img { display:block;width:100%;height:auto;border-radius:10px;aspect-ratio:1 / 1; }
+    dialog.ce-dlg .cap { font-size:14px;color:#111827;margin:10px 2px;line-height:1.6; }
+    dialog.ce-dlg .bar { display:flex;align-items:center;gap:8px; }
+    dialog.ce-dlg .bar .sp { flex:1;text-align:center;font-size:12.5px;color:#4b5563;font-variant-numeric:tabular-nums; }
+    @media (max-width: 760px) {
+      .ce-zones { grid-template-columns:1fr; }
+      .ce-howto-row { grid-template-columns:repeat(2,1fr); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ce-zone, .ce-how { transition:none; }
+    }
     details.ce-listbox > summary, details.ce-acct > summary, details.ce-adv summary { border-radius:6px; }
     details.ce-listbox > summary:hover, details.ce-adv summary:hover { color:#111827; }
     .ce-table th { font-size:11.5px;letter-spacing:.02em; }
@@ -265,6 +307,16 @@
 </head>
 <body class="bg-gray-50 min-h-screen" data-page-title="ce_page_title">
 
+  <dialog id="ce-how-dlg" class="ce-dlg">
+    <img id="ce-how-img" src="closing-howto/1.webp" width="620" height="620" alt="" />
+    <p id="ce-how-cap" class="cap"></p>
+    <div class="bar">
+      <button type="button" id="ce-how-prev" class="ce-btn2" data-i18n="ce_how_prev">上一格</button>
+      <span id="ce-how-n" class="sp"></span>
+      <button type="button" id="ce-how-next" class="ce-btn2" data-i18n="ce_how_next">下一格</button>
+      <button type="button" id="ce-how-close" class="ce-btn" data-i18n="ce_close">关闭</button>
+    </div>
+  </dialog>
   <div id="auth-gate"><div class="ag-center"><div class="ag-spinner"></div><p class="ag-text" data-i18n="ag_verifying">验证身份中…</p></div></div>
 
   <div id="app">
@@ -300,19 +352,25 @@
       <section class="ce-card">
         <h2 class="ce-h ce-step"><span class="ce-no" aria-hidden="true">1</span><span data-i18n="ce_step_files">指定工作文件夹</span></h2>
         <p class="ce-hint" data-i18n="ce_files_intro"></p>
-        <div class="ce-two">
-          <div class="ce-need-card" id="ce-c-book">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6M12 11v8"/></svg>
-            <div class="t"><span translate="no">公司资料.xlsx</span><span class="ce-st wait" data-i18n="ce_s_wait">未检查</span></div>
-            <div class="d" data-i18n="ce_c_book_d">公司・员工・期初余额・固定资产等，一张表填一类。</div>
-            <div class="x hidden"></div>
-            <a class="ce-link" href="closing-engine/template.xlsx" download="公司资料.xlsx" data-i18n="ce_tpl_xlsx">下载空白模板</a>
-          </div>
-          <div class="ce-need-card" id="ce-c-bank">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-6 9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 20h18"/></svg>
-            <div class="t"><span data-i18n="ce_c_bank_t">bank 文件夹（银行流水）</span><span class="ce-st wait" data-i18n="ce_s_wait">未检查</span></div>
-            <div class="d" data-i18n="ce_c_bank_d">网银下载的 CSV・Excel 原样放进去，要覆盖到结账月份的月末。</div>
-            <div class="x hidden"></div>
+        <div class="ce-howto">
+          <span class="ce-hint" data-i18n="ce_how_h">怎么放（点图放大）</span>
+          <div class="ce-howto-row">
+            <button type="button" class="ce-how" data-how="1">
+              <img src="closing-howto/1.webp" width="620" height="620" loading="lazy" decoding="async" alt="" />
+              <span class="c"><b>1</b><span data-i18n="ce_how_1"></span></span>
+            </button>
+            <button type="button" class="ce-how" data-how="2">
+              <img src="closing-howto/2.webp" width="620" height="620" loading="lazy" decoding="async" alt="" />
+              <span class="c"><b>2</b><span data-i18n="ce_how_2"></span></span>
+            </button>
+            <button type="button" class="ce-how" data-how="3">
+              <img src="closing-howto/3.webp" width="620" height="620" loading="lazy" decoding="async" alt="" />
+              <span class="c"><b>3</b><span data-i18n="ce_how_3"></span></span>
+            </button>
+            <button type="button" class="ce-how" data-how="4">
+              <img src="closing-howto/4.webp" width="620" height="620" loading="lazy" decoding="async" alt="" />
+              <span class="c"><b>4</b><span data-i18n="ce_how_4"></span></span>
+            </button>
           </div>
         </div>
         <div class="ce-row">
@@ -324,6 +382,65 @@
         <p class="ce-hint" style="margin-top:6px" data-i18n="ce_pick_tip"></p>
         <p id="ce-open-hint" class="ce-hint hidden" data-i18n="ce_open_hint"></p>
         <p id="ce-pre" class="ce-status" aria-live="polite"></p>
+        <div id="ce-zones" class="ce-zones off">
+          <div class="ce-zone" id="ce-z-tab">
+            <div class="zh"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6M12 11v8"/></svg><span data-i18n="ce_z_tab_t">表格（Excel・CSV）</span></div>
+            <p class="d" data-i18n="ce_z_tab_d">公司资料和银行流水。拖到这里，或点「选择文件」。</p>
+            <div class="ce-need" id="ce-c-book">
+              <span class="n" translate="no">公司资料.xlsx</span><span class="ce-st wait" data-i18n="ce_s_wait">未检查</span>
+              <a class="ce-link" href="closing-engine/template.xlsx" download="公司资料.xlsx" data-i18n="ce_tpl_xlsx">下载空白模板</a>
+              <div class="x hidden"></div>
+            </div>
+            <div class="ce-need" id="ce-c-bank">
+              <span class="n" data-i18n="ce_c_bank_t">银行流水</span><span class="ce-st wait" data-i18n="ce_s_wait">未检查</span>
+              <div class="x hidden"></div>
+            </div>
+            <label class="ce-btn2" for="ce-in-tab" data-i18n="ce_z_pick">选择文件</label>
+            <input type="file" id="ce-in-tab" multiple accept=".xlsx,.xlsm,.csv" class="hidden" data-i18n-title="ce_z_tab_t" />
+            <ul id="ce-z-tab-log" class="ce-zlog" aria-live="polite"></ul>
+          </div>
+          <div class="ce-zone" id="ce-z-ev">
+            <div class="zh"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg><span data-i18n="ce_z_ev_t">凭证（照片・PDF）</span><span class="ce-opt" data-i18n="ce_optional">可选</span></div>
+            <p class="d" data-i18n="ce_z_ev_d">收据、请求书、纳付书等。在这台电脑里读出日期・金额・交易方，图片不会上传。</p>
+            <p id="ce-ev-count" class="ce-hint" data-i18n="ce_ev_count_none">还没有凭证</p>
+            <label class="ce-btn2" for="ce-in-ev" data-i18n="ce_z_pick">选择文件</label>
+            <input type="file" id="ce-in-ev" multiple accept="image/*,application/pdf" class="hidden" data-i18n-title="ce_z_ev_t" />
+            <p id="ce-ev-progress" class="ce-status" aria-live="polite"></p>
+            <ul id="ce-z-ev-log" class="ce-zlog" aria-live="polite"></ul>
+          </div>
+        </div>
+        <p id="ce-z-need" class="ce-hint" data-i18n="ce_z_need_folder">先选择工作文件夹，两个入口才能用。</p>
+        <details id="ce-ev-box" class="ce-listbox hidden">
+        <summary data-i18n="ce_ev_box">凭证明细与确认</summary>
+        <div id="ce-ev-body">
+          <div class="ce-row" style="margin:8px 0">
+            <label class="ce-hint"><span data-i18n="ce_ans_by">判断人</span>
+              <input type="text" id="ce-ev-by" class="ce-input" style="width:9em" autocomplete="off" data-i18n-title="ce_ans_by" /></label>
+          </div>
+          <p class="ce-hint" data-i18n="ce_ev_kinds"></p>
+          <div id="ce-ev-notices"></div>
+          <div class="ce-row ce-ev-q">
+            <label class="ce-hint"><span data-i18n="ce_ev_q_date">交易日</span>
+              <input type="date" id="ce-ev-q-from" class="ce-input" title="from" />〜<input type="date" id="ce-ev-q-to" class="ce-input" title="to" /></label>
+            <label class="ce-hint"><span data-i18n="ce_ev_q_amount">金额</span>
+              <input type="number" id="ce-ev-q-min" class="ce-input" style="width:8em" title="min" />〜<input type="number" id="ce-ev-q-max" class="ce-input" style="width:8em" title="max" /></label>
+            <label class="ce-hint"><span data-i18n="ce_ev_q_party">交易方</span>
+              <input type="text" id="ce-ev-q-party" class="ce-input" style="width:10em" title="party" /></label>
+            <label class="ce-hint"><input type="checkbox" id="ce-ev-q-void" title="include void" /> <span data-i18n="ce_ev_q_void">含已取消</span></label>
+            <button type="button" id="ce-ev-search" class="ce-btn2" data-i18n="ce_ev_search">检索</button>
+            <button type="button" id="ce-ev-clear" class="ce-link" data-i18n="ce_ev_clear">清除</button>
+          </div>
+          <div class="ce-table-wrap">
+            <table class="ce-table ce-ev-table">
+              <thead><tr><th>#</th><th data-i18n="ce_ev_col_status">状态</th><th data-i18n="ce_ev_q_date">交易日</th>
+                <th data-i18n="ce_ev_q_amount">金额</th><th data-i18n="ce_ev_q_party">交易方</th><th data-i18n="ce_ev_col_doc">单据</th><th data-i18n="ce_ev_col_kind">区分</th>
+                <th data-i18n="ce_ev_col_file">文件</th><th data-i18n="ce_ev_col_bank">对应流水</th><th></th></tr></thead>
+              <tbody id="ce-ev-list"></tbody>
+            </table>
+          </div>
+          <p id="ce-ev-empty" class="ce-hint" data-i18n="ce_ev_empty">还没有凭证。</p>
+        </div>
+        </details>
         <details id="ce-listbox" class="ce-listbox">
         <summary data-i18n="ce_list_toggle">资料清单（11 项）</summary>
         <div class="ce-table-wrap">
@@ -339,49 +456,9 @@
         </p>
       </section>
 
-      <!-- 1b. 证凭（照片・PDF） -->
-      <section class="ce-card" id="ce-ev">
-        <h2 class="ce-h ce-step"><span class="ce-no" aria-hidden="true">2</span><span data-i18n="ce_ev_h">证凭（照片・PDF）</span><span class="ce-opt" data-i18n="ce_optional">可选</span></h2>
-        <p class="ce-hint" data-i18n="ce_ev_intro"></p>
-        <p id="ce-ev-need" class="ce-hint" data-i18n="ce_ev_need_folder"></p>
-        <div id="ce-ev-body" class="hidden">
-          <div class="ce-row" style="margin:10px 0">
-            <label class="ce-btn2" for="ce-ev-paper" data-i18n="ce_ev_add_paper">添加纸质凭证（照片・扫描）</label>
-            <input type="file" id="ce-ev-paper" multiple accept="image/*,application/pdf" class="hidden" title="paper evidence" />
-            <label class="ce-btn2" for="ce-ev-elec" data-i18n="ce_ev_add_elec">添加电子收到的文件</label>
-            <input type="file" id="ce-ev-elec" multiple accept="image/*,application/pdf" class="hidden" title="electronic evidence" />
-            <label class="ce-hint"><span data-i18n="ce_ans_by">判断人</span>
-              <input type="text" id="ce-ev-by" class="ce-input" style="width:9em" title="by" /></label>
-          </div>
-          <p class="ce-hint" data-i18n="ce_ev_kinds"></p>
-          <div id="ce-ev-notices"></div>
-          <p id="ce-ev-progress" class="ce-status" aria-live="polite"></p>
-          <div class="ce-row ce-ev-q">
-            <label class="ce-hint"><span data-i18n="ce_ev_q_date">交易日</span>
-              <input type="date" id="ce-ev-q-from" class="ce-input" title="from" />〜<input type="date" id="ce-ev-q-to" class="ce-input" title="to" /></label>
-            <label class="ce-hint"><span data-i18n="ce_ev_q_amount">金额</span>
-              <input type="number" id="ce-ev-q-min" class="ce-input" style="width:8em" title="min" />〜<input type="number" id="ce-ev-q-max" class="ce-input" style="width:8em" title="max" /></label>
-            <label class="ce-hint"><span data-i18n="ce_ev_q_party">交易方</span>
-              <input type="text" id="ce-ev-q-party" class="ce-input" style="width:10em" title="party" /></label>
-            <label class="ce-hint"><input type="checkbox" id="ce-ev-q-void" title="include void" /> <span data-i18n="ce_ev_q_void">含已取消</span></label>
-            <button type="button" id="ce-ev-search" class="ce-btn2" data-i18n="ce_ev_search">检索</button>
-            <button type="button" id="ce-ev-clear" class="ce-link" data-i18n="ce_ev_clear">清除</button>
-          </div>
-          <div class="ce-table-wrap">
-            <table class="ce-table ce-ev-table">
-              <thead><tr><th>#</th><th data-i18n="ce_ev_col_status">状态</th><th data-i18n="ce_ev_q_date">交易日</th>
-                <th data-i18n="ce_ev_q_amount">金额</th><th data-i18n="ce_ev_q_party">交易方</th><th data-i18n="ce_ev_col_doc">单据</th>
-                <th data-i18n="ce_ev_col_file">文件</th><th data-i18n="ce_ev_col_bank">对应流水</th><th></th></tr></thead>
-              <tbody id="ce-ev-list"></tbody>
-            </table>
-          </div>
-          <p id="ce-ev-empty" class="ce-hint" data-i18n="ce_ev_empty">还没有凭证。</p>
-        </div>
-      </section>
-
       <!-- 2. 结账 -->
       <section class="ce-card">
-        <h2 class="ce-h ce-step"><span class="ce-no" aria-hidden="true">3</span><span data-i18n="ce_step_run">结账</span></h2>
+        <h2 class="ce-h ce-step"><span class="ce-no" aria-hidden="true">2</span><span data-i18n="ce_step_run">结账</span></h2>
         <div class="ce-row">
           <label class="ce-hint"><span data-i18n="ce_step_from">结账期间：从</span>
             <input type="month" id="ce-from" class="ce-input" title="period start" /></label>
@@ -700,7 +777,7 @@
     function getWorker() {
       if (!worker) {
         // ?v=：线上给这个文件 4 小时缓存。Worker 的加载方式变了（经典→module）时改这个值，免得新页面配上缓存里的旧 Worker
-        worker = new Worker('closing-worker.js?v=3', { type: 'module' });
+        worker = new Worker('closing-worker.js?v=4', { type: 'module' });
         worker.onmessage = onWorkerMessage;
         worker.onerror = (ev) => {
           console.error(ev);
@@ -786,7 +863,7 @@
         console.error(err);
         setStatus($('ce-pre'), errKey(err), err.kind === 'runtime' ? ` ${err.message}` : '', true);
       } finally {
-        showProgress(false);
+        if (!running) showProgress(false);
         $('ce-run').disabled = !prechecked;
       }
     }
@@ -797,7 +874,8 @@
       if (!files.some((f) => f.path === 'company.yaml' || f.path === '公司资料.xlsx')) {
         renderList({ items: [{ id: 'company', status: 'missing' }] });
         $('ce-listbox').open = false; // 只知道缺公司资料，其余没检查，展开也全是「未检查」
-        setStatus($('ce-pre'), 'ce_err_no_company', '', true);
+        // 能写的工作文件夹（两个入口可用）：空文件夹是正常的起点，不算错；只读的旧入口才是选错了文件夹
+        setStatus($('ce-pre'), 'ce_err_no_company', '', !dirHandle);
         $('ce-run').disabled = true;
         return;
       }
@@ -953,9 +1031,9 @@
         .map((f) => ({ path: f.path, buf: f.buf.slice(0) }));
     }
     // 引擎的证凭操作（一个接一个）。返回的 files（索引簿・修改记录）写回文件夹，同时更新内存里的 files
-    function evAsk(op, args) {
+    function evAsk(op, args, extra) {
       const run = async () => {
-        const copy = evFiles();
+        const copy = evFiles().concat(extra || []);
         const m = await ask({ cmd: 'evidence', op, args, files: copy }, copy.map((f) => f.buf));
         const r = m.result;
         if (r && r.files && dirHandle) {
@@ -1062,12 +1140,51 @@
         yield { page: null, n: 1, bitmap: await createImageBitmap(new Blob([buf], { type: file.type || 'image/jpeg' })) };
       }
     }
+    // 区分（纸质／电子）的先判。只是草稿：人确认时可以改（对方扫描后用邮件发来的请求书，看着是纸，法律上是电子）。
+    // 依据（2026-10-12 用 6 份真实 PDF 量过）：软件生成的 PDF 要么有文字层，要么每页上千条绘图指令（TKC 的
+    // 残高試算表：0 字・1 万条）；扫描件每页只有一两张图、十几条指令。
+    const SCAN_MAX_OPS = 60;
+    async function guessKind(file, buf) {
+      if (!(file.type === 'application/pdf' || /\.pdf$/i.test(file.name))) return { kind: EV_PAPER, basis: 'photo' };
+      const lib = await loadPdfjs();
+      const doc = await lib.getDocument({ data: new Uint8Array(buf.slice(0)), isEvalSupported: false }).promise;
+      let ops = 0;
+      for (let i = 1; i <= Math.min(3, doc.numPages); i++) {
+        const page = await doc.getPage(i);
+        const text = textLines((await page.getTextContent()).items).join('').replace(/\s/g, '');
+        if (text.length >= 30) return { kind: EV_ELEC, basis: 'text' };
+        ops = Math.max(ops, (await page.getOperatorList()).fnArray.length);
+      }
+      return ops > SCAN_MAX_OPS ? { kind: EV_ELEC, basis: 'vector' } : { kind: EV_PAPER, basis: 'scan' };
+    }
+    // 原件在文件夹里搬家（未確認 → 区分的文件夹）：先抄过去，索引簿改好之后再删旧的。中途失败最多多出一份，不会丢
+    async function dirOf(parts, create) {
+      let d = dirHandle;
+      for (const part of parts) d = await d.getDirectoryHandle(part, { create: !!create });
+      return d;
+    }
+    async function copyFile(from, to) {
+      const a = from.split('/');
+      const fh = await (await dirOf(a.slice(0, -1))).getFileHandle(a[a.length - 1]);
+      await writeFile(to.split('/'), await (await fh.getFile()).arrayBuffer());
+    }
+    async function removeFile(path) {
+      const a = path.split('/');
+      await (await dirOf(a.slice(0, -1))).removeEntry(a[a.length - 1]);
+    }
+    function zlog(listId, cls, key, params) {
+      const li = el('li', cls);
+      window.sdfSetText(li, key, params);
+      $(listId).appendChild(li);
+      return li;
+    }
+
     async function sha256hex(buf) {
       const h = await crypto.subtle.digest('SHA-256', buf);
       return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, '0')).join('');
     }
 
-    async function evAdd(list, kind) {
+    async function evAdd(list) {
       if (!dirHandle || !list.length) return;
       const prog = $('ce-ev-progress');
       const t0 = performance.now();
@@ -1082,8 +1199,11 @@
           continue;
         }
         let rel;
+        let kind;
+        let basis;
         try {
-          rel = await evAsk('path', [sha, file.name, today()]);
+          ({ kind, basis } = await guessKind(file, buf));
+          rel = await evAsk('path', [sha, file.name, today()]); // 先放进「未確認」，确认区分后再归档
           await writeFile(rel.split('/'), buf); // 原件原样写进文件夹（不改内容）
         } catch (e) {
           console.error(e);
@@ -1095,7 +1215,7 @@
           for await (const pg of pagesOf(file, buf)) {
             window.sdfSetText(prog, 'ce_ev_reading', { name: file.name, i: fi + 1, n: list.length, p: pg.page || 1, pn: pg.n });
             const lines = pg.lines || (await ocr(pg.bitmap)).lines;
-            const r = await evAsk('add', [rel, sha, kind, today(), [{ page: pg.page, lines }]]);
+            const r = await evAsk('add', [rel, sha, kind, today(), [{ page: pg.page, lines }], basis]);
             if (r && r.ok === false) throw new Error(r.error);
             any = true;
             pages++;
@@ -1103,22 +1223,106 @@
         } catch (e) {
           console.error(e);
           window.sdfSetText(prog, 'ce_ev_err_read', { name: file.name, msg: String((e && e.message) || e) });
-          if (!any) await evAsk('add', [rel, sha, kind, today(), [{ page: null, lines: [] }]]); // 原件已放进去 → 至少留一行空草稿
+          if (!any) await evAsk('add', [rel, sha, kind, today(), [{ page: null, lines: [] }], basis]); // 原件已放进去 → 至少留一行空草稿
         }
       }
       // 全部が取り込み済みだったときは「取り込み済み」の知らせを残す（0 頁を読みました、で上書きしない）
       if (pages || !dups) window.sdfSetText(prog, 'ce_ev_done', { n: pages, s: Math.round((performance.now() - t0) / 1000) });
     }
-    $('ce-ev-paper').addEventListener('change', (e) => {
-      const list = [...e.target.files];
-      e.target.value = '';
-      evAdd(list, EV_PAPER);
-    });
-    $('ce-ev-elec').addEventListener('change', (e) => {
-      const list = [...e.target.files];
-      e.target.value = '';
-      evAdd(list, EV_ELEC);
-    });
+    // ── 两个入口 ─────────────────────────────────────────────────────────
+    // 表格：交给引擎看内容（recognize.classify），页面按答案放进文件夹。认不出来的不放（不猜）。
+    const IS_TABLE = /\.(xlsx|xlsm|csv)$/i;
+    const IS_EVIDENCE = /\.(pdf|png|jpe?g|webp|gif|bmp|tiff?)$/i;
+    let inboxChain = Promise.resolve();
+    async function tabAdd(list) {
+      if (!dirHandle || !list.length) return;
+      const log = 'ce-z-tab-log';
+      let filed = 0;
+      for (const file of list) {
+        const name = file.name;
+        const wait = zlog(log, '', 'ce_z_looking', { name });
+        try {
+          const buf = await file.arrayBuffer();
+          const r = await evAsk('classify', [`_inbox/${name}`], [{ path: `_inbox/${name}`, buf: buf.slice(0) }]);
+          wait.remove();
+          if (!r || r.ok === false) {
+            zlog(log, 'ng', 'ce_z_err', { name, msg: (r && r.error) || '' });
+          } else if (r.kind === 'workbook') {
+            const old = files.find((f) => f.path === '公司资料.xlsx');
+            if (old) {
+              const bk = [OUT_DIR, '备份', `${stamp()}_公司资料.xlsx`];
+              await writeFile(bk, old.buf);
+              await writeFile(['公司资料.xlsx'], buf);
+              zlog(log, 'ok', 'ce_z_wb_replaced', { name, path: bk.join('/') });
+            } else {
+              await writeFile(['公司资料.xlsx'], buf);
+              zlog(log, 'ok', 'ce_z_wb_ok', { name });
+            }
+            filed++;
+            files = await readDir(dirHandle, ''); // 接下来的流水要对着新的列名登记来认
+          } else if (r.kind === 'bank') {
+            await writeFile(['bank', name], buf);
+            zlog(log, 'ok', r.checked ? 'ce_z_bank_ok' : 'ce_z_bank_unchecked', { name });
+            filed++;
+          } else if (r.kind === 'bank_other') {
+            zlog(log, 'ng', 'ce_z_bank_other', {
+              name,
+              found: (r.found || []).join('・'),
+              want: (r.want || []).map((c) => c.join('・')).join(' ／ '),
+            });
+          } else {
+            zlog(log, 'ng', 'ce_z_unknown', { name });
+          }
+        } catch (e) {
+          console.error(e);
+          wait.remove();
+          zlog(log, 'ng', 'ce_z_err', { name, msg: String((e && e.message) || e) });
+        }
+      }
+      if (filed) {
+        files = await readDir(dirHandle, '');
+        window.sdfSetText($('ce-folder-info'), 'ce_fs_connected', { name: dirHandle.name, n: files.length });
+        afterFiles();
+      }
+    }
+    // 拖进哪个入口都行：按文件类型分给表格或凭证（放错入口不算错）
+    function intake(list) {
+      if (!dirHandle) return;
+      const tabs = list.filter((f) => IS_TABLE.test(f.name));
+      const evs = list.filter((f) => !IS_TABLE.test(f.name) && (IS_EVIDENCE.test(f.name) || /^image\//.test(f.type)));
+      for (const f of list)
+        if (!tabs.includes(f) && !evs.includes(f)) zlog('ce-z-tab-log', 'ng', 'ce_z_skip', { name: f.name });
+      const run = async () => {
+        await tabAdd(tabs);
+        await evAdd(evs);
+      };
+      inboxChain = inboxChain.then(run, run).catch((e) => console.error(e));
+    }
+    for (const [zone, input] of [
+      ['ce-z-tab', 'ce-in-tab'],
+      ['ce-z-ev', 'ce-in-ev'],
+    ]) {
+      $(input).addEventListener('click', (e) => {
+        if (!dirHandle) e.preventDefault(); // 还没有工作文件夹：没地方存
+      });
+      $(input).addEventListener('change', (e) => {
+        const list = [...e.target.files];
+        e.target.value = '';
+        intake(list);
+      });
+      const z = $(zone);
+      z.addEventListener('dragover', (e) => {
+        if (!dirHandle) return;
+        e.preventDefault();
+        z.classList.add('over');
+      });
+      z.addEventListener('dragleave', () => z.classList.remove('over'));
+      z.addEventListener('drop', (e) => {
+        e.preventDefault();
+        z.classList.remove('over');
+        intake([...(e.dataTransfer?.files || [])]);
+      });
+    }
 
     function evBy() {
       const v = $('ce-ev-by').value.trim();
@@ -1184,11 +1388,16 @@
     }
     function renderEv() {
       const on = !!dirHandle;
-      $('ce-ev-body').classList.toggle('hidden', !on);
-      $('ce-ev-need').classList.toggle('hidden', on);
+      $('ce-zones').classList.toggle('off', !on);
+      $('ce-z-need').classList.toggle('hidden', on);
+      $('ce-ev-box').classList.toggle('hidden', !on || !evEntries.length);
       if (!on) return;
       if (!$('ce-ev-by').value) $('ce-ev-by').value = savedBy();
       const live = evEntries.filter((e) => e.status !== '取消');
+      const waiting = live.filter((e) => e.status === '下書き').length;
+      if (live.length) window.sdfSetText($('ce-ev-count'), 'ce_ev_count', { n: live.length, d: waiting });
+      else window.sdfSetText($('ce-ev-count'), 'ce_ev_count_none');
+      if (waiting && !evBoxTouched) $('ce-ev-box').open = true; // 有待确认的就展开；用户自己收起过就不再动
       const notes = $('ce-ev-notices');
       notes.replaceChildren();
       if (live.some((e) => e.kind === EV_PAPER)) notes.appendChild(el('p', 'ce-ev-warn', 'ce_ev_paper_notice'));
@@ -1204,6 +1413,11 @@
       $('ce-ev-empty').classList.toggle('hidden', rows.length > 0);
       for (const e of rows) body.append(...evRow(e));
     }
+    let evBoxTouched = false;
+    $('ce-ev-box').addEventListener('toggle', (ev) => {
+      if (ev.isTrusted && !$('ce-ev-box').open) evBoxTouched = true;
+    });
+    const EV_PENDING = 'evidence/未確認/';
     function evRow(e) {
       const tr = el('tr');
       const locked = e.status === '確認済' && !evEditing.has(e.no);
@@ -1231,8 +1445,24 @@
       cell(party);
       const doc = el('span');
       doc.textContent = e.doc || '—';
-      const kind = el('div', 'ce-hint', e.kind === EV_PAPER ? 'ce_ev_kind_paper' : 'ce_ev_kind_elec');
-      cell(doc).appendChild(kind);
+      cell(doc);
+      const kind = document.createElement('select');
+      kind.className = 'ce-input ce-ev-kind';
+      kind.title = t('ce_ev_col_kind');
+      for (const [v, key] of [
+        [EV_PAPER, 'ce_ev_kind_paper'],
+        [EV_ELEC, 'ce_ev_kind_elec'],
+      ]) {
+        const o = el('option', '', key);
+        o.value = v;
+        kind.appendChild(o);
+      }
+      kind.value = e.kind;
+      kind.disabled = locked || e.status === '取消';
+      const kc = cell(kind);
+      // 还没人确认过区分（原件还在「未確認」）时，写出页面是凭什么先判的
+      if (e.file.startsWith(EV_PENDING) && e.fields && e.fields.kind_basis)
+        kc.appendChild(el('div', 'ce-ev-basis', `ce_ev_basis_${e.fields.kind_basis}`));
       const name = e.file.split('/').pop().replace(/^[0-9a-f]{8}_/, '');
       cell(`${name}${e.page ? ` p.${e.page}` : ''}`).title = e.file;
       cell(e.bank ? e.bank.split(':').slice(2, 4).join(' ') : '—');
@@ -1250,7 +1480,27 @@
             reason = await askReason(act, 'ce_ev_reason_fix');
             if (!reason) return;
           }
-          const r = await evDo('confirm', [e.no, values(), by, reason], err);
+          // 区分定了（或改了）→ 原件归进那个区分的文件夹。先抄过去再改索引簿，成功后删旧的；失败就删掉抄过去的那份
+          const vals = { ...values(), kind: kind.value };
+          let move = null;
+          if (e.file.startsWith(EV_PENDING) || kind.value !== e.kind) {
+            const base = e.file.split('/').pop().replace(/^[0-9a-f]{8}_/, '');
+            const to = await evAsk('path', [e.sha, base, e.received, kind.value]);
+            if (typeof to === 'string' && to !== e.file) {
+              try {
+                await copyFile(e.file, to);
+              } catch (ex) {
+                console.error(ex);
+                delete err.dataset.i18n;
+                err.textContent = String((ex && ex.message) || ex);
+                return;
+              }
+              move = { from: e.file, to };
+              vals.file = to;
+            }
+          }
+          const r = await evDo('confirm', [e.no, vals, by, reason], err);
+          if (move) await removeFile(r && r.ok !== false ? move.from : move.to).catch((ex) => console.error(ex));
           if (r && r.ok !== false) {
             // 列表是在 evDo 里面重画的，那时这一行还算「修改中」；这里退出修改后再画一次，否则订正成功了行还开着
             evEditing.delete(e.no);
@@ -1283,7 +1533,7 @@
       if (e.note) {
         const nr = el('tr', 'ce-ev-note');
         const td = el('td');
-        td.colSpan = 9;
+        td.colSpan = 10;
         td.textContent = e.note;
         nr.appendChild(td);
         out.push(nr);
@@ -1378,6 +1628,7 @@
       $('ce-result').classList.add('hidden');
       lastXlsx = null;
       setStatus($('ce-status'), '');
+      running = true;
       showProgress(true);
       setBar(ready ? STAGE_PCT.ready : 0, ready ? 'ce_p_ready' : 'ce_p_runtime');
       try {
@@ -1442,14 +1693,12 @@
         console.error(err);
         setStatus($('ce-status'), errKey(err), err.kind === 'runtime' ? ` ${err.message}` : '', true);
       } finally {
+        running = false;
         showProgress(false);
-        if (scrollPending) {
-          scrollPending = false;
-          $('ce-result').scrollIntoView({
-            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-            block: 'start',
-          });
-        }
+        // 进度条一收，页面短了约 65px：结果出来时已经定位过（render），用户之后没有自己滚动的话再对齐一次。
+        // 自己滚过就不动——写进文件夹要一两秒，那时再把页面拉走会打断人
+        if (scrollPending && Math.abs(window.scrollY - scrolledTo) < 4) $('ce-result').scrollIntoView({ block: 'start' });
+        scrollPending = false;
         $('ce-run').disabled = !prechecked;
         document.querySelectorAll('[data-sample]').forEach((b) => (b.disabled = false));
         updateRerun();
@@ -1458,6 +1707,8 @@
 
     let isSampleRun = false;
     let scrollPending = false;
+    let scrolledTo = 0; // render 定位之后的滚动位置（用来判断用户有没有自己滚过）
+    let running = false; // 正在结账：排在前面的资料检查结束时不要把进度条藏掉
     let reportsInFolder = false;
     function forMonth(r, month) {
       const p = (r.periods || []).find((x) => x.month === month);
@@ -1666,7 +1917,10 @@
       $('ce-answers-box').classList.toggle('hidden', !r.answers);
       $('ce-answers-none').classList.toggle('hidden', !!r.answers);
       $('ce-listbox').open = false;
-      scrollPending = true; // 滚动留到进度条收起之后（run 的 finally）：先滚的话，进度条一收页面又短 65px，结果的头被顶栏盖住
+      // 结果一出来就定位（不用平滑滚动：要马上知道落在哪里）。之后进度条收起时在 run 的 finally 里再对齐一次
+      $('ce-result').scrollIntoView({ block: 'start' });
+      scrolledTo = window.scrollY;
+      scrollPending = true;
     }
 
     // ── 结果：汇总・报表・事项 ─────────────────────────────────────────────────
@@ -2199,8 +2453,32 @@
     // 底稿语言默认跟界面：日文界面 → 日文底稿，其余 → 中文
     if (window.sdfLang && window.sdfLang() === 'ja') $('ce-wp-lang').value = 'ja';
     renderList(null);
+    // 四格图解：点小图放大，左右键・按钮换格。说明文字跟界面语言
+    let howAt = 1;
+    function showHow(i) {
+      howAt = ((i - 1 + 4) % 4) + 1;
+      $('ce-how-img').src = `closing-howto/${howAt}.webp`;
+      window.sdfSetText($('ce-how-cap'), `ce_how_${howAt}`);
+      $('ce-how-n').textContent = `${howAt} / 4`;
+    }
+    document.querySelectorAll('.ce-how').forEach((b) =>
+      b.addEventListener('click', () => {
+        showHow(Number(b.dataset.how));
+        $('ce-how-dlg').showModal();
+      }),
+    );
+    $('ce-how-prev').addEventListener('click', () => showHow(howAt - 1));
+    $('ce-how-next').addEventListener('click', () => showHow(howAt + 1));
+    $('ce-how-close').addEventListener('click', () => $('ce-how-dlg').close());
+    $('ce-how-dlg').addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') showHow(howAt - 1);
+      if (e.key === 'ArrowRight') showHow(howAt + 1);
+    });
+    $('ce-how-dlg').addEventListener('click', (e) => {
+      if (e.target === $('ce-how-dlg')) $('ce-how-dlg').close(); // 点到图外面的暗处
+    });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=4be2063e02"></script>
+  <script src="../../js/main.js?v=561d44ee2d"></script>
 </body>
 </html>
