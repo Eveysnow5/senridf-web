@@ -877,7 +877,7 @@ const T = {
     ce_ans_done: '処理済み（仕訳しない）',
     ce_ans_account: '科目を選ぶ',
     ce_ans_sub: '補助（任意）',
-    ce_ans_tax: '税区分（既定）',
+    ce_ans_tax: '税区分：科目の既定どおり',
     ce_ans_split: '＋ 行を分ける',
     ce_ans_remove: '削除',
     ce_ans_diff: '残り {n} 円',
@@ -922,6 +922,14 @@ const T = {
     ce_z_unknown: '✗ {name}：会社の資料でも銀行明細でもないため、保存していません',
     ce_z_err: '✗ {name}：読めませんでした（{msg}）',
     ce_z_skip: '✗ {name}：この種類のファイルは扱えません（表は Excel・CSV、証憑は画像・PDF）',
+    ce_ev_no_template:
+      'この種類の書類はまだ自動で読めません。ファイル名を押して原本を開き、見ながら取引日・金額・取引先を入れてください',
+    ce_ev_open: '原本を開く：{name}',
+    ce_ev_open_err: '原本を開けませんでした（{msg}）',
+    ce_rerun_note:
+      '作業フォルダにつないでいるときは、回答をフォルダの「公司资料.xlsx」に書き込みます（元のファイルは先に「结账结果/备份」へコピーします）。',
+    ce_period_why:
+      '帳簿は開始月から順に締めていくので、既定では会計年度の最初の月から「終了」の月まで計算します。結果は月ごとに切り替えて見られます。1 か月だけでよければ「最新の 1 か月だけ」を押してください。',
     ce_ev_box: '証憑の一覧と確認',
     ce_ev_count: '{n} 件（未確認 {d} 件）',
     ce_ev_count_none: 'まだありません',
@@ -1869,7 +1877,7 @@ const T = {
     ce_ans_done: '已处理（不入账）',
     ce_ans_account: '选择科目',
     ce_ans_sub: '明细（可选）',
-    ce_ans_tax: '税区分（默认）',
+    ce_ans_tax: '税区分：按科目的默认',
     ce_ans_split: '＋ 拆成多行',
     ce_ans_remove: '删除',
     ce_ans_diff: '差额 {n} 日元',
@@ -1910,6 +1918,13 @@ const T = {
     ce_z_unknown: '✗ {name}：不是公司资料，也不是银行流水，没有保存',
     ce_z_err: '✗ {name}：没能读取（{msg}）',
     ce_z_skip: '✗ {name}：这种文件处理不了（表格要 Excel・CSV，凭证要图片・PDF）',
+    ce_ev_no_template: '这一类单据还不能自动读取。请点文件名打开原件，对照着填交易日・金额・交易方',
+    ce_ev_open: '打开原件：{name}',
+    ce_ev_open_err: '没能打开原件（{msg}）',
+    ce_rerun_note:
+      '连接着工作文件夹时，回答会写进文件夹里的「公司资料.xlsx」（原文件会先备份到「结账结果/备份」）。',
+    ce_period_why:
+      '账要从开始月一个月一个月结下来，所以默认从会计年度的第一个月算到「到」的月份。结果里可以按月切换着看。只要一个月的话，点「只结最新一个月」。',
     ce_ev_box: '凭证明细与确认',
     ce_ev_count: '已有 {n} 张，其中 {d} 张待确认',
     ce_ev_count_none: '还没有凭证',
@@ -2904,7 +2919,7 @@ const T = {
     ce_ans_done: 'Done (no entry)',
     ce_ans_account: 'Choose account',
     ce_ans_sub: 'Sub-account (optional)',
-    ce_ans_tax: 'Tax category (default)',
+    ce_ans_tax: 'Tax category: the account default',
     ce_ans_split: '+ Split into lines',
     ce_ans_remove: 'Remove',
     ce_ans_diff: 'Remaining {n} yen',
@@ -2950,6 +2965,14 @@ const T = {
     ce_z_err: '✗ {name}: could not be read ({msg})',
     ce_z_skip:
       '✗ {name}: this file type is not supported (tables: Excel or CSV; evidence: images or PDF)',
+    ce_ev_no_template:
+      'This kind of document cannot be read automatically yet. Click the file name to open the original and enter the date, amount and party from it',
+    ce_ev_open: 'Open the original: {name}',
+    ce_ev_open_err: 'Could not open the original ({msg})',
+    ce_rerun_note:
+      'While a working folder is connected, your answers are written into “公司资料.xlsx” in that folder (the previous file is first copied to “结账结果/备份”).',
+    ce_period_why:
+      'Books are closed month by month from the start, so by default the run covers the fiscal year’s first month through the “to” month. You can switch months in the results. For one month only, press “Latest month only”.',
     ce_ev_box: 'Evidence list and confirmation',
     ce_ev_count: '{n} on file, {d} to confirm',
     ce_ev_count_none: 'None yet',

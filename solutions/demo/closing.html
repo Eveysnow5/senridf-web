@@ -474,6 +474,7 @@
         <!-- 会计年度（按公司的决算月）：点一下填好起止 -->
         <div id="ce-fy" class="ce-fy hidden"></div>
         <p id="ce-period-note" class="ce-hint hidden" style="margin-top:4px"></p>
+        <p id="ce-period-why" class="ce-hint hidden" data-i18n="ce_period_why"></p>
         <div id="ce-progress" class="ce-progress hidden">
           <div class="ce-bar"><div id="ce-bar"></div></div>
           <div class="ce-progress-text"><span id="ce-stage"></span><span id="ce-elapsed"></span></div>
@@ -540,6 +541,7 @@
           <div class="ce-row" style="margin-top:12px">
             <button type="button" id="ce-rerun" class="ce-btn" disabled></button>
           </div>
+          <p id="ce-rerun-note" class="ce-hint hidden" style="margin-top:4px" data-i18n="ce_rerun_note"></p>
           <div id="ce-dl-box" class="hidden" style="margin-top:10px">
             <div class="ce-row">
               <button type="button" id="ce-dl-book" class="ce-btn2 hidden" data-i18n="ce_dl_book">下载更新后的公司资料.xlsx</button>
@@ -1021,6 +1023,9 @@
     let evHits = null; // 检索命中的连番（null＝不在检索，显示全部）
     let evChain = Promise.resolve();
     let evEditing = new Set(); // 正在修改的已确认行
+    // 各行里填了但还没确认的值 {连番: {date, amount, party, kind}}。确认・取消任何一行都会把整张表重画——
+    // 不记下来的话，别的行刚填的日期・金额就没了，而且没有任何提示（2026-10-12 用户测试发现）
+    const evUnsaved = new Map();
     let ocrWorker = null;
     let ocrSeq = 0;
     const ocrWait = new Map();
@@ -1179,6 +1184,25 @@
     async function removeFile(path) {
       const a = path.split('/');
       await (await dirOf(a.slice(0, -1))).removeEntry(a[a.length - 1]);
+    }
+    // 打开原件（在新标签页里看）。先同步开一个空白页（等读完文件再开会被浏览器当成弹窗拦掉），读好了再把地址填进去
+    const MIME = { pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif' };
+    async function openOriginal(path, host) {
+      const tab = window.open('', '_blank');
+      try {
+        const a = path.split('/');
+        const fh = await (await dirOf(a.slice(0, -1))).getFileHandle(a[a.length - 1]);
+        const type = MIME[a[a.length - 1].split('.').pop().toLowerCase()] || 'application/octet-stream';
+        const url = URL.createObjectURL(new Blob([await (await fh.getFile()).arrayBuffer()], { type }));
+        if (!tab) throw new Error('popup blocked'); // 不在本页打开：会把没保存的东西冲掉
+        tab.location = url;
+      } catch (ex) {
+        console.error(ex);
+        if (tab) tab.close();
+        let box = host.querySelector('.ce-err');
+        if (!box) box = host.appendChild(el('div', 'ce-err'));
+        window.sdfSetText(box, 'ce_ev_open_err', { msg: String((ex && ex.message) || ex) });
+      }
     }
     function zlog(listId, cls, key, params) {
       const li = el('li', cls);
@@ -1472,7 +1496,25 @@
       if (e.file.startsWith(EV_PENDING) && e.fields && e.fields.kind_basis)
         kc.appendChild(el('div', 'ce-ev-basis', `ce_ev_basis_${e.fields.kind_basis}`));
       const name = e.file.split('/').pop().replace(/^[0-9a-f]{8}_/, '');
-      cell(`${name}${e.page ? ` p.${e.page}` : ''}`).title = e.file;
+      // 文件名可以点：打开原件（没有读取模板的单据要对照原件手填）
+      const open = el('button', 'ce-link');
+      open.type = 'button';
+      open.textContent = `${name}${e.page ? ` p.${e.page}` : ''}`;
+      open.title = t('ce_ev_open').replace('{name}', e.file);
+      const fc = cell(open);
+      open.addEventListener('click', () => openOriginal(e.file, fc));
+      const un = evUnsaved.get(e.no);
+      if (un && !date.disabled) {
+        date.value = un.date;
+        amount.value = un.amount;
+        party.value = un.party;
+        kind.value = un.kind;
+      }
+      const keep = () => evUnsaved.set(e.no, { date: date.value, amount: amount.value, party: party.value, kind: kind.value });
+      for (const i of [date, amount, party, kind]) {
+        i.addEventListener('input', keep);
+        i.addEventListener('change', keep);
+      }
       cell(e.bank ? e.bank.split(':').slice(2, 4).join(' ') : '—');
       const act = el('div', 'ce-row');
       const err = el('div', 'ce-err');
@@ -1512,6 +1554,7 @@
           if (r && r.ok !== false) {
             // 列表是在 evDo 里面重画的，那时这一行还算「修改中」；这里退出修改后再画一次，否则订正成功了行还开着
             evEditing.delete(e.no);
+            evUnsaved.delete(e.no);
             renderEv();
           }
         });
@@ -1532,12 +1575,23 @@
           const by = evBy();
           if (!by) return window.sdfSetText(err, 'ce_ans_err_by');
           const reason = await askReason(act, 'ce_ev_reason_void');
-          if (reason) await evDo('void', [e.no, by, reason], err);
+          if (reason) {
+            const r = await evDo('void', [e.no, by, reason], err);
+            if (r && r.ok !== false) evUnsaved.delete(e.no);
+          }
         });
         act.appendChild(rm);
       }
       cell(act).appendChild(err);
       const out = [tr];
+      if (e.status === '下書き' && !e.note && !(e.fields && e.fields.template)) {
+        // 没有对应的读取模板：三个栏是空的。不说的话，用户只看到「明明有字却什么都没读出来」
+        const nr = el('tr', 'ce-ev-note');
+        const td = el('td', '', 'ce_ev_no_template');
+        td.colSpan = 10;
+        nr.appendChild(td);
+        out.push(nr);
+      }
       if (e.note) {
         const nr = el('tr', 'ce-ev-note');
         const td = el('td');
@@ -1570,6 +1624,7 @@
     // 文件夹接上之后读一次索引簿（没有就是空表）
     async function evConnected() {
       evHits = null;
+      evUnsaved.clear();
       evEditing = new Set();
       renderEv();
       if (dirHandle) await evAsk('listing', [{}]);
@@ -1590,6 +1645,7 @@
       const fys = (period && period.fiscal_years) || [];
       box.classList.toggle('hidden', !fys.length);
       note.classList.toggle('hidden', !fys.length);
+      $('ce-period-why').classList.toggle('hidden', !fys.length);
       if (!fys.length) return;
       const pick = (a, b) => {
         $('ce-from').value = a;
@@ -2420,6 +2476,7 @@
       const n = Object.keys(answers).length + Object.keys(edits).length;
       window.sdfSetText($('ce-rerun'), 'ce_rerun', n);
       $('ce-rerun').disabled = !n || !lastRun;
+      $('ce-rerun-note').classList.toggle('hidden', !(n && dirHandle && lastRun && lastRun.source === 'upload'));
     }
     $('ce-rerun').addEventListener('click', () => lastRun && run(lastRun.source, true));
     function download(bytes, name, type) {
@@ -2492,6 +2549,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=561d44ee2d"></script>
+  <script src="../../js/main.js?v=de39c5a5ba"></script>
 </body>
 </html>
