@@ -149,6 +149,7 @@
     .ce-it.ask { border-left:3px solid #4f46e5; }
     .ce-it.todo { border-left:3px solid #d97706; }
     .ce-it.err { border-left:3px solid #dc2626; }
+    .ce-it.info { border-left:3px solid #9ca3af; }
     .ce-it .l { padding:10px 12px;min-width:0; }
     .ce-it .r { padding:10px 12px;background:#f9fafb;border-left:1px solid #e5e7eb;border-radius:0 8px 8px 0;min-width:0;font-size:12px;color:#374151; }
     .ce-it h3 { font-size:13px;font-weight:600;color:#111827;margin:0;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;word-break:break-all; }
@@ -418,6 +419,7 @@
               <input type="text" id="ce-ev-by" class="ce-input" style="width:9em" autocomplete="off" data-i18n-title="ce_ans_by" /></label>
           </div>
           <p class="ce-hint" data-i18n="ce_ev_kinds"></p>
+          <p class="ce-hint" data-i18n="ce_ev_date_hint"></p>
           <div id="ce-ev-notices"></div>
           <div class="ce-row ce-ev-q">
             <label class="ce-hint"><span data-i18n="ce_ev_q_date">交易日</span>
@@ -535,6 +537,7 @@
             <button type="button" class="ce-tab" data-bucket="ask" role="tab"><span data-i18n="ce_b_ask">待确认</span><span class="n">0</span></button>
             <button type="button" class="ce-tab" data-bucket="todo" role="tab"><span data-i18n="ce_b_todo">待处理</span><span class="n">0</span></button>
             <button type="button" class="ce-tab err" data-bucket="err" role="tab"><span data-i18n="ce_b_err">疑似错误</span><span class="n">0</span></button>
+            <button type="button" class="ce-tab" data-bucket="info" role="tab"><span data-i18n="ce_b_info">告知</span><span class="n">0</span></button>
           </div>
           <p id="ce-b-lead" class="ce-hint"></p>
           <div id="ce-items" class="ce-items"></div>
@@ -1515,7 +1518,11 @@
         i.addEventListener('input', keep);
         i.addEventListener('change', keep);
       }
-      cell(e.bank ? e.bank.split(':').slice(2, 4).join(' ') : '—');
+      // 对应流水：自己选定的（索引簿的照合先），或上一次结账时引擎自动对上的（结果里的 evidence_links）
+      const link = lastRun && lastRun.result.evidence_links ? lastRun.result.evidence_links[String(e.no)] : null;
+      if (e.bank) cell(e.bank.split(':').slice(2, 4).join(' '));
+      else if (link) cell(t('ce_ev_linked_auto').replace('{d}', link.date).replace('{t}', link.desc));
+      else cell('—');
       const act = el('div', 'ce-row');
       const err = el('div', 'ce-err');
       const values = () => ({ date: date.value, amount: amount.value === '' ? null : Number(amount.value), party: party.value.trim() });
@@ -1730,6 +1737,7 @@
         lastBook = m.book || null;
         lastDecisions = r.decisions_yaml || '';
         lastRun = { source, result: r };
+        renderEv(); // 凭证对上了哪笔流水要跟着更新
         setStatus($('ce-status'), 'ce_status_done');
         const saveHere = source === 'upload' && dirHandle;
         isSampleRun = source !== 'upload';
@@ -1973,7 +1981,7 @@
       }
       $('ce-fs-out').replaceChildren();
       const cnt = counts(r);
-      bucketOn = ['ask', 'todo', 'err'].find((b) => cnt[b]) || 'ask';
+      bucketOn = ['err', 'todo', 'ask', 'info'].find((b) => cnt[b]) || 'ask'; // 先看最要紧的：疑似错误 → 缺资料 → 待确认 → 告知
       renderItems(r);
       $('ce-dl-box').classList.add('hidden');
 
@@ -2042,7 +2050,7 @@
       return out;
     }
     function counts(r) {
-      const c = { ask: 0, todo: 0, err: 0 };
+      const c = { ask: 0, todo: 0, err: 0, info: 0 }; // info＝前提的告知：不算进「需要您处理」的件数
       for (const it of itemList(r)) c[it.bucket] += 1;
       return c;
     }
@@ -2071,10 +2079,13 @@
         d.append(el('div', 'k', key), v, sub);
         box.appendChild(d);
       };
-      kpi('ce_k_rev', s.revenue_month, 'ce_k_ytd', { v: yen(s.revenue_ytd) });
-      kpi('ce_k_profit', s.profit_month, 'ce_k_ytd', { v: yen(s.profit_ytd) });
+      kpi('ce_k_rev', s.revenue_month, 'ce_k_ytd', { v: yen(s.revenue_ytd), f: s.ytd_from || '' });
+      kpi('ce_k_profit', s.profit_month, 'ce_k_ytd', { v: yen(s.profit_ytd), f: s.ytd_from || '' });
       if (short) kpi('ce_k_cash', s.cash, 'ce_k_cash_short', { d: s.bank_through }, 'ng');
-      else kpi('ce_k_cash', s.cash, s.bank_ok ? 'ce_k_cash_ok' : 'ce_k_cash_ng', null, s.bank_ok ? 'ok' : 'ng');
+      else if (s.bank_ok) kpi('ce_k_cash', s.cash, 'ce_k_cash_ok', null, 'ok');
+      else if (s.bank_diff === null || s.bank_diff === undefined) kpi('ce_k_cash', s.cash, 'ce_k_cash_ng', null, 'ng');
+      // 差多少直接写出来（以前只有「≠」，要翻到疑似错误里才看得到）
+      else kpi('ce_k_cash', s.cash, 'ce_k_cash_diff', { d: `${s.bank_diff > 0 ? '+' : ''}${yen(s.bank_diff)}` }, 'ng');
       kpi('ce_k_items', cnt.ask + cnt.todo + cnt.err, 'ce_k_counts', cnt);
       const up = $('ce-up');
       up.replaceChildren();
@@ -2549,6 +2560,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=de39c5a5ba"></script>
+  <script src="../../js/main.js?v=eb7f83e381"></script>
 </body>
 </html>
