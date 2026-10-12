@@ -887,6 +887,8 @@ const T = {
     ce_ans_account: '科目を選ぶ',
     ce_ans_sub: '補助（任意）',
     ce_ans_tax: '税区分：科目の既定どおり',
+    ce_ans_neg:
+      '差し引かれた分はマイナスで書きます。例：報酬の支払 89,790 ＝ 支払報酬 100,000 ＋ 預り金 −10,210（天引きした源泉所得税）。入金 329,560 ＝ 売掛金 330,000 ＋ 支払手数料 −440（相手が差し引いた手数料）。',
     ce_ans_split: '＋ 行を分ける',
     ce_ans_remove: '削除',
     ce_ans_diff: '残り {n} 円',
@@ -1900,6 +1902,8 @@ const T = {
     ce_ans_account: '选择科目',
     ce_ans_sub: '明细（可选）',
     ce_ans_tax: '税区分：按科目的默认',
+    ce_ans_neg:
+      '被扣掉的部分填负数。例：付报酬 89,790＝支払報酬 100,000＋預り金 −10,210（代扣的源泉所得税）；收款 329,560＝売掛金 330,000＋支払手数料 −440（对方扣掉的手续费）。',
     ce_ans_split: '＋ 拆成多行',
     ce_ans_remove: '删除',
     ce_ans_diff: '差额 {n} 日元',
@@ -2955,6 +2959,8 @@ const T = {
     ce_ans_account: 'Choose account',
     ce_ans_sub: 'Sub-account (optional)',
     ce_ans_tax: 'Tax category: the account default',
+    ce_ans_neg:
+      'Enter deducted parts as negative amounts. E.g. a fee payment of 89,790 = 支払報酬 100,000 + 預り金 −10,210 (tax withheld); a receipt of 329,560 = 売掛金 330,000 + 支払手数料 −440 (fee deducted by the payer).',
     ce_ans_split: '+ Split into lines',
     ce_ans_remove: 'Remove',
     ce_ans_diff: 'Remaining {n} yen',

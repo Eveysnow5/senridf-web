@@ -857,8 +857,18 @@
         if (!$('ce-from').value && fys.length) {
           const fy = autoMonth ? fys[0] : fys.find((x) => x.start <= month && month <= x.end) || fys[0];
           $('ce-from').value = fy.from;
-          if (autoMonth) $('ce-month').value = fy.to;
+          if (autoMonth) {
+            $('ce-month').value = fy.to;
+            periodAuto = true;
+          }
           autoMonth = false;
+          return await precheck();
+        }
+        // 期间是页面自己填的、用户还没动过：资料变了（先放公司资料、后放流水）就跟着重算。
+        // 不重算的话「到」会停在开始月——那是按「还没有流水」算出来的（2026-10-12 用户测试）
+        if (periodAuto && fys.length && ($('ce-from').value !== fys[0].from || $('ce-month').value !== fys[0].to)) {
+          $('ce-from').value = fys[0].from;
+          $('ce-month').value = fys[0].to;
           return await precheck();
         }
         renderList(r);
@@ -1641,11 +1651,16 @@
     }
 
     let autoMonth = false; // 「到」是页面自动填的（用户还没选）
+    let periodAuto = false; // 期间（从・到）是页面自己填的，用户还没动过
     $('ce-month').addEventListener('change', () => {
       autoMonth = false;
+      periodAuto = false;
       precheck();
     });
-    $('ce-from').addEventListener('change', () => precheck());
+    $('ce-from').addEventListener('change', () => {
+      periodAuto = false;
+      precheck();
+    });
 
     // 会计年度的快捷按钮（日本的决算月由公司自己定，不一定是 12 月）。period 来自引擎的预检
     function renderPeriod(period) {
@@ -1658,6 +1673,7 @@
       $('ce-period-why').classList.toggle('hidden', !fys.length);
       if (!fys.length) return;
       const pick = (a, b) => {
+        periodAuto = false;
         $('ce-from').value = a;
         $('ce-month').value = b;
         precheck();
@@ -2320,7 +2336,10 @@
         sumCheck();
       });
       const bookBox = el('div', 'ce-form');
-      bookBox.append(linesBox, diff, split);
+      const neg = el('div', 'ce-hint', 'ce_ans_neg'); // 拆成多行时才用得上：点了「拆成多行」再显示
+      neg.classList.toggle('hidden', prevLines.length < 2);
+      split.addEventListener('click', () => neg.classList.remove('hidden'));
+      bookBox.append(linesBox, diff, split, neg);
       if (sg) {
         const note = el('div', `ce-sg${sgSure ? '' : ' far'}`);
         const txt = el('span');
@@ -2390,7 +2409,7 @@
         if (a.action === 'book') {
           const ls = lines();
           if (ls.some((l) => !l.account)) return window.sdfSetText(err, 'ce_ans_err_account');
-          if (ls.reduce((s, l) => s + l.amount, 0) !== amount || ls.some((l) => l.amount <= 0))
+          if (ls.reduce((s, l) => s + l.amount, 0) !== amount || ls.some((l) => !l.amount)) // 负数＝被扣掉的部分（记到另一边）；0 不行
             return window.sdfSetText(err, 'ce_ans_err_sum');
           const clean = (l) => Object.fromEntries(Object.entries(l).filter(([, v]) => v !== '' && v !== 0));
           if (ls.length === 1) Object.assign(a, clean({ ...ls[0], amount: '' }));
@@ -2566,6 +2585,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=65d7fe3143"></script>
+  <script src="../../js/main.js?v=0eec366d16"></script>
 </body>
 </html>
