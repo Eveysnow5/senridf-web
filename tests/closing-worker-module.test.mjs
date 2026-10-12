@@ -67,3 +67,20 @@ test('页面发给 Worker 的请求要排队（等待位只有一个）', () => 
 test('Worker 的初始化只做一次（记住 Promise，不是结果）', () => {
   assert.match(worker, /function init\(\) \{\s*if \(!initing\)/);
 });
+
+// 2026-10-12：pdf.js に cMapUrl を渡していなかったので、フォントを埋め込まない日本語 PDF（TKC の残高試算表など）の
+// 文字が**エラーも出さずに**落ちていた（0 字。渡すと 1,160 字）。工资单も 214 字 → 278 字。
+// 「換版本也不行」と一度誤って結論したのは、試した配布元（cdnjs）に CMap が無く 403 だったから。
+test('月结页面读 PDF 时给了编码表（cMapUrl），而且版本和 pdf.js 本体一致', () => {
+  const calls = [...html.matchAll(/getDocument\(\{([^}]*)\}\)/g)].map((m) => m[1]);
+  assert.ok(calls.length >= 2, `只找到 ${calls.length} 处 getDocument`);
+  for (const c of calls) assert.match(c, /\.\.\.PDF_OPTS/, `getDocument({${c}}) 没有带 PDF_OPTS`);
+  const lib = html.match(/ajax\/libs\/pdf\.js\/([\d.]+)\/pdf\.min\.js/);
+  const cmap = html.match(
+    /cMapUrl: 'https:\/\/cdn\.jsdelivr\.net\/npm\/pdfjs-dist@([\d.]+)\/cmaps\/'/,
+  );
+  assert.ok(lib && cmap, '找不到 pdf.js 或 cMapUrl 的地址');
+  assert.equal(cmap[1], lib[1], 'cMap 的版本和 pdf.js 本体不一致');
+  assert.match(html, /cMapPacked: true/);
+  assert.match(html, /isEvalSupported: false/);
+});

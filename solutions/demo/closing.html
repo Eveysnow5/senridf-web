@@ -1089,6 +1089,14 @@
 
     // PDF：有文字层（电子收到的 PDF、工资单等）直接取字；扫描件按页渲染成图片再识别。
     // pdf.js 用站内其他页面同一个版本（SRI 固定），isEvalSupported:false 缓解 CVE-2024-4367
+    // cMapUrl：字体不嵌入的日文 PDF 用预定义的编码（UniJIS-UTF16-H 等），pdf.js 要另外读编码表才能解出文字。
+    // 不给的话**不报错、只是少字**：TKC 的残高試算表读出 0 字（配上后 1,160 字），工资单 214 字（配上后 278 字）
+    // ——2026-10-12 用真实文件量出来的。cdnjs 上没有这些文件（403），从 jsDelivr 的同一个版本读。
+    const PDF_OPTS = {
+      isEvalSupported: false,
+      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+      cMapPacked: true,
+    };
     let pdfjs = null;
     async function loadPdfjs() {
       if (pdfjs) return pdfjs;
@@ -1120,7 +1128,7 @@
     async function* pagesOf(file, buf) {
       if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
         const lib = await loadPdfjs();
-        const doc = await lib.getDocument({ data: new Uint8Array(buf.slice(0)), isEvalSupported: false }).promise;
+        const doc = await lib.getDocument({ data: new Uint8Array(buf.slice(0)), ...PDF_OPTS }).promise;
         for (let i = 1; i <= doc.numPages; i++) {
           const page = await doc.getPage(i);
           const lines = textLines((await page.getTextContent()).items);
@@ -1147,7 +1155,7 @@
     async function guessKind(file, buf) {
       if (!(file.type === 'application/pdf' || /\.pdf$/i.test(file.name))) return { kind: EV_PAPER, basis: 'photo' };
       const lib = await loadPdfjs();
-      const doc = await lib.getDocument({ data: new Uint8Array(buf.slice(0)), isEvalSupported: false }).promise;
+      const doc = await lib.getDocument({ data: new Uint8Array(buf.slice(0)), ...PDF_OPTS }).promise;
       let ops = 0;
       for (let i = 1; i <= Math.min(3, doc.numPages); i++) {
         const page = await doc.getPage(i);
