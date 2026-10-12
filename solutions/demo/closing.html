@@ -389,7 +389,7 @@
             <p class="d" data-i18n="ce_z_tab_d">公司资料和银行流水。拖到这里，或点「选择文件」。</p>
             <div class="ce-need" id="ce-c-book">
               <span class="n" translate="no">公司资料.xlsx</span><span class="ce-st wait" data-i18n="ce_s_wait">未检查</span>
-              <a class="ce-link" href="closing-engine/template.xlsx" download="公司资料.xlsx" data-i18n="ce_tpl_xlsx">下载空白模板</a>
+              <a class="ce-link" id="ce-tpl" href="closing-engine/template.xlsx" download="公司资料.xlsx" data-i18n="ce_tpl_xlsx">下载空白模板</a>
               <div class="x hidden"></div>
             </div>
             <div class="ce-need" id="ce-c-bank">
@@ -705,7 +705,9 @@
           sh.className = 'ce-sheets';
           const lab = document.createElement('span');
           window.sdfSetText(lab, 'ce_wb_sheets');
-          sh.append(lab, document.createTextNode(` ${sheets}`));
+          // 表名跟着工作簿的语言（日文・英文模板的表名不一样）；没有检查结果时用清单里的中文名
+          const names = byId[id]?.sheets?.length ? byId[id].sheets.join('・') : sheets;
+          sh.append(lab, document.createTextNode(` ${names}`));
           f.append(sh);
         }
         if (bad) f.append(d);
@@ -1898,7 +1900,16 @@
       });
     }
     // 事前チェックの文言も画面の言語で出し直す（軽い）。締めの実行中（サンプルのボタンが止まっている間）はしない
+    // 空白模板跟着界面语言：表名・栏名・说明・下拉都是那种语言（引擎三种都能读）
+    const TPL = { zh: ['template.xlsx', '公司资料.xlsx'], ja: ['template_ja.xlsx', '会社資料.xlsx'], en: ['template_en.xlsx', 'company-data.xlsx'] };
+    function setTemplateLink() {
+      const [file, name] = TPL[ui()] || TPL.zh;
+      $('ce-tpl').href = `closing-engine/${file}`;
+      $('ce-tpl').download = name;
+    }
+    setTemplateLink();
     function onLangChange() {
+      setTemplateLink();
       refreshTr();
       if (shown && shown.view) renderStatements(shown.view);
       if (files.length && !document.querySelector('[data-sample]').disabled) precheck();
