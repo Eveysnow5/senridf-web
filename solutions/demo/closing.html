@@ -376,7 +376,7 @@
         <div class="ce-row">
           <button type="button" id="ce-open" class="ce-btn hidden" data-i18n="ce_open_folder">选择工作文件夹</button>
           <label class="ce-btn2" id="ce-pick" for="ce-folder" data-i18n="ce_pick_folder">选择工作文件夹</label>
-          <input type="file" id="ce-folder" webkitdirectory multiple class="hidden" title="company folder" />
+          <input type="file" id="ce-folder" webkitdirectory multiple class="hidden" data-i18n-title="ce_pick_folder" />
           <span id="ce-folder-info" class="ce-hint" data-i18n="ce_upload_none">尚未选择文件夹</span>
         </div>
         <p class="ce-hint" style="margin-top:6px" data-i18n="ce_pick_tip"></p>
@@ -421,12 +421,12 @@
           <div id="ce-ev-notices"></div>
           <div class="ce-row ce-ev-q">
             <label class="ce-hint"><span data-i18n="ce_ev_q_date">交易日</span>
-              <input type="date" id="ce-ev-q-from" class="ce-input" title="from" />〜<input type="date" id="ce-ev-q-to" class="ce-input" title="to" /></label>
+              <input type="date" id="ce-ev-q-from" class="ce-input" data-i18n-title="ce_ev_q_date" />〜<input type="date" id="ce-ev-q-to" class="ce-input" data-i18n-title="ce_ev_q_date" /></label>
             <label class="ce-hint"><span data-i18n="ce_ev_q_amount">金额</span>
-              <input type="number" id="ce-ev-q-min" class="ce-input" style="width:8em" title="min" />〜<input type="number" id="ce-ev-q-max" class="ce-input" style="width:8em" title="max" /></label>
+              <input type="number" id="ce-ev-q-min" class="ce-input" style="width:8em" data-i18n-title="ce_ev_q_amount" />〜<input type="number" id="ce-ev-q-max" class="ce-input" style="width:8em" data-i18n-title="ce_ev_q_amount" /></label>
             <label class="ce-hint"><span data-i18n="ce_ev_q_party">交易方</span>
-              <input type="text" id="ce-ev-q-party" class="ce-input" style="width:10em" title="party" /></label>
-            <label class="ce-hint"><input type="checkbox" id="ce-ev-q-void" title="include void" /> <span data-i18n="ce_ev_q_void">含已取消</span></label>
+              <input type="text" id="ce-ev-q-party" class="ce-input" style="width:10em" data-i18n-title="ce_ev_q_party" /></label>
+            <label class="ce-hint"><input type="checkbox" id="ce-ev-q-void" data-i18n-title="ce_ev_q_void" /> <span data-i18n="ce_ev_q_void">含已取消</span></label>
             <button type="button" id="ce-ev-search" class="ce-btn2" data-i18n="ce_ev_search">检索</button>
             <button type="button" id="ce-ev-clear" class="ce-link" data-i18n="ce_ev_clear">清除</button>
           </div>
@@ -461,11 +461,11 @@
         <h2 class="ce-h ce-step"><span class="ce-no" aria-hidden="true">2</span><span data-i18n="ce_step_run">结账</span></h2>
         <div class="ce-row">
           <label class="ce-hint"><span data-i18n="ce_step_from">结账期间：从</span>
-            <input type="month" id="ce-from" class="ce-input" title="period start" /></label>
+            <input type="month" id="ce-from" class="ce-input" data-i18n-title="ce_step_from" /></label>
           <label class="ce-hint"><span data-i18n="ce_step_to">到</span>
-            <input type="month" id="ce-month" class="ce-input" title="period end" /></label>
+            <input type="month" id="ce-month" class="ce-input" data-i18n-title="ce_step_to" /></label>
           <label class="ce-hint"><span data-i18n="ce_step_lang">底稿语言</span>
-            <select id="ce-wp-lang" class="ce-input" title="workpaper language">
+            <select id="ce-wp-lang" class="ce-input" data-i18n-title="ce_step_lang">
               <option value="zh" data-i18n="ce_lang_zh">中文</option>
               <option value="ja" data-i18n="ce_lang_ja">日文</option>
             </select></label>
@@ -1438,12 +1438,12 @@
       cell(String(e.no));
       const st = el('span', `ce-ev-st ${EV_STATUS[e.status] || ''}`, `ce_ev_st_${EV_STATUS[e.status] || 'draft'}`);
       cell(st);
-      const date = input(e.date, 'date');
+      const date = input(e.date, t('ce_ev_q_date'));
       date.type = 'date';
-      const amount = input(e.amount ?? '', 'amount');
+      const amount = input(e.amount ?? '', t('ce_ev_q_amount'));
       amount.type = 'number';
       amount.inputMode = 'numeric';
-      const party = input(e.party, 'party');
+      const party = input(e.party, t('ce_ev_q_party'));
       for (const i of [date, amount, party]) {
         i.disabled = locked || e.status === '取消';
         i.classList.add('ce-ev-in');
@@ -2142,9 +2142,14 @@
       if (key) window.sdfSetText(e, key);
       return e;
     }
+    let fieldSeq = 0;
     function field(labelKey, input) {
+      // 标签要和输入框关联上（for＝id）：点标签能聚焦，读屏也念得出这个框是什么
       const w = el('div');
-      w.append(el('label', null, labelKey), input);
+      const label = el('label', null, labelKey);
+      if (!input.id) input.id = `ce-f-${++fieldSeq}`;
+      label.htmlFor = input.id;
+      w.append(label, input);
       return w;
     }
     function input(value, title) {
@@ -2202,10 +2207,10 @@
       function addLine(l) {
         const line = el('div', 'ce-line');
         const acc = select(accounts, l.account, 'ce_ans_account');
-        const sub = input(l.sub, 'sub');
+        const sub = input(l.sub, t('ce_ans_sub'));
         sub.placeholder = window.sdfT('ce_ans_sub');
         const tax = select(r.tax_categories, l.tax, 'ce_ans_tax');
-        const amt = input(l.amount ?? '', 'amount');
+        const amt = input(l.amount ?? '', t('ce_ev_q_amount'));
         amt.type = 'number';
         amt.inputMode = 'numeric';
         const rm = el('button', 'ce-link', 'ce_ans_remove');
@@ -2283,8 +2288,8 @@
       form.appendChild(bookBox);
       sumCheck();
 
-      const evidence = input(prev.evidence, 'evidence');
-      const reason = input(prev.reason, 'reason');
+      const evidence = input(prev.evidence, t('ce_ans_evidence'));
+      const reason = input(prev.reason, t('ce_ans_reason'));
       const by = input(prev.by || savedBy(), 'by');
       const g = el('div', 'ce-grid2');
       g.append(field('ce_ans_evidence', evidence), field('ce_ans_by', by));
