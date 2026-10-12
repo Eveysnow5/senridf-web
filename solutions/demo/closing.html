@@ -505,6 +505,7 @@
               <h3 class="ce-h3" data-i18n="ce_up_h">接下来要缴的</h3>
               <ul id="ce-up" class="ce-ul"></ul>
               <p class="ce-hint" data-i18n="ce_up_note"></p>
+              <p id="ce-up-open" class="ce-hint hidden" data-i18n="ce_up_note_open"></p>
             </div>
             <div>
               <h3 class="ce-h3" data-i18n="ce_out_h">结账产物</h3>
@@ -862,7 +863,8 @@
         }
         renderList(r);
         prechecked = !!r.ready;
-        if (r.ready) setStatus($('ce-pre'), 'ce_pre_ok');
+        // 有 ⚠ 的项目（流水没到月末・缺开头的月份・本期要用的资料）时，不说「文件齐全」——两句话会打架
+        if (r.ready) setStatus($('ce-pre'), (r.items || []).some((x) => x.status === 'warn') ? 'ce_pre_ok_warn' : 'ce_pre_ok');
         else if (r.error) setStatus($('ce-pre'), 'ce_pre_engine_err', ` ${r.error}`, true);
         else setStatus($('ce-pre'), 'ce_pre_block', '', true);
       } catch (err) {
@@ -1934,6 +1936,7 @@
       $('ce-result').classList.remove('hidden');
       $('ce-sample-banner').classList.toggle('hidden', !isSample);
       $('ce-fix-where').classList.toggle('hidden', isSample || !dirHandle); // 示例・只读方式没有「工作文件夹里的那一份」
+      if (dirHandle) window.sdfSetText($('ce-fix-where'), 'ce_fix_where', { name: dirHandle.name });
       const n = r.checks.length;
       const fail = r.checks.filter((c) => c.status === 'FAIL').length;
       const skip = r.checks.filter((c) => c.status === 'SKIP').length;
@@ -2089,6 +2092,7 @@
       // 差多少直接写出来（以前只有「≠」，要翻到疑似错误里才看得到）
       else kpi('ce_k_cash', s.cash, 'ce_k_cash_diff', { d: `${s.bank_diff > 0 ? '+' : ''}${yen(s.bank_diff)}` }, 'ng');
       kpi('ce_k_items', cnt.ask + cnt.todo + cnt.err, 'ce_k_counts', cnt);
+      $('ce-up-open').classList.toggle('hidden', !(cnt.todo + cnt.err)); // 缺资料・对不上的事项没处理完：待缴金额可能还会变
       const up = $('ce-up');
       up.replaceChildren();
       for (const u of r.view.upcoming) {
@@ -2562,6 +2566,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=718a5923b9"></script>
+  <script src="../../js/main.js?v=65d7fe3143"></script>
 </body>
 </html>

@@ -809,6 +809,8 @@ const T = {
     ce_ev_linked_auto: '{d} {t}（自動で照合）',
     ce_k_counts: '要確認 {ask}・要対応 {todo}・誤りの疑い {err}（ほかにお知らせ {info}）',
     ce_up_h: 'これから納めるもの',
+    ce_up_note_open:
+      'まだ済んでいない事項があります。それを片付けると、ここの金額は変わることがあります。',
     ce_up_note: '月末残高からの見積り。告知書・納付書の金額で確認してください。',
     ce_up_shaho: '{m} 分の社会保険料',
     ce_up_gensen: '源泉所得税',
@@ -934,7 +936,7 @@ const T = {
     ce_ev_open: '原本を開く：{name}',
     ce_ev_open_err: '原本を開けませんでした（{msg}）',
     ce_fix_where:
-      '「表を直す」は、作業フォルダの中の「公司资料.xlsx」を直すことです（元の置き場所のファイルではありません）。Excel で直して保存し、Excel を閉じてから「締めを実行」を押してください。明細を足すときは、上の「表」の入口に入れます。',
+      '「表を直す」は、作業フォルダ（さきほど選んだ「{name}」フォルダ）の中の「公司资料.xlsx」を直すことです（元の置き場所のファイルではありません）。Excel で直して保存し、Excel を閉じてから「締めを実行」を押してください。明細を足すときは、上の「表」の入口に入れます。',
     ce_ev_by_label: '担当者（証憑の確認・取消のときに記録されます）',
     ce_rerun_note:
       '作業フォルダにつないでいるときは、回答をフォルダの「公司资料.xlsx」に書き込みます（元のファイルは先に「结账结果/备份」へコピーします）。',
@@ -1001,6 +1003,8 @@ const T = {
     ce_upload_hint:
       '事務所の既定方針（office）を使う場合は、そのファイルもフォルダの中に置いてください。ファイルはこのブラウザの中だけで読みます。',
     ce_pre_running: 'ファイルを確認しています…',
+    ce_pre_ok_warn:
+      '締めを実行できます。ただし ⚠ の付いた項目があります。先に上の入口と「項目ごとの確認結果」を見てください。',
     ce_pre_ok: 'ファイルはそろっています。締めを実行できます。',
     ce_pre_block:
       '不足または書式の誤りがあります。上の一覧に沿って直し、フォルダを選び直してください。',
@@ -1823,6 +1827,7 @@ const T = {
     ce_ev_linked_auto: '{d} {t}（自动对上）',
     ce_k_counts: '待确认 {ask}・待处理 {todo}・疑似错误 {err}（另有告知 {info}）',
     ce_up_h: '接下来要缴的',
+    ce_up_note_open: '还有没处理完的事项。处理之后，这里的金额可能会变。',
     ce_up_note: '按月末余额估算，请以缴费通知、纳付书为准。',
     ce_up_shaho: '{m} 月份社保',
     ce_up_gensen: '源泉所得税',
@@ -1939,7 +1944,7 @@ const T = {
     ce_ev_open: '打开原件：{name}',
     ce_ev_open_err: '没能打开原件（{msg}）',
     ce_fix_where:
-      '「改表」改的是工作文件夹里的那份「公司资料.xlsx」（不是原来存放处的那一份）。用 Excel 改好、保存、关掉 Excel 之后，再点「执行结账」。要补流水的话，放进上面的「表格」入口。',
+      '「改表」改的是工作文件夹（就是刚才选的「{name}」文件夹）里的那份「公司资料.xlsx」，不是原来存放处的那一份。用 Excel 改好、保存、关掉 Excel 之后，再点「执行结账」。要补流水的话，放进上面的「表格」入口。',
     ce_ev_by_label: '判断人（确认・取消凭证时会记进记录）',
     ce_rerun_note:
       '连接着工作文件夹时，回答会写进文件夹里的「公司资料.xlsx」（原文件会先备份到「结账结果/备份」）。',
@@ -2005,6 +2010,7 @@ const T = {
     ce_upload_hint:
       '如使用事务所默认方针（office），请把该文件也放在文件夹内。文件只在这个浏览器里读取。',
     ce_pre_running: '正在检查文件…',
+    ce_pre_ok_warn: '可以结账，但有带 ⚠ 的项目。请先看一下上面的入口和「各项检查明细」里的说明。',
     ce_pre_ok: '文件齐全，可以结账。',
     ce_pre_block: '有缺少或格式错误的文件。请按上面的清单修正后，重新选择文件夹。',
     ce_pre_engine_err: '引擎读取时发现问题：',
@@ -2872,6 +2878,8 @@ const T = {
     ce_ev_linked_auto: '{d} {t} (matched automatically)',
     ce_k_counts: 'To confirm {ask} · To do {todo} · Possible errors {err} (plus {info} notices)',
     ce_up_h: 'Coming payments',
+    ce_up_note_open:
+      'Some items are still open; these amounts may change once they are dealt with.',
     ce_up_note: 'Estimated from month-end balances; check against the notices.',
     ce_up_shaho: 'Social insurance for {m}',
     ce_up_gensen: 'Withholding tax',
@@ -2997,7 +3005,7 @@ const T = {
     ce_ev_open: 'Open the original: {name}',
     ce_ev_open_err: 'Could not open the original ({msg})',
     ce_fix_where:
-      '“Fix the sheet” means editing “公司资料.xlsx” inside the working folder (not the copy where you originally kept it). Edit it in Excel, save, close Excel, then press “Run”. To add bank statements, use the “Tables” inbox above.',
+      '“Fix the sheet” means editing “公司资料.xlsx” inside the working folder (the “{name}” folder you chose), not the copy where you originally kept it. Edit it in Excel, save, close Excel, then press “Run”. To add bank statements, use the “Tables” inbox above.',
     ce_ev_by_label: 'Your name (recorded when you confirm or cancel evidence)',
     ce_rerun_note:
       'While a working folder is connected, your answers are written into “公司资料.xlsx” in that folder (the previous file is first copied to “结账结果/备份”).',
@@ -3068,6 +3076,8 @@ const T = {
     ce_upload_hint:
       'If you use office defaults (office), put that file inside the folder too. Files are read only inside this browser.',
     ce_pre_running: 'Checking the files…',
+    ce_pre_ok_warn:
+      'You can run the close, but some items are marked ⚠. Check the inboxes above and “Check details” first.',
     ce_pre_ok: 'All set. You can run the close.',
     ce_pre_block:
       'Some files are missing or malformed. Fix them following the list above and choose the folder again.',
