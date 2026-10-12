@@ -415,8 +415,8 @@
         <summary data-i18n="ce_ev_box">凭证明细与确认</summary>
         <div id="ce-ev-body">
           <div class="ce-row" style="margin:8px 0">
-            <label class="ce-hint"><span data-i18n="ce_ans_by">判断人</span>
-              <input type="text" id="ce-ev-by" class="ce-input" style="width:9em" autocomplete="off" data-i18n-title="ce_ans_by" /></label>
+            <label class="ce-hint"><span data-i18n="ce_ev_by_label">判断人（确认・取消凭证时会记进记录）</span>
+              <input type="text" id="ce-ev-by" class="ce-input" style="width:9em" autocomplete="off" data-i18n-title="ce_ev_by_label" /></label>
           </div>
           <p class="ce-hint" data-i18n="ce_ev_kinds"></p>
           <p class="ce-hint" data-i18n="ce_ev_date_hint"></p>
@@ -540,6 +540,7 @@
             <button type="button" class="ce-tab" data-bucket="info" role="tab"><span data-i18n="ce_b_info">告知</span><span class="n">0</span></button>
           </div>
           <p id="ce-b-lead" class="ce-hint"></p>
+          <p id="ce-fix-where" class="ce-hint hidden" data-i18n="ce_fix_where"></p>
           <div id="ce-items" class="ce-items"></div>
           <div class="ce-row" style="margin-top:12px">
             <button type="button" id="ce-rerun" class="ce-btn" disabled></button>
@@ -1932,6 +1933,7 @@
       shown = r;
       $('ce-result').classList.remove('hidden');
       $('ce-sample-banner').classList.toggle('hidden', !isSample);
+      $('ce-fix-where').classList.toggle('hidden', isSample || !dirHandle); // 示例・只读方式没有「工作文件夹里的那一份」
       const n = r.checks.length;
       const fail = r.checks.filter((c) => c.status === 'FAIL').length;
       const skip = r.checks.filter((c) => c.status === 'SKIP').length;
@@ -2560,6 +2562,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=eb7f83e381"></script>
+  <script src="../../js/main.js?v=718a5923b9"></script>
 </body>
 </html>

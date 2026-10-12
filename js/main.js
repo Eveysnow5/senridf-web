@@ -933,6 +933,9 @@ const T = {
       'この種類の書類はまだ自動で読めません。ファイル名を押して原本を開き、見ながら取引日・金額・取引先を入れてください',
     ce_ev_open: '原本を開く：{name}',
     ce_ev_open_err: '原本を開けませんでした（{msg}）',
+    ce_fix_where:
+      '「表を直す」は、作業フォルダの中の「公司资料.xlsx」を直すことです（元の置き場所のファイルではありません）。Excel で直して保存し、Excel を閉じてから「締めを実行」を押してください。明細を足すときは、上の「表」の入口に入れます。',
+    ce_ev_by_label: '担当者（証憑の確認・取消のときに記録されます）',
     ce_rerun_note:
       '作業フォルダにつないでいるときは、回答をフォルダの「公司资料.xlsx」に書き込みます（元のファイルは先に「结账结果/备份」へコピーします）。',
     ce_period_why:
@@ -1935,6 +1938,9 @@ const T = {
     ce_ev_no_template: '这一类单据还不能自动读取。请点文件名打开原件，对照着填交易日・金额・交易方',
     ce_ev_open: '打开原件：{name}',
     ce_ev_open_err: '没能打开原件（{msg}）',
+    ce_fix_where:
+      '「改表」改的是工作文件夹里的那份「公司资料.xlsx」（不是原来存放处的那一份）。用 Excel 改好、保存、关掉 Excel 之后，再点「执行结账」。要补流水的话，放进上面的「表格」入口。',
+    ce_ev_by_label: '判断人（确认・取消凭证时会记进记录）',
     ce_rerun_note:
       '连接着工作文件夹时，回答会写进文件夹里的「公司资料.xlsx」（原文件会先备份到「结账结果/备份」）。',
     ce_period_why:
@@ -2990,6 +2996,9 @@ const T = {
       'This kind of document cannot be read automatically yet. Click the file name to open the original and enter the date, amount and party from it',
     ce_ev_open: 'Open the original: {name}',
     ce_ev_open_err: 'Could not open the original ({msg})',
+    ce_fix_where:
+      '“Fix the sheet” means editing “公司资料.xlsx” inside the working folder (not the copy where you originally kept it). Edit it in Excel, save, close Excel, then press “Run”. To add bank statements, use the “Tables” inbox above.',
+    ce_ev_by_label: 'Your name (recorded when you confirm or cancel evidence)',
     ce_rerun_note:
       'While a working folder is connected, your answers are written into “公司资料.xlsx” in that folder (the previous file is first copied to “结账结果/备份”).',
     ce_period_why:
