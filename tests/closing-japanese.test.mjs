@@ -179,6 +179,7 @@ test('弥生导入文件按字节写出；分录预览走引擎；定位表述�
   const keys = [
     ...['title', 'body', 'a', 'b', 'c', 'tail'].map((k) => `ce_stance_${k}`),
     'ce_yayoi_note',
+    'ce_yayoi_open_note',
     ...['title', 'debit', 'credit', 'wait'].map((k) => `ce_pv_${k}`),
   ];
   for (const k of keys)
@@ -187,6 +188,11 @@ test('弥生导入文件按字节写出；分录预览走引擎；定位表述�
   // 弥生的文件是 Shift_JIS 的字节：不能当文字用 TextEncoder 再编码（那样写出来是 UTF-8，弥生读不了）
   assert.match(HTML, /writeFile\(\[outDir\(\), p\.month, x\.name\], reportBytes\(x\)\)/);
   assert.match(HTML, /if \(!x\.b64\) return new TextEncoder\(\)\.encode\(x\.html\)/);
+  // 期初余额的文件只在开始记账的月份有：说明跟着它出现
+  assert.match(
+    HTML,
+    /'ce-yayoi-open-note'\)\.classList\.toggle\('hidden', !\(r\.exports && r\.exports\.yayoi_opening\)\)/,
+  );
   // 预览由引擎算（和结账同一套函数），页面不自己拆税
   assert.match(HTML, /op: 'preview', args: \[x\.key, a\]/);
   const worker = readFileSync(path.join(ROOT, 'solutions', 'demo', 'closing-worker.js'), 'utf8');

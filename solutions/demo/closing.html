@@ -553,6 +553,7 @@
                 <button type="button" id="ce-download" class="ce-btn2" data-i18n="ce_download">ワークペーパー（xlsx）をダウンロード</button>
                 <span id="ce-dl-reports" class="ce-row"></span>
                 <p id="ce-yayoi-note" class="ce-yayoi hidden" data-i18n="ce_yayoi_note">「弥生会計インポート」は、締めた月の仕訳を弥生会計に取り込める形（弥生インポート形式）にしたファイルです。弥生会計の［ファイル］→［インポート］で読み込みます。科目の名前が弥生の登録名と違うときは、取り込みの画面で対応づけを尋ねられます。</p>
+                <p id="ce-yayoi-open-note" class="ce-yayoi hidden" data-i18n="ce_yayoi_open_note">「弥生会計期首残高」は、記帳を始めた月の期首残高を弥生会計に取り込める形にしたファイルです。弥生会計の［科目残高入力］を開き、［ファイル］→［インポート］で読み込みます。繰越利益剰余金は入れていません（弥生会計では直接入力できない科目です）。取り込んだあと［貸借調整］を押すと弥生会計が計算します。その額がこの道具の期首残高の繰越利益剰余金と同じなら、残高はすべて移っています。</p>
               </div>
               <div id="ce-fs-out" class="ce-hint" style="margin-top:6px"></div>
             </div>
@@ -2010,6 +2011,7 @@
       const rp = $('ce-dl-reports');
       rp.replaceChildren();
       $('ce-yayoi-note').classList.toggle('hidden', !(r.exports && r.exports.yayoi));
+      $('ce-yayoi-open-note').classList.toggle('hidden', !(r.exports && r.exports.yayoi_opening));
       if (reportsInFolder) return;
       for (const x of [...Object.values(r.reports || {}), ...Object.values(r.exports || {})]) {
         const b = el('button', 'ce-btn2');
@@ -2815,6 +2817,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=5fe0fc0188"></script>
+  <script src="../../js/main.js?v=e6b010f220"></script>
 </body>
 </html>

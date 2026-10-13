@@ -944,6 +944,8 @@ const T = {
     ce_stance_tail: '「技術は人のためにある」——千里同風の考えです。',
     ce_yayoi_note:
       '「弥生会計インポート」は、締めた月の仕訳を弥生会計に取り込める形（弥生インポート形式）にしたファイルです。弥生会計の［ファイル］→［インポート］で読み込みます。科目の名前が弥生の登録名と違うときは、取り込みの画面で対応づけを尋ねられます。',
+    ce_yayoi_open_note:
+      '「弥生会計期首残高」は、記帳を始めた月の期首残高を弥生会計に取り込める形にしたファイルです。弥生会計の［科目残高入力］を開き、［ファイル］→［インポート］で読み込みます。繰越利益剰余金は入れていません（弥生会計では直接入力できない科目です）。取り込んだあと［貸借調整］を押すと弥生会計が計算します。その額がこの道具の期首残高の繰越利益剰余金と同じなら、残高はすべて移っています。',
     ce_pv_title: 'この回答でできる仕訳',
     ce_pv_debit: '借方',
     ce_pv_credit: '貸方',
@@ -2000,6 +2002,8 @@ const T = {
     ce_stance_tail: '技术是为人服务的。千里同風是这么想的。',
     ce_yayoi_note:
       '「弥生会計インポート」是把结账月份的分录写成弥生会计能导入的格式（弥生インポート形式）的文件。在弥生会计的［ファイル］→［インポート］里读取。科目名和弥生里登记的不一样时，导入界面会让你对应。',
+    ce_yayoi_open_note:
+      '「弥生会計期首残高」是把开始记账那个月的期初余额写成弥生会计能导入的格式的文件。打开弥生会计的［科目残高入力］，在［ファイル］→［インポート］里读取。里面没有繰越利益剰余金（弥生会计里这个科目不能直接输入）。导入后按［貸借調整］，弥生会计会自己算出来。算出的金额和这个工具期初余额里的繰越利益剰余金相同，就说明余额全部带过去了。',
     ce_pv_title: '这样回答会生成的分录',
     ce_pv_debit: '借方',
     ce_pv_credit: '贷方',
@@ -3103,6 +3107,8 @@ const T = {
     ce_stance_tail: 'Technology is there for people. That is what Senridoufuu believes.',
     ce_yayoi_note:
       '“弥生会計インポート” is a file of the month’s entries in the format Yayoi Kaikei can import (弥生インポート形式). Load it in Yayoi Kaikei under File → Import. If an account name differs from the one registered in Yayoi, the import screen asks you to match it.',
+    ce_yayoi_open_note:
+      '“弥生会計期首残高” is a file of the opening balances for the month the books begin, in the format Yayoi Kaikei can import. Open 科目残高入力 in Yayoi Kaikei and load it under File → Import. Retained earnings (繰越利益剰余金) are left out, because Yayoi Kaikei does not let you enter that account directly. After importing, press 貸借調整 and Yayoi Kaikei works it out. If that figure equals the retained earnings in this tool’s opening balances, every balance has carried over.',
     ce_pv_title: 'The entry this answer will make',
     ce_pv_debit: 'Debit',
     ce_pv_credit: 'Credit',
