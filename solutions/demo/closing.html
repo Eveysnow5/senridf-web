@@ -1,16 +1,18 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>月结引擎 — 千里同風</title>
+  <title>月次決算エンジン — 千里同風</title>
   <link rel="stylesheet" href="/css/tailwind.min.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+JP:wght@400;500&family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet" />
   <!-- 结账引擎（Python/Pyodide）在 Web Worker 里跑：closing-worker.js。财务数据不出这台电脑。 -->
   <style>
-    body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
+    /* 字体跟着语言：日文界面用日文字体（用中文字体的话，直・骨・角 这些汉字会显示成中文字形） */
+    body { font-family: 'Inter', 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif; }
+    html:lang(zh) body { font-family: 'Inter', 'Noto Sans SC', 'Microsoft YaHei', sans-serif; }
     .hidden { display: none; }
     #auth-gate { position:fixed;inset:0;background:#faf9f7;display:flex;align-items:center;justify-content:center;z-index:9999; }
     .ag-center { text-align:center; }
@@ -301,6 +303,7 @@
 
 
 
+
   <!-- head-meta:start（npm run meta 生成，勿手改） -->
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -312,20 +315,20 @@
     <img id="ce-how-img" src="closing-howto/1.webp" width="620" height="620" alt="" />
     <p id="ce-how-cap" class="cap"></p>
     <div class="bar">
-      <button type="button" id="ce-how-prev" class="ce-btn2" data-i18n="ce_how_prev">上一格</button>
+      <button type="button" id="ce-how-prev" class="ce-btn2" data-i18n="ce_how_prev">前へ</button>
       <span id="ce-how-n" class="sp"></span>
-      <button type="button" id="ce-how-next" class="ce-btn2" data-i18n="ce_how_next">下一格</button>
-      <button type="button" id="ce-how-close" class="ce-btn" data-i18n="ce_close">关闭</button>
+      <button type="button" id="ce-how-next" class="ce-btn2" data-i18n="ce_how_next">次へ</button>
+      <button type="button" id="ce-how-close" class="ce-btn" data-i18n="ce_close">閉じる</button>
     </div>
   </dialog>
-  <div id="auth-gate"><div class="ag-center"><div class="ag-spinner"></div><p class="ag-text" data-i18n="ag_verifying">验证身份中…</p></div></div>
+  <div id="auth-gate"><div class="ag-center"><div class="ag-spinner"></div><p class="ag-text" data-i18n="ag_verifying">認証中…</p></div></div>
 
   <div id="app">
     <header class="bg-white border-b border-gray-200 sticky top-0 z-10">
       <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
         <div>
-          <h1 class="text-base font-semibold text-gray-900" data-i18n="ce_title">月结引擎（日本·试用版）</h1>
-          <p class="text-xs text-gray-500" data-i18n="ce_subtitle">工资 · 社保 · 源泉 · 银行对账 · 消费税 → 底稿</p>
+          <h1 class="text-base font-semibold text-gray-900" data-i18n="ce_title">月次決算エンジン（日本・試用版）</h1>
+          <p class="text-xs text-gray-500" data-i18n="ce_subtitle">給与 · 社会保険 · 源泉 · 銀行照合 · 消費税 → ワークペーパー</p>
         </div>
         <div class="flex items-center gap-2">
           <span class="flex items-center gap-1 text-xs mr-1">
@@ -336,163 +339,163 @@
             <button type="button" class="lang-btn px-1 py-0.5" data-lang="en">EN</button>
           </span>
           <span id="user-email" class="text-xs text-gray-400 hidden sm:block"></span>
-          <button type="button" id="logout-btn" class="text-xs text-gray-500 hover:text-gray-800 ml-1" data-i18n="ce_logout">退出</button>
+          <button type="button" id="logout-btn" class="text-xs text-gray-500 hover:text-gray-800 ml-1" data-i18n="ce_logout">ログアウト</button>
         </div>
       </div>
     </header>
 
     <main class="max-w-5xl mx-auto px-4 py-6">
-      <div class="ce-privacy"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span data-i18n="ce_privacy">数据只在这个浏览器里处理，不会发送到服务器。</span></div>
+      <div class="ce-privacy"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span data-i18n="ce_privacy">財務データはこのブラウザの中だけで処理され、サーバーには送信されません。読み込むのは実行環境とエンジン本体だけです。</span></div>
       <p class="ce-sample">
-        <span data-i18n="ce_sample_line">先看示例结果：</span>
-        <button type="button" class="ce-btn2" data-sample="tokyo" data-i18n="ce_sample_tokyo">东京虚构公司</button>
-        <button type="button" class="ce-btn2" data-sample="osaka" data-i18n="ce_sample_osaka">大阪虚构公司</button>
+        <span data-i18n="ce_sample_line">まず結果の例を見る：</span>
+        <button type="button" class="ce-btn2" data-sample="tokyo" data-i18n="ce_sample_tokyo">東京の架空会社</button>
+        <button type="button" class="ce-btn2" data-sample="osaka" data-i18n="ce_sample_osaka">大阪の架空会社</button>
       </p>
 
       <!-- 1. 准备并选择公司资料 -->
       <section class="ce-card">
-        <h2 class="ce-h ce-step"><span class="ce-no" aria-hidden="true">1</span><span data-i18n="ce_step_files">指定工作文件夹</span></h2>
-        <p class="ce-hint" data-i18n="ce_files_intro"></p>
+        <h2 class="ce-h ce-step"><span class="ce-no" aria-hidden="true">1</span><span data-i18n="ce_step_files">作業フォルダを選び、資料を入れる</span></h2>
+        <p class="ce-hint" data-i18n="ce_files_intro">まず作業フォルダを 1 つ選びます（空のフォルダでかまいません）。次に、下の 2 つの入口に資料を入れます。中身を見て、こちらで仕分けてフォルダに保存します。決算の結果と回答も同じフォルダに保存されます。</p>
         <div class="ce-howto">
-          <span class="ce-hint" data-i18n="ce_how_h">怎么放（点图放大）</span>
+          <span class="ce-hint" data-i18n="ce_how_h">入れ方（クリックで拡大）</span>
           <div class="ce-howto-row">
             <button type="button" class="ce-how" data-how="1">
               <img src="closing-howto/1.webp" width="620" height="620" loading="lazy" decoding="async" alt="" />
-              <span class="c"><b>1</b><span data-i18n="ce_how_1"></span></span>
+              <span class="c"><b>1</b><span data-i18n="ce_how_1">月末。資料があちこちに散らばっています</span></span>
             </button>
             <button type="button" class="ce-how" data-how="2">
               <img src="closing-howto/2.webp" width="620" height="620" loading="lazy" decoding="async" alt="" />
-              <span class="c"><b>2</b><span data-i18n="ce_how_2"></span></span>
+              <span class="c"><b>2</b><span data-i18n="ce_how_2">表は 1 か所に：会社の資料と銀行明細</span></span>
             </button>
             <button type="button" class="ce-how" data-how="3">
               <img src="closing-howto/3.webp" width="620" height="620" loading="lazy" decoding="async" alt="" />
-              <span class="c"><b>3</b><span data-i18n="ce_how_3"></span></span>
+              <span class="c"><b>3</b><span data-i18n="ce_how_3">写真と PDF も 1 か所に：領収書・請求書</span></span>
             </button>
             <button type="button" class="ce-how" data-how="4">
               <img src="closing-howto/4.webp" width="620" height="620" loading="lazy" decoding="async" alt="" />
-              <span class="c"><b>4</b><span data-i18n="ce_how_4"></span></span>
+              <span class="c"><b>4</b><span data-i18n="ce_how_4">フォルダを選べば、決算の結果が出てきます</span></span>
             </button>
           </div>
         </div>
         <div class="ce-row">
-          <button type="button" id="ce-open" class="ce-btn hidden" data-i18n="ce_open_folder">选择工作文件夹</button>
-          <label class="ce-btn2" id="ce-pick" for="ce-folder" data-i18n="ce_pick_folder">选择工作文件夹</label>
+          <button type="button" id="ce-open" class="ce-btn hidden" data-i18n="ce_open_folder">作業フォルダを選ぶ</button>
+          <label class="ce-btn2" id="ce-pick" for="ce-folder" data-i18n="ce_pick_folder">作業フォルダを選ぶ</label>
           <input type="file" id="ce-folder" webkitdirectory multiple class="hidden" data-i18n-title="ce_pick_folder" />
-          <span id="ce-folder-info" class="ce-hint" data-i18n="ce_upload_none">尚未选择文件夹</span>
+          <span id="ce-folder-info" class="ce-hint" data-i18n="ce_upload_none">フォルダが選ばれていません</span>
         </div>
-        <p class="ce-hint" style="margin-top:6px" data-i18n="ce_pick_tip"></p>
-        <p id="ce-open-hint" class="ce-hint hidden" data-i18n="ce_open_hint"></p>
+        <p class="ce-hint" style="margin-top:6px" data-i18n="ce_pick_tip">フォルダを選ぶ画面にはフォルダだけが表示されます（中のファイルが見えないのは正常です）。作業フォルダを開いてから「フォルダーの選択」を押してください。</p>
+        <p id="ce-open-hint" class="ce-hint hidden" data-i18n="ce_open_hint">Chrome・Edge では、フォルダを直接読み書きできます：締めの結果と回答が自動でフォルダに保存されます（毎回、ブラウザが許可を確認します）。他のブラウザは「フォルダを選ぶ」（読み取りのみ、ダウンロードが必要）。</p>
         <p id="ce-pre" class="ce-status" aria-live="polite"></p>
         <div id="ce-zones" class="ce-zones off">
           <div class="ce-zone" id="ce-z-tab">
-            <div class="zh"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6M12 11v8"/></svg><span data-i18n="ce_z_tab_t">表格（Excel・CSV）</span></div>
-            <p class="d" data-i18n="ce_z_tab_d">公司资料和银行流水。拖到这里，或点「选择文件」。</p>
+            <div class="zh"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6M12 11v8"/></svg><span data-i18n="ce_z_tab_t">表（Excel・CSV）</span></div>
+            <p class="d" data-i18n="ce_z_tab_d">会社の資料と銀行明細。ここにドラッグするか、「ファイルを選ぶ」を押してください。</p>
             <div class="ce-need" id="ce-c-book">
-              <span class="n" translate="no">公司资料.xlsx</span><span class="ce-st wait" data-i18n="ce_s_wait">未检查</span>
-              <a class="ce-link" id="ce-tpl" href="closing-engine/template.xlsx" download="公司资料.xlsx" data-i18n="ce_tpl_xlsx">下载空白模板</a>
+              <span class="n" id="ce-book-name" translate="no">会社資料.xlsx</span><span class="ce-st wait" data-i18n="ce_s_wait">未確認</span>
+              <a class="ce-link" id="ce-tpl" href="closing-engine/template_ja.xlsx" download="会社資料.xlsx" data-i18n="ce_tpl_xlsx">空のテンプレートをダウンロード</a>
               <div class="x hidden"></div>
             </div>
             <div class="ce-need" id="ce-c-bank">
-              <span class="n" data-i18n="ce_c_bank_t">银行流水</span><span class="ce-st wait" data-i18n="ce_s_wait">未检查</span>
+              <span class="n" data-i18n="ce_c_bank_t">銀行明細</span><span class="ce-st wait" data-i18n="ce_s_wait">未確認</span>
               <div class="x hidden"></div>
             </div>
-            <label class="ce-btn2" for="ce-in-tab" data-i18n="ce_z_pick">选择文件</label>
+            <label class="ce-btn2" for="ce-in-tab" data-i18n="ce_z_pick">ファイルを選ぶ</label>
             <input type="file" id="ce-in-tab" multiple accept=".xlsx,.xlsm,.csv" class="hidden" data-i18n-title="ce_z_tab_t" />
             <ul id="ce-z-tab-log" class="ce-zlog" aria-live="polite"></ul>
           </div>
           <div class="ce-zone" id="ce-z-ev">
-            <div class="zh"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg><span data-i18n="ce_z_ev_t">凭证（照片・PDF）</span><span class="ce-opt" data-i18n="ce_optional">可选</span></div>
-            <p class="d" data-i18n="ce_z_ev_d">收据、请求书、纳付书等。在这台电脑里读出日期・金额・交易方，图片不会上传。</p>
-            <p id="ce-ev-count" class="ce-hint" data-i18n="ce_ev_count_none">还没有凭证</p>
-            <label class="ce-btn2" for="ce-in-ev" data-i18n="ce_z_pick">选择文件</label>
+            <div class="zh"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg><span data-i18n="ce_z_ev_t">証憑（写真・PDF）</span><span class="ce-opt" data-i18n="ce_optional">任意</span></div>
+            <p class="d" data-i18n="ce_z_ev_d">領収書・請求書・納付書など。このパソコンの中で日付・金額・取引先を読み取ります（画像は外に送りません）。</p>
+            <p id="ce-ev-count" class="ce-hint" data-i18n="ce_ev_count_none">まだありません</p>
+            <label class="ce-btn2" for="ce-in-ev" data-i18n="ce_z_pick">ファイルを選ぶ</label>
             <input type="file" id="ce-in-ev" multiple accept="image/*,application/pdf" class="hidden" data-i18n-title="ce_z_ev_t" />
             <p id="ce-ev-progress" class="ce-status" aria-live="polite"></p>
             <ul id="ce-z-ev-log" class="ce-zlog" aria-live="polite"></ul>
           </div>
         </div>
-        <p id="ce-z-need" class="ce-hint" data-i18n="ce_z_need_folder">先选择工作文件夹，两个入口才能用。</p>
+        <p id="ce-z-need" class="ce-hint" data-i18n="ce_z_need_folder">先に作業フォルダを選ぶと、2 つの入口が使えるようになります（保存先が必要なため）。</p>
         <details id="ce-ev-box" class="ce-listbox hidden">
-        <summary data-i18n="ce_ev_box">凭证明细与确认</summary>
+        <summary data-i18n="ce_ev_box">証憑の一覧と確認</summary>
         <div id="ce-ev-body">
           <div class="ce-row" style="margin:8px 0">
-            <label class="ce-hint"><span data-i18n="ce_ev_by_label">判断人（确认・取消凭证时会记进记录）</span>
+            <label class="ce-hint"><span data-i18n="ce_ev_by_label">担当者（証憑の確認・取消のときに記録されます）</span>
               <input type="text" id="ce-ev-by" class="ce-input" style="width:9em" autocomplete="off" data-i18n-title="ce_ev_by_label" /></label>
           </div>
-          <p class="ce-hint" data-i18n="ce_ev_kinds"></p>
-          <p class="ce-hint" data-i18n="ce_ev_date_hint"></p>
+          <p class="ce-hint" data-i18n="ce_ev_kinds">「紙」は撮影・スキャンした紙の書類、「電子」はメール・ダウンロード・ネットバンキングで受け取ったデータです（データのまま保存する義務があります）。区分はファイルの作りから仮に判定しています。スキャンしてメールで届いた請求書は見た目が紙でも「電子」です。確認のときに直してください。確認すると、原本はその区分のフォルダに移ります。</p>
+          <p class="ce-hint" data-i18n="ce_ev_date_hint">「取引日」には書類に書いてある日付を入れます：領収書は領収日、請求書は請求日（発行日）、口座振替の通知は引落日。</p>
           <div id="ce-ev-notices"></div>
           <div class="ce-row ce-ev-q">
-            <label class="ce-hint"><span data-i18n="ce_ev_q_date">交易日</span>
+            <label class="ce-hint"><span data-i18n="ce_ev_q_date">取引日</span>
               <input type="date" id="ce-ev-q-from" class="ce-input" data-i18n-title="ce_ev_q_date" />〜<input type="date" id="ce-ev-q-to" class="ce-input" data-i18n-title="ce_ev_q_date" /></label>
-            <label class="ce-hint"><span data-i18n="ce_ev_q_amount">金额</span>
+            <label class="ce-hint"><span data-i18n="ce_ev_q_amount">金額</span>
               <input type="number" id="ce-ev-q-min" class="ce-input" style="width:8em" data-i18n-title="ce_ev_q_amount" />〜<input type="number" id="ce-ev-q-max" class="ce-input" style="width:8em" data-i18n-title="ce_ev_q_amount" /></label>
-            <label class="ce-hint"><span data-i18n="ce_ev_q_party">交易方</span>
+            <label class="ce-hint"><span data-i18n="ce_ev_q_party">取引先</span>
               <input type="text" id="ce-ev-q-party" class="ce-input" style="width:10em" data-i18n-title="ce_ev_q_party" /></label>
-            <label class="ce-hint"><input type="checkbox" id="ce-ev-q-void" data-i18n-title="ce_ev_q_void" /> <span data-i18n="ce_ev_q_void">含已取消</span></label>
-            <button type="button" id="ce-ev-search" class="ce-btn2" data-i18n="ce_ev_search">检索</button>
-            <button type="button" id="ce-ev-clear" class="ce-link" data-i18n="ce_ev_clear">清除</button>
+            <label class="ce-hint"><input type="checkbox" id="ce-ev-q-void" data-i18n-title="ce_ev_q_void" /> <span data-i18n="ce_ev_q_void">取消も含む</span></label>
+            <button type="button" id="ce-ev-search" class="ce-btn2" data-i18n="ce_ev_search">検索</button>
+            <button type="button" id="ce-ev-clear" class="ce-link" data-i18n="ce_ev_clear">クリア</button>
           </div>
           <div class="ce-table-wrap">
             <table class="ce-table ce-ev-table">
-              <thead><tr><th>#</th><th data-i18n="ce_ev_col_status">状态</th><th data-i18n="ce_ev_q_date">交易日</th>
-                <th data-i18n="ce_ev_q_amount">金额</th><th data-i18n="ce_ev_q_party">交易方</th><th data-i18n="ce_ev_col_doc">单据</th><th data-i18n="ce_ev_col_kind">区分</th>
-                <th data-i18n="ce_ev_col_file">文件</th><th data-i18n="ce_ev_col_bank">对应流水</th><th></th></tr></thead>
+              <thead><tr><th>#</th><th data-i18n="ce_ev_col_status">状態</th><th data-i18n="ce_ev_q_date">取引日</th>
+                <th data-i18n="ce_ev_q_amount">金額</th><th data-i18n="ce_ev_q_party">取引先</th><th data-i18n="ce_ev_col_doc">書類</th><th data-i18n="ce_ev_col_kind">区分</th>
+                <th data-i18n="ce_ev_col_file">ファイル</th><th data-i18n="ce_ev_col_bank">照合先の明細</th><th></th></tr></thead>
               <tbody id="ce-ev-list"></tbody>
             </table>
           </div>
-          <p id="ce-ev-empty" class="ce-hint" data-i18n="ce_ev_empty">还没有凭证。</p>
+          <p id="ce-ev-empty" class="ce-hint" data-i18n="ce_ev_empty">証憑はまだありません。</p>
         </div>
         </details>
         <details id="ce-listbox" class="ce-listbox">
-        <summary data-i18n="ce_list_toggle">资料清单（11 项）</summary>
+        <summary data-i18n="ce_list_toggle">項目ごとの確認結果（11 項目）</summary>
         <div class="ce-table-wrap">
           <table class="ce-table">
-            <thead><tr><th>#</th><th data-i18n="ce_col_file">文件</th><th data-i18n="ce_col_need">何时需要</th><th data-i18n="ce_col_state">状态</th></tr></thead>
+            <thead><tr><th>#</th><th data-i18n="ce_col_file">ファイル</th><th data-i18n="ce_col_need">必要なとき</th><th data-i18n="ce_col_state">状態</th></tr></thead>
             <tbody id="ce-list"></tbody>
           </table>
         </div>
         </details>
         <p class="ce-hint" style="margin-top:6px">
-          <span data-i18n="ce_upload_hint"></span>
-          <a class="ce-link" href="closing-engine/template.zip" download="公司资料模板.zip" data-i18n="ce_tpl_yaml">进阶：YAML 模板</a>
+          <span data-i18n="ce_upload_hint">事務所の既定方針（office）を使う場合は、そのファイルもフォルダの中に置いてください。ファイルはこのブラウザの中だけで読みます。</span>
+          <a class="ce-link" href="closing-engine/template.zip" download="yaml-template.zip" data-i18n="ce_tpl_yaml">上級者向け：YAML テンプレート</a>
         </p>
       </section>
 
       <!-- 2. 结账 -->
       <section class="ce-card">
-        <h2 class="ce-h ce-step"><span class="ce-no" aria-hidden="true">2</span><span data-i18n="ce_step_run">结账</span></h2>
+        <h2 class="ce-h ce-step"><span class="ce-no" aria-hidden="true">2</span><span data-i18n="ce_step_run">締める</span></h2>
         <div class="ce-row">
-          <label class="ce-hint"><span data-i18n="ce_step_from">结账期间：从</span>
+          <label class="ce-hint"><span data-i18n="ce_step_from">締める期間：開始</span>
             <input type="month" id="ce-from" class="ce-input" data-i18n-title="ce_step_from" /></label>
-          <label class="ce-hint"><span data-i18n="ce_step_to">到</span>
+          <label class="ce-hint"><span data-i18n="ce_step_to">終了</span>
             <input type="month" id="ce-month" class="ce-input" data-i18n-title="ce_step_to" /></label>
-          <label class="ce-hint"><span data-i18n="ce_step_lang">底稿语言</span>
+          <label class="ce-hint"><span data-i18n="ce_step_lang">ワークペーパーの言語</span>
             <select id="ce-wp-lang" class="ce-input" data-i18n-title="ce_step_lang">
-              <option value="zh" data-i18n="ce_lang_zh">中文</option>
-              <option value="ja" data-i18n="ce_lang_ja">日文</option>
+              <option value="zh" data-i18n="ce_lang_zh">中国語</option>
+              <option value="ja" data-i18n="ce_lang_ja">日本語</option>
             </select></label>
-          <button type="button" id="ce-run" class="ce-btn" data-i18n="ce_run" disabled>执行结账</button>
+          <button type="button" id="ce-run" class="ce-btn" data-i18n="ce_run" disabled>締めを実行</button>
         </div>
         <!-- 会计年度（按公司的决算月）：点一下填好起止 -->
         <div id="ce-fy" class="ce-fy hidden"></div>
         <p id="ce-period-note" class="ce-hint hidden" style="margin-top:4px"></p>
-        <p id="ce-period-why" class="ce-hint hidden" data-i18n="ce_period_why"></p>
+        <p id="ce-period-why" class="ce-hint hidden" data-i18n="ce_period_why">帳簿は開始月から順に締めていくので、既定では会計年度の最初の月から「終了」の月まで計算します。結果は月ごとに切り替えて見られます。1 か月だけでよければ「最新の 1 か月だけ」を押してください。</p>
         <div id="ce-progress" class="ce-progress hidden">
           <div class="ce-bar"><div id="ce-bar"></div></div>
           <div class="ce-progress-text"><span id="ce-stage"></span><span id="ce-elapsed"></span></div>
-          <p class="ce-hint" data-i18n="ce_p_note"></p>
+          <p class="ce-hint" data-i18n="ce_p_note">計算はバックグラウンドで行うので画面は固まりません。このページは閉じないでください。</p>
         </div>
         <p id="ce-status" class="ce-status" aria-live="polite"></p>
-        <p class="ce-hint" data-i18n="ce_disclaimer"></p>
+        <p class="ce-hint" data-i18n="ce_disclaimer">会計担当者の判断を前提とした補助ツールです。法人税等の計算表は概算で、申告書ではありません。</p>
       </section>
 
       <!-- 结果：汇总 → 资产负债表・利润表 → 三类事项；检查明细收在最后（会计用） -->
       <section id="ce-result" class="hidden">
         <div id="ce-months" class="ce-months hidden">
-          <span class="ce-hint" data-i18n="ce_months_h">查看月份</span>
+          <span class="ce-hint" data-i18n="ce_months_h">表示する月</span>
         </div>
         <div class="ce-card">
-          <p id="ce-sample-banner" class="ce-banner hidden" data-i18n="ce_sample_banner"></p>
+          <p id="ce-sample-banner" class="ce-banner hidden" data-i18n="ce_sample_banner">これは架空の会社のサンプルの結果です（実在の会社とは関係ありません）。</p>
           <div class="ce-sumhead">
             <h2 class="ce-h" id="ce-company" style="margin:0"></h2>
             <span id="ce-chip-bank" class="ce-chip"></span>
@@ -502,15 +505,15 @@
           <div id="ce-kpis" class="ce-kpis"></div>
           <div class="ce-duo">
             <div>
-              <h3 class="ce-h3" data-i18n="ce_up_h">接下来要缴的</h3>
+              <h3 class="ce-h3" data-i18n="ce_up_h">これから納めるもの</h3>
               <ul id="ce-up" class="ce-ul"></ul>
-              <p class="ce-hint" data-i18n="ce_up_note"></p>
-              <p id="ce-up-open" class="ce-hint hidden" data-i18n="ce_up_note_open"></p>
+              <p class="ce-hint" data-i18n="ce_up_note">月末残高からの見積り。告知書・納付書の金額で確認してください。</p>
+              <p id="ce-up-open" class="ce-hint hidden" data-i18n="ce_up_note_open">まだ済んでいない事項があります。それを片付けると、ここの金額は変わることがあります。</p>
             </div>
             <div>
-              <h3 class="ce-h3" data-i18n="ce_out_h">结账产物</h3>
+              <h3 class="ce-h3" data-i18n="ce_out_h">締めの成果物</h3>
               <div class="ce-row">
-                <button type="button" id="ce-download" class="ce-btn2" data-i18n="ce_download">下载底稿</button>
+                <button type="button" id="ce-download" class="ce-btn2" data-i18n="ce_download">ワークペーパー（xlsx）をダウンロード</button>
                 <span id="ce-dl-reports" class="ce-row"></span>
               </div>
               <div id="ce-fs-out" class="ce-hint" style="margin-top:6px"></div>
@@ -520,25 +523,25 @@
 
         <div class="ce-stmts">
           <div class="ce-card">
-            <h2 class="ce-h3" data-i18n="ce_bs_h">资产负债表</h2>
+            <h2 class="ce-h3" data-i18n="ce_bs_h">貸借対照表</h2>
             <table class="ce-fs"><tbody id="ce-bs"></tbody></table>
           </div>
           <div class="ce-card">
-            <h2 class="ce-h3" data-i18n="ce_pl_h">利润表</h2>
+            <h2 class="ce-h3" data-i18n="ce_pl_h">損益計算書</h2>
             <table class="ce-fs">
-              <thead><tr><td></td><th data-i18n="ce_pl_month">本月</th><th data-i18n="ce_pl_ytd">本期累计</th></tr></thead>
+              <thead><tr><td></td><th data-i18n="ce_pl_month">今月</th><th data-i18n="ce_pl_ytd">期首から</th></tr></thead>
               <tbody id="ce-pl"></tbody>
             </table>
           </div>
         </div>
 
         <div class="ce-card">
-          <h2 class="ce-h" data-i18n="ce_items_h">需要您处理的事项</h2>
+          <h2 class="ce-h" data-i18n="ce_items_h">対応が必要な事項</h2>
           <div class="ce-tabs" role="tablist">
-            <button type="button" class="ce-tab" data-bucket="ask" role="tab"><span data-i18n="ce_b_ask">待确认</span><span class="n">0</span></button>
-            <button type="button" class="ce-tab" data-bucket="todo" role="tab"><span data-i18n="ce_b_todo">待处理</span><span class="n">0</span></button>
-            <button type="button" class="ce-tab err" data-bucket="err" role="tab"><span data-i18n="ce_b_err">疑似错误</span><span class="n">0</span></button>
-            <button type="button" class="ce-tab" data-bucket="info" role="tab"><span data-i18n="ce_b_info">告知</span><span class="n">0</span></button>
+            <button type="button" class="ce-tab" data-bucket="ask" role="tab"><span data-i18n="ce_b_ask">要確認</span><span class="n">0</span></button>
+            <button type="button" class="ce-tab" data-bucket="todo" role="tab"><span data-i18n="ce_b_todo">要対応</span><span class="n">0</span></button>
+            <button type="button" class="ce-tab err" data-bucket="err" role="tab"><span data-i18n="ce_b_err">誤りの疑い</span><span class="n">0</span></button>
+            <button type="button" class="ce-tab" data-bucket="info" role="tab"><span data-i18n="ce_b_info">お知らせ</span><span class="n">0</span></button>
           </div>
           <p id="ce-b-lead" class="ce-hint"></p>
           <p id="ce-fix-where" class="ce-hint hidden" data-i18n="ce_fix_where"></p>
@@ -546,41 +549,41 @@
           <div class="ce-row" style="margin-top:12px">
             <button type="button" id="ce-rerun" class="ce-btn" disabled></button>
           </div>
-          <p id="ce-rerun-note" class="ce-hint hidden" style="margin-top:4px" data-i18n="ce_rerun_note"></p>
+          <p id="ce-rerun-note" class="ce-hint hidden" style="margin-top:4px" data-i18n="ce_rerun_note">作業フォルダにつないでいるときは、回答をフォルダの「会社資料.xlsx」に書き込みます（元のファイルは先に「締め結果/バックアップ」へコピーします）。</p>
           <div id="ce-dl-box" class="hidden" style="margin-top:10px">
             <div class="ce-row">
-              <button type="button" id="ce-dl-book" class="ce-btn2 hidden" data-i18n="ce_dl_book">下载更新后的公司资料.xlsx</button>
-              <button type="button" id="ce-dl-dec" class="ce-btn2 hidden" data-i18n="ce_dl_decisions">下载回答文件</button>
+              <button type="button" id="ce-dl-book" class="ce-btn2 hidden" data-i18n="ce_dl_book">回答入りの会社資料.xlsx をダウンロード</button>
+              <button type="button" id="ce-dl-dec" class="ce-btn2 hidden" data-i18n="ce_dl_decisions">回答ファイル（decisions.yaml）をダウンロード</button>
               <span id="ce-dl-files" class="ce-row"></span>
             </div>
-            <p class="ce-hint" style="margin-top:4px" data-i18n="ce_dl_note"></p>
+            <p class="ce-hint" style="margin-top:4px" data-i18n="ce_dl_note">次回はこのファイルでフォルダを差し替えれば、回答を入れ直す必要はありません。</p>
           </div>
         </div>
 
         <details class="ce-card ce-acct">
-          <summary class="ce-h3" data-i18n="ce_acct_h">会计用：全部检查</summary>
+          <summary class="ce-h3" data-i18n="ce_acct_h">会計担当者向け：全検査の明細</summary>
           <p id="ce-summary" class="ce-summary" style="margin-top:8px"></p>
           <div id="ce-steps" class="ce-steps hidden">
-            <strong data-i18n="ce_next_h">下一步</strong>
+            <strong data-i18n="ce_next_h">次にすること</strong>
             <ol id="ce-steps-list"></ol>
           </div>
           <div class="ce-table-wrap" style="margin-top:10px">
             <table class="ce-table">
-              <thead><tr><th data-i18n="ce_col_id">编号</th><th data-i18n="ce_col_check">检查</th><th data-i18n="ce_col_status">结果</th><th data-i18n="ce_col_n">件数</th></tr></thead>
+              <thead><tr><th data-i18n="ce_col_id">番号</th><th data-i18n="ce_col_check">検査</th><th data-i18n="ce_col_status">結果</th><th data-i18n="ce_col_n">件数</th></tr></thead>
               <tbody id="ce-checks"></tbody>
             </table>
           </div>
           <div id="ce-na-box" class="hidden" style="margin-top:12px">
-            <h3 class="ce-h3" data-i18n="ce_na">不适用</h3>
+            <h3 class="ce-h3" data-i18n="ce_na">対象外</h3>
             <ul id="ce-na" class="ce-hint"></ul>
           </div>
           <details class="ce-adv">
-            <summary data-i18n="ce_adv_yaml">进阶：YAML 回答模板</summary>
-            <p id="ce-answers-none" class="ce-hint hidden" data-i18n="ce_answers_none">没有未匹配的银行流水。</p>
+            <summary data-i18n="ce_adv_yaml">上級：YAML の回答テンプレート</summary>
+            <p id="ce-answers-none" class="ce-hint hidden" data-i18n="ce_answers_none">未照合の銀行明細はありません。</p>
             <div id="ce-answers-box">
               <textarea id="ce-answers" class="ce-answers" readonly title="decisions.yaml"></textarea>
               <div class="ce-row" style="margin-top:8px">
-                <button type="button" id="ce-copy" class="ce-btn2" data-i18n="ce_copy">复制</button>
+                <button type="button" id="ce-copy" class="ce-btn2" data-i18n="ce_copy">コピー</button>
               </div>
             </div>
           </details>
@@ -891,7 +894,7 @@
     // 读进来之后共通：要有公司资料（Excel 工作簿或 company.yaml），月份默认取最新的月度文件夹，然后预检。
     // （以前只认 company.yaml——只放了公司资料.xlsx 的文件夹会被拒绝，2026-10-10 修）
     async function afterFiles() {
-      if (!files.some((f) => f.path === 'company.yaml' || f.path === '公司资料.xlsx')) {
+      if (!files.some((f) => f.path === 'company.yaml' || BOOKS.includes(f.path))) {
         renderList({ items: [{ id: 'company', status: 'missing' }] });
         $('ce-listbox').open = false; // 只知道缺公司资料，其余没检查，展开也全是「未检查」
         // 能写的工作文件夹（两个入口可用）：空文件夹是正常的起点，不算错；只读的旧入口才是选错了文件夹
@@ -924,7 +927,7 @@
       files = [];
       for (const f of list) {
         const parts = f.webkitRelativePath.split('/').slice(1);
-        if (!parts.length || parts[0] === OUT_DIR) continue;
+        if (!parts.length || OUTS.includes(parts[0])) continue;
         if (parts[0] === 'evidence' && !EV_KEEP.test(parts.join('/'))) continue; // 证凭原件不读
         files.push({ path: parts.join('/'), buf: await f.arrayBuffer() });
       }
@@ -934,11 +937,27 @@
     // ── 读写本机文件夹（File System Access API；Chrome / Edge）──────────────────
     // 结账产物写进「结账结果/YYYY-MM/」；带回答结账时，先把原来的公司资料.xlsx（或 decisions.yaml）
     // 备份到「结账结果/备份/」再写回。Excel 开着文件时 Windows 会锁住 → 写入失败要说清楚。
-    const OUT_DIR = '结账结果';
+    // 工作文件夹里的名字跟着界面语言（日文界面下不出现中文的文件名）。已经有的不改名：
+    // 文件夹里原来叫什么就继续用什么（公司资料.xlsx 和 会社資料.xlsx 不会并存；结果文件夹同理）。
+    const NAMES = {
+      zh: { book: '公司资料.xlsx', out: '结账结果', bak: '备份', wp: '底稿' },
+      ja: { book: '会社資料.xlsx', out: '締め結果', bak: 'バックアップ', wp: 'ワークペーパー' },
+      en: { book: 'company-data.xlsx', out: 'closing-results', bak: 'backup', wp: 'workpaper' },
+    };
+    const BOOKS = Object.values(NAMES).map((n) => n.book);
+    const OUTS = Object.values(NAMES).map((n) => n.out);
+    const names = () => NAMES[ui()] || NAMES.ja;
+    let outFound = null; // 文件夹里已经有的结果文件夹
+    const outDir = () => outFound || names().out;
+    const bookName = () => (files.find((f) => BOOKS.includes(f.path)) || {}).path || names().book;
     async function readDir(h, prefix) {
       const out = [];
       for await (const [name, child] of h.entries()) {
-        if (name.startsWith('.') || name.startsWith('~$') || (!prefix && name === OUT_DIR)) continue;
+        if (!prefix && OUTS.includes(name)) {
+          if (child.kind === 'directory') outFound = outFound || name;
+          continue;
+        }
+        if (name.startsWith('.') || name.startsWith('~$')) continue;
         const path = prefix ? `${prefix}/${name}` : name;
         if (child.kind === 'directory') out.push(...(await readDir(child, path)));
         else if (path.startsWith('evidence/') && !EV_KEEP.test(path)) continue; // 证凭原件：引擎只读索引簿
@@ -966,18 +985,18 @@
         for (const p of r.periods) {
           setBar(STAGE_PCT.workpaper, 'ce_p_save', { m: p.month });
           const bytes = p.month === r.month ? xlsx : await monthWorkpaper(p.month, lang);
-          await writeFile([OUT_DIR, p.month, `底稿_${lang}.xlsx`], bytes);
+          await writeFile([outDir(), p.month, `${(NAMES[lang] || NAMES.ja).wp}_${lang}.xlsx`], bytes);
           for (const x of Object.values(p.reports || {})) {
-            await writeFile([OUT_DIR, p.month, x.name], new TextEncoder().encode(x.html));
+            await writeFile([outDir(), p.month, x.name], new TextEncoder().encode(x.html));
           }
         }
         const ps = r.periods;
-        if (ps.length === 1) notes.push(['ce_fs_out_month', { path: `${OUT_DIR}/${ps[0].month}/` }]);
-        else notes.push(['ce_fs_out_range', { root: OUT_DIR, a: ps[0].month, b: ps[ps.length - 1].month, n: ps.length }]);
+        if (ps.length === 1) notes.push(['ce_fs_out_month', { path: `${outDir()}/${ps[0].month}/` }]);
+        else notes.push(['ce_fs_out_range', { root: outDir(), a: ps[0].month, b: ps[ps.length - 1].month, n: ps.length }]);
         if (usedAnswers) {
           const enc = (t) => new TextEncoder().encode(t);
           const targets = [];
-          if (lastBook) targets.push(['公司资料.xlsx', lastBook]);
+          if (lastBook) targets.push([bookName(), lastBook]);
           else {
             if (lastDecisions && Object.keys(answers).length) targets.push(['decisions.yaml', enc(lastDecisions)]);
             for (const [n, t] of Object.entries(r.changed_files || {})) targets.push([n, enc(t)]);
@@ -987,7 +1006,7 @@
             const old = files.find((f) => f.path === name);
             let bk = '—';
             if (old) {
-              const parts = [OUT_DIR, '备份', `${st}_${name}`];
+              const parts = [outDir(), names().bak, `${st}_${name}`];
               await writeFile(parts, old.buf);
               bk = parts.join('/');
             }
@@ -1298,14 +1317,14 @@
           if (!r || r.ok === false) {
             zlog(log, 'ng', 'ce_z_err', { name, msg: (r && r.error) || '' });
           } else if (r.kind === 'workbook') {
-            const old = files.find((f) => f.path === '公司资料.xlsx');
+            const old = files.find((f) => BOOKS.includes(f.path));
             if (old) {
-              const bk = [OUT_DIR, '备份', `${stamp()}_公司资料.xlsx`];
+              const bk = [outDir(), names().bak, `${stamp()}_${old.path}`];
               await writeFile(bk, old.buf);
-              await writeFile(['公司资料.xlsx'], buf);
+              await writeFile([old.path], buf);
               zlog(log, 'ok', 'ce_z_wb_replaced', { name, path: bk.join('/') });
             } else {
-              await writeFile(['公司资料.xlsx'], buf);
+              await writeFile([names().book], buf);
               zlog(log, 'ok', 'ce_z_wb_ok', { name });
             }
             filed++;
@@ -1906,6 +1925,7 @@
       const [file, name] = TPL[ui()] || TPL.zh;
       $('ce-tpl').href = `closing-engine/${file}`;
       $('ce-tpl').download = name;
+      $('ce-book-name').textContent = bookName();
     }
     setTemplateLink();
     function onLangChange() {
@@ -2536,7 +2556,7 @@
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     }
     $('ce-dl-book').addEventListener('click', () =>
-      download(lastBook, '公司资料.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+      download(lastBook, bookName(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
     );
     $('ce-dl-dec').addEventListener('click', () => download(lastDecisions, 'decisions.yaml', 'text/yaml'));
 
@@ -2596,6 +2616,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=0eec366d16"></script>
+  <script src="../../js/main.js?v=7790cd25ea"></script>
 </body>
 </html>

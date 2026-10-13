@@ -754,8 +754,8 @@ const T = {
     ce_months_h: '表示する月',
     ce_err_period: '締める期間に誤りがあります：',
     ce_p_save: '{m} の成果物を書き出し中…',
-    ce_fs_out_month: '書き出し：{path}（ワークペーパー・汇总 2 件）',
-    ce_fs_out_range: '書き出し：{root}/ の {a}〜{b}（{n} か月、各月にワークペーパーと汇总 2 件）',
+    ce_fs_out_month: '書き出し：{path}（ワークペーパー・報告書 2 件）',
+    ce_fs_out_range: '書き出し：{root}/ の {a}〜{b}（{n} か月、各月にワークペーパーと報告書 2 件）',
     ce_fx_btn: 'ここで入力',
     ce_fx_amount: '月額',
     ce_fx_until_may: '同じ額を翌年 5 月まで入れる',
@@ -784,10 +784,10 @@ const T = {
       'Chrome・Edge では、フォルダを直接読み書きできます：締めの結果と回答が自動でフォルダに保存されます（毎回、ブラウザが許可を確認します）。他のブラウザは「フォルダを選ぶ」（読み取りのみ、ダウンロードが必要）。',
     ce_fs_connected: '接続済み：{name}（読み書き・{n} ファイル）',
     ce_fs_out: '保存しました：{path}',
-    ce_fs_book: '回答を 公司资料.xlsx に書き込みました（元のファイルの控え：{path}）',
+    ce_fs_book: '回答を 会社資料.xlsx に書き込みました（元のファイルの控え：{path}）',
     ce_fs_dec: '回答を decisions.yaml に書き込みました（控え：{path}）',
     ce_fs_locked:
-      'フォルダに書き込めません。Excel で 公司资料.xlsx を開いていませんか？閉じてから「回答を反映して締め直す」を押してください（回答は消えていません）。',
+      'フォルダに書き込めません。Excel で 会社資料.xlsx を開いていませんか？閉じてから「回答を反映して締め直す」を押してください（回答は消えていません）。',
     ce_fs_err: 'フォルダに書き込めませんでした：{msg}',
     ce_chip_bank_ok: '銀行と帳簿は一致',
     ce_chip_bank_ng: '銀行と帳簿が不一致',
@@ -857,13 +857,13 @@ const T = {
     ce_acct_h: '会計担当者向け：全検査の明細',
     ce_next_h: '次にすること',
     ce_next_contact:
-      'エンジン内部の検査 {n} 項目（{ids}）が通りません。底稿を添えて連絡してください',
+      'エンジン内部の検査 {n} 項目（{ids}）が通りません。ワークペーパーを添えて連絡してください',
     ce_next_checks: 'まず通らなかった検査 {n} 項目（{ids}）を片付ける。やり方は各行の「→」',
     ce_next_answer: 'この画面の「回答」で済む要確認 {n} 件',
     ce_next_both: '「回答」でも表の修正でも済む要確認 {n} 件（各行の説明を参照）',
     ce_next_sheet: '表を直してから締め直す要確認 {n} 件',
     ce_next_sheets: '開く表：{list}（YAML なら {files}）',
-    ce_next_none: 'やることはありません。底稿をダウンロードして確認してください',
+    ce_next_none: 'やることはありません。ワークペーパーをダウンロードして確認してください',
     ce_how_answer: 'この画面で回答',
     ce_how_sheet: '表を直す',
     ce_how_both: '回答／表',
@@ -903,7 +903,7 @@ const T = {
     ce_ans_err_sum: '各行の金額の合計が明細の金額と一致しません',
     ce_ans_err_reason: '理由を書いてください',
     ce_rerun: '回答を反映して締め直す（{n} 件）',
-    ce_dl_book: '回答入りの公司资料.xlsx をダウンロード',
+    ce_dl_book: '回答入りの会社資料.xlsx をダウンロード',
     ce_dl_decisions: '回答ファイル（decisions.yaml）をダウンロード',
     ce_dl_note: '次回はこのファイルでフォルダを差し替えれば、回答を入れ直す必要はありません。',
     ce_adv_yaml: '上級：YAML の回答テンプレート',
@@ -923,13 +923,13 @@ const T = {
     ce_z_need_folder:
       '先に作業フォルダを選ぶと、2 つの入口が使えるようになります（保存先が必要なため）。',
     ce_z_looking: '確認中：{name}',
-    ce_z_wb_ok: '✓ {name} → 会社の資料（公司资料.xlsx）',
+    ce_z_wb_ok: '✓ {name} → 会社の資料（会社資料.xlsx）',
     ce_z_wb_replaced: '✓ {name} → 会社の資料を入れ替えました（前のファイル：{path}）',
     ce_z_bank_ok: '✓ {name} → 銀行明細（bank フォルダ）',
     ce_z_bank_unchecked:
       '✓ {name} → 銀行明細（bank フォルダ）。会社の資料がまだ無いので、列名は未確認です',
     ce_z_bank_other:
-      '✗ {name}：銀行明細のようですが、見出し（{found}）が、会社の資料の「银行账户」シートに登録した列名（{want}）と違います。登録の列名をファイルの書き方に合わせてから、もう一度入れてください',
+      '✗ {name}：銀行明細のようですが、見出し（{found}）が、会社の資料の「銀行口座」シートに登録した列名（{want}）と違います。登録の列名をファイルの書き方に合わせてから、もう一度入れてください',
     ce_z_unknown: '✗ {name}：会社の資料でも銀行明細でもないため、保存していません',
     ce_z_err: '✗ {name}：読めませんでした（{msg}）',
     ce_z_skip: '✗ {name}：この種類のファイルは扱えません（表は Excel・CSV、証憑は画像・PDF）',
@@ -938,10 +938,10 @@ const T = {
     ce_ev_open: '原本を開く：{name}',
     ce_ev_open_err: '原本を開けませんでした（{msg}）',
     ce_fix_where:
-      '「表を直す」は、作業フォルダ（さきほど選んだ「{name}」フォルダ）の中の「公司资料.xlsx」を直すことです（元の置き場所のファイルではありません）。Excel で直して保存し、Excel を閉じてから「締めを実行」を押してください。明細を足すときは、上の「表」の入口に入れます。',
+      '「表を直す」は、作業フォルダ（さきほど選んだ「{name}」フォルダ）の中の「会社資料.xlsx」を直すことです（元の置き場所のファイルではありません）。Excel で直して保存し、Excel を閉じてから「締めを実行」を押してください。明細を足すときは、上の「表」の入口に入れます。',
     ce_ev_by_label: '担当者（証憑の確認・取消のときに記録されます）',
     ce_rerun_note:
-      '作業フォルダにつないでいるときは、回答をフォルダの「公司资料.xlsx」に書き込みます（元のファイルは先に「结账结果/备份」へコピーします）。',
+      '作業フォルダにつないでいるときは、回答をフォルダの「会社資料.xlsx」に書き込みます（元のファイルは先に「締め結果/バックアップ」へコピーします）。',
     ce_period_why:
       '帳簿は開始月から順に締めていくので、既定では会計年度の最初の月から「終了」の月まで計算します。結果は月ごとに切り替えて見られます。1 か月だけでよければ「最新の 1 か月だけ」を押してください。',
     ce_ev_box: '証憑の一覧と確認',
@@ -1034,7 +1034,7 @@ const T = {
     ce_err_load:
       '実行環境を読み込めませんでした。ネットワーク、または広告ブロックなどの拡張機能を確認してから再読み込みしてください。',
     ce_err_no_company:
-      'このフォルダにはまだ会社の資料がありません。下の「表」の入口に「公司资料.xlsx」を入れてください（すでに資料を入れたフォルダがあるなら、そのフォルダを選び直してください。1 つ上のフォルダや bank フォルダではありません）。',
+      'このフォルダにはまだ会社の資料がありません。下の「表」の入口に「会社資料.xlsx」を入れてください（すでに資料を入れたフォルダがあるなら、そのフォルダを選び直してください。1 つ上のフォルダや bank フォルダではありません）。',
     ce_err_no_month: '月を選んでください。',
     ce_err_company: '会社データに問題があります：',
     ce_err_close: '締め処理が止まりました：',
@@ -2857,10 +2857,10 @@ const T = {
       'In Chrome or Edge the folder is read and written directly: results and answers are saved back automatically (the browser asks for permission each time). Other browsers: “Choose folder” (read-only, downloads needed).',
     ce_fs_connected: 'Connected: {name} (read/write, {n} files)',
     ce_fs_out: 'Saved: {path}',
-    ce_fs_book: 'Answers written into 公司资料.xlsx (backup of the old file: {path})',
+    ce_fs_book: 'Answers written into company-data.xlsx (backup of the old file: {path})',
     ce_fs_dec: 'Answers written into decisions.yaml (backup: {path})',
     ce_fs_locked:
-      'Could not write to the folder. Is 公司资料.xlsx open in Excel? Close it and press “Run again with answers” (your answers are kept).',
+      'Could not write to the folder. Is company-data.xlsx open in Excel? Close it and press “Run again with answers” (your answers are kept).',
     ce_fs_err: 'Could not write to the folder: {msg}',
     ce_chip_bank_ok: 'Bank and books agree',
     ce_chip_bank_ng: 'Bank and books differ',
@@ -2975,7 +2975,7 @@ const T = {
     ce_ans_err_sum: 'The lines do not add up to the amount',
     ce_ans_err_reason: 'Please give a reason',
     ce_rerun: 'Run again with answers ({n})',
-    ce_dl_book: 'Download 公司资料.xlsx with answers',
+    ce_dl_book: 'Download company-data.xlsx with answers',
     ce_dl_decisions: 'Download answers (decisions.yaml)',
     ce_dl_note:
       'Put this file back into your folder next time and you will not need to answer again.',
@@ -2995,13 +2995,13 @@ const T = {
     ce_z_pick: 'Choose files',
     ce_z_need_folder: 'Choose the working folder first; the two inboxes need somewhere to save.',
     ce_z_looking: 'Reading: {name}',
-    ce_z_wb_ok: '✓ {name} → company workbook (公司资料.xlsx)',
+    ce_z_wb_ok: '✓ {name} → company workbook (company-data.xlsx)',
     ce_z_wb_replaced: '✓ {name} → company workbook replaced (previous file: {path})',
     ce_z_bank_ok: '✓ {name} → bank statements (“bank” folder)',
     ce_z_bank_unchecked:
       '✓ {name} → bank statements (“bank” folder). No company workbook yet, so the column names are unchecked',
     ce_z_bank_other:
-      '✗ {name}: this looks like a bank statement, but its headings ({found}) differ from the column names registered on the “银行账户” sheet of the company workbook ({want}). Change the registered names to match the file, then add it again',
+      '✗ {name}: this looks like a bank statement, but its headings ({found}) differ from the column names registered on the “Bank accounts” sheet of the company workbook ({want}). Change the registered names to match the file, then add it again',
     ce_z_unknown: '✗ {name}: neither a company workbook nor a bank statement, so it was not saved',
     ce_z_err: '✗ {name}: could not be read ({msg})',
     ce_z_skip:
@@ -3011,10 +3011,10 @@ const T = {
     ce_ev_open: 'Open the original: {name}',
     ce_ev_open_err: 'Could not open the original ({msg})',
     ce_fix_where:
-      '“Fix the sheet” means editing “公司资料.xlsx” inside the working folder (the “{name}” folder you chose), not the copy where you originally kept it. Edit it in Excel, save, close Excel, then press “Run”. To add bank statements, use the “Tables” inbox above.',
+      '“Fix the sheet” means editing “company-data.xlsx” inside the working folder (the “{name}” folder you chose), not the copy where you originally kept it. Edit it in Excel, save, close Excel, then press “Run”. To add bank statements, use the “Tables” inbox above.',
     ce_ev_by_label: 'Your name (recorded when you confirm or cancel evidence)',
     ce_rerun_note:
-      'While a working folder is connected, your answers are written into “公司资料.xlsx” in that folder (the previous file is first copied to “结账结果/备份”).',
+      'While a working folder is connected, your answers are written into “company-data.xlsx” in that folder (the previous file is first copied to “closing-results/backup”).',
     ce_period_why:
       'Books are closed month by month from the start, so by default the run covers the fiscal year’s first month through the “to” month. You can switch months in the results. For one month only, press “Latest month only”.',
     ce_ev_box: 'Evidence list and confirmation',
@@ -3110,7 +3110,7 @@ const T = {
     ce_err_load:
       'Could not load the runtime. Check your network or browser extensions such as ad blockers, then reload.',
     ce_err_no_company:
-      'This folder has no company workbook yet. Add “公司资料.xlsx” through the “Tables” inbox below (if you already have a folder with your files, choose that folder itself: not its parent, and not the “bank” folder).',
+      'This folder has no company workbook yet. Add “company-data.xlsx” through the “Tables” inbox below (if you already have a folder with your files, choose that folder itself: not its parent, and not the “bank” folder).',
     ce_err_no_month: 'Please choose a month.',
     ce_err_company: 'Problem in the company data:',
     ce_err_close: 'The close stopped:',
