@@ -718,6 +718,27 @@ const T = {
     ce_pick_tip:
       'フォルダを選ぶ画面にはフォルダだけが表示されます（中のファイルが見えないのは正常です）。作業フォルダを開いてから「フォルダーの選択」を押してください。',
     ce_list_toggle: '項目ごとの確認結果（11 項目）',
+    ce_rp_title: '銀行ルールの当たり方',
+    ce_rp_sum_ok: '（ルール {n} 本・明細 {rows} 行）',
+    ce_rp_sum_warn: '（⚠ 見直すところが {w} か所あります）',
+    ce_rp_intro:
+      '締める期間（{first}〜{last}）の明細 {rows} 行に、「{sheet}」の表のルールを当ててみた結果です。締める前にルールを直せます。',
+    ce_rp_norules:
+      '「{sheet}」の表にルールはまだありません。無くても締められます（明細ごとに尋ねます）。',
+    ce_rp_unused:
+      'どの明細にも当たらないルールが {n} 本あります。「摘要に含まれる字」が明細の摘要とまったく同じか確かめてください（半角カナは半角のまま写します）。',
+    ce_rp_multi:
+      '複数のルールが当たる明細が {n} 件あります。締めでは推測せず、その明細について尋ねます。当たるルールが一つだけになるように、ルールを直してください。',
+    ce_rp_answered: '回答済み',
+    ce_rp_hits: 'ルールごとの当たった件数',
+    ce_rp_n: '{n} 件',
+    ce_rp_more: 'ほか {n} 件',
+    ce_rp_n_total: '{n} 件・合計 {a}',
+    ce_rp_none_pre:
+      'ルールの無い明細は、締めた後にここに出ます。給与・社会保険・税金の支払と自社の口座どうしの振替は自動で照合するので、ルールは要りません。',
+    ce_rp_none_zero: 'ルールの無い明細はありません。',
+    ce_rp_none:
+      'ルールの無い明細が {n} 件（摘要 {k} 種類）あります。同じ摘要が毎月出てくるものは、「{sheet}」の表にルールを書くと次から自動で仕訳されます。',
     ce_ev_reason_fix: '確認済の行を直す理由（訂正削除記録に残ります）',
     ce_ev_reason_void: '取り消す理由（行も原本も消さず、記録に残ります）',
     ce_ev_dup: '{name} は取り込み済みです（同じ中身）',
@@ -1743,6 +1764,26 @@ const T = {
     ce_pick_tip:
       '选文件夹的对话框里只显示文件夹，看不到里面的文件是正常的：点进工作文件夹后，按「选择文件夹」。',
     ce_list_toggle: '各项检查明细（11 项）',
+    ce_rp_title: '银行规则试跑',
+    ce_rp_sum_ok: '（规则 {n} 条・流水 {rows} 笔）',
+    ce_rp_sum_warn: '（⚠ 有 {w} 处需要看一下）',
+    ce_rp_intro:
+      '把「{sheet}」表里的规则，对结账期间（{first}〜{last}）的 {rows} 笔流水试了一遍。结账前就可以把规则改好。',
+    ce_rp_norules: '「{sheet}」表里还没有规则。没有也能结账（每一笔流水都会问你）。',
+    ce_rp_unused:
+      '有 {n} 条规则一笔流水都没对上。请核对「摘要包含」和流水里的摘要是否一字不差（半角片假名要照原样写）。',
+    ce_rp_multi:
+      '有 {n} 笔流水同时符合两条以上的规则。结账时不会猜，会一笔一笔问你。请把规则改成只有一条能对上。',
+    ce_rp_answered: '已回答',
+    ce_rp_hits: '每条规则对上的笔数',
+    ce_rp_n: '{n} 笔',
+    ce_rp_more: '另有 {n} 笔',
+    ce_rp_n_total: '{n} 笔・合计 {a}',
+    ce_rp_none_pre:
+      '没有规则的流水，结账之后会列在这里。工资、社保、税金的支付和自己账户之间的互转会自动核对，不需要写规则。',
+    ce_rp_none_zero: '没有缺规则的流水。',
+    ce_rp_none:
+      '有 {n} 笔流水没有规则（摘要 {k} 种）。每个月都出现的摘要，写进「{sheet}」表后下次就自动记账。',
     ce_ev_reason_fix: '修改已确认条目的理由（会记入修改删除记录）',
     ce_ev_reason_void: '取消的理由（条目和原件都不删除，会留下记录）',
     ce_ev_dup: '{name} 已经导入过了（内容相同）',
@@ -2790,6 +2831,27 @@ const T = {
     ce_pick_tip:
       'The folder dialog shows folders only, so not seeing your files there is normal. Open the working folder, then press “Select Folder”.',
     ce_list_toggle: 'Check details (11 items)',
+    ce_rp_title: 'Bank rules: dry run',
+    ce_rp_sum_ok: ' ({n} rules, {rows} rows)',
+    ce_rp_sum_warn: ' (⚠ {w} to review)',
+    ce_rp_intro:
+      'The rules on the “{sheet}” sheet were tried against the {rows} statement rows in the closing period ({first} to {last}). You can fix the rules before closing.',
+    ce_rp_norules:
+      'There are no rules on the “{sheet}” sheet yet. Closing works without them (you will be asked about each row).',
+    ce_rp_unused:
+      '{n} rule(s) match no row. Check that the text to look for is exactly what the statement shows (keep half-width kana as is).',
+    ce_rp_multi:
+      '{n} row(s) match two or more rules. The close will not guess; it asks about each one. Change the rules so that only one matches.',
+    ce_rp_answered: 'answered',
+    ce_rp_hits: 'Rows matched by each rule',
+    ce_rp_n: '{n} row(s)',
+    ce_rp_more: '{n} more',
+    ce_rp_n_total: '{n} row(s), total {a}',
+    ce_rp_none_pre:
+      'Rows without a rule are listed here after closing. Payroll, social insurance and tax payments and transfers between your own accounts are matched automatically and need no rule.',
+    ce_rp_none_zero: 'No rows are missing a rule.',
+    ce_rp_none:
+      '{n} row(s) have no rule ({k} different descriptions). For descriptions that come back every month, add a rule on the “{sheet}” sheet and they are booked automatically next time.',
     ce_ev_reason_fix: 'Reason for changing a confirmed row (kept in the correction log)',
     ce_ev_reason_void:
       'Reason for cancelling (the row and the original are kept, and the reason is logged)',

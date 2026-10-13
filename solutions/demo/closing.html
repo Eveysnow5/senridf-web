@@ -242,6 +242,16 @@
     .ce-zlog li.ng { color:#b91c1c; }
     .ce-zlog li.ok { color:#047857; }
     details.ce-listbox.hidden { display:none; }
+    .ce-rp { font-size:12.5px;color:#374151;line-height:1.7;padding:2px 0 6px; }
+    .ce-rp p { margin:6px 0 2px; }
+    .ce-rp p.warn { color:#92400e; }
+    .ce-rp p.h { color:#6b7280; }
+    .ce-rp ul { margin:0 0 4px 1.2em;padding:0;list-style:disc; }
+    .ce-rp li { overflow-wrap:anywhere; }
+    .ce-rp .n { color:#6b7280;margin-left:.6em; }
+    .ce-rp .tag { font-size:11px;color:#065f46;background:#d1fae5;border-radius:4px;padding:0 5px;margin-left:.6em; }
+    .ce-rp-sum { color:#6b7280; }
+    .ce-rp-sum.warn { color:#92400e; }
     .ce-ev-kind { min-width:5.5em; }
     .ce-ev-basis { font-size:11px;color:#6b7280;margin-top:2px;white-space:normal;max-width:14em; }
     /* 四格图解 */
@@ -454,6 +464,10 @@
             <tbody id="ce-list"></tbody>
           </table>
         </div>
+        </details>
+        <details id="ce-rules" class="ce-listbox hidden">
+        <summary><span data-i18n="ce_rp_title">銀行ルールの当たり方</span><span id="ce-rp-sum" class="ce-rp-sum"></span></summary>
+        <div id="ce-rp-body" class="ce-rp"></div>
         </details>
         <p class="ce-hint" style="margin-top:6px">
           <span data-i18n="ce_upload_hint">事務所の既定方針（office）を使う場合は、そのファイルもフォルダの中に置いてください。ファイルはこのブラウザの中だけで読みます。</span>
@@ -739,6 +753,85 @@
       });
     }
 
+    // ── 银行规则试跑（引擎的 rules_preview）：结账前看每条规则对上几笔、哪条一笔都没对上、哪些流水同时符合多条。
+    // 「没有规则的流水」只在结账之后才有（结账前分不出哪些会被工资・社保自动核对）。文字都走 sdfSetText，切语言时自己会变。
+    let rulesSheet = '';
+    let closedRules = null; // 结账时的那一份（带「没有规则的流水」）
+    const rulesKey = (p) => JSON.stringify([p.first, p.last, p.rows, p.rules, p.multi_n]);
+    function renderRules(p, sheet) {
+      const box = $('ce-rules');
+      if (sheet) rulesSheet = sheet;
+      if (p && p.none !== null) closedRules = p;
+      // 结账后又做了一次资料检查（切语言等）：流水和规则没变，就继续显示结账时的那一份
+      else if (p && closedRules && rulesKey(p) === rulesKey(closedRules)) p = closedRules;
+      else closedRules = null;
+      box.classList.toggle('hidden', !p);
+      if (!p) return;
+      const body = $('ce-rp-body');
+      body.replaceChildren();
+      const sh = rulesSheet || t('ce_f_bank_rules');
+      const line = (cls, key, params) => {
+        const el = document.createElement('p');
+        if (cls) el.className = cls;
+        window.sdfSetText(el, key, params);
+        body.appendChild(el);
+      };
+      const tagged = (text, key, params, cls) => {
+        const li = document.createElement('li');
+        li.append(document.createTextNode(text));
+        if (key) {
+          const sp = document.createElement('span');
+          sp.className = cls || 'n';
+          window.sdfSetText(sp, key, params);
+          li.appendChild(sp);
+        }
+        return li;
+      };
+      const list = (items, rest) => {
+        const ul = document.createElement('ul');
+        ul.append(...items);
+        if (rest > 0) ul.appendChild(tagged('', 'ce_rp_more', { n: rest }));
+        body.appendChild(ul);
+      };
+      const cond = (w) => `「${w.desc_contains ?? w.desc_regex ?? ''}」`;
+      const signed = (a) => `${a < 0 ? '−' : '+'}${Math.abs(a).toLocaleString()}`;
+      const byId = Object.fromEntries(p.rules.map((r) => [r.id, r]));
+      const open = p.multi.filter((m) => !m.answered).length + (p.multi_n - p.multi.length);
+      const w = p.unused.length + open;
+      const sum = $('ce-rp-sum');
+      sum.classList.toggle('warn', w > 0);
+      window.sdfSetText(sum, w > 0 ? 'ce_rp_sum_warn' : 'ce_rp_sum_ok', { w, n: p.rules.length, rows: p.rows });
+      if ($('ce-result').classList.contains('hidden')) box.open = w > 0; // 结果显示着的时候不动（免得把结果往下顶）
+      if (!p.rules.length) line('', 'ce_rp_norules', { sheet: sh });
+      else line('h', 'ce_rp_intro', { first: p.first, last: p.last, rows: p.rows, sheet: sh });
+      if (p.unused.length) {
+        line('warn', 'ce_rp_unused', { n: p.unused.length });
+        list(p.unused.map((id) => tagged(`${id} ${cond(byId[id].when)}`)));
+      }
+      if (p.multi_n) {
+        line('warn', 'ce_rp_multi', { n: p.multi_n });
+        list(
+          p.multi.map((m) =>
+            tagged(`${m.date} ${m.desc} ${signed(m.amount)}（${m.rules.join('・')}）`, m.answered ? 'ce_rp_answered' : '', null, 'tag'),
+          ),
+          p.multi_n - p.multi.length,
+        );
+      }
+      if (p.rules.length) {
+        line('h', 'ce_rp_hits');
+        list(p.rules.map((r) => tagged(`${r.id} ${cond(r.when)}`, 'ce_rp_n', { n: r.n })));
+      }
+      if (p.none === null) line('h', 'ce_rp_none_pre');
+      else if (!p.none_n) line('h', 'ce_rp_none_zero');
+      else {
+        line('', 'ce_rp_none', { n: p.none_n, k: p.none_kinds, sheet: sh });
+        list(
+          p.none.map((g) => tagged(g.desc, 'ce_rp_n_total', { n: g.n, a: signed(g.total) })),
+          p.none_kinds - p.none.length,
+        );
+      }
+    }
+
     // ── Worker ───────────────────────────────────────────────────────────────
     function setStatus(el, key, extra, isErr) {
       el.classList.toggle('err', !!isErr);
@@ -877,6 +970,7 @@
           return await precheck();
         }
         renderList(r);
+        renderRules(r.rules_preview, ((r.items || []).find((x) => x.id === 'bank_rules')?.sheets || [])[0]);
         prechecked = !!r.ready;
         // 有 ⚠ 的项目（流水没到月末・缺开头的月份・本期要用的资料）时，不说「文件齐全」——两句话会打架
         if (r.ready) setStatus($('ce-pre'), (r.items || []).some((x) => x.status === 'warn') ? 'ce_pre_ok_warn' : 'ce_pre_ok');
@@ -896,6 +990,7 @@
     async function afterFiles() {
       if (!files.some((f) => f.path === 'company.yaml' || BOOKS.includes(f.path))) {
         renderList({ items: [{ id: 'company', status: 'missing' }] });
+        renderRules(null);
         $('ce-listbox').open = false; // 只知道缺公司资料，其余没检查，展开也全是「未检查」
         // 能写的工作文件夹（两个入口可用）：空文件夹是正常的起点，不算错；只读的旧入口才是选错了文件夹
         setStatus($('ce-pre'), 'ce_err_no_company', '', !dirHandle);
@@ -1980,6 +2075,7 @@
 
     function render(r, isSample, switching) {
       shown = r;
+      if (!isSample && r.rules_preview) renderRules(r.rules_preview);
       $('ce-result').classList.remove('hidden');
       $('ce-sample-banner').classList.toggle('hidden', !isSample);
       $('ce-fix-where').classList.toggle('hidden', isSample || !dirHandle); // 示例・只读方式没有「工作文件夹里的那一份」
@@ -2616,6 +2712,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=e244dc4db5"></script>
+  <script src="../../js/main.js?v=74656a236d"></script>
 </body>
 </html>

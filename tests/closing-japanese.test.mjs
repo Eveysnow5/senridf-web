@@ -142,3 +142,20 @@ test('日文的句子是です・ます体', () => {
   for (const [k, v] of ce(JA)) for (const b of plainEnds(v)) bad.push(`${k}: …${b}`);
   assert.deepStrictEqual(bad, []);
 });
+
+// 银行规则试跑（2026-10-13）：面板用到的文案键三种语言都要有；结账前・结账后两处都要接上
+test('规则试跑：文案三语齐全，资料检查和结账结果都会更新面板', () => {
+  const used = [...new Set([...HTML.matchAll(/'(ce_rp_\w+)'/g)].map((m) => m[1]))];
+  used.push('ce_rp_title');
+  assert.ok(used.length >= 12, `只找到 ${used.length} 个键`);
+  const ZH = block('zh');
+  for (const k of used)
+    for (const [lang, t] of Object.entries({ ja: JA, zh: ZH, en: EN }))
+      assert.ok(k in t, `${lang} 缺 ${k}`);
+  assert.match(HTML, /renderRules\(r\.rules_preview, /, '资料检查之后没有更新面板');
+  assert.match(
+    HTML,
+    /if \(!isSample && r\.rules_preview\) renderRules\(r\.rules_preview\)/,
+    '结账之后没有更新面板',
+  );
+});
