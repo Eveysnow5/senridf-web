@@ -114,3 +114,31 @@ test('工作文件夹里的名字跟着语言，日文界面不写中文名', ()
   assert.ok(!/writeFile\(\[[^\]]*'(公司资料|结账结果|备份)/.test(script), '还有写死的中文路径');
   assert.ok(!/`底稿_\$\{lang\}/.test(script), '底稿的文件名还是写死的中文');
 });
+
+// 文は です・ます体（2026-10-13：弥生は全部です・ます、それに合わせる）。ボタンと見出しは「選ぶ」「締める」のままでよいので、
+// 見るのは「。」を含む文章だけ：括弧の中の補足を除いて、文末がひらがなの用言（る・た・い・だ…）で敬体でないものを拾う。
+function plainEnds(text) {
+  const bad = [];
+  if (!text.includes('。')) return bad;
+  for (const seg of text.replace(/<[^>]+>/g, '').split(/。|\n/)) {
+    const body = seg
+      .replace(/（[^（）]*）/g, '')
+      .replace(/[\s:：、,.…!！?？—→」』）)\]]+$/u, '')
+      .replace(/\{\w+\}$/, '');
+    if (!/[るうくすつぬむぶぐただい]$/.test(body)) continue;
+    if (/(です|ます|ません|でした|ました|ください|でしょう|ましょう)$/.test(body)) continue;
+    if (/(はい|いいえ|なし|ない場合|支払い|扱い|違い|お知らせ|ほか|以外)$/.test(body)) continue;
+    bad.push(body.slice(-20));
+  }
+  return bad;
+}
+
+test('日文的句子是です・ます体', () => {
+  assert.deepStrictEqual(plainEnds('表を直して締め直す。理由を書いてください。'), [
+    '表を直して締め直す',
+  ]);
+  assert.deepStrictEqual(plainEnds('明細がありません（まだ入れていない）。入れてください。'), []);
+  const bad = [];
+  for (const [k, v] of ce(JA)) for (const b of plainEnds(v)) bad.push(`${k}: …${b}`);
+  assert.deepStrictEqual(bad, []);
+});
