@@ -1735,7 +1735,13 @@
         const td = el('td');
         td.colSpan = 10;
         const amt = fx.foreign ? Number(fx.foreign).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '';
-        const key = !fx.foreign ? 'ce_ev_fx_unread' : !fx.fx_yen ? 'ce_ev_fx_ask' : e.amount ? 'ce_ev_fx_used' : 'ce_ev_fx_frac';
+        const key = !fx.foreign
+          ? 'ce_ev_fx_unread'
+          : !fx.fx_yen
+            ? 'ce_ev_fx_ask'
+            : fx.fx_rounded
+              ? 'ce_ev_fx_rounded'
+              : 'ce_ev_fx_used';
         window.sdfSetText(td, key, { cur: fx.currency, amt, rate: fx.fx_rate || '', yen: fx.fx_yen || '' });
         nr.appendChild(td);
         out.push(nr);
@@ -2724,6 +2730,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=789fc57051"></script>
+  <script src="../../js/main.js?v=1afa95714f"></script>
 </body>
 </html>

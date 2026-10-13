@@ -959,8 +959,8 @@ const T = {
       'この種類の書類はまだ自動で読めません。ファイル名を押して原本を開き、見ながら取引日・金額・取引先を入れてください',
     ce_ev_fx_ask:
       '外貨の書類です（{cur} {amt}）。円に換算した金額を入れてください。使ったレートを備考に書いておくと、あとで確かめられます。',
-    ce_ev_fx_frac:
-      '外貨の書類です（{cur} {amt}）。書類に書いてある換算は {amt} × {rate} ＝ {yen} です。円未満の扱いを決めて、円の金額を入れてください。',
+    ce_ev_fx_rounded:
+      '外貨の書類です（{cur} {amt}）。書類に書いてある換算 {amt} × {rate} ＝ {yen} の円未満を四捨五入して、金額に入れました。確かめてください。',
     ce_ev_fx_used:
       '外貨の書類です（{cur} {amt}）。書類に書いてある換算 {amt} × {rate} ＝ {yen} を金額に入れました。確かめてください。',
     ce_ev_fx_unread:
@@ -1997,8 +1997,8 @@ const T = {
     ce_ev_no_template: '这一类单据还不能自动读取。请点文件名打开原件，对照着填交易日・金额・交易方',
     ce_ev_fx_ask:
       '这是外币单据（{cur} {amt}）。请填入折算成日元后的金额。把用的汇率写在备注里，方便以后核对。',
-    ce_ev_fx_frac:
-      '这是外币单据（{cur} {amt}）。单据上写的换算是 {amt} × {rate} ＝ {yen}。请决定不足 1 日元的部分怎么处理，再填入日元金额。',
+    ce_ev_fx_rounded:
+      '这是外币单据（{cur} {amt}）。单据上写的换算是 {amt} × {rate} ＝ {yen}，已四舍五入到日元填进金额，请核对。',
     ce_ev_fx_used:
       '这是外币单据（{cur} {amt}）。已把单据上写的换算 {amt} × {rate} ＝ {yen} 填进金额，请核对。',
     ce_ev_fx_unread:
@@ -3089,8 +3089,8 @@ const T = {
       'This kind of document cannot be read automatically yet. Click the file name to open the original and enter the date, amount and party from it',
     ce_ev_fx_ask:
       'This document is in a foreign currency ({cur} {amt}). Enter the amount converted to yen. Note the rate you used so it can be checked later.',
-    ce_ev_fx_frac:
-      'This document is in a foreign currency ({cur} {amt}). The conversion written on it is {amt} × {rate} = {yen}. Decide how to treat the fraction of a yen, then enter the yen amount.',
+    ce_ev_fx_rounded:
+      'This document is in a foreign currency ({cur} {amt}). The conversion written on it, {amt} × {rate} = {yen}, was rounded to the nearest yen and entered as the amount. Please check it.',
     ce_ev_fx_used:
       'This document is in a foreign currency ({cur} {amt}). The conversion written on it, {amt} × {rate} = {yen}, was entered as the amount. Please check it.',
     ce_ev_fx_unread:
