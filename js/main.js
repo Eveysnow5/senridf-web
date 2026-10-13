@@ -957,6 +957,14 @@ const T = {
     ce_z_skip: '✗ {name}：この種類のファイルは扱えません（表は Excel・CSV、証憑は画像・PDF）',
     ce_ev_no_template:
       'この種類の書類はまだ自動で読めません。ファイル名を押して原本を開き、見ながら取引日・金額・取引先を入れてください',
+    ce_ev_fx_ask:
+      '外貨の書類です（{cur} {amt}）。円に換算した金額を入れてください。使ったレートを備考に書いておくと、あとで確かめられます。',
+    ce_ev_fx_frac:
+      '外貨の書類です（{cur} {amt}）。書類に書いてある換算は {amt} × {rate} ＝ {yen} です。円未満の扱いを決めて、円の金額を入れてください。',
+    ce_ev_fx_used:
+      '外貨の書類です（{cur} {amt}）。書類に書いてある換算 {amt} × {rate} ＝ {yen} を金額に入れました。確かめてください。',
+    ce_ev_fx_unread:
+      '外貨（{cur}）の書類のようですが、金額を読み切れませんでした。書類を見て、円に換算した金額を入れてください。',
     ce_ev_open: '原本を開く：{name}',
     ce_ev_open_err: '原本を開けませんでした（{msg}）',
     ce_fix_where:
@@ -1987,6 +1995,14 @@ const T = {
     ce_z_err: '✗ {name}：没能读取（{msg}）',
     ce_z_skip: '✗ {name}：这种文件处理不了（表格要 Excel・CSV，凭证要图片・PDF）',
     ce_ev_no_template: '这一类单据还不能自动读取。请点文件名打开原件，对照着填交易日・金额・交易方',
+    ce_ev_fx_ask:
+      '这是外币单据（{cur} {amt}）。请填入折算成日元后的金额。把用的汇率写在备注里，方便以后核对。',
+    ce_ev_fx_frac:
+      '这是外币单据（{cur} {amt}）。单据上写的换算是 {amt} × {rate} ＝ {yen}。请决定不足 1 日元的部分怎么处理，再填入日元金额。',
+    ce_ev_fx_used:
+      '这是外币单据（{cur} {amt}）。已把单据上写的换算 {amt} × {rate} ＝ {yen} 填进金额，请核对。',
+    ce_ev_fx_unread:
+      '这像是外币（{cur}）单据，但金额没能读准。请对照单据，填入折算成日元后的金额。',
     ce_ev_open: '打开原件：{name}',
     ce_ev_open_err: '没能打开原件（{msg}）',
     ce_fix_where:
@@ -3071,6 +3087,14 @@ const T = {
       '✗ {name}: this file type is not supported (tables: Excel or CSV; evidence: images or PDF)',
     ce_ev_no_template:
       'This kind of document cannot be read automatically yet. Click the file name to open the original and enter the date, amount and party from it',
+    ce_ev_fx_ask:
+      'This document is in a foreign currency ({cur} {amt}). Enter the amount converted to yen. Note the rate you used so it can be checked later.',
+    ce_ev_fx_frac:
+      'This document is in a foreign currency ({cur} {amt}). The conversion written on it is {amt} × {rate} = {yen}. Decide how to treat the fraction of a yen, then enter the yen amount.',
+    ce_ev_fx_used:
+      'This document is in a foreign currency ({cur} {amt}). The conversion written on it, {amt} × {rate} = {yen}, was entered as the amount. Please check it.',
+    ce_ev_fx_unread:
+      'This looks like a foreign-currency ({cur}) document, but the amount could not be read reliably. Check the document and enter the amount converted to yen.',
     ce_ev_open: 'Open the original: {name}',
     ce_ev_open_err: 'Could not open the original ({msg})',
     ce_fix_where:

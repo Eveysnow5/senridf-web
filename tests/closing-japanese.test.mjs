@@ -159,3 +159,16 @@ test('规则试跑：文案三语齐全，资料检查和结账结果都会更�
     '结账之后没有更新面板',
   );
 });
+
+// 外币单据（2026-10-13）：引擎认出外币单据（fields.currency）时，页面要用界面语言说明并要日元金额——
+// 金额栏是外币的话不能悄悄留空也不能当日元。四种说法三语都要有
+test('外币单据的草稿：四种提示三语齐全，页面按 fields.currency 显示', () => {
+  const keys = ['ce_ev_fx_ask', 'ce_ev_fx_frac', 'ce_ev_fx_used', 'ce_ev_fx_unread'];
+  const ZH = block('zh');
+  for (const k of keys) {
+    assert.ok(HTML.includes(`'${k}'`), `页面没有用到 ${k}`);
+    for (const [lang, t] of Object.entries({ ja: JA, zh: ZH, en: EN }))
+      assert.ok(k in t, `${lang} 缺 ${k}`);
+  }
+  assert.match(HTML, /e\.status === '下書き' && e\.fields && e\.fields\.currency/);
+});

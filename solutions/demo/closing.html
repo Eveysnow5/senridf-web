@@ -1728,7 +1728,19 @@
         nr.appendChild(td);
         out.push(nr);
       }
-      if (e.note) {
+      // 外币单据（引擎认出来的中国发票等）：金额是外币，不能当日元。草稿阶段用界面语言说明并要日元金额
+      const fx = e.status === '下書き' && e.fields && e.fields.currency ? e.fields : null;
+      if (fx) {
+        const nr = el('tr', 'ce-ev-note');
+        const td = el('td');
+        td.colSpan = 10;
+        const amt = fx.foreign ? Number(fx.foreign).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '';
+        const key = !fx.foreign ? 'ce_ev_fx_unread' : !fx.fx_yen ? 'ce_ev_fx_ask' : e.amount ? 'ce_ev_fx_used' : 'ce_ev_fx_frac';
+        window.sdfSetText(td, key, { cur: fx.currency, amt, rate: fx.fx_rate || '', yen: fx.fx_yen || '' });
+        nr.appendChild(td);
+        out.push(nr);
+      }
+      if (e.note && !(fx && fx.foreign)) {
         const nr = el('tr', 'ce-ev-note');
         const td = el('td');
         td.colSpan = 10;
@@ -2712,6 +2724,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=74656a236d"></script>
+  <script src="../../js/main.js?v=789fc57051"></script>
 </body>
 </html>
