@@ -140,7 +140,16 @@ json.dumps(jpclose.web.month_workpaper(ce_args[0], ce_args[1], ce_args[2]), ensu
 
 // 证凭（索引簿）：op 是 jpclose.webev 的函数名，args 跟在公司目录后面。返回改过的索引簿文本（files），
 // 页面写回文件夹。原件（照片・PDF）页面直接写进文件夹，不进这里
-const EVIDENCE_OPS = new Set(['path', 'add', 'confirm', 'void', 'attach', 'listing', 'classify']);
+const EVIDENCE_OPS = new Set([
+  'path',
+  'add',
+  'confirm',
+  'void',
+  'attach',
+  'listing',
+  'classify',
+  'preview',
+]);
 const EVIDENCE = `
 import json, jpclose.webev as _w
 _op, _args = ce_args[0], list(ce_args[1])

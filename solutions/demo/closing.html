@@ -242,6 +242,19 @@
     .ce-zlog li.ng { color:#b91c1c; }
     .ce-zlog li.ok { color:#047857; }
     details.ce-listbox.hidden { display:none; }
+    .ce-stance { margin:0 0 14px;padding:2px 2px 0;color:#374151;font-size:13px;line-height:1.8; }
+    .ce-stance h2 { font-size:15px;font-weight:600;color:#111827;margin:0 0 4px; }
+    .ce-stance p { margin:0; }
+    .ce-stance ul { margin:6px 0 4px 1.2em;padding:0;list-style:disc; }
+    .ce-stance .tail { color:#6b7280;font-size:12.5px; }
+    .ce-pv { margin-top:8px;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;font-size:12.5px;color:#374151;background:#fafafa; }
+    .ce-pv .t { font-weight:600;color:#111827;margin-bottom:4px; }
+    .ce-pv table { border-collapse:collapse;width:100%; }
+    .ce-pv td { padding:2px 8px 2px 0;vertical-align:top;overflow-wrap:anywhere; }
+    .ce-pv td.a { text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums; }
+    .ce-pv td.s { color:#6b7280;white-space:nowrap; }
+    .ce-pv .w { color:#6b7280; }
+    .ce-yayoi { font-size:12px;color:#6b7280;line-height:1.7;margin-top:6px; }
     .ce-rp { font-size:12.5px;color:#374151;line-height:1.7;padding:2px 0 6px; }
     .ce-rp p { margin:6px 0 2px; }
     .ce-rp p.warn { color:#92400e; }
@@ -356,6 +369,16 @@
 
     <main class="max-w-5xl mx-auto px-4 py-6">
       <div class="ce-privacy"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span data-i18n="ce_privacy">財務データはこのブラウザの中だけで処理され、サーバーには送信されません。読み込むのは実行環境とエンジン本体だけです。</span></div>
+      <section class="ce-stance" aria-labelledby="ce-stance-h">
+        <h2 id="ce-stance-h" data-i18n="ce_stance_title">判断するのは人、確かめるのは道具。</h2>
+        <p data-i18n="ce_stance_body">帳簿をつけるところは、いまの会計ソフトや AI が手伝ってくれます。この道具が受け持つのは、そのあとの月末のひと仕事です。給与・社会保険・税金・銀行残高を一つずつ突き合わせ、合わないところを理由と一緒にお知らせします。</p>
+        <ul>
+          <li data-i18n="ce_stance_a">推測で埋めません。分からないことは分からないと言って、お尋ねします。</li>
+          <li data-i18n="ce_stance_b">どの数字にも、どこから来たか（法令・料率表・入力した行）をたどれる道筋を付けます。</li>
+          <li data-i18n="ce_stance_c">財務データはこのブラウザの外に出ません。締めた仕訳は、お使いの会計ソフトへ持っていけます。</li>
+        </ul>
+        <p class="tail" data-i18n="ce_stance_tail">「技術は人のためにある」——千里同風の考えです。</p>
+      </section>
       <p class="ce-sample">
         <span data-i18n="ce_sample_line">まず結果の例を見る：</span>
         <button type="button" class="ce-btn2" data-sample="tokyo" data-i18n="ce_sample_tokyo">東京の架空会社</button>
@@ -529,6 +552,7 @@
               <div class="ce-row">
                 <button type="button" id="ce-download" class="ce-btn2" data-i18n="ce_download">ワークペーパー（xlsx）をダウンロード</button>
                 <span id="ce-dl-reports" class="ce-row"></span>
+                <p id="ce-yayoi-note" class="ce-yayoi hidden" data-i18n="ce_yayoi_note">「弥生会計インポート」は、締めた月の仕訳を弥生会計に取り込める形（弥生インポート形式）にしたファイルです。弥生会計の［ファイル］→［インポート］で読み込みます。科目の名前が弥生の登録名と違うときは、取り込みの画面で対応づけを尋ねられます。</p>
               </div>
               <div id="ce-fs-out" class="ce-hint" style="margin-top:6px"></div>
             </div>
@@ -882,7 +906,7 @@
     function getWorker() {
       if (!worker) {
         // ?v=：线上给这个文件 4 小时缓存。Worker 的加载方式变了（经典→module）时改这个值，免得新页面配上缓存里的旧 Worker
-        worker = new Worker('closing-worker.js?v=4', { type: 'module' });
+        worker = new Worker('closing-worker.js?v=5', { type: 'module' });
         worker.onmessage = onWorkerMessage;
         worker.onerror = (ev) => {
           console.error(ev);
@@ -1081,8 +1105,8 @@
           setBar(STAGE_PCT.workpaper, 'ce_p_save', { m: p.month });
           const bytes = p.month === r.month ? xlsx : await monthWorkpaper(p.month, lang);
           await writeFile([outDir(), p.month, `${(NAMES[lang] || NAMES.ja).wp}_${lang}.xlsx`], bytes);
-          for (const x of Object.values(p.reports || {})) {
-            await writeFile([outDir(), p.month, x.name], new TextEncoder().encode(x.html));
+          for (const x of [...Object.values(p.reports || {}), ...Object.values(p.exports || {})]) {
+            await writeFile([outDir(), p.month, x.name], reportBytes(x));
           }
         }
         const ps = r.periods;
@@ -1948,6 +1972,7 @@
         summary: p.summary,
         view: p.view,
         reports: p.reports,
+        exports: p.exports,
         checks: p.checks.map((c, i) => ({ ...c, ...p.tr[t].checks[i] })),
         not_applicable: p.not_applicable.map((x, i) => ({ ...x, ...p.tr[t].na[i] })),
         tr,
@@ -1973,15 +1998,27 @@
       }
     }
     // 汇总的下载按钮（没有连接文件夹时）：跟着正在看的月份
+    // 汇总是 HTML 文字；弥生的导入文件是 Shift_JIS 的字节（引擎给 base64）——不能当文字再编码一次
+    function reportBytes(x) {
+      if (!x.b64) return new TextEncoder().encode(x.html);
+      const bin = atob(x.b64);
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    }
     function renderReportButtons(r) {
       const rp = $('ce-dl-reports');
       rp.replaceChildren();
+      $('ce-yayoi-note').classList.toggle('hidden', !(r.exports && r.exports.yayoi));
       if (reportsInFolder) return;
-      for (const x of Object.values(r.reports || {})) {
+      for (const x of [...Object.values(r.reports || {}), ...Object.values(r.exports || {})]) {
         const b = el('button', 'ce-btn2');
         b.type = 'button';
-        window.sdfSetText(b, 'ce_dl_report', { name: `${x.name.replace(/[.]html$/, '')}（${r.month}）` });
-        b.addEventListener('click', () => download(x.html, x.name.replace(/[.]html$/, `_${r.month}.html`), 'text/html'));
+        const dated = /_\d{4}-\d{2}[.]\w+$/.test(x.name); // 名字里已经带月份的（弥生的导入文件）不再加
+        window.sdfSetText(b, 'ce_dl_report', { name: dated ? x.name.replace(/[.]\w+$/, '') : `${x.name.replace(/[.]html$/, '')}（${r.month}）` });
+        b.addEventListener('click', () =>
+          download(reportBytes(x), dated ? x.name : x.name.replace(/[.]html$/, `_${r.month}.html`), x.mime || 'text/html'),
+        );
         rp.appendChild(b);
       }
     }
@@ -2485,6 +2522,50 @@
       neg.classList.toggle('hidden', prevLines.length < 2);
       split.addEventListener('click', () => neg.classList.remove('hidden'));
       bookBox.append(linesBox, diff, split, neg);
+      // 这样回答会生成的分录：由引擎用和结账同一套函数算（页面不另写一套规则）。输入停下 400ms 后再问
+      const pv = el('div', 'ce-pv');
+      let pvTimer = null;
+      let pvSeq = 0;
+      const pvWait = () => {
+        pv.replaceChildren(el('div', 't', 'ce_pv_title'), el('div', 'w', 'ce_pv_wait'));
+      };
+      async function pvRun() {
+        const ls = lines();
+        const a = ls.length === 1 ? { account: ls[0].account, sub: ls[0].sub, tax: ls[0].tax } : { lines: ls };
+        if (isEv) Object.assign(a, { credit: credit.value, credit_sub: creditSub.value.trim() });
+        const ready = ls.every((l) => l.account && l.amount) && ls.reduce((s, l) => s + l.amount, 0) === amount && (!isEv || credit.value);
+        if (!ready) return pvWait();
+        const my = ++pvSeq;
+        let r = null;
+        try {
+          r = (await ask({ cmd: 'evidence', op: 'preview', args: [x.key, a] })).result;
+        } catch (e) {
+          console.error(e);
+        }
+        if (my !== pvSeq || !row.isConnected) return; // 之后又改过，或者表单已经关了
+        if (!r || !r.ok) return pvWait();
+        const tb = document.createElement('table');
+        for (const l of r.lines) {
+          const tr = document.createElement('tr');
+          const side = el('td', 's', l.side === 'debit' ? 'ce_pv_debit' : 'ce_pv_credit');
+          const acc = el('td');
+          acc.textContent = `${l.account}${l.sub ? `／${l.sub}` : ''}${l.tax && l.tax !== '対象外' ? `（${l.tax}）` : ''}`;
+          const amt = el('td', 'a');
+          amt.textContent = l.amount.toLocaleString();
+          tr.append(side, acc, amt);
+          tb.appendChild(tr);
+        }
+        pv.replaceChildren(el('div', 't', 'ce_pv_title'), tb);
+      }
+      const pvSoon = () => {
+        clearTimeout(pvTimer);
+        pvTimer = setTimeout(pvRun, 400);
+      };
+      linesBox.addEventListener('input', pvSoon);
+      linesBox.addEventListener('change', pvSoon);
+      split.addEventListener('click', pvSoon);
+      bookBox.appendChild(pv);
+      pvWait();
       if (sg) {
         const note = el('div', `ce-sg${sgSure ? '' : ' far'}`);
         const txt = el('span');
@@ -2521,9 +2602,13 @@
         const cl = el('div', 'ce-line');
         cl.append(credit, creditSub);
         bookBox.append(field('ce_ans_credit_h', cl));
+        cl.addEventListener('input', pvSoon);
+        cl.addEventListener('change', pvSoon);
+        bookBox.appendChild(pv); // 贷方的栏在下面，预览放到最后
       }
       form.appendChild(bookBox);
       sumCheck();
+      pvSoon();
 
       const evidence = input(prev.evidence, t('ce_ans_evidence'));
       const reason = input(prev.reason, t('ce_ans_reason'));
@@ -2730,6 +2815,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=1afa95714f"></script>
+  <script src="../../js/main.js?v=5fe0fc0188"></script>
 </body>
 </html>

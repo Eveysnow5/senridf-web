@@ -933,6 +933,21 @@ const T = {
     ce_title: '月次決算エンジン（日本・試用版）',
     ce_subtitle: '給与 · 社会保険 · 源泉 · 銀行照合 · 消費税 → ワークペーパー',
     ce_logout: 'ログアウト',
+    ce_stance_title: '判断するのは人、確かめるのは道具。',
+    ce_stance_body:
+      '帳簿をつけるところは、いまの会計ソフトや AI が手伝ってくれます。この道具が受け持つのは、そのあとの月末のひと仕事です。給与・社会保険・税金・銀行残高を一つずつ突き合わせ、合わないところを理由と一緒にお知らせします。',
+    ce_stance_a: '推測で埋めません。分からないことは分からないと言って、お尋ねします。',
+    ce_stance_b:
+      'どの数字にも、どこから来たか（法令・料率表・入力した行）をたどれる道筋を付けます。',
+    ce_stance_c:
+      '財務データはこのブラウザの外に出ません。締めた仕訳は、お使いの会計ソフトへ持っていけます。',
+    ce_stance_tail: '「技術は人のためにある」——千里同風の考えです。',
+    ce_yayoi_note:
+      '「弥生会計インポート」は、締めた月の仕訳を弥生会計に取り込める形（弥生インポート形式）にしたファイルです。弥生会計の［ファイル］→［インポート］で読み込みます。科目の名前が弥生の登録名と違うときは、取り込みの画面で対応づけを尋ねられます。',
+    ce_pv_title: 'この回答でできる仕訳',
+    ce_pv_debit: '借方',
+    ce_pv_credit: '貸方',
+    ce_pv_wait: '科目と金額がそろうと、ここに仕訳が出ます。',
     ce_privacy:
       '財務データはこのブラウザの中だけで処理され、サーバーには送信されません。読み込むのは実行環境とエンジン本体だけです。',
     ce_optional: '任意',
@@ -1976,6 +1991,19 @@ const T = {
     ce_title: '月结引擎（日本·试用版）',
     ce_subtitle: '工资 · 社保 · 源泉 · 银行对账 · 消费税 → 底稿',
     ce_logout: '退出',
+    ce_stance_title: '判断交给人，核对交给工具。',
+    ce_stance_body:
+      '记账这一步，现在的会计软件和 AI 都能帮上忙。这个工具做的是之后月末的那一遍：把工资、社保、税金、银行余额一项一项对过去，对不上的地方连同理由一起告诉你。',
+    ce_stance_a: '不靠猜来填。不知道的就说不知道，然后问你。',
+    ce_stance_b: '每个数字都能查到出处：法令、费率表、你填的哪一行。',
+    ce_stance_c: '财务数据不出这个浏览器。结好的分录可以带回你在用的会计软件。',
+    ce_stance_tail: '技术是为人服务的。千里同風是这么想的。',
+    ce_yayoi_note:
+      '「弥生会計インポート」是把结账月份的分录写成弥生会计能导入的格式（弥生インポート形式）的文件。在弥生会计的［ファイル］→［インポート］里读取。科目名和弥生里登记的不一样时，导入界面会让你对应。',
+    ce_pv_title: '这样回答会生成的分录',
+    ce_pv_debit: '借方',
+    ce_pv_credit: '贷方',
+    ce_pv_wait: '选好科目、填好金额后，这里会显示分录。',
     ce_privacy: '财务数据只在这个浏览器里处理，不会发送到服务器。页面只下载运行环境和引擎本身。',
     ce_optional: '可选',
     ce_z_tab_t: '表格（Excel・CSV）',
@@ -3063,6 +3091,22 @@ const T = {
     ce_title: 'Month-end Closing Engine (Japan, beta)',
     ce_subtitle: 'Payroll · Social insurance · Withholding · Bank · Consumption tax → Workpaper',
     ce_logout: 'Sign out',
+    ce_stance_title: 'People decide. The tool checks.',
+    ce_stance_body:
+      'Keeping the books is something today’s accounting software and AI already help with. This tool takes the step after that, at month end: it checks payroll, social insurance, taxes and bank balances one by one, and tells you what does not agree, with the reason.',
+    ce_stance_a:
+      'It does not fill gaps by guessing. When it does not know, it says so and asks you.',
+    ce_stance_b:
+      'Every figure can be traced to where it came from: the law, the rate table, the row you entered.',
+    ce_stance_c:
+      'Your financial data never leaves this browser. The closed entries can be taken into the accounting software you use.',
+    ce_stance_tail: 'Technology is there for people. That is what Senridoufuu believes.',
+    ce_yayoi_note:
+      '“弥生会計インポート” is a file of the month’s entries in the format Yayoi Kaikei can import (弥生インポート形式). Load it in Yayoi Kaikei under File → Import. If an account name differs from the one registered in Yayoi, the import screen asks you to match it.',
+    ce_pv_title: 'The entry this answer will make',
+    ce_pv_debit: 'Debit',
+    ce_pv_credit: 'Credit',
+    ce_pv_wait: 'The entry appears here once the account and amount are filled in.',
     ce_privacy:
       'Your financial data is processed only inside this browser and is never sent to a server. The page downloads only the runtime and the engine itself.',
     ce_optional: 'Optional',
