@@ -422,7 +422,7 @@
         <div id="ce-zones" class="ce-zones off">
           <div class="ce-zone" id="ce-z-tab">
             <div class="zh"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6M12 11v8"/></svg><span data-i18n="ce_z_tab_t">表（Excel・CSV）</span></div>
-            <p class="d" data-i18n="ce_z_tab_d">会社の資料と銀行明細。ここにドラッグするか、「ファイルを選ぶ」を押してください。</p>
+            <p class="d" data-i18n="ce_z_tab_d">会社の資料、銀行明細、弥生会計の期首残高データ。ここにドラッグするか、「ファイルを選ぶ」を押してください。</p>
             <div class="ce-need" id="ce-c-book">
               <span class="n" id="ce-book-name" translate="no">会社資料.xlsx</span><span class="ce-st wait" data-i18n="ce_s_wait">未確認</span>
               <a class="ce-link" id="ce-tpl" href="closing-engine/template_ja.xlsx" download="会社資料.xlsx" data-i18n="ce_tpl_xlsx">空のテンプレートをダウンロード</a>
@@ -907,7 +907,7 @@
     function getWorker() {
       if (!worker) {
         // ?v=：线上给这个文件 4 小时缓存。Worker 的加载方式变了（经典→module）时改这个值，免得新页面配上缓存里的旧 Worker
-        worker = new Worker('closing-worker.js?v=5', { type: 'module' });
+        worker = new Worker('closing-worker.js?v=6', { type: 'module' });
         worker.onmessage = onWorkerMessage;
         worker.onerror = (ev) => {
           console.error(ev);
@@ -1453,6 +1453,32 @@
             await writeFile(['bank', name], buf);
             zlog(log, 'ok', r.checked ? 'ce_z_bank_ok' : 'ce_z_bank_unchecked', { name });
             filed++;
+          } else if (r.kind === 'opening') {
+            // 弥生会計的期初余额数据：引擎写进公司资料的「期初余额」表，返回改好的工作簿；这里备份旧的再换上
+            const o = await evAsk('import_opening', [`_inbox/${name}`], [{ path: `_inbox/${name}`, buf: buf.slice(0) }]);
+            const old = files.find((f) => BOOKS.includes(f.path));
+            if (o && o.ok && old) {
+              const bk = [outDir(), names().bak, `${stamp()}_${old.path}`];
+              await writeFile(bk, old.buf);
+              await writeFile([old.path], reportBytes({ b64: o.book }));
+              zlog(log, 'ok', 'ce_z_op_ok', { name, n: o.rows, path: bk.join('/') });
+              if (o.retained) zlog(log, '', 'ce_z_op_retained', { name, amount: Number(o.retained).toLocaleString('ja-JP') });
+              if (o.unknown && o.unknown.length) zlog(log, 'ng', 'ce_z_op_names', { name, list: o.unknown.join('・') });
+              filed++;
+              files = await readDir(dirHandle, '');
+            } else {
+              const why = ['no_book', 'exists', 'start', 'file', 'book', 'yaml'].includes(o && o.error) ? o.error : '';
+              if (!why) zlog(log, 'ng', 'ce_z_err', { name, msg: (o && o.error) || '' });
+              else
+                zlog(log, 'ng', `ce_z_op_${why}`, {
+                  name,
+                  n: o.n,
+                  day: o.day,
+                  start: o.start,
+                  line: o.lines && o.lines[0] && o.lines[0].line,
+                  msg: o.text,
+                });
+            }
           } else if (r.kind === 'bank_other') {
             zlog(log, 'ng', 'ce_z_bank_other', {
               name,
@@ -2817,6 +2843,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=e6b010f220"></script>
+  <script src="../../js/main.js?v=12ed3299a7"></script>
 </body>
 </html>

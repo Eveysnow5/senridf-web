@@ -149,6 +149,7 @@ const EVIDENCE_OPS = new Set([
   'listing',
   'classify',
   'preview',
+  'import_opening',
 ]);
 const EVIDENCE = `
 import json, jpclose.webev as _w

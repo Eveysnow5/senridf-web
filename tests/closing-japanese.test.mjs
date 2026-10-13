@@ -198,3 +198,30 @@ test('弥生导入文件按字节写出；分录预览走引擎；定位表述�
   const worker = readFileSync(path.join(ROOT, 'solutions', 'demo', 'closing-worker.js'), 'utf8');
   assert.match(worker, /EVIDENCE_OPS = new Set\(\[[^\]]*'preview'/);
 });
+
+// 2026-10-14：弥生会計的期初余额数据也能放进来（和导出是同一个格式）
+test('弥生的期初余额数据：页面交给引擎写进工作簿，九种提示三语齐全', () => {
+  const ZH = block('zh');
+  const keys = [
+    'ok',
+    'retained',
+    'names',
+    'no_book',
+    'exists',
+    'start',
+    'file',
+    'book',
+    'yaml',
+  ].map((k) => `ce_z_op_${k}`);
+  for (const k of keys)
+    for (const [lang, t] of Object.entries({ ja: JA, zh: ZH, en: EN }))
+      assert.ok(k in t, `${lang} 缺 ${k}`);
+  assert.match(HTML, /evAsk\('import_opening', \[`_inbox\/\$\{name\}`\]/);
+  // 换工作簿之前先备份旧的
+  assert.match(
+    HTML,
+    /await writeFile\(bk, old\.buf\);\s+await writeFile\(\[old\.path\], reportBytes\(\{ b64: o\.book \}\)\)/,
+  );
+  const worker = readFileSync(path.join(ROOT, 'solutions', 'demo', 'closing-worker.js'), 'utf8');
+  assert.match(worker, /EVIDENCE_OPS = new Set\(\[[^\]]*'import_opening'/);
+});

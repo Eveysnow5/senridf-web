@@ -954,7 +954,8 @@ const T = {
       '財務データはこのブラウザの中だけで処理され、サーバーには送信されません。読み込むのは実行環境とエンジン本体だけです。',
     ce_optional: '任意',
     ce_z_tab_t: '表（Excel・CSV）',
-    ce_z_tab_d: '会社の資料と銀行明細。ここにドラッグするか、「ファイルを選ぶ」を押してください。',
+    ce_z_tab_d:
+      '会社の資料、銀行明細、弥生会計の期首残高データ。ここにドラッグするか、「ファイルを選ぶ」を押してください。',
     ce_z_ev_t: '証憑（写真・PDF）',
     ce_z_ev_d:
       '領収書・請求書・納付書など。このパソコンの中で日付・金額・取引先を読み取ります（画像は外に送りません）。',
@@ -969,7 +970,24 @@ const T = {
       '✓ {name} → 銀行明細（bank フォルダ）。会社の資料がまだ無いので、列名は未確認です',
     ce_z_bank_other:
       '✗ {name}：銀行明細のようですが、見出し（{found}）が、会社の資料の「銀行口座」シートに登録した列名（{want}）と違います。登録の列名をファイルの書き方に合わせてから、もう一度入れてください',
-    ce_z_unknown: '✗ {name}：会社の資料でも銀行明細でもないため、保存していません',
+    ce_z_unknown:
+      '✗ {name}：会社の資料でも、銀行明細でも、弥生会計の期首残高データでもないため、保存していません',
+    ce_z_op_ok:
+      '✓ {name} → 会社の資料の「期首残高」シートに {n} 行を入れました（前のファイル：{path}）',
+    ce_z_op_retained:
+      '{name}：繰越利益剰余金 {amount} 円は、貸借の差額から入れました（弥生会計の［貸借調整］と同じ計算です）。前期の貸借対照表と合っているか確かめてください',
+    ce_z_op_names:
+      '{name}：科目表に無い科目名があります（{list}）。「期首残高」シートで名前を直すか、「追加科目」シートに足してください',
+    ce_z_op_no_book:
+      '✗ {name}：弥生会計の期首残高データですが、会社の資料がまだありません。先に会社の資料（記帳を始める月・決算月）を入れてください',
+    ce_z_op_exists:
+      '✗ {name}：期首残高はもう {n} 行入っています。上書きはしません。入れ直すときは、会社の資料の「期首残高」シートを空にしてから、もう一度入れてください',
+    ce_z_op_start:
+      '✗ {name}：このファイルの期首日（{day}）が、会社の資料の「記帳を始める月」（{start}）の初日ではありません。どちらかを直してください',
+    ce_z_op_file:
+      '✗ {name}：{line} 行目が弥生会計の期首残高データの形ではありません（期首日・勘定科目名・貸借区分・補助科目名・部門・前期繰越残高の順です）',
+    ce_z_op_book: '✗ {name}：会社の資料に直すところがあるため、取り込めません（{msg}）',
+    ce_z_op_yaml: '✗ {name}：この会社フォルダは YAML で入力しているため、取り込めません',
     ce_z_err: '✗ {name}：読めませんでした（{msg}）',
     ce_z_skip: '✗ {name}：この種類のファイルは扱えません（表は Excel・CSV、証憑は画像・PDF）',
     ce_ev_no_template:
@@ -2011,7 +2029,7 @@ const T = {
     ce_privacy: '财务数据只在这个浏览器里处理，不会发送到服务器。页面只下载运行环境和引擎本身。',
     ce_optional: '可选',
     ce_z_tab_t: '表格（Excel・CSV）',
-    ce_z_tab_d: '公司资料和银行流水。拖到这里，或点「选择文件」。',
+    ce_z_tab_d: '公司资料、银行流水、弥生会計的期初余额数据。拖到这里，或点「选择文件」。',
     ce_z_ev_t: '凭证（照片・PDF）',
     ce_z_ev_d: '收据、请求书、纳付书等。在这台电脑里读出日期・金额・交易方，图片不会上传。',
     ce_z_pick: '选择文件',
@@ -2023,7 +2041,22 @@ const T = {
     ce_z_bank_unchecked: '✓ {name} → 银行流水（bank 文件夹）。还没有公司资料，列名尚未核对',
     ce_z_bank_other:
       '✗ {name}：看起来是银行流水，但表头（{found}）和公司资料「银行账户」表里登记的列名（{want}）不一样。请把登记的列名改成文件里的写法，再放一次',
-    ce_z_unknown: '✗ {name}：不是公司资料，也不是银行流水，没有保存',
+    ce_z_unknown: '✗ {name}：不是公司资料、银行流水，也不是弥生会計的期初余额数据，没有保存',
+    ce_z_op_ok: '✓ {name} → 已把 {n} 行写进公司资料的「期初余额」表（原文件备份：{path}）',
+    ce_z_op_retained:
+      '{name}：繰越利益剰余金 {amount} 日元是按借贷差额填的（和弥生会計的［貸借調整］算法相同）。请对照上期的资产负债表确认',
+    ce_z_op_names:
+      '{name}：有科目表里没有的科目名（{list}）。请在「期初余额」表里改名，或在「追加科目」表里登记',
+    ce_z_op_no_book:
+      '✗ {name}：是弥生会計的期初余额数据，但还没有公司资料。请先放入公司资料（开始记账的月份・决算月）',
+    ce_z_op_exists:
+      '✗ {name}：期初余额已经有 {n} 行，不覆盖。要重新导入，请先清空公司资料的「期初余额」表再放一次',
+    ce_z_op_start:
+      '✗ {name}：文件里的期首日（{day}）不是公司资料里「开始记账的月份」（{start}）的第一天。请改其中一个',
+    ce_z_op_file:
+      '✗ {name}：第 {line} 行不是弥生会計期初余额数据的格式（依次是期首日・勘定科目名・貸借区分・補助科目名・部門・前期繰越残高）',
+    ce_z_op_book: '✗ {name}：公司资料里有需要改的地方，没有导入（{msg}）',
+    ce_z_op_yaml: '✗ {name}：这个公司文件夹是用 YAML 录入的，不能导入',
     ce_z_err: '✗ {name}：没能读取（{msg}）',
     ce_z_skip: '✗ {name}：这种文件处理不了（表格要 Excel・CSV，凭证要图片・PDF）',
     ce_ev_no_template: '这一类单据还不能自动读取。请点文件名打开原件，对照着填交易日・金额・交易方',
@@ -3117,7 +3150,8 @@ const T = {
       'Your financial data is processed only inside this browser and is never sent to a server. The page downloads only the runtime and the engine itself.',
     ce_optional: 'Optional',
     ce_z_tab_t: 'Tables (Excel, CSV)',
-    ce_z_tab_d: 'Company workbook and bank statements. Drag them here, or press “Choose files”.',
+    ce_z_tab_d:
+      'Company workbook, bank statements and Yayoi Kaikei opening-balance data. Drag them here, or press “Choose files”.',
     ce_z_ev_t: 'Evidence (photos, PDFs)',
     ce_z_ev_d:
       'Receipts, invoices, tax slips. Date, amount and party are read on this computer; images are never uploaded.',
@@ -3131,7 +3165,25 @@ const T = {
       '✓ {name} → bank statements (“bank” folder). No company workbook yet, so the column names are unchecked',
     ce_z_bank_other:
       '✗ {name}: this looks like a bank statement, but its headings ({found}) differ from the column names registered on the “Bank accounts” sheet of the company workbook ({want}). Change the registered names to match the file, then add it again',
-    ce_z_unknown: '✗ {name}: neither a company workbook nor a bank statement, so it was not saved',
+    ce_z_unknown:
+      '✗ {name}: not a company workbook, a bank statement or Yayoi Kaikei opening-balance data, so it was not saved',
+    ce_z_op_ok:
+      '✓ {name} → {n} rows written to the “Opening balances” sheet of the company workbook (previous file: {path})',
+    ce_z_op_retained:
+      '{name}: retained earnings (繰越利益剰余金) of {amount} yen were filled in as the difference between debits and credits, the same calculation as 貸借調整 in Yayoi Kaikei. Check the figure against last year’s balance sheet',
+    ce_z_op_names:
+      '{name}: some account names are not in the chart of accounts ({list}). Rename them on the “Opening balances” sheet or add them on the “Extra accounts” sheet',
+    ce_z_op_no_book:
+      '✗ {name}: this is Yayoi Kaikei opening-balance data, but there is no company workbook yet. Add the company workbook first (it holds the month the books begin and the fiscal year end)',
+    ce_z_op_exists:
+      '✗ {name}: there are already {n} opening-balance rows, and they are not overwritten. To import again, clear the “Opening balances” sheet of the company workbook and add the file once more',
+    ce_z_op_start:
+      '✗ {name}: the first day in this file ({day}) is not the first day of the month the books begin in the company workbook ({start}). Correct one of them',
+    ce_z_op_file:
+      '✗ {name}: line {line} is not in the Yayoi Kaikei opening-balance format (期首日, 勘定科目名, 貸借区分, 補助科目名, 部門, 前期繰越残高, in that order)',
+    ce_z_op_book:
+      '✗ {name}: the company workbook has something to correct, so nothing was imported ({msg})',
+    ce_z_op_yaml: '✗ {name}: this company folder is kept in YAML, so the file cannot be imported',
     ce_z_err: '✗ {name}: could not be read ({msg})',
     ce_z_skip:
       '✗ {name}: this file type is not supported (tables: Excel or CSV; evidence: images or PDF)',
