@@ -143,6 +143,12 @@ import json, jpclose.web
 json.dumps(jpclose.web.month_workpaper(ce_args[0], ce_args[1], ce_args[2]), ensure_ascii=False, default=str)
 `;
 
+// 查分录（跨年度）：用上一次 run 的账和 closed/ 的确定文件
+const SEARCH = `
+import json, jpclose.web
+json.dumps(jpclose.web.search(*ce_args), ensure_ascii=False, default=str)
+`;
+
 // 年度确定：用上一次 run 留下的账（jpclose.web._LAST）做确定文件，页面写进 closed/
 const FINALIZE = `
 import json, jpclose.web
@@ -161,6 +167,8 @@ const EVIDENCE_OPS = new Set([
   'classify',
   'preview',
   'import_opening',
+  'import_journal',
+  'add_rules',
 ]);
 const EVIDENCE = `
 import json, jpclose.webev as _w
@@ -232,6 +240,8 @@ self.onmessage = async (e) => {
         transfer.push(book.buffer);
       }
       post({ type: 'result', result: r, xlsx: bytes, book }, transfer);
+    } else if (m.cmd === 'search') {
+      post({ type: 'search', result: callPy(p, m.args || [], SEARCH) });
     } else if (m.cmd === 'finalize') {
       post({ type: 'finalize', result: callPy(p, [m.fy_end, m.by, m.at], FINALIZE) });
     } else if (m.cmd === 'workpaper') {

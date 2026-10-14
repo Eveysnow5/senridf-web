@@ -255,6 +255,18 @@
     .ce-pv td.s { color:#6b7280;white-space:nowrap; }
     .ce-pv .w { color:#6b7280; }
     .ce-cy { margin-top:14px;padding-top:10px;border-top:1px solid #e5e7eb; }
+    .ce-learn { margin-top:10px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa; }
+    .ce-learn li { list-style:none;margin:3px 0; }
+    .ce-learn ul { padding-left:0;margin:6px 0; }
+    .ce-learn .ex { color:#6b7280;font-size:12px; }
+    .ce-clients { margin:8px 0 4px; }
+    .ce-clients li { list-style:none;margin:4px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap; }
+    .ce-clients ul { padding-left:0;margin:4px 0; }
+    .ce-sr-form { display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin:6px 0; }
+    .ce-sr-wrap { overflow-x:auto; }
+    .ce-sr td.num { text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums; }
+    .ce-sr td { padding:3px 6px;border-bottom:1px solid #f0f0f0;font-size:12.5px; }
+    .ce-sr .cl { color:#6b7280;font-size:11.5px; }
     .ce-yayoi { font-size:12px;color:#6b7280;line-height:1.7;margin-top:6px; }
     .ce-rp { font-size:12.5px;color:#374151;line-height:1.7;padding:2px 0 6px; }
     .ce-rp p { margin:6px 0 2px; }
@@ -411,6 +423,12 @@
             </button>
           </div>
         </div>
+        <div id="ce-clients" class="ce-clients hidden">
+          <h3 class="ce-h3" data-i18n="ce_cl_h">最近の会社</h3>
+          <ul id="ce-cl-list"></ul>
+          <p class="ce-hint" data-i18n="ce_cl_d">この一覧はこのブラウザだけに保存されます（フォルダの中身は保存しません）。開くたびに、ブラウザが読み書きの許可を確認します。</p>
+          <ul id="ce-cl-log" class="ce-zlog" aria-live="polite"></ul>
+        </div>
         <div class="ce-row">
           <button type="button" id="ce-open" class="ce-btn hidden" data-i18n="ce_open_folder">作業フォルダを選ぶ</button>
           <label class="ce-btn2" id="ce-pick" for="ce-folder" data-i18n="ce_pick_folder">作業フォルダを選ぶ</label>
@@ -423,7 +441,7 @@
         <div id="ce-zones" class="ce-zones off">
           <div class="ce-zone" id="ce-z-tab">
             <div class="zh"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6M12 11v8"/></svg><span data-i18n="ce_z_tab_t">表（Excel・CSV）</span></div>
-            <p class="d" data-i18n="ce_z_tab_d">会社の資料、銀行明細、弥生会計の期首残高データ。ここにドラッグするか、「ファイルを選ぶ」を押してください。</p>
+            <p class="d" data-i18n="ce_z_tab_d">会社の資料、銀行明細、弥生会計の期首残高・仕訳。ここにドラッグするか、「ファイルを選ぶ」を押してください。</p>
             <div class="ce-need" id="ce-c-book">
               <span class="n" id="ce-book-name" translate="no">会社資料.xlsx</span><span class="ce-st wait" data-i18n="ce_s_wait">未確認</span>
               <a class="ce-link" id="ce-tpl" href="closing-engine/template_ja.xlsx" download="会社資料.xlsx" data-i18n="ce_tpl_xlsx">空のテンプレートをダウンロード</a>
@@ -436,6 +454,20 @@
             <label class="ce-btn2" for="ce-in-tab" data-i18n="ce_z_pick">ファイルを選ぶ</label>
             <input type="file" id="ce-in-tab" multiple accept=".xlsx,.xlsm,.csv" class="hidden" data-i18n-title="ce_z_tab_t" />
             <ul id="ce-z-tab-log" class="ce-zlog" aria-live="polite"></ul>
+            <div id="ce-learn" class="ce-learn hidden">
+              <h3 class="ce-h3" data-i18n="ce_lr_h">弥生の仕訳から見つけた銀行ルールの候補</h3>
+              <p id="ce-lr-sum" class="ce-hint"></p>
+              <p class="ce-hint" data-i18n="ce_lr_d">候補は候補です。会社の資料に入れるのは、チェックを付けたものだけです。給与・社会保険・税金の支払は、締めが計算から照合するので候補にしていません。</p>
+              <ul id="ce-lr-list"></ul>
+              <div id="ce-lr-split" class="ce-hint"></div>
+              <div id="ce-lr-unknown" class="ce-hint"></div>
+              <div class="ce-row">
+                <label class="ce-hint" for="ce-lr-by" data-i18n="ce_lr_by">判断者</label>
+                <input id="ce-lr-by" class="ce-input" type="text" autocomplete="name" />
+                <button type="button" id="ce-lr-go" class="ce-btn2" data-i18n="ce_lr_go">選んだルールを会社の資料に入れる</button>
+              </div>
+              <ul id="ce-lr-log" class="ce-zlog" aria-live="polite"></ul>
+            </div>
           </div>
           <div class="ce-zone" id="ce-z-ev">
             <div class="zh"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg><span data-i18n="ce_z_ev_t">証憑（写真・PDF）</span><span class="ce-opt" data-i18n="ce_optional">任意</span></div>
@@ -585,6 +617,23 @@
             </table>
             <p id="ce-pl-settle-note" class="ce-hint hidden" data-i18n="ce_pl_settle_note">決算整理の仕訳は、決算月の「今月」に含めず別の欄に出しています。「期首から」には含みます。</p>
           </div>
+        </div>
+
+        <div class="ce-card" id="ce-sr-card">
+          <h2 class="ce-h3" data-i18n="ce_sr_h">仕訳を探す（年度をまたいで）</h2>
+          <p class="ce-hint" data-i18n="ce_sr_d">確定した年度と、いま締めた期間の仕訳から探します。科目を入れると、その科目の元帳として残高も出します。</p>
+          <div class="ce-sr-form">
+            <label class="ce-hint"><span data-i18n="ce_sr_acc">科目</span> <input id="ce-sr-acc" class="ce-input" type="text" list="ce-sr-accounts" autocomplete="off" /></label>
+            <datalist id="ce-sr-accounts"></datalist>
+            <label class="ce-hint"><span data-i18n="ce_sr_sub">補助</span> <input id="ce-sr-sub" class="ce-input" type="text" autocomplete="off" /></label>
+            <label class="ce-hint"><span data-i18n="ce_sr_text">摘要などの文字</span> <input id="ce-sr-text" class="ce-input" type="text" autocomplete="off" /></label>
+            <label class="ce-hint"><span data-i18n="ce_sr_from">日付：から</span> <input id="ce-sr-from" class="ce-input" type="date" /></label>
+            <label class="ce-hint"><span data-i18n="ce_sr_to">まで</span> <input id="ce-sr-to" class="ce-input" type="date" /></label>
+            <label class="ce-hint"><span data-i18n="ce_sr_amount">金額</span> <input id="ce-sr-amount" class="ce-input" type="number" min="0" step="1" /></label>
+            <button type="button" id="ce-sr-go" class="ce-btn2" data-i18n="ce_sr_go">探す</button>
+          </div>
+          <p id="ce-sr-msg" class="ce-hint" aria-live="polite"></p>
+          <div class="ce-sr-wrap"><table class="ce-sr"><tbody id="ce-sr-rows"></tbody></table></div>
         </div>
 
         <div class="ce-card">
@@ -1178,17 +1227,111 @@
       $('ce-open-hint').classList.remove('hidden');
       $('ce-pick').classList.add('hidden');
       $('ce-open').addEventListener('click', async () => {
+        let h;
         try {
-          dirHandle = await window.showDirectoryPicker({ mode: 'readwrite', id: 'ce-company' });
+          h = await window.showDirectoryPicker({ mode: 'readwrite', id: 'ce-company' });
         } catch (e) {
           if (e.name !== 'AbortError') console.error(e);
           return;
         }
-        files = await readDir(dirHandle, '');
-        window.sdfSetText($('ce-folder-info'), 'ce_fs_connected', { name: dirHandle.name, n: files.length });
-        afterFiles();
-        evConnected();
+        await connectFolder(h);
       });
+      renderClients();
+    }
+    async function connectFolder(h) {
+      dirHandle = h;
+      files = await readDir(dirHandle, '');
+      window.sdfSetText($('ce-folder-info'), 'ce_fs_connected', { name: dirHandle.name, n: files.length });
+      saveClient({});
+      afterFiles();
+      evConnected();
+    }
+
+    // ── 客户列表（税理士一个人管很多家）：记住打开过的文件夹（句柄存在这个浏览器的 IndexedDB），
+    //    显示各家结到哪个月、还有几件要处理。只存句柄和这几项摘要，不存文件夹里的内容
+    function clientsDb() {
+      return new Promise((resolve, reject) => {
+        let req;
+        try {
+          req = indexedDB.open('ce-clients', 1);
+        } catch (e) {
+          return reject(e);
+        }
+        req.onupgradeneeded = () => req.result.createObjectStore('clients', { keyPath: 'id' });
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function clientsTx(mode, fn) {
+      const db = await clientsDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('clients', mode);
+        const out = fn(tx.objectStore('clients'));
+        tx.oncomplete = () => resolve(out && out.result !== undefined ? out.result : undefined);
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+    async function listClients() {
+      try {
+        return (await clientsTx('readonly', (st) => st.getAll())) || [];
+      } catch (e) {
+        console.error(e);
+        return [];
+      }
+    }
+    // 同一个文件夹只记一条（isSameEntry 判断，不靠名字）；extra 是要更新的摘要（公司名・结到哪个月・件数）
+    async function saveClient(extra) {
+      if (!dirHandle) return;
+      try {
+        const all = await listClients();
+        let rec = null;
+        for (const c of all) {
+          if (c.handle && (await c.handle.isSameEntry(dirHandle).catch(() => false))) rec = c;
+        }
+        rec = { ...(rec || { id: `${Date.now()}` }), handle: dirHandle, folder: dirHandle.name, at: Date.now(), ...extra };
+        await clientsTx('readwrite', (st) => st.put(rec));
+        renderClients();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    async function renderClients() {
+      const box = $('ce-clients');
+      const list = $('ce-cl-list');
+      const all = (await listClients()).sort((a, b) => b.at - a.at);
+      box.classList.toggle('hidden', !all.length);
+      list.replaceChildren();
+      for (const c of all) {
+        const li = el('li');
+        const name = c.company || c.folder;
+        const t = el('span');
+        if (c.lastMonth) window.sdfSetText(t, 'ce_cl_item', { name, m: c.lastMonth, n: c.open ?? 0 });
+        else window.sdfSetText(t, 'ce_cl_never', { name });
+        const go = el('button', 'ce-btn2', 'ce_cl_open');
+        go.type = 'button';
+        go.addEventListener('click', () => openClient(c, name));
+        const rm = el('button', 'ce-link', 'ce_cl_forget');
+        rm.type = 'button';
+        rm.addEventListener('click', async () => {
+          await clientsTx('readwrite', (st) => st.delete(c.id)).catch((e) => console.error(e));
+          renderClients();
+        });
+        li.append(t, go, rm);
+        list.appendChild(li);
+      }
+    }
+    async function openClient(c, name) {
+      const log = 'ce-cl-log';
+      $(log).replaceChildren();
+      try {
+        let perm = await c.handle.queryPermission({ mode: 'readwrite' });
+        if (perm !== 'granted') perm = await c.handle.requestPermission({ mode: 'readwrite' });
+        if (perm !== 'granted') return void zlog(log, 'ng', 'ce_cl_denied', { name });
+        await connectFolder(c.handle);
+      } catch (e) {
+        console.error(e);
+        zlog(log, 'ng', e && e.name === 'NotFoundError' ? 'ce_cl_gone' : 'ce_cl_denied', { name });
+      }
     }
     // ── 1b. 证凭（照片・PDF）────────────────────────────────────────────────
     // 电子帐簿保存法：用索引簿（交易日・金额・交易方）检索；原件原样放进 evidence/<导入年月>/，不改名、不移动。
@@ -1502,6 +1645,14 @@
                   msg: o.text,
                 });
             }
+          } else if (r.kind === 'journal') {
+            // 弥生的分录：不放进文件夹。引擎和同期的银行流水配对，给出银行规则的候选（写进公司资料要用户勾选）
+            const j = await evAsk('import_journal', [`_inbox/${name}`], [{ path: `_inbox/${name}`, buf: buf.slice(0) }]);
+            if (j && j.ok) renderLearn(name, j);
+            else if (j && ['no_bank', 'no_book', 'file'].includes(j.error))
+              zlog(log, 'ng', `ce_lr_err_${j.error}`, { name, line: j.lines && j.lines[0] && j.lines[0].line });
+            else if (j && ['book', 'yaml'].includes(j.error)) zlog(log, 'ng', `ce_z_op_${j.error}`, { name, msg: j.text });
+            else zlog(log, 'ng', 'ce_z_err', { name, msg: (j && j.error) || '' });
           } else if (r.kind === 'bank_other') {
             zlog(log, 'ng', 'ce_z_bank_other', {
               name,
@@ -1523,6 +1674,86 @@
         afterFiles();
       }
     }
+    // 弥生分录 → 银行规则的候选。勾选后由引擎写进公司资料的「银行规则」表（先备份旧工作簿）
+    let learnRules = [];
+    const txt = (tag, cls, text) => {
+      const e = el(tag, cls);
+      e.textContent = text;
+      return e;
+    };
+    function renderLearn(name, j) {
+      learnRules = j.rules || [];
+      $('ce-learn').classList.remove('hidden');
+      $('ce-lr-log').replaceChildren();
+      window.sdfSetText($('ce-lr-sum'), 'ce_lr_sum', {
+        name,
+        v: j.vouchers,
+        from: (j.period || [])[0] || '',
+        to: (j.period || [])[1] || '',
+        p: j.paired,
+      });
+      const list = $('ce-lr-list');
+      list.replaceChildren();
+      if (!learnRules.length) list.appendChild(el('li', 'ce-hint', 'ce_lr_none'));
+      learnRules.forEach((c, i) => {
+        const li = el('li');
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.id = `ce-lr-${i}`;
+        box.checked = c.known;
+        box.disabled = !c.known;
+        const lab = document.createElement('label');
+        lab.htmlFor = box.id;
+        const acc = c.sub ? `${c.account}（${c.sub}）` : c.account;
+        const tax = c.tax && c.tax !== '対象外' ? ` ${c.tax}` : '';
+        lab.textContent = ` ${c.desc_contains}（${window.sdfT(c.direction === 'in' ? 'ce_lr_inn' : 'ce_lr_out')}）→ ${acc}${tax}・`;
+        const n = el('span');
+        window.sdfSetText(n, 'ce_lr_n', { n: c.n });
+        lab.appendChild(n);
+        if (!c.known) lab.appendChild(el('span', 'ex', 'ce_lr_unknown_mark'));
+        lab.title = (c.examples || []).join('\n');
+        li.append(box, lab);
+        list.appendChild(li);
+      });
+      const split = $('ce-lr-split');
+      split.replaceChildren();
+      if ((j.split || []).length) {
+        split.appendChild(el('p', '', 'ce_lr_split_h'));
+        for (const x of j.split) split.appendChild(txt('p', 'ex', `${x.desc_contains}：${x.accounts.join('・')}`));
+      }
+      const unk = $('ce-lr-unknown');
+      unk.replaceChildren();
+      if ((j.unknown || []).length) {
+        unk.appendChild(el('p', '', 'ce_lr_unknown_h'));
+        unk.appendChild(txt('p', 'ex', j.unknown.map((u) => `${u.account}（${u.n}）`).join('・')));
+      }
+      $('ce-lr-go').disabled = !learnRules.some((c) => c.known);
+    }
+    $('ce-lr-go').addEventListener('click', async () => {
+      const log = 'ce-lr-log';
+      $(log).replaceChildren();
+      const by = $('ce-lr-by').value.trim();
+      if (!by) return void zlog(log, 'ng', 'ce_lr_err_by');
+      const pick = learnRules.filter((c, i) => $(`ce-lr-${i}`).checked);
+      if (!pick.length) return void zlog(log, 'ng', 'ce_lr_err_empty');
+      try {
+        const a = await evAsk('add_rules', [pick, by, today()]);
+        const old = files.find((f) => BOOKS.includes(f.path));
+        if (a && a.ok && old) {
+          const bk = [outDir(), names().bak, `${stamp()}_${old.path}`];
+          await writeFile(bk, old.buf);
+          await writeFile([old.path], reportBytes({ b64: a.book }));
+          zlog(log, 'ok', 'ce_lr_ok', { n: a.added.length, path: bk.join('/') });
+          $('ce-lr-go').disabled = true;
+          files = await readDir(dirHandle, '');
+          afterFiles();
+        } else if (a && ['by', 'empty'].includes(a.error)) zlog(log, 'ng', `ce_lr_err_${a.error}`);
+        else zlog(log, 'ng', 'ce_z_err', { name: '', msg: (a && a.error) || '' });
+      } catch (e) {
+        console.error(e);
+        zlog(log, 'ng', 'ce_z_err', { name: '', msg: String((e && e.message) || e) });
+      }
+    });
     // 拖进哪个入口都行：按文件类型分给表格或凭证（放错入口不算错）
     function intake(list) {
       if (!dirHandle) return;
@@ -1967,6 +2198,56 @@
       }
     });
 
+    // 查分录（跨年度）：引擎在 Worker 里用上一次结账的账和 closed/ 的确定文件查
+    $('ce-sr-go').addEventListener('click', async () => {
+      const v = (k) => $(`ce-sr-${k}`).value.trim();
+      const msg = $('ce-sr-msg');
+      const body = $('ce-sr-rows');
+      body.replaceChildren();
+      // 空なら '' のまま渡す（null は Pyodide では None ではなく JsNull になり、引擎の int() で落ちる）
+      const amount = v('amount');
+      let r;
+      try {
+        r = (await ask({ cmd: 'search', args: [v('acc'), v('sub'), v('text'), v('from'), v('to'), amount] })).result || {};
+      } catch (e) {
+        console.error(e);
+        r = { ok: false };
+      }
+      if (!r.ok) return void window.sdfSetText(msg, 'ce_sr_err');
+      if (!r.rows.length) return void window.sdfSetText(msg, 'ce_sr_none');
+      window.sdfSetText(msg, 'ce_sr_count', { total: r.total, n: r.rows.length });
+      const ledger = r.rows.some((x) => x.balance !== null && x.balance !== undefined);
+      const head = document.createElement('tr');
+      for (const k of ['date', 'vno', 'narr', 'line', 'dr', 'cr'].concat(ledger ? ['bal'] : [])) {
+        const th = el('th', '', `ce_sr_${k}`);
+        head.appendChild(th);
+      }
+      body.appendChild(head);
+      for (const x of r.rows) {
+        const tr = document.createElement('tr');
+        const cell = (text, cls) => {
+          const td = document.createElement('td');
+          if (cls) td.className = cls;
+          td.textContent = text;
+          tr.appendChild(td);
+          return td;
+        };
+        const d = cell(x.date);
+        if (x.closed) {
+          const c = el('div', 'cl');
+          window.sdfSetText(c, 'ce_sr_closed', { y: x.closed });
+          d.appendChild(c);
+        }
+        cell(x.vno ?? '');
+        cell(x.narration);
+        cell(x.sub ? `${x.account}（${x.sub}）` : x.account);
+        cell(x.debit ? yen(x.debit) : '', 'num');
+        cell(x.credit ? yen(x.credit) : '', 'num');
+        if (ledger) cell(x.balance === null || x.balance === undefined ? '' : yen(x.balance), 'num');
+        body.appendChild(tr);
+      }
+    });
+
     // ── 2. 结账 ──────────────────────────────────────────────────────────────
     function today() {
       const d = new Date();
@@ -2293,6 +2574,12 @@
       renderStatements(r.view);
       renderReportButtons(r);
       renderCloseYear(r);
+      const dl = $('ce-sr-accounts');
+      dl.replaceChildren(...(r.accounts || []).map((a) => Object.assign(document.createElement('option'), { value: a.name })));
+      if (dirHandle) {
+        const last = (r.periods || []).map((p) => p.month).sort().pop() || r.month;
+        saveClient({ company: r.company, lastMonth: last, open: (r.pending || []).filter((x) => x.bucket !== 'info').length });
+      }
       if (switching) {
         renderItems(r);
         return;
@@ -2935,6 +3222,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=6364697f29"></script>
+  <script src="../../js/main.js?v=9d58dbc518"></script>
 </body>
 </html>

@@ -262,3 +262,88 @@ test('决算整理：损益表多一栏，文案三语齐全', () => {
   assert.match(HTML, /const cols = \(m, x, y\) => \(st \? \[m, x, y\] : \[m, y\]\);/);
   assert.match(HTML, /cols\(v\.pl\.net_month, v\.pl\.net_settle, v\.pl\.net_ytd\)/);
 });
+
+// 2026-10-14：弥生的分录 → 银行规则的候选（勾选后写进公司资料）
+test('弥生分录：候选面板三语齐全，写入走引擎、先备份工作簿', () => {
+  const ZH = block('zh');
+  const keys = [
+    'h',
+    'sum',
+    'd',
+    'inn',
+    'out',
+    'n',
+    'none',
+    'split_h',
+    'unknown_h',
+    'unknown_mark',
+    'by',
+    'go',
+    'ok',
+    'err_by',
+    'err_empty',
+    'err_no_bank',
+    'err_no_book',
+    'err_file',
+  ].map((k) => `ce_lr_${k}`);
+  for (const k of keys)
+    for (const [lang, t] of Object.entries({ ja: JA, zh: ZH, en: EN }))
+      assert.ok(k in t, `${lang} 缺 ${k}`);
+  assert.match(HTML, /evAsk\('import_journal', \[`_inbox\/\$\{name\}`\]/);
+  assert.match(HTML, /evAsk\('add_rules', \[pick, by, today\(\)\]\)/);
+  assert.match(
+    HTML,
+    /await writeFile\(bk, old\.buf\);\s+await writeFile\(\[old\.path\], reportBytes\(\{ b64: a\.book \}\)\)/,
+  );
+  const worker = readFileSync(path.join(ROOT, 'solutions', 'demo', 'closing-worker.js'), 'utf8');
+  assert.match(worker, /'import_journal',\s+'add_rules'/);
+});
+
+// 2026-10-14：客户列表（记住打开过的文件夹）
+test('客户列表：文案三语齐全；只存句柄和摘要；同一文件夹按 isSameEntry 只记一条', () => {
+  const ZH = block('zh');
+  for (const k of ['h', 'item', 'never', 'open', 'forget', 'denied', 'gone', 'd'].map(
+    (x) => `ce_cl_${x}`,
+  ))
+    for (const [lang, t] of Object.entries({ ja: JA, zh: ZH, en: EN }))
+      assert.ok(k in t, `${lang} 缺 ${k}`);
+  assert.match(HTML, /indexedDB\.open\('ce-clients', 1\)/);
+  assert.match(HTML, /c\.handle\.isSameEntry\(dirHandle\)/);
+  assert.match(HTML, /c\.handle\.requestPermission\(\{ mode: 'readwrite' \}\)/);
+});
+
+// 2026-10-14：跨年度查分录
+test('查分录：文案三语齐全，查询交给引擎（closed/ 和上一次结账）', () => {
+  const ZH = block('zh');
+  const keys = [
+    'h',
+    'd',
+    'acc',
+    'sub',
+    'text',
+    'from',
+    'to',
+    'amount',
+    'go',
+    'count',
+    'none',
+    'closed',
+    'date',
+    'vno',
+    'narr',
+    'line',
+    'dr',
+    'cr',
+    'bal',
+    'err',
+  ].map((k) => `ce_sr_${k}`);
+  for (const k of keys)
+    for (const [lang, t] of Object.entries({ ja: JA, zh: ZH, en: EN }))
+      assert.ok(k in t, `${lang} 缺 ${k}`);
+  assert.match(
+    HTML,
+    /ask\(\{ cmd: 'search', args: \[v\('acc'\), v\('sub'\), v\('text'\), v\('from'\), v\('to'\), amount\] \}\)/,
+  );
+  const worker = readFileSync(path.join(ROOT, 'solutions', 'demo', 'closing-worker.js'), 'utf8');
+  assert.match(worker, /jpclose\.web\.search\(\*ce_args\)/);
+});
