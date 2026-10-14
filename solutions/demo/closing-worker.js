@@ -143,6 +143,12 @@ import json, jpclose.web
 json.dumps(jpclose.web.month_workpaper(ce_args[0], ce_args[1], ce_args[2]), ensure_ascii=False, default=str)
 `;
 
+// 年度确定：用上一次 run 留下的账（jpclose.web._LAST）做确定文件，页面写进 closed/
+const FINALIZE = `
+import json, jpclose.web
+json.dumps(jpclose.web.finalize_year(ce_args[0], ce_args[1], ce_args[2]), ensure_ascii=False, default=str)
+`;
+
 // 证凭（索引簿）：op 是 jpclose.webev 的函数名，args 跟在公司目录后面。返回改过的索引簿文本（files），
 // 页面写回文件夹。原件（照片・PDF）页面直接写进文件夹，不进这里
 const EVIDENCE_OPS = new Set([
@@ -226,6 +232,8 @@ self.onmessage = async (e) => {
         transfer.push(book.buffer);
       }
       post({ type: 'result', result: r, xlsx: bytes, book }, transfer);
+    } else if (m.cmd === 'finalize') {
+      post({ type: 'finalize', result: callPy(p, [m.fy_end, m.by, m.at], FINALIZE) });
     } else if (m.cmd === 'workpaper') {
       const out = `/tmp/workpaper_${m.month}.xlsx`;
       const r = callPy(p, [m.month, m.lang, out], WORKPAPER);

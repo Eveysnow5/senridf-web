@@ -15,7 +15,17 @@ import { accessDecision } from '../../../api/_lib/accessControl.js';
 import { getUserStatus } from '../../../api/_lib/userStatus.js';
 import { isAdmin } from '../../../../js/shared/admins.js';
 
-export const GATED = /\/jpclose-bundle\.zip$/;
+export const GATED = /\/jpclose-bundle\.zip$/i;
+
+// 判断前先解码：/jpclose%2Dbundle.zip 这样的写法，静态文件服务可能照样给出代码包，原样比对会漏过去。
+// 解不开的（坏的 % 编码）一律当成要拦
+function gatedPath(pathname) {
+  try {
+    return GATED.test(decodeURIComponent(pathname));
+  } catch {
+    return true;
+  }
+}
 
 function deny(code, error) {
   return new Response(JSON.stringify({ error }), {
@@ -28,7 +38,7 @@ function deny(code, error) {
 export function makeGate(deps) {
   return async function onRequest(context) {
     const { request } = context;
-    if (!GATED.test(new URL(request.url).pathname)) return context.next();
+    if (!gatedPath(new URL(request.url).pathname)) return context.next();
     const header = request.headers.get('Authorization') || '';
     const token = header.startsWith('Bearer ') ? header.slice(7).trim() : null;
     if (!token) return deny(401, 'login required');

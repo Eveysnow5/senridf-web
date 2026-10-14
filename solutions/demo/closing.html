@@ -254,6 +254,7 @@
     .ce-pv td.a { text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums; }
     .ce-pv td.s { color:#6b7280;white-space:nowrap; }
     .ce-pv .w { color:#6b7280; }
+    .ce-cy { margin-top:14px;padding-top:10px;border-top:1px solid #e5e7eb; }
     .ce-yayoi { font-size:12px;color:#6b7280;line-height:1.7;margin-top:6px; }
     .ce-rp { font-size:12.5px;color:#374151;line-height:1.7;padding:2px 0 6px; }
     .ce-rp p { margin:6px 0 2px; }
@@ -516,6 +517,7 @@
         <!-- 会计年度（按公司的决算月）：点一下填好起止 -->
         <div id="ce-fy" class="ce-fy hidden"></div>
         <p id="ce-period-note" class="ce-hint hidden" style="margin-top:4px"></p>
+        <p id="ce-closed-note" class="ce-hint hidden" style="margin-top:4px"></p>
         <p id="ce-period-why" class="ce-hint hidden" data-i18n="ce_period_why">帳簿は開始月から順に締めていくので、既定では会計年度の最初の月から「終了」の月まで計算します。結果は月ごとに切り替えて見られます。1 か月だけでよければ「最新の 1 か月だけ」を押してください。</p>
         <div id="ce-progress" class="ce-progress hidden">
           <div class="ce-bar"><div id="ce-bar"></div></div>
@@ -556,6 +558,16 @@
                 <p id="ce-yayoi-open-note" class="ce-yayoi hidden" data-i18n="ce_yayoi_open_note">「弥生会計期首残高」は、記帳を始めた月の期首残高を弥生会計に取り込める形にしたファイルです。弥生会計の［科目残高入力］を開き、［ファイル］→［インポート］で読み込みます。繰越利益剰余金は入れていません（弥生会計では直接入力できない科目です）。取り込んだあと［貸借調整］を押すと弥生会計が計算します。その額がこの道具の期首残高の繰越利益剰余金と同じなら、残高はすべて移っています。</p>
               </div>
               <div id="ce-fs-out" class="ce-hint" style="margin-top:6px"></div>
+              <div id="ce-cy" class="ce-cy hidden">
+                <h3 class="ce-h3" data-i18n="ce_cy_h">年度の確定</h3>
+                <p class="ce-hint" data-i18n="ce_cy_d">申告を済ませた年度を確定します。確定した年度の数字は、そのあと変わりません。誤りが見つかったら、当期に更正の仕訳を入れて直します。確定すると作業フォルダの closed フォルダに確定ファイルができ、次からの締めは次の年度の初めから計算します。</p>
+                <div class="ce-row">
+                  <label class="ce-hint" for="ce-cy-by" data-i18n="ce_cy_by">判断者</label>
+                  <input id="ce-cy-by" class="ce-input" type="text" autocomplete="name" />
+                  <button type="button" id="ce-cy-go" class="ce-btn2"></button>
+                </div>
+                <ul id="ce-cy-log" class="ce-zlog" aria-live="polite"></ul>
+              </div>
             </div>
           </div>
         </div>
@@ -568,9 +580,10 @@
           <div class="ce-card">
             <h2 class="ce-h3" data-i18n="ce_pl_h">損益計算書</h2>
             <table class="ce-fs">
-              <thead><tr><td></td><th data-i18n="ce_pl_month">今月</th><th data-i18n="ce_pl_ytd">期首から</th></tr></thead>
+              <thead><tr><td></td><th data-i18n="ce_pl_month">今月</th><th id="ce-pl-settle-h" class="hidden" data-i18n="ce_pl_settle">決算整理</th><th data-i18n="ce_pl_ytd">期首から</th></tr></thead>
               <tbody id="ce-pl"></tbody>
             </table>
+            <p id="ce-pl-settle-note" class="ce-hint hidden" data-i18n="ce_pl_settle_note">決算整理の仕訳は、決算月の「今月」に含めず別の欄に出しています。「期首から」には含みます。</p>
           </div>
         </div>
 
@@ -983,6 +996,7 @@
         const m = await ask({ cmd: 'precheck', files: copy, month, month_from: from, ui: ui() }, copy.map((f) => f.buf));
         const r = m.result;
         renderPeriod(r.period);
+        renderClosed(r.closed);
         // 「从」还空着：取包含「到」的会计年度的第一个月。「到」是页面自动填的（不是用户选的）时，
         // 期间默认取最新的会计年度（到＝流水的最后一个月）
         const fys = (r.period && r.period.fiscal_years) || [];
@@ -1891,6 +1905,68 @@
       window.sdfSetText(note, 'ce_period_note', { m: period.fy_end_month, start: period.start, last: period.last || '—' });
     }
 
+    // 已确定的年度（closed/FY*.yaml）：结账从其下一年度开始
+    let lastClosed = [];
+    function renderClosed(list) {
+      lastClosed = list || [];
+      const note = $('ce-closed-note');
+      note.classList.toggle('hidden', !(list && list.length));
+      if (!list || !list.length) return;
+      // 一项一项按当前语言拼好（sdfT 只取文案，不填参数）
+      const fill = (t, p) => t.replace(/\{(\w+)\}/g, (_, k) => (k in p ? p[k] : `{${k}}`));
+      const items = list.map((c) => fill(window.sdfT('ce_cy_item'), c)).join('、');
+      window.sdfSetText(note, 'ce_cy_closed', { list: items });
+    }
+    // 年度确定：结到决算月、连着文件夹时显示。引擎用上一次结账的账做确定文件，页面写进 closed/
+    let cyMonth = '';
+    function renderCloseYear(r) {
+      const box = $('ce-cy');
+      const fyEnd = r.period && r.period.fy_end_month;
+      const done = (r.closed || []).some((c) => c.end === r.month);
+      const show = Boolean(dirHandle && fyEnd && Number(r.month.split('-')[1]) === Number(fyEnd) && !done);
+      box.classList.toggle('hidden', !show);
+      if (!show) return;
+      cyMonth = r.month;
+      window.sdfSetText($('ce-cy-go'), 'ce_cy_go', { m: r.month });
+    }
+    $('ce-cy-go').addEventListener('click', async () => {
+      const log = 'ce-cy-log';
+      $(log).replaceChildren();
+      const by = $('ce-cy-by').value.trim();
+      if (!by) {
+        zlog(log, 'ng', 'ce_cy_err_by');
+        return;
+      }
+      try {
+        const m = await ask({ cmd: 'finalize', fy_end: cyMonth, by, at: today() });
+        const r = m.result || {};
+        if (r.ok) {
+          const bytes = new TextEncoder().encode(r.text);
+          await writeFile(r.path.split('/'), bytes);
+          const [y, mm] = r.end.split('-').map(Number);
+          const next = `${mm === 12 ? y + 1 : y}-${String((mm % 12) + 1).padStart(2, '0')}`;
+          zlog(log, 'ok', 'ce_cy_ok', { end: r.end, n: r.vouchers, next });
+          $('ce-cy-go').disabled = true;
+          files = await readDir(dirHandle, '');
+          // 已确定的年度不能再结：期间清空，让页面按「最新的会计年度」重新选（从下一年度开始）
+          $('ce-from').value = '';
+          $('ce-month').value = '';
+          afterFiles();
+        } else if (r.error === 'open') {
+          zlog(log, 'ng', 'ce_cy_err_open', { items: (r.items || []).join('、') });
+        } else if (r.error === 'checks') {
+          zlog(log, 'ng', 'ce_cy_err_checks', { months: (r.months || []).join('、') });
+        } else if (['not_closed', 'already', 'by'].includes(r.error)) {
+          zlog(log, 'ng', `ce_cy_err_${r.error}`);
+        } else {
+          zlog(log, 'ng', 'ce_cy_err_other', { msg: r.error || '' });
+        }
+      } catch (e) {
+        console.error(e);
+        zlog(log, 'ng', 'ce_cy_err_other', { msg: String((e && e.message) || e) });
+      }
+    });
+
     // ── 2. 结账 ──────────────────────────────────────────────────────────────
     function today() {
       const d = new Date();
@@ -2116,6 +2192,7 @@
     }
     setTemplateLink();
     function onLangChange() {
+      renderClosed(lastClosed); // 已确定年度的列表是按语言拼好的，切换时重拼
       setTemplateLink();
       refreshTr();
       if (shown && shown.view) renderStatements(shown.view);
@@ -2215,6 +2292,7 @@
       renderSummary(r);
       renderStatements(r.view);
       renderReportButtons(r);
+      renderCloseYear(r);
       if (switching) {
         renderItems(r);
         return;
@@ -2276,11 +2354,16 @@
       fsRow(bs, 't', 'ce_bs_le', [v.bs.liabilities + v.bs.equity], true);
       const pl = $('ce-pl');
       pl.replaceChildren();
+      // 决算整理（第 13 期）：只在决算月有。有的话在「本月」和「累计」之间多一栏
+      const st = Boolean(v.pl.has_settle);
+      $('ce-pl-settle-h').classList.toggle('hidden', !st);
+      $('ce-pl-settle-note').classList.toggle('hidden', !st);
+      const cols = (m, x, y) => (st ? [m, x, y] : [m, y]);
       for (const sec of v.pl.sections) {
-        fsRow(pl, 'h', `ce_sec_${SEC_KEY[sec.section] || 'other'}`, [sec.total, sec.total_ytd], true);
-        for (const l of sec.lines) fsRow(pl, 'i', l.account, [l.amount, l.ytd], false, l.cn);
+        fsRow(pl, 'h', `ce_sec_${SEC_KEY[sec.section] || 'other'}`, cols(sec.total, sec.total_settle, sec.total_ytd), true);
+        for (const l of sec.lines) fsRow(pl, 'i', l.account, cols(l.amount, l.settle, l.ytd), false, l.cn);
       }
-      fsRow(pl, 't', 'ce_pl_net', [v.pl.net_month, v.pl.net_ytd], true);
+      fsRow(pl, 't', 'ce_pl_net', cols(v.pl.net_month, v.pl.net_settle, v.pl.net_ytd), true);
     }
     function itemList(r) {
       const out = r.pending.map((x, i) => ({ kind: 'p', i, x, bucket: x.bucket }));
@@ -2852,6 +2935,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=12ed3299a7"></script>
+  <script src="../../js/main.js?v=6364697f29"></script>
 </body>
 </html>

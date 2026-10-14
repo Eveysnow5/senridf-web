@@ -77,6 +77,21 @@ test('代码包：管理员放行；审核状态读失败放行（和 /api/* 同
   );
 });
 
+test('换个写法也拦：大小写、% 编码、坏的 % 编码', async () => {
+  for (const name of [
+    'JPCLOSE-BUNDLE.ZIP',
+    'jpclose%2Dbundle.zip',
+    'jpclose-bundle%2Ezip',
+    'jp%ZZclose-bundle.zip',
+  ]) {
+    const { res, calls } = await run(
+      `https://www.senridf.com/solutions/demo/closing-engine/${name}`,
+    );
+    assert.equal(res.status, 401, name);
+    assert.equal(calls.next, 0, name);
+  }
+});
+
 test('只拦代码包：模板、wheel、manifest 照常公开（不验 token）', async () => {
   for (const name of [
     'template_ja.xlsx',

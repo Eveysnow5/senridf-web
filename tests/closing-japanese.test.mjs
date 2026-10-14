@@ -225,3 +225,40 @@ test('弥生的期初余额数据：页面交给引擎写进工作簿，九种�
   const worker = readFileSync(path.join(ROOT, 'solutions', 'demo', 'closing-worker.js'), 'utf8');
   assert.match(worker, /EVIDENCE_OPS = new Set\(\[[^\]]*'import_opening'/);
 });
+
+// 2026-10-14：年度确定（确定后不再改动，错误在当年做更正分录）
+test('年度确定：文案三语齐全，页面把引擎给的确定文件写进文件夹', () => {
+  const ZH = block('zh');
+  const keys = [
+    'h',
+    'd',
+    'by',
+    'go',
+    'ok',
+    'err_open',
+    'err_checks',
+    'err_not_closed',
+    'err_already',
+    'err_by',
+    'err_other',
+    'closed',
+    'item',
+  ].map((k) => `ce_cy_${k}`);
+  for (const k of keys)
+    for (const [lang, t] of Object.entries({ ja: JA, zh: ZH, en: EN }))
+      assert.ok(k in t, `${lang} 缺 ${k}`);
+  assert.match(HTML, /ask\(\{ cmd: 'finalize', fy_end: cyMonth, by, at: today\(\) \}\)/);
+  assert.match(HTML, /await writeFile\(r\.path\.split\('\/'\), bytes\)/);
+  const worker = readFileSync(path.join(ROOT, 'solutions', 'demo', 'closing-worker.js'), 'utf8');
+  assert.match(worker, /jpclose\.web\.finalize_year\(ce_args\[0\], ce_args\[1\], ce_args\[2\]\)/);
+});
+
+// 2026-10-14：决算整理（第 13 期）在损益表里单独一栏
+test('决算整理：损益表多一栏，文案三语齐全', () => {
+  const ZH = block('zh');
+  for (const k of ['ce_pl_settle', 'ce_pl_settle_note'])
+    for (const [lang, t] of Object.entries({ ja: JA, zh: ZH, en: EN }))
+      assert.ok(k in t, `${lang} 缺 ${k}`);
+  assert.match(HTML, /const cols = \(m, x, y\) => \(st \? \[m, x, y\] : \[m, y\]\);/);
+  assert.match(HTML, /cols\(v\.pl\.net_month, v\.pl\.net_settle, v\.pl\.net_ytd\)/);
+});
