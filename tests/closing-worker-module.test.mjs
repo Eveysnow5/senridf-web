@@ -59,7 +59,7 @@ test('加载器是 ES 模块版，文件在、且与清单的 sha256 一致', ()
 test('页面发给 Worker 的请求要排队（等待位只有一个）', () => {
   assert.match(
     html,
-    /function ask\(msg, transfer\) \{\s*const run = \(\) => askOne\(msg, transfer\);/,
+    /function ask\(msg, transfer\) \{\s*const run = async \(\) => askOne\(\{ \.\.\.msg, token: await idToken\(\) \}, transfer\);/,
   );
   assert.match(html, /askChain\.then\(run, run\)/);
 });

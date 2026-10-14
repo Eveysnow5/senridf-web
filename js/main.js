@@ -1094,6 +1094,8 @@ const T = {
     ce_disclaimer:
       '会計担当者の判断を前提とした補助ツールです。法人税等の計算表は概算で、申告書ではありません。',
     ce_status_done: '完了',
+    ce_err_auth:
+      'エンジンを読み込めませんでした。ログインし直してから、もう一度お試しください（エンジンはログインした会員だけが使えます）。',
     ce_err_bundle:
       'エンジンのファイルが壊れているか、更新の途中です。ページを再読み込みしてください。',
     ce_err_load:
@@ -2157,6 +2159,7 @@ const T = {
     ce_p_note: '计算在后台进行，页面不会卡住。请不要关闭本页。',
     ce_disclaimer: '本工具以使用者具备会计判断为前提。法人税等计算表为估算，不是申报书。',
     ce_status_done: '完成',
+    ce_err_auth: '没能加载引擎。请重新登录后再试（引擎只对登录的会员开放）。',
     ce_err_bundle: '引擎文件损坏或正在更新，请刷新页面。',
     ce_err_load: '运行环境加载失败。请检查网络，或广告拦截等浏览器扩展后刷新页面。',
     ce_err_no_company:
@@ -3295,6 +3298,8 @@ const T = {
     ce_disclaimer:
       'This tool assumes an accountant makes the judgments. The corporate tax sheet is an estimate, not a tax return.',
     ce_status_done: 'Done',
+    ce_err_auth:
+      'The engine could not be loaded. Sign in again and retry (the engine is available to signed-in members only).',
     ce_err_bundle: 'The engine files are damaged or mid-update. Please reload the page.',
     ce_err_load:
       'Could not load the runtime. Check your network or browser extensions such as ad blockers, then reload.',

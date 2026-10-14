@@ -925,8 +925,17 @@
     // 「检查资料」和「读证凭索引」同时发出，后一个把前一个的等待位顶掉，检查永远停在「正在检查文件…」
     // （2026-10-11 用真实的文件夹接口实测发现）。
     let askChain = Promise.resolve();
+    // 每个请求都带上登录凭证：引擎的代码包只给登录的会员（服务器端拦，见 functions/solutions/demo/closing-engine/）
+    async function idToken() {
+      try {
+        return auth.currentUser ? await auth.currentUser.getIdToken() : null;
+      } catch (e) {
+        console.error(e);
+        return null;
+      }
+    }
     function ask(msg, transfer) {
-      const run = () => askOne(msg, transfer);
+      const run = async () => askOne({ ...msg, token: await idToken() }, transfer);
       const p = askChain.then(run, run);
       askChain = p.catch(() => {
         // 排队用：失败由调用方处理（p 已返回给它），这里只是让下一个请求照常开始
@@ -956,7 +965,7 @@
     }
 
     function errKey(err) {
-      return { bundle: 'ce_err_bundle', load: 'ce_err_load' }[err.kind] || 'ce_err_runtime';
+      return { bundle: 'ce_err_bundle', load: 'ce_err_load', auth: 'ce_err_auth' }[err.kind] || 'ce_err_runtime';
     }
 
     // ── 1. 选文件夹 → 预检 ───────────────────────────────────────────────────

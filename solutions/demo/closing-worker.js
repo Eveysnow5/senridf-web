@@ -23,6 +23,8 @@ const ROOT = '/opt/jpclose';
 const WORK = '/work/company';
 let py = null;
 let manifest = null;
+// 页面每次请求都带上登录凭证（Firebase ID token）。代码包只给登录的会员（functions/solutions/demo/closing-engine/_middleware.js）
+let idToken = null;
 
 function post(msg, transfer) {
   self.postMessage(msg, transfer || []);
@@ -34,9 +36,12 @@ async function sha256Hex(buf) {
 }
 
 class BundleError extends Error {}
+class AuthError extends Error {}
 
 async function fetchChecked(name, sha) {
-  const r = await fetch(ENGINE + name, { cache: 'no-cache' });
+  const headers = idToken ? { Authorization: `Bearer ${idToken}` } : {};
+  const r = await fetch(ENGINE + name, { cache: 'no-cache', headers });
+  if (r.status === 401 || r.status === 403) throw new AuthError(name);
   if (!r.ok) throw new BundleError(name);
   const buf = await r.arrayBuffer();
   if ((await sha256Hex(buf)) !== sha) throw new BundleError(name);
@@ -160,6 +165,7 @@ json.dumps(_r, ensure_ascii=False, default=str)
 
 self.onmessage = async (e) => {
   const m = e.data || {};
+  if (m.token) idToken = m.token;
   if (m.cmd === 'evidence') {
     try {
       const p = await init();
@@ -235,7 +241,7 @@ self.onmessage = async (e) => {
     console.error(err);
     post({
       type: 'error',
-      kind: err instanceof BundleError ? 'bundle' : 'runtime',
+      kind: err instanceof AuthError ? 'auth' : err instanceof BundleError ? 'bundle' : 'runtime',
       message: String((err && err.message) || err),
     });
   }
