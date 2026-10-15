@@ -118,6 +118,33 @@ test('页面：有助手走快路，助手中途没了不悄悄换成浏览器�
   assert.match(html, /id="ce-ev-helper"/);
 });
 
+test('混合：快路读的页对上模板但验算没过，用浏览器补读；补读的验算通过得更多才换用', () => {
+  const html = fs.readFileSync(
+    fileURLToPath(new URL('../solutions/demo/closing.html', import.meta.url)),
+    'utf8',
+  );
+  const fn = html.slice(
+    html.indexOf('async function readFast('),
+    html.indexOf('async function readFast(') + 1400,
+  );
+  assert.match(fn, /evAsk\('check', \[lines\]\)/);
+  assert.match(fn, /a\.matched > a\.passed/);
+  assert.match(fn, /b\.passed > a\.passed/);
+  const copy = html.indexOf('const copy = retryCopy(pg.canvas)');
+  assert.ok(
+    copy > 0 && copy < html.indexOf('await fastRead(pg.canvas)', copy),
+    '彩色副本要在转灰度之前拿',
+  );
+  const worker = fs.readFileSync(
+    fileURLToPath(new URL('../solutions/demo/closing-worker.js', import.meta.url)),
+    'utf8',
+  );
+  assert.match(worker, /'check',/);
+  const main = fs.readFileSync(fileURLToPath(new URL('../js/main.js', import.meta.url)), 'utf8');
+  for (const k of ['ce_ev_rereading', 'ce_ev_reread_sum'])
+    assert.equal(main.split(`\n    ${k}:`).length - 1, 3, `${k} 三语`);
+});
+
 test('安全策略：connect-src 放行助手的地址', () => {
   const h = fs.readFileSync(fileURLToPath(new URL('../_headers', import.meta.url)), 'utf8');
   const csp = h.match(/^\s*Content-Security-Policy[^:]*:.*?(connect-src[^;]*)/m)[1]; // 头那一行（注释里也有这个词）

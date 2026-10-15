@@ -975,7 +975,7 @@
     function getWorker() {
       if (!worker) {
         // ?v=：线上给这个文件 4 小时缓存。Worker 的加载方式变了（经典→module）时改这个值，免得新页面配上缓存里的旧 Worker
-        worker = new Worker('closing-worker.js?v=7', { type: 'module' });
+        worker = new Worker('closing-worker.js?v=8', { type: 'module' });
         worker.onmessage = onWorkerMessage;
         worker.onerror = (ev) => {
           console.error(ev);
@@ -1521,6 +1521,40 @@
       canvas.width = canvas.height = 0; // 4500 像素的画布占几十 MB，用完马上放掉
       return (await lo.helperRead(blob)).lines;
     }
+    // 补读用的彩色小副本（长边 3000，和浏览器识别原来的读法一样）。要在 fastRead 转灰度之前拿
+    function retryCopy(canvas) {
+      const z = Math.min(1, 3000 / Math.max(canvas.width, canvas.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(canvas.width * z);
+      c.height = Math.round(canvas.height * z);
+      c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height);
+      return c;
+    }
+    // 混合（作者 2026-10-15）：快路读出的页对上了模板、但验算没过 → 用浏览器识别把这一页再读一遍（单核，约 45 秒），
+    // 补读的验算通过得更多才换用。没对上模板的页不补读：通用规则读的单据没有验算，补读了也分不出哪遍对
+    async function readFast(pg, at) {
+      const copy = retryCopy(pg.canvas);
+      try {
+        let lines = await fastRead(pg.canvas);
+        const a = await evAsk('check', [lines]);
+        if (a && a.ok && a.matched > a.passed) {
+          window.sdfSetText($('ce-ev-progress'), 'ce_ev_rereading', at);
+          try {
+            const slow = (await ocr(await createImageBitmap(copy))).lines;
+            const b = await evAsk('check', [slow]);
+            const better = !!(b && b.ok && b.passed > a.passed);
+            if (better) lines = slow;
+            return { lines, reread: true, better };
+          } catch (e) {
+            console.error(e); // 补读失败就用快路的结果（草稿照样留下）
+          }
+          return { lines, reread: true, better: false };
+        }
+        return { lines, reread: false, better: false };
+      } finally {
+        copy.width = copy.height = 0;
+      }
+    }
     // 区分（纸质／电子）的先判。只是草稿：人确认时可以改（对方扫描后用邮件发来的请求书，看着是纸，法律上是电子）。
     // 依据（2026-10-12 用 6 份真实 PDF 量过）：软件生成的 PDF 要么有文字层，要么每页上千条绘图指令（TKC 的
     // 残高試算表：0 字・1 万条）；扫描件每页只有一两张图、十几条指令。
@@ -1592,6 +1626,8 @@
       let fast = useOcr ? await (await loadLocalOcr()).findHelper() : null;
       if (useOcr) window.sdfSetText($('ce-ev-helper'), fast ? 'ce_ev_helper_on' : 'ce_ev_helper_off', { v: fast ? fast.version : '' });
       let lost = false;
+      let rereads = 0; // 验算没过、用浏览器补读的页数
+      let improved = 0; // 其中补读后验算通过更多的
       const t0 = performance.now();
       let pages = 0;
       let dups = 0;
@@ -1634,7 +1670,10 @@
               // 助手中途没了（窗口被关掉）：这一批剩下的扫描页不再识别——不悄悄换成浏览器识别，那会把电脑占住
               if (!lost) {
                 try {
-                  lines = await fastRead(pg.canvas);
+                  const r = await readFast(pg, at);
+                  lines = r.lines;
+                  if (r.reread) rereads++;
+                  if (r.better) improved++;
                 } catch (e) {
                   console.error(e);
                   lost = true;
@@ -1667,6 +1706,7 @@
       const secs = Math.round((performance.now() - t0) / 1000);
       if (!useOcr && saved) window.sdfSetText(prog, 'ce_ev_done_noocr', { f: saved, n: pages, s: secs });
       else if (pages || !dups) window.sdfSetText(prog, 'ce_ev_done', { n: pages, s: secs });
+      if (rereads) zlog('ce-z-ev-log', '', 'ce_ev_reread_sum', { r: rereads, b: improved });
     }
     try {
       const v = localStorage.getItem('ce-ev-ocr');
@@ -3368,6 +3408,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=158a268e48"></script>
+  <script src="../../js/main.js?v=da0ddc57a8"></script>
 </body>
 </html>
