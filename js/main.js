@@ -747,8 +747,15 @@ const T = {
     ce_ev_reading:
       '読み取り中：{name}（{i}/{n} ファイル・{p}/{pn} 頁）——写真は 1 頁 10〜60 秒かかります',
     ce_ev_done: '{n} 頁を読み取りました（{s} 秒）',
-    ce_ev_ocr:
-      '写真・スキャンの文字を読み取る（1 ページ目だけ。1 ページ 10〜60 秒かかり、その間パソコンに負荷がかかります）',
+    ce_ev_ocr: '写真・スキャンの文字を読み取る',
+    ce_ev_helper_idle:
+      'Windows のパソコンでは、本機の読み取り助手を起動しておくと、1 ページ約 1 秒で全ページを読みます（画像はこのパソコンから出ません）。無いときはブラウザの中で 1 ページ目だけ読みます（1 ページ 10〜60 秒、その間パソコンに負荷がかかります）。',
+    ce_ev_helper_on: '本機の読み取り助手（{v}）で読みます：1 ページ約 1 秒、全ページ',
+    ce_ev_helper_off:
+      '本機の読み取り助手が見つからないので、ブラウザの中で 1 ページ目だけ読みます（1 ページ 10〜60 秒、その間パソコンに負荷がかかります）。Windows なら助手を起動すると速くなります',
+    ce_ev_helper_lost:
+      '本機の読み取り助手が途中で止まりました（{msg}）。残りのスキャンの頁は読んでいません（原本は保存済み）。助手を起動し直して、もう一度入れてください',
+    ce_ev_reading_fast: '読み取り中：{name}（{i}/{n} ファイル・{p}/{pn} 頁）',
     ce_ev_ocr_d:
       '書類の種類ごとに検算までできるのは、電気料金・大阪市の水道料金の請求書、年金の保険料の納入告知書、地方税の納付書（QR）、中国の電子発票です。そのほかの書類（領収書・請求書・契約書など）は、書類の言葉から日付・金額・取引先を読みますが、検算はできないので原本と照らしてください。文字の入った PDF は、チェックに関係なくすぐ読みます。',
     ce_ev_pages: '（全 {n} ページ）',
@@ -1943,7 +1950,15 @@ const T = {
     ce_ev_err_read: '{name} 读取失败：{msg}（原件已保存，请在草稿里手动填写）',
     ce_ev_reading: '识别中：{name}（第 {i}/{n} 个文件・第 {p}/{pn} 页）——照片每页约 10–60 秒',
     ce_ev_done: '已识别 {n} 页（{s} 秒）',
-    ce_ev_ocr: '读取照片・扫描件上的文字（只读第 1 页。每页 10〜60 秒，期间电脑负载较高）',
+    ce_ev_ocr: '读取照片・扫描件上的文字',
+    ce_ev_helper_idle:
+      'Windows 电脑上，先打开本机识别助手，每页约 1 秒、全部页都读（图片不离开这台电脑）。没有助手时在浏览器里只读第 1 页（每页 10〜60 秒，期间电脑负载较高）。',
+    ce_ev_helper_on: '用本机识别助手（{v}）识别：每页约 1 秒，全部页',
+    ce_ev_helper_off:
+      '没有找到本机识别助手，在浏览器里只读第 1 页（每页 10〜60 秒，期间电脑负载较高）。Windows 电脑打开助手会快很多',
+    ce_ev_helper_lost:
+      '本机识别助手中途停了（{msg}）。剩下的扫描页没有识别（原件已保存）。请重新打开助手，再放一次',
+    ce_ev_reading_fast: '识别中：{name}（第 {i}/{n} 个文件・第 {p}/{pn} 页）',
     ce_ev_ocr_d:
       '能按单据种类验算的有：电费账单、大阪市水费账单、年金保险费缴纳通知、地方税缴纳书（QR）、中国电子发票。其他单据（收据、请求书、合同等）按单据上的字样读出日期・金额・交易方，但无法验算，请对照原件。带文字的 PDF 不管勾不勾都会马上读取。',
     ce_ev_pages: '（共 {n} 页）',
@@ -3150,8 +3165,15 @@ const T = {
     ce_ev_reading:
       'Reading {name} (file {i}/{n}, page {p}/{pn}) — photos take about 10–60 s per page',
     ce_ev_done: 'Read {n} page(s) ({s} s)',
-    ce_ev_ocr:
-      'Read text in photos and scans (first page only; about 10–60 s per page, with a heavy load on the computer meanwhile)',
+    ce_ev_ocr: 'Read text in photos and scans',
+    ce_ev_helper_idle:
+      'On Windows, start the local reading helper first: it reads every page in about 1 s per page (images never leave this computer). Without it, only the first page is read inside the browser (10–60 s per page, with a heavy load on the computer meanwhile).',
+    ce_ev_helper_on: 'Reading with the local helper ({v}): about 1 s per page, all pages',
+    ce_ev_helper_off:
+      'The local reading helper was not found, so only the first page is read inside the browser (10–60 s per page, with a heavy load on the computer meanwhile). On Windows, starting the helper makes this much faster',
+    ce_ev_helper_lost:
+      'The local reading helper stopped part way ({msg}). The remaining scanned pages were not read (the originals are saved). Start the helper again and add the files once more',
+    ce_ev_reading_fast: 'Reading {name} (file {i}/{n}, page {p}/{pn})',
     ce_ev_ocr_d:
       'Fully cross-checked kinds: electricity bills, Osaka City water bills, pension premium notices, local tax payment slips (QR) and Chinese e-fapiao. Other documents (receipts, invoices, contracts and so on) are read for date, amount and party from their wording, but cannot be cross-checked, so compare them with the original. PDFs with a text layer are read at once either way.',
     ce_ev_pages: '({n} pages)',

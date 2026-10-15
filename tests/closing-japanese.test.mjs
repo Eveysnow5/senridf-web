@@ -364,7 +364,17 @@ test('证凭：一个文件读完再交给引擎；扫描只识别第 1 页；�
     for (const [lang, t] of Object.entries({ ja: JA, zh: ZH, en: EN }))
       assert.ok(k in t, `${lang} 缺 ${k}`);
   assert.match(HTML, /evAsk\('add', \[rel, sha, kind, today\(\), read, basis, total\]\)/);
-  assert.match(HTML, /if \(!ocr \|\| scanned\+\+ >= 1\)/);
+  // 浏览器识别（慢路）只读第 1 页；本机识别助手（快路）最多读 FAST_MAX_PAGES 页
+  assert.match(HTML, /if \(!ocr \|\| scanned\+\+ >= \(fast \? FAST_MAX_PAGES : 1\)\)/);
+  for (const k of [
+    'ce_ev_helper_idle',
+    'ce_ev_helper_on',
+    'ce_ev_helper_off',
+    'ce_ev_helper_lost',
+    'ce_ev_reading_fast',
+  ])
+    for (const [lang, t] of Object.entries({ ja: JA, zh: ZH, en: EN }))
+      assert.ok(k in t, `${lang} 缺 ${k}`);
   assert.match(HTML, /r\.kind === 'workpaper'/);
 });
 

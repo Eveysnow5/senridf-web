@@ -477,8 +477,9 @@
             <input type="file" id="ce-in-ev" multiple accept="image/*,application/pdf" class="hidden" data-i18n-title="ce_z_ev_t" />
             <label class="ce-hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:6px">
               <input type="checkbox" id="ce-ev-ocr" checked style="margin-top:3px" />
-              <span data-i18n="ce_ev_ocr">写真・スキャンの文字を読み取る（1 ページ目だけ。1 ページ 10〜60 秒かかり、その間パソコンに負荷がかかります）</span>
+              <span data-i18n="ce_ev_ocr">写真・スキャンの文字を読み取る</span>
             </label>
+            <p id="ce-ev-helper" class="ce-hint" data-i18n="ce_ev_helper_idle">Windows のパソコンでは、本機の読み取り助手を起動しておくと、1 ページ約 1 秒で全ページを読みます（画像はこのパソコンから出ません）。無いときはブラウザの中で 1 ページ目だけ読みます（1 ページ 10〜60 秒、その間パソコンに負荷がかかります）。</p>
             <p class="ce-hint" data-i18n="ce_ev_ocr_d">書類の種類ごとに検算までできるのは、電気料金・大阪市の水道料金の請求書、年金の保険料の納入告知書、地方税の納付書（QR）、中国の電子発票です。そのほかの書類（領収書・請求書・契約書など）は、書類の言葉から日付・金額・取引先を読みますが、検算はできないので原本と照らしてください。文字の入った PDF は、チェックに関係なくすぐ読みます。</p>
             <p id="ce-ev-progress" class="ce-status" aria-live="polite"></p>
             <ul id="ce-z-ev-log" class="ce-zlog" aria-live="polite"></ul>
@@ -1458,9 +1459,15 @@
         .sort((a, b) => b[0] - a[0])
         .map(([, its]) => its.sort((a, b) => a.transform[4] - b.transform[4]).map((x) => x.str).join(' '));
     }
-    // 识别（OCR）很慢、很占电脑：扫描页只识别第 1 页（能自动读的单据信息都在第 1 页），而且可以整个关掉（ocr＝false）。
-    // 带文字层的页不识别、直接读，照常全读
-    async function* pagesOf(file, buf, ocr = true) {
+    // 识别（OCR）有两条路：
+    //   快路＝本机识别助手（Windows 自带的识别，closing-localocr.mjs）：一页约 1 秒，扫描页全读（最多 FAST_MAX_PAGES 页）
+    //   慢路＝浏览器里识别（closing-ocr-worker.js）：一页 30–60 秒、很占电脑，扫描页只识别第 1 页（能自动读的单据信息都在第 1 页）
+    // 可以整个关掉（ocr＝false）。带文字层的页不识别、直接读，照常全读
+    const FAST_MAX_PAGES = 30;
+    let localOcr = null;
+    const loadLocalOcr = async () => (localOcr ||= await import('./closing-localocr.mjs?v=1'));
+    async function* pagesOf(file, buf, ocr = true, fast = false) {
+      const longSide = fast ? (await loadLocalOcr()).LONG_SIDE : 3000;
       if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
         const lib = await loadPdfjs();
         const doc = await lib.getDocument({ data: new Uint8Array(buf.slice(0)), ...PDF_OPTS }).promise;
@@ -1472,23 +1479,47 @@
             yield { page: i, n: doc.numPages, lines };
             continue;
           }
-          if (!ocr || scanned++ >= 1) {
+          if (!ocr || scanned++ >= (fast ? FAST_MAX_PAGES : 1)) {
             yield { page: i, n: doc.numPages, skipped: true };
             continue;
           }
           const vp0 = page.getViewport({ scale: 1 });
-          const vp = page.getViewport({ scale: Math.min(4, 3000 / Math.max(vp0.width, vp0.height)) });
+          const vp = page.getViewport({ scale: Math.min(fast ? 8 : 4, longSide / Math.max(vp0.width, vp0.height)) });
           const c = document.createElement('canvas');
           c.width = Math.ceil(vp.width);
           c.height = Math.ceil(vp.height);
           await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
-          yield { page: i, n: doc.numPages, bitmap: await createImageBitmap(c) };
+          yield fast ? { page: i, n: doc.numPages, canvas: c } : { page: i, n: doc.numPages, bitmap: await createImageBitmap(c) };
         }
       } else if (ocr) {
-        yield { page: null, n: 1, bitmap: await createImageBitmap(new Blob([buf], { type: file.type || 'image/jpeg' })) };
+        const bmp = await createImageBitmap(new Blob([buf], { type: file.type || 'image/jpeg' }));
+        if (!fast) {
+          yield { page: null, n: 1, bitmap: bmp };
+          return;
+        }
+        const z = longSide / Math.max(bmp.width, bmp.height);
+        const c = document.createElement('canvas');
+        c.width = Math.round(bmp.width * z);
+        c.height = Math.round(bmp.height * z);
+        c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+        bmp.close();
+        yield { page: null, n: 1, canvas: c };
       } else {
         yield { page: null, n: 1, skipped: true };
       }
+    }
+    // 快路：页面先转灰度、存成 JPEG 再交给助手（理由见 closing-localocr.mjs 的文件头）
+    async function fastRead(canvas) {
+      const lo = await loadLocalOcr();
+      const x = canvas.getContext('2d');
+      const im = x.getImageData(0, 0, canvas.width, canvas.height);
+      lo.toGray(im.data);
+      x.putImageData(im, 0, 0);
+      const blob = await new Promise((resolve, reject) =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('jpeg'))), 'image/jpeg', lo.JPEG_QUALITY),
+      );
+      canvas.width = canvas.height = 0; // 4500 像素的画布占几十 MB，用完马上放掉
+      return (await lo.helperRead(blob)).lines;
     }
     // 区分（纸质／电子）的先判。只是草稿：人确认时可以改（对方扫描后用邮件发来的请求书，看着是纸，法律上是电子）。
     // 依据（2026-10-12 用 6 份真实 PDF 量过）：软件生成的 PDF 要么有文字层，要么每页上千条绘图指令（TKC 的
@@ -1557,6 +1588,10 @@
       if (!dirHandle || !list.length) return;
       const prog = $('ce-ev-progress');
       const useOcr = $('ce-ev-ocr').checked;
+      // 每次开始前找一次本机识别助手（用户可能刚把它打开）。找不到就用浏览器识别
+      let fast = useOcr ? await (await loadLocalOcr()).findHelper() : null;
+      if (useOcr) window.sdfSetText($('ce-ev-helper'), fast ? 'ce_ev_helper_on' : 'ce_ev_helper_off', { v: fast ? fast.version : '' });
+      let lost = false;
       const t0 = performance.now();
       let pages = 0;
       let dups = 0;
@@ -1586,14 +1621,32 @@
         let total = 1;
         let skipped = false;
         try {
-          for await (const pg of pagesOf(file, buf, useOcr)) {
+          for await (const pg of pagesOf(file, buf, useOcr && !lost, !!fast)) {
             total = pg.n;
             if (pg.skipped) {
               skipped = true;
               continue;
             }
-            window.sdfSetText(prog, 'ce_ev_reading', { name: file.name, i: fi + 1, n: list.length, p: pg.page || 1, pn: pg.n });
-            read.push({ page: pg.page, lines: pg.lines || (await ocr(pg.bitmap)).lines });
+            const at = { name: file.name, i: fi + 1, n: list.length, p: pg.page || 1, pn: pg.n };
+            window.sdfSetText(prog, pg.canvas ? 'ce_ev_reading_fast' : 'ce_ev_reading', at);
+            let lines = pg.lines;
+            if (!lines && pg.canvas) {
+              // 助手中途没了（窗口被关掉）：这一批剩下的扫描页不再识别——不悄悄换成浏览器识别，那会把电脑占住
+              if (!lost) {
+                try {
+                  lines = await fastRead(pg.canvas);
+                } catch (e) {
+                  console.error(e);
+                  lost = true;
+                  zlog('ce-z-ev-log', 'ng', 'ce_ev_helper_lost', { msg: String((e && e.message) || e) });
+                }
+              }
+              if (!lines) {
+                skipped = true;
+                continue;
+              }
+            }
+            read.push({ page: pg.page, lines: lines || (await ocr(pg.bitmap)).lines });
             pages++;
           }
         } catch (e) {
@@ -3315,6 +3368,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=0e81db52bb"></script>
+  <script src="../../js/main.js?v=158a268e48"></script>
 </body>
 </html>
