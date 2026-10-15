@@ -168,6 +168,7 @@ const EVIDENCE_OPS = new Set([
   'preview',
   'import_opening',
   'import_journal',
+  'import_workpaper',
   'add_rules',
 ]);
 const EVIDENCE = `

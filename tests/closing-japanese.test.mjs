@@ -296,7 +296,7 @@ test('弥生分录：候选面板三语齐全，写入走引擎、先备份工�
     /await writeFile\(bk, old\.buf\);\s+await writeFile\(\[old\.path\], reportBytes\(\{ b64: a\.book \}\)\)/,
   );
   const worker = readFileSync(path.join(ROOT, 'solutions', 'demo', 'closing-worker.js'), 'utf8');
-  assert.match(worker, /'import_journal',\s+'add_rules'/);
+  assert.match(worker, /EVIDENCE_OPS = new Set\(\[[^\]]*'import_journal'[^\]]*'add_rules'/);
 });
 
 // 2026-10-14：客户列表（记住打开过的文件夹）
@@ -358,10 +358,36 @@ test('证凭：一个文件读完再交给引擎；扫描只识别第 1 页；�
     'ce_ev_skipped',
     'ce_ev_done_noocr',
     'ce_z_workpaper',
+    'ce_ev_generic',
+    'ce_ev_generic_nokey',
   ])
     for (const [lang, t] of Object.entries({ ja: JA, zh: ZH, en: EN }))
       assert.ok(k in t, `${lang} 缺 ${k}`);
   assert.match(HTML, /evAsk\('add', \[rel, sha, kind, today\(\), read, basis, total\]\)/);
   assert.match(HTML, /if \(!ocr \|\| scanned\+\+ >= 1\)/);
   assert.match(HTML, /r\.kind === 'workpaper'/);
+});
+
+// 2026-10-15：直接读财务底稿（不让客户照着我们的表去填）
+test('财务底稿：页面交给引擎读，写进（或新建）公司资料；提示三语齐全', () => {
+  const ZH = block('zh');
+  const keys = [
+    'ok',
+    'ok_new',
+    'check_ok',
+    'check_ng',
+    'added',
+    'guessed',
+    'rounding',
+    'err_prior_year',
+    'err_no_journal',
+    'err_no_bs',
+    'err_start',
+  ].map((k) => `ce_wp_${k}`);
+  for (const k of keys)
+    for (const [lang, t] of Object.entries({ ja: JA, zh: ZH, en: EN }))
+      assert.ok(k in t, `${lang} 缺 ${k}`);
+  assert.match(HTML, /evAsk\('import_workpaper', \[`_inbox\/\$\{name\}`, ui\(\)\]/);
+  const worker = readFileSync(path.join(ROOT, 'solutions', 'demo', 'closing-worker.js'), 'utf8');
+  assert.match(worker, /'import_workpaper'/);
 });

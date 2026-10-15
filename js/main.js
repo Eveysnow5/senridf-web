@@ -750,11 +750,32 @@ const T = {
     ce_ev_ocr:
       '写真・スキャンの文字を読み取る（1 ページ目だけ。1 ページ 10〜60 秒かかり、その間パソコンに負荷がかかります）',
     ce_ev_ocr_d:
-      '自動で読み取れるのは、電気料金・大阪市の水道料金の請求書、年金の保険料の納入告知書、地方税の納付書（QR）、中国の電子発票だけです。契約書や一般の領収書は、読み取っても下書きは空のままなので、チェックを外すと速く取り込めます。文字の入った PDF は、チェックに関係なくすぐ読みます。',
+      '書類の種類ごとに検算までできるのは、電気料金・大阪市の水道料金の請求書、年金の保険料の納入告知書、地方税の納付書（QR）、中国の電子発票です。そのほかの書類（領収書・請求書・契約書など）は、書類の言葉から日付・金額・取引先を読みますが、検算はできないので原本と照らしてください。文字の入った PDF は、チェックに関係なくすぐ読みます。',
     ce_ev_pages: '（全 {n} ページ）',
     ce_ev_done_noocr:
       '{f} 個のファイルを保存しました。写真・スキャンの文字は読み取っていません（文字の入った PDF は {n} 頁読みました・{s} 秒）',
     ce_ev_skipped: '{name}：写真・スキャンは読み取らずに保存しました（チェックが外れています）',
+    ce_wp_ok:
+      '✓ {name} → ワークペーパーから期首残高 {n} 行（{as_of} 現在）と、会社名・決算月・記帳を始める月（{start}）を会社の資料に入れました（前のファイル：{path}）',
+    ce_wp_ok_new:
+      '✓ {name} → ワークペーパーから会社の資料を作りました：期首残高 {n} 行（{as_of} 現在）・会社名・決算月・記帳を始める月（{start}）。足りないものは、下の確認結果がお知らせします',
+    ce_wp_check_ok:
+      '{name}：読み取った資産の合計が、ワークペーパーの貸借対照表の資産合計と一致しました（{total} 円）',
+    ce_wp_check_ng:
+      '△ {name}：読み取った資産の合計（{computed} 円）が、ワークペーパーの貸借対照表の資産合計（{total} 円）と合いません。期首残高を確かめてください',
+    ce_wp_added: '{name}：科目表に無い科目を「追加科目」に登録しました：{list}',
+    ce_wp_guessed:
+      '△ {name}：区分を残高の向きから決めた科目があります（{list}）。「追加科目」の表で区分を確かめてください',
+    ce_wp_rounding:
+      '{name}：ワークペーパーの円未満の金額を四捨五入しました（動いた額 {r} 円は繰越利益剰余金に入っています）',
+    ce_wp_err_prior_year:
+      '✗ {name}：この年度には年初の残高がありますが、仕訳帳には年初の内訳がありません。前の年度のワークペーパーか、弥生会計の期首残高データを入れてください',
+    ce_wp_err_no_journal:
+      '✗ {name}：ワークペーパーですが、仕訳帳の表（科目・明細・借方・貸方の見出しがある表）が見つかりません',
+    ce_wp_err_no_bs:
+      '✗ {name}：ワークペーパーですが、貸借対照表の表が見つかりません（年度末の日と資産合計をそこから読みます）',
+    ce_wp_err_start:
+      '✗ {name}：ワークペーパーの年度末（{day}）の次の月が、会社の資料の「記帳を始める月」（{start}）と違います。どちらかを直してください',
     ce_z_workpaper:
       '△ {name}：年次の財務ワークペーパー（貸借対照表・仕訳帳の表があるもの）です。会社の資料ではないため保存していません。この道具はまだワークペーパーから読み込めません。期首残高は、その貸借対照表の期末残高を会社の資料の「期首残高」シートに写すか、弥生会計の期首残高データを入れてください。',
     ce_ev_attached: '照合先を決めました',
@@ -1073,6 +1094,10 @@ const T = {
     ce_z_op_yaml: '✗ {name}：この会社フォルダは YAML で入力しているため、取り込めません',
     ce_z_err: '✗ {name}：読めませんでした（{msg}）',
     ce_z_skip: '✗ {name}：この種類のファイルは扱えません（表は Excel・CSV、証憑は画像・PDF）',
+    ce_ev_generic:
+      '書類の「{key}」の欄から読みました。この種類の書類は検算できないので、原本と照らしてから確認してください',
+    ce_ev_generic_nokey:
+      '書類の言葉から読みました。この種類の書類は検算できないので、原本と照らしてから確認してください',
     ce_ev_no_template:
       'この種類の書類はまだ自動で読めません。ファイル名を押して原本を開き、見ながら取引日・金額・取引先を入れてください',
     ce_ev_fx_ask:
@@ -1920,11 +1945,29 @@ const T = {
     ce_ev_done: '已识别 {n} 页（{s} 秒）',
     ce_ev_ocr: '读取照片・扫描件上的文字（只读第 1 页。每页 10〜60 秒，期间电脑负载较高）',
     ce_ev_ocr_d:
-      '能自动读出的只有：电费账单、大阪市水费账单、年金保险费缴纳通知、地方税缴纳书（QR）、中国电子发票。合同和一般收据即使读了，草稿也是空的——取消勾选就能快速导入。带文字的 PDF 不管勾不勾都会马上读取。',
+      '能按单据种类验算的有：电费账单、大阪市水费账单、年金保险费缴纳通知、地方税缴纳书（QR）、中国电子发票。其他单据（收据、请求书、合同等）按单据上的字样读出日期・金额・交易方，但无法验算，请对照原件。带文字的 PDF 不管勾不勾都会马上读取。',
     ce_ev_pages: '（共 {n} 页）',
     ce_ev_done_noocr:
       '已保存 {f} 个文件，照片・扫描件没有识别文字（带文字的 PDF 读了 {n} 页・{s} 秒）',
     ce_ev_skipped: '{name}：照片・扫描件没有识别，直接保存了（未勾选读取文字）',
+    ce_wp_ok:
+      '✓ {name} → 已从底稿把期初余额 {n} 行（截至 {as_of}）和公司名・决算月・开始记账月份（{start}）写进公司资料（原文件备份：{path}）',
+    ce_wp_ok_new:
+      '✓ {name} → 已从底稿新建公司资料：期初余额 {n} 行（截至 {as_of}）・公司名・决算月・开始记账月份（{start}）。还缺什么，下面的检查结果会提示',
+    ce_wp_check_ok: '{name}：读出的资产合计和底稿资产负债表的资产总计一致（{total} 日元）',
+    ce_wp_check_ng:
+      '△ {name}：读出的资产合计（{computed} 日元）和底稿资产负债表的资产总计（{total} 日元）对不上，请核对期初余额',
+    ce_wp_added: '{name}：科目表里没有的科目已登记到「追加科目」：{list}',
+    ce_wp_guessed: '△ {name}：有的科目是按余额方向定的区分（{list}），请在「追加科目」表里核对区分',
+    ce_wp_rounding:
+      '{name}：底稿里不足 1 日元的金额已四舍五入（差额 {r} 日元计入了繰越利益剰余金）',
+    ce_wp_err_prior_year:
+      '✗ {name}：这个年度有年初余额，但序时账里没有年初余额的明细。请放入上一年度的底稿，或者弥生会计的期初余额数据',
+    ce_wp_err_no_journal:
+      '✗ {name}：是财务底稿，但找不到序时账（有 中文科目・日文科目・明细科目・借方・贷方 表头的表）',
+    ce_wp_err_no_bs: '✗ {name}：是财务底稿，但找不到资产负债表（年度末日期和资产总计要从这里读）',
+    ce_wp_err_start:
+      '✗ {name}：底稿年度末（{day}）的下一个月，和公司资料里「开始记账的月份」（{start}）不一致。请改其中一个',
     ce_z_workpaper:
       '△ {name}：这是财务工作底稿（年报），不是公司资料，没有保存。工具目前还不能从底稿读取。期初余额请把底稿资产负债表的期末余额抄到公司资料的「期初余额」表，或者放入弥生会计的期初余额数据。',
     ce_ev_attached: '已对应到这笔流水',
@@ -2221,6 +2264,8 @@ const T = {
     ce_z_op_yaml: '✗ {name}：这个公司文件夹是用 YAML 录入的，不能导入',
     ce_z_err: '✗ {name}：没能读取（{msg}）',
     ce_z_skip: '✗ {name}：这种文件处理不了（表格要 Excel・CSV，凭证要图片・PDF）',
+    ce_ev_generic: '按单据上「{key}」一栏读出。这类单据无法验算，请对照原件后再确认',
+    ce_ev_generic_nokey: '按单据上的字样读出。这类单据无法验算，请对照原件后再确认',
     ce_ev_no_template: '这一类单据还不能自动读取。请点文件名打开原件，对照着填交易日・金额・交易方',
     ce_ev_fx_ask:
       '这是外币单据（{cur} {amt}）。请填入折算成日元后的金额。把用的汇率写在备注里，方便以后核对。',
@@ -3108,11 +3153,33 @@ const T = {
     ce_ev_ocr:
       'Read text in photos and scans (first page only; about 10–60 s per page, with a heavy load on the computer meanwhile)',
     ce_ev_ocr_d:
-      'Only these can be read automatically: electricity bills, Osaka City water bills, pension premium notices, local tax payment slips (QR) and Chinese e-fapiao. Contracts and ordinary receipts give an empty draft even when read, so untick this to add them quickly. PDFs with a text layer are read at once either way.',
+      'Fully cross-checked kinds: electricity bills, Osaka City water bills, pension premium notices, local tax payment slips (QR) and Chinese e-fapiao. Other documents (receipts, invoices, contracts and so on) are read for date, amount and party from their wording, but cannot be cross-checked, so compare them with the original. PDFs with a text layer are read at once either way.',
     ce_ev_pages: '({n} pages)',
     ce_ev_done_noocr:
       'Saved {f} file(s) without reading text in photos or scans (read {n} page(s) of PDFs with text, {s} s)',
     ce_ev_skipped: '{name}: saved without reading the photo or scan (reading is unticked)',
+    ce_wp_ok:
+      '✓ {name} → opening balances ({n} rows, as of {as_of}), company name, fiscal year end and first month ({start}) were taken from the workpaper into the company workbook (previous file: {path})',
+    ce_wp_ok_new:
+      '✓ {name} → a company workbook was created from the workpaper: opening balances ({n} rows, as of {as_of}), company name, fiscal year end and first month ({start}). The checks below say what is still missing',
+    ce_wp_check_ok:
+      '{name}: the total assets read agree with the balance sheet in the workpaper ({total} yen)',
+    ce_wp_check_ng:
+      '△ {name}: the total assets read ({computed} yen) do not agree with the balance sheet in the workpaper ({total} yen). Check the opening balances',
+    ce_wp_added:
+      '{name}: accounts not in the chart were registered on the Extra accounts sheet: {list}',
+    ce_wp_guessed:
+      '△ {name}: for some accounts the section was set from the balance direction ({list}). Check the section on the Extra accounts sheet',
+    ce_wp_rounding:
+      '{name}: amounts below one yen in the workpaper were rounded (the {r} yen moved went to retained earnings)',
+    ce_wp_err_prior_year:
+      '✗ {name}: this year has balances at the start, but the journal has no breakdown of them. Add the workpaper of the previous year, or Yayoi Kaikei opening-balance data',
+    ce_wp_err_no_journal:
+      '✗ {name}: this is a workpaper, but no journal sheet (with account, detail, debit and credit headings) was found',
+    ce_wp_err_no_bs:
+      '✗ {name}: this is a workpaper, but no balance sheet was found (the year end and total assets are read from it)',
+    ce_wp_err_start:
+      '✗ {name}: the month after the year end of the workpaper ({day}) differs from the first month in the company workbook ({start}). Correct one of them',
     ce_z_workpaper:
       '△ {name}: this is a financial workpaper (annual), not the company workbook, so it was not saved. The tool cannot read workpapers yet. For opening balances, copy the closing balances from the balance sheet in the workpaper to the Opening balances sheet, or add Yayoi Kaikei opening-balance data.',
     ce_ev_attached: 'Linked to this row',
@@ -3433,6 +3500,10 @@ const T = {
     ce_z_err: '✗ {name}: could not be read ({msg})',
     ce_z_skip:
       '✗ {name}: this file type is not supported (tables: Excel or CSV; evidence: images or PDF)',
+    ce_ev_generic:
+      'Read from the “{key}” field of the document. Documents of this kind cannot be cross-checked, so compare with the original before confirming',
+    ce_ev_generic_nokey:
+      'Read from the wording of the document. Documents of this kind cannot be cross-checked, so compare with the original before confirming',
     ce_ev_no_template:
       'This kind of document cannot be read automatically yet. Click the file name to open the original and enter the date, amount and party from it',
     ce_ev_fx_ask:

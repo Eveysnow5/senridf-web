@@ -479,7 +479,7 @@
               <input type="checkbox" id="ce-ev-ocr" checked style="margin-top:3px" />
               <span data-i18n="ce_ev_ocr">写真・スキャンの文字を読み取る（1 ページ目だけ。1 ページ 10〜60 秒かかり、その間パソコンに負荷がかかります）</span>
             </label>
-            <p class="ce-hint" data-i18n="ce_ev_ocr_d">自動で読み取れるのは、電気料金・大阪市の水道料金の請求書、年金の保険料の納入告知書、地方税の納付書（QR）、中国の電子発票だけです。契約書や一般の領収書は、読み取っても下書きは空のままなので、チェックを外すと速く取り込めます。文字の入った PDF は、チェックに関係なくすぐ読みます。</p>
+            <p class="ce-hint" data-i18n="ce_ev_ocr_d">書類の種類ごとに検算までできるのは、電気料金・大阪市の水道料金の請求書、年金の保険料の納入告知書、地方税の納付書（QR）、中国の電子発票です。そのほかの書類（領収書・請求書・契約書など）は、書類の言葉から日付・金額・取引先を読みますが、検算はできないので原本と照らしてください。文字の入った PDF は、チェックに関係なくすぐ読みます。</p>
             <p id="ce-ev-progress" class="ce-status" aria-live="polite"></p>
             <ul id="ce-z-ev-log" class="ce-zlog" aria-live="polite"></ul>
           </div>
@@ -974,7 +974,7 @@
     function getWorker() {
       if (!worker) {
         // ?v=：线上给这个文件 4 小时缓存。Worker 的加载方式变了（经典→module）时改这个值，免得新页面配上缓存里的旧 Worker
-        worker = new Worker('closing-worker.js?v=6', { type: 'module' });
+        worker = new Worker('closing-worker.js?v=7', { type: 'module' });
         worker.onmessage = onWorkerMessage;
         worker.onerror = (ev) => {
           console.error(ev);
@@ -1690,7 +1690,41 @@
                 });
             }
           } else if (r.kind === 'workpaper') {
-            zlog(log, 'ng', 'ce_z_workpaper', { name });
+            // 财务底稿：引擎读序时账算出期初余额（没有公司资料就新建一本），这里备份旧工作簿再换上
+            const w = await evAsk('import_workpaper', [`_inbox/${name}`, ui()], [{ path: `_inbox/${name}`, buf: buf.slice(0) }]);
+            const old = files.find((f) => BOOKS.includes(f.path));
+            if (w && w.ok) {
+              const fmt = (n) => Number(n).toLocaleString('ja-JP', { maximumFractionDigits: 2 });
+              if (old) {
+                const bk = [outDir(), names().bak, `${stamp()}_${old.path}`];
+                await writeFile(bk, old.buf);
+                await writeFile([old.path], reportBytes({ b64: w.book }));
+                zlog(log, 'ok', 'ce_wp_ok', { name, n: w.rows, as_of: w.as_of, start: w.start, path: bk.join('/') });
+              } else {
+                await writeFile([names().book], reportBytes({ b64: w.book }));
+                zlog(log, 'ok', 'ce_wp_ok_new', { name, n: w.rows, as_of: w.as_of, start: w.start });
+              }
+              const c = w.check || {};
+              if (c.total_assets !== null && c.total_assets !== undefined)
+                zlog(log, c.ok ? '' : 'ng', c.ok ? 'ce_wp_check_ok' : 'ce_wp_check_ng', {
+                  name,
+                  total: fmt(c.total_assets),
+                  computed: fmt(c.computed),
+                });
+              const added = w.accounts_added || [];
+              if (added.length) zlog(log, '', 'ce_wp_added', { name, list: added.map((a) => a.name).join('・') });
+              const guessed = added.filter((a) => a.guessed);
+              if (guessed.length) zlog(log, 'ng', 'ce_wp_guessed', { name, list: guessed.map((a) => a.name).join('・') });
+              if (Math.abs(w.rounding || 0) >= 0.005) zlog(log, '', 'ce_wp_rounding', { name, r: fmt(w.rounding) });
+              filed++;
+              files = await readDir(dirHandle, '');
+            } else if (w && ['prior_year', 'no_journal', 'no_bs', 'start'].includes(w.error)) {
+              zlog(log, 'ng', `ce_wp_err_${w.error}`, { name, day: w.day, start: w.start });
+            } else if (w && ['exists', 'book', 'yaml'].includes(w.error)) {
+              zlog(log, 'ng', `ce_z_op_${w.error}`, { name, n: w.n, msg: w.text });
+            } else {
+              zlog(log, 'ng', 'ce_z_err', { name, msg: (w && w.error) || '' });
+            }
           } else if (r.kind === 'journal') {
             // 弥生的分录：不放进文件夹。引擎和同期的银行流水配对，给出银行规则的候选（写进公司资料要用户勾选）
             const j = await evAsk('import_journal', [`_inbox/${name}`], [{ path: `_inbox/${name}`, buf: buf.slice(0) }]);
@@ -2099,7 +2133,18 @@
         nr.appendChild(td);
         out.push(nr);
       }
-      if (e.note && !(fx && fx.foreign)) {
+      // 通用规则读出的草稿：引擎的备注是日文，这里按界面语言说（读的是单据上的哪个词）
+      const gen = e.status === '下書き' && e.fields && e.fields.generic;
+      if (gen) {
+        const nr = el('tr', 'ce-ev-note');
+        const td = el('td');
+        td.colSpan = 10;
+        const k = e.fields.generic_amount;
+        window.sdfSetText(td, k ? 'ce_ev_generic' : 'ce_ev_generic_nokey', { key: k || '' });
+        nr.appendChild(td);
+        out.push(nr);
+      }
+      if (e.note && !(fx && fx.foreign) && !gen) {
         const nr = el('tr', 'ce-ev-note');
         const td = el('td');
         td.colSpan = 10;
@@ -3270,6 +3315,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=18442d47e2"></script>
+  <script src="../../js/main.js?v=0e81db52bb"></script>
 </body>
 </html>

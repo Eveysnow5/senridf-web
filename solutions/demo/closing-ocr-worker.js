@@ -36,10 +36,10 @@ async function init() {
   const [det, rec, dict] = await Promise.all(
     ['det.onnx', 'rec.onnx', 'rec.dict.txt'].map((n) => load(manifest, n)),
   );
-  const gpu = !!(
-    self.navigator.gpu && (await self.navigator.gpu.requestAdapter().catch(() => null))
-  );
-  ep = gpu ? 'webgpu' : 'wasm';
+  // 不用显卡（WebGPU）：2026-10-15 作者报告，识别一开始电脑就被占几个小时，浏览器和别的程序都打不开——
+  // 笔记本的集成显卡被占满时整个系统的界面都会卡住。只用 CPU 的一个核（WASM 单线程）：慢一些，但电脑还能用
+  const gpu = false;
+  ep = 'wasm';
   svc = new PaddleOcrService({
     model: { detection: det, recognition: rec, charactersDictionary: dict },
     session: { executionProviders: gpu ? ['webgpu', 'wasm'] : ['wasm'] },
