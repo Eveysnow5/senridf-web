@@ -435,6 +435,11 @@
           <input type="file" id="ce-folder" webkitdirectory multiple class="hidden" data-i18n-title="ce_pick_folder" />
           <span id="ce-folder-info" class="ce-hint" data-i18n="ce_upload_none">フォルダが選ばれていません</span>
         </div>
+        <!-- 判断人は一か所で（作者 2026-10-15：毎回手で書かせない）。このパソコンに記憶し、証憑の確認・回答・銀行ルール・年度の確定で使う -->
+        <div class="ce-row" style="margin:8px 0">
+          <label class="ce-hint"><span data-i18n="ce_ev_by_label">判断者（このパソコンに記憶します。証憑の確認・質問への回答・銀行ルール・年度の確定に記録されます）</span>
+            <input type="text" id="ce-ev-by" class="ce-input" style="width:9em" autocomplete="name" data-i18n-title="ce_ev_by_label" /></label>
+        </div>
         <p class="ce-hint" style="margin-top:6px" data-i18n="ce_pick_tip">フォルダを選ぶ画面にはフォルダだけが表示されます（中のファイルが見えないのは正常です）。作業フォルダを開いてから「フォルダーの選択」を押してください。</p>
         <p id="ce-open-hint" class="ce-hint hidden" data-i18n="ce_open_hint">Chrome・Edge では、フォルダを直接読み書きできます：締めの結果と回答が自動でフォルダに保存されます（毎回、ブラウザが許可を確認します）。他のブラウザでは「フォルダを選ぶ」を使ってください（読み取りのみで、結果はダウンロードが必要です）。</p>
         <p id="ce-pre" class="ce-status" aria-live="polite"></p>
@@ -489,10 +494,6 @@
         <details id="ce-ev-box" class="ce-listbox hidden">
         <summary data-i18n="ce_ev_box">証憑の一覧と確認</summary>
         <div id="ce-ev-body">
-          <div class="ce-row" style="margin:8px 0">
-            <label class="ce-hint"><span data-i18n="ce_ev_by_label">担当者（証憑の確認・取消のときに記録されます）</span>
-              <input type="text" id="ce-ev-by" class="ce-input" style="width:9em" autocomplete="off" data-i18n-title="ce_ev_by_label" /></label>
-          </div>
           <p class="ce-hint" data-i18n="ce_ev_kinds">「紙」は撮影・スキャンした紙の書類、「電子」はメール・ダウンロード・ネットバンキングで受け取ったデータです（データのまま保存する義務があります）。区分はファイルの作りから仮に判定しています。スキャンしてメールで届いた請求書は見た目が紙でも「電子」です。確認のときに直してください。確認すると、原本はその区分のフォルダに移ります。</p>
           <p class="ce-hint" data-i18n="ce_ev_date_hint">「取引日」には書類に書いてある日付を入れます：領収書は領収日、請求書は請求日（発行日）、口座振替の通知は引落日。</p>
           <div id="ce-ev-notices"></div>
@@ -1621,6 +1622,9 @@
     async function evAdd(list) {
       if (!dirHandle || !list.length) return;
       const prog = $('ce-ev-progress');
+      // 放进来马上说一声（作者 2026-10-15：上传后几十秒没有任何反应，以为没放进去）。
+      // 开头要等的是：找识别助手、读 PDF 的库、引擎（刚放的表格还在检查时，要等它做完）
+      window.sdfSetText(prog, 'ce_ev_preparing', { name: list[0].name, i: 1, n: list.length });
       const useOcr = $('ce-ev-ocr').checked;
       // 每次开始前找一次本机识别助手（用户可能刚把它打开）。找不到就用浏览器识别
       let fast = useOcr ? await (await loadLocalOcr()).findHelper() : null;
@@ -1633,6 +1637,7 @@
       let dups = 0;
       let saved = 0;
       for (const [fi, file] of list.entries()) {
+        window.sdfSetText(prog, 'ce_ev_preparing', { name: file.name, i: fi + 1, n: list.length });
         const buf = await file.arrayBuffer();
         const sha = await sha256hex(buf);
         if (evEntries.some((e) => e.sha === sha && e.status !== '取消')) {
@@ -1721,11 +1726,17 @@
         // 同上
       }
     });
+    // 判断者：上の一か所に書けばこのパソコンが覚え、どの確認でも使う（入れた時点で保存）
+    $('ce-ev-by').value = savedBy();
+    $('ce-ev-by').addEventListener('change', () => evBy());
     // ── 两个入口 ─────────────────────────────────────────────────────────
     // 表格：交给引擎看内容（recognize.classify），页面按答案放进文件夹。认不出来的不放（不猜）。
     const IS_TABLE = /\.(xlsx|xlsm|csv)$/i;
     const IS_EVIDENCE = /\.(pdf|png|jpe?g|webp|gif|bmp|tiff?)$/i;
-    let inboxChain = Promise.resolve();
+    let inboxChain = Promise.resolve(); // 表格入口的队
+    let evInChain = Promise.resolve(); // 凭证入口的队
+    let tabBusy = 0;
+    let evBusy = 0;
     async function tabAdd(list) {
       if (!dirHandle || !list.length) return;
       const log = 'ce-z-tab-log';
@@ -1905,7 +1916,7 @@
     $('ce-lr-go').addEventListener('click', async () => {
       const log = 'ce-lr-log';
       $(log).replaceChildren();
-      const by = $('ce-lr-by').value.trim();
+      const by = $('ce-lr-by').value.trim() || evBy(); // 空なら上の「判断者」
       if (!by) return void zlog(log, 'ng', 'ce_lr_err_by');
       const pick = learnRules.filter((c, i) => $(`ce-lr-${i}`).checked);
       if (!pick.length) return void zlog(log, 'ng', 'ce_lr_err_empty');
@@ -1934,11 +1945,26 @@
       const evs = list.filter((f) => !IS_TABLE.test(f.name) && (IS_EVIDENCE.test(f.name) || /^image\//.test(f.type)));
       for (const f of list)
         if (!tabs.includes(f) && !evs.includes(f)) zlog('ce-z-tab-log', 'ng', 'ce_z_skip', { name: f.name });
-      const run = async () => {
-        await tabAdd(tabs);
-        await evAdd(evs);
-      };
-      inboxChain = inboxChain.then(run, run).catch((e) => console.error(e));
+      // 表格和凭证各排各的队（作者 2026-10-15：凭证识别要几分钟，排在它后面的银行流水放进来「没有任何反应」）。
+      // 前面还有没处理完的，马上说一声在排队
+      if (tabs.length) {
+        if (tabBusy) zlog('ce-z-tab-log', '', 'ce_z_queued', { n: tabs.length });
+        tabBusy++;
+        const run = () => tabAdd(tabs);
+        inboxChain = inboxChain
+          .then(run, run)
+          .catch((e) => console.error(e))
+          .finally(() => tabBusy--);
+      }
+      if (evs.length) {
+        if (evBusy) zlog('ce-z-ev-log', '', 'ce_ev_queued', { n: evs.length });
+        evBusy++;
+        const run = () => evAdd(evs);
+        evInChain = evInChain
+          .then(run, run)
+          .catch((e) => console.error(e))
+          .finally(() => evBusy--);
+      }
     }
     for (const [zone, input] of [
       ['ce-z-tab', 'ce-in-tab'],
@@ -2349,7 +2375,7 @@
     $('ce-cy-go').addEventListener('click', async () => {
       const log = 'ce-cy-log';
       $(log).replaceChildren();
-      const by = $('ce-cy-by').value.trim();
+      const by = $('ce-cy-by').value.trim() || evBy(); // 空なら上の「判断者」
       if (!by) {
         zlog(log, 'ng', 'ce_cy_err_by');
         return;
@@ -3408,6 +3434,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=da0ddc57a8"></script>
+  <script src="../../js/main.js?v=fd4eb23da4"></script>
 </body>
 </html>

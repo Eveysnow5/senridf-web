@@ -150,3 +150,47 @@ test('安全策略：connect-src 放行助手的地址', () => {
   const csp = h.match(/^\s*Content-Security-Policy[^:]*:.*?(connect-src[^;]*)/m)[1]; // 头那一行（注释里也有这个词）
   assert.ok(csp.split(/\s+/).includes(HELPER), csp);
 });
+
+test('入口：表格和凭证各排各的队；排队・准备时马上提示（2026-10-15 作者：放进去几十秒没反应）', () => {
+  const html = fs.readFileSync(
+    fileURLToPath(new URL('../solutions/demo/closing.html', import.meta.url)),
+    'utf8',
+  );
+  const fn = html.slice(html.indexOf('function intake('), html.indexOf('function intake(') + 1600);
+  assert.match(fn, /inboxChain = inboxChain/);
+  assert.match(fn, /evInChain = evInChain/);
+  assert.doesNotMatch(
+    fn,
+    /await tabAdd\(tabs\);\s*await evAdd\(evs\)/,
+    '凭证不能排在表格后面（反过来也一样）',
+  );
+  assert.match(fn, /'ce_z_queued'/);
+  assert.match(fn, /'ce_ev_queued'/);
+  const ev = html.slice(
+    html.indexOf('async function evAdd('),
+    html.indexOf('async function evAdd(') + 600,
+  );
+  assert.ok(
+    ev.indexOf("'ce_ev_preparing'") > 0 &&
+      ev.indexOf("'ce_ev_preparing'") < ev.indexOf('findHelper'),
+    '找助手之前先提示',
+  );
+  const main = fs.readFileSync(fileURLToPath(new URL('../js/main.js', import.meta.url)), 'utf8');
+  for (const k of ['ce_ev_preparing', 'ce_ev_queued', 'ce_z_queued'])
+    assert.equal(main.split(`\n    ${k}:`).length - 1, 3, `${k} 三语`);
+});
+
+test('判断人：页面顶部一处，记在这台电脑；其他地方空着就用它', () => {
+  const html = fs.readFileSync(
+    fileURLToPath(new URL('../solutions/demo/closing.html', import.meta.url)),
+    'utf8',
+  );
+  const box = html.indexOf('id="ce-ev-box"');
+  assert.ok(
+    html.indexOf('id="ce-ev-by"') > 0 && html.indexOf('id="ce-ev-by"') < box,
+    '不在凭证列表里（打开前看不到）',
+  );
+  assert.match(html, /\$\('ce-ev-by'\)\.value = savedBy\(\);/);
+  assert.match(html, /\$\('ce-lr-by'\)\.value\.trim\(\) \|\| evBy\(\)/);
+  assert.match(html, /\$\('ce-cy-by'\)\.value\.trim\(\) \|\| evBy\(\)/);
+});

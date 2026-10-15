@@ -748,6 +748,10 @@ const T = {
       '読み取り中：{name}（{i}/{n} ファイル・{p}/{pn} 頁）——写真は 1 頁 10〜60 秒かかります',
     ce_ev_done: '{n} 頁を読み取りました（{s} 秒）',
     ce_ev_ocr: '写真・スキャンの文字を読み取る',
+    ce_z_queued: '前のファイルの処理が終わってから、続けて {n} 個のファイルを処理します',
+    ce_ev_queued: '前のファイルの読み取りが終わってから、続けて {n} 個のファイルを読みます',
+    ce_ev_preparing:
+      '準備中：{name}（{i}/{n} ファイル）——読み取り助手と読み取りの準備をしています。表の確認が動いているときは、それが終わるのを待ちます',
     ce_ev_helper_idle:
       'Windows のパソコンでは、本機の読み取り助手を起動しておくと、1 ページ約 1 秒で全ページを読みます（画像はこのパソコンから出ません）。無いときはブラウザの中で 1 ページ目だけ読みます（1 ページ 10〜60 秒、その間パソコンに負荷がかかります）。',
     ce_ev_rereading:
@@ -1083,7 +1087,7 @@ const T = {
     ce_z_wb_replaced: '✓ {name} → 会社の資料を入れ替えました（前のファイル：{path}）',
     ce_z_bank_ok: '✓ {name} → 銀行明細（bank フォルダ）',
     ce_z_bank_unchecked:
-      '✓ {name} → 銀行明細（bank フォルダ）。会社の資料がまだ無いので、列名は未確認です',
+      '✓ {name} → 銀行明細（bank フォルダ）。会社の資料に銀行口座がまだ登録されていないので、列名は照らしていません（登録すると次の確認で照らします）',
     ce_z_bank_other:
       '✗ {name}：銀行明細のようですが、見出し（{found}）が、会社の資料の「銀行口座」シートに登録した列名（{want}）と違います。登録の列名をファイルの書き方に合わせてから、もう一度入れてください',
     ce_z_unknown:
@@ -1124,7 +1128,8 @@ const T = {
     ce_ev_open_err: '原本を開けませんでした（{msg}）',
     ce_fix_where:
       '「表を直す」は、作業フォルダ（さきほど選んだ「{name}」フォルダ）の中の「会社資料.xlsx」を直すことです（元の置き場所のファイルではありません）。Excel で直して保存し、Excel を閉じてから「締めを実行」を押してください。明細を足すときは、上の「表」の入口に入れます。',
-    ce_ev_by_label: '担当者（証憑の確認・取消のときに記録されます）',
+    ce_ev_by_label:
+      '判断者（このパソコンに記憶します。証憑の確認・質問への回答・銀行ルール・年度の確定に記録されます）',
     ce_rerun_note:
       '作業フォルダにつないでいるときは、回答をフォルダの「会社資料.xlsx」に書き込みます（元のファイルは先に「締め結果/バックアップ」へコピーします）。',
     ce_period_why:
@@ -1194,7 +1199,7 @@ const T = {
       '締めを実行できます。ただし ⚠ の付いた項目があります。先に上の入口と「項目ごとの確認結果」を見てください。',
     ce_pre_ok: 'ファイルはそろっています。締めを実行できます。',
     ce_pre_block:
-      '不足または書式の誤りがあります。上の一覧に沿って直し、フォルダを選び直してください。',
+      '不足または書式の誤りがあります。上の一覧に沿って補ってください：ファイルは下の入口に入れれば、自動でもう一度確認します（フォルダの中のファイルを直接直したときは、フォルダを選び直してください）。',
     ce_pre_engine_err: 'エンジンが読み込みで問題を見つけました：',
     ce_step_run: '締める',
     ce_step_month: '締める月',
@@ -1956,6 +1961,10 @@ const T = {
     ce_ev_reading: '识别中：{name}（第 {i}/{n} 个文件・第 {p}/{pn} 页）——照片每页约 10–60 秒',
     ce_ev_done: '已识别 {n} 页（{s} 秒）',
     ce_ev_ocr: '读取照片・扫描件上的文字',
+    ce_z_queued: '前面的文件处理完后，接着处理这 {n} 个文件',
+    ce_ev_queued: '前面的文件识别完后，接着识别这 {n} 个文件',
+    ce_ev_preparing:
+      '准备中：{name}（第 {i}/{n} 个文件）——正在准备识别助手和读取工具；表格还在检查时，要等它做完',
     ce_ev_helper_idle:
       'Windows 电脑上，先打开本机识别助手，每页约 1 秒、全部页都读（图片不离开这台电脑）。没有助手时在浏览器里只读第 1 页（每页 10〜60 秒，期间电脑负载较高）。',
     ce_ev_rereading:
@@ -2267,7 +2276,8 @@ const T = {
     ce_z_wb_ok: '✓ {name} → 公司资料（公司资料.xlsx）',
     ce_z_wb_replaced: '✓ {name} → 已替换公司资料（原文件备份：{path}）',
     ce_z_bank_ok: '✓ {name} → 银行流水（bank 文件夹）',
-    ce_z_bank_unchecked: '✓ {name} → 银行流水（bank 文件夹）。还没有公司资料，列名尚未核对',
+    ce_z_bank_unchecked:
+      '✓ {name} → 银行流水（bank 文件夹）。公司资料里还没有登记银行账户，列名还没对照（登记后，下次检查会自动对照）',
     ce_z_bank_other:
       '✗ {name}：看起来是银行流水，但表头（{found}）和公司资料「银行账户」表里登记的列名（{want}）不一样。请把登记的列名改成文件里的写法，再放一次',
     ce_z_unknown: '✗ {name}：不是公司资料、银行流水，也不是弥生会計的期初余额数据，没有保存',
@@ -2303,7 +2313,7 @@ const T = {
     ce_ev_open_err: '没能打开原件（{msg}）',
     ce_fix_where:
       '「改表」改的是工作文件夹（就是刚才选的「{name}」文件夹）里的那份「公司资料.xlsx」，不是原来存放处的那一份。用 Excel 改好、保存、关掉 Excel 之后，再点「执行结账」。要补流水的话，放进上面的「表格」入口。',
-    ce_ev_by_label: '判断人（确认・取消凭证时会记进记录）',
+    ce_ev_by_label: '判断人（这台电脑会记住；确认凭证、回答问题、银行规则、年度确定都记这个名字）',
     ce_rerun_note:
       '连接着工作文件夹时，回答会写进文件夹里的「公司资料.xlsx」（原文件会先备份到「结账结果/备份」）。',
     ce_period_why:
@@ -2370,7 +2380,8 @@ const T = {
     ce_pre_running: '正在检查文件…',
     ce_pre_ok_warn: '可以结账，但有带 ⚠ 的项目。请先看一下上面的入口和「各项检查明细」里的说明。',
     ce_pre_ok: '文件齐全，可以结账。',
-    ce_pre_block: '有缺少或格式错误的文件。请按上面的清单修正后，重新选择文件夹。',
+    ce_pre_block:
+      '有缺少或格式错误的文件。请按上面的清单补齐：把文件放进下面的入口即可，放进去后会自动重新检查（直接改了文件夹里的文件时，请重新选择文件夹）。',
     ce_pre_engine_err: '引擎读取时发现问题：',
     ce_step_run: '结账',
     ce_step_month: '结账月份',
@@ -3175,6 +3186,10 @@ const T = {
       'Reading {name} (file {i}/{n}, page {p}/{pn}) — photos take about 10–60 s per page',
     ce_ev_done: 'Read {n} page(s) ({s} s)',
     ce_ev_ocr: 'Read text in photos and scans',
+    ce_z_queued: 'These {n} file(s) will be handled after the files before them',
+    ce_ev_queued: 'These {n} file(s) will be read after the files before them',
+    ce_ev_preparing:
+      'Preparing {name} (file {i}/{n}) — getting the reading helper and tools ready; if the tables are still being checked, this waits until that finishes',
     ce_ev_helper_idle:
       'On Windows, start the local reading helper first: it reads every page in about 1 s per page (images never leave this computer). Without it, only the first page is read inside the browser (10–60 s per page, with a heavy load on the computer meanwhile).',
     ce_ev_rereading:
@@ -3511,7 +3526,7 @@ const T = {
     ce_z_wb_replaced: '✓ {name} → company workbook replaced (previous file: {path})',
     ce_z_bank_ok: '✓ {name} → bank statements (“bank” folder)',
     ce_z_bank_unchecked:
-      '✓ {name} → bank statements (“bank” folder). No company workbook yet, so the column names are unchecked',
+      '✓ {name} → bank statements (“bank” folder). No bank account is registered in the company workbook yet, so the column names are not checked (they will be at the next check once one is registered)',
     ce_z_bank_other:
       '✗ {name}: this looks like a bank statement, but its headings ({found}) differ from the column names registered on the “Bank accounts” sheet of the company workbook ({want}). Change the registered names to match the file, then add it again',
     ce_z_unknown:
@@ -3554,7 +3569,8 @@ const T = {
     ce_ev_open_err: 'Could not open the original ({msg})',
     ce_fix_where:
       '“Fix the sheet” means editing “company-data.xlsx” inside the working folder (the “{name}” folder you chose), not the copy where you originally kept it. Edit it in Excel, save, close Excel, then press “Run”. To add bank statements, use the “Tables” inbox above.',
-    ce_ev_by_label: 'Your name (recorded when you confirm or cancel evidence)',
+    ce_ev_by_label:
+      'Decided by (remembered on this computer; recorded when confirming documents, answering questions, adding bank rules and closing a year)',
     ce_rerun_note:
       'While a working folder is connected, your answers are written into “company-data.xlsx” in that folder (the previous file is first copied to “closing-results/backup”).',
     ce_period_why:
@@ -3628,7 +3644,7 @@ const T = {
       'You can run the close, but some items are marked ⚠. Check the inboxes above and “Check details” first.',
     ce_pre_ok: 'All set. You can run the close.',
     ce_pre_block:
-      'Some files are missing or malformed. Fix them following the list above and choose the folder again.',
+      'Some files are missing or malformed. Add them following the list above: drop files into the boxes below and the check runs again by itself (if you edited files in the folder directly, choose the folder again).',
     ce_pre_engine_err: 'The engine found a problem:',
     ce_step_run: 'Close the month',
     ce_step_month: 'Month',
