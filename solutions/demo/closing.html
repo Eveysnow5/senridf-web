@@ -475,6 +475,11 @@
             <p id="ce-ev-count" class="ce-hint" data-i18n="ce_ev_count_none">まだありません</p>
             <label class="ce-btn2" for="ce-in-ev" data-i18n="ce_z_pick">ファイルを選ぶ</label>
             <input type="file" id="ce-in-ev" multiple accept="image/*,application/pdf" class="hidden" data-i18n-title="ce_z_ev_t" />
+            <label class="ce-hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:6px">
+              <input type="checkbox" id="ce-ev-ocr" checked style="margin-top:3px" />
+              <span data-i18n="ce_ev_ocr">写真・スキャンの文字を読み取る（1 ページ目だけ。1 ページ 10〜60 秒かかり、その間パソコンに負荷がかかります）</span>
+            </label>
+            <p class="ce-hint" data-i18n="ce_ev_ocr_d">自動で読み取れるのは、電気料金・大阪市の水道料金の請求書、年金の保険料の納入告知書、地方税の納付書（QR）、中国の電子発票だけです。契約書や一般の領収書は、読み取っても下書きは空のままなので、チェックを外すと速く取り込めます。文字の入った PDF は、チェックに関係なくすぐ読みます。</p>
             <p id="ce-ev-progress" class="ce-status" aria-live="polite"></p>
             <ul id="ce-z-ev-log" class="ce-zlog" aria-live="polite"></ul>
           </div>
@@ -1453,15 +1458,22 @@
         .sort((a, b) => b[0] - a[0])
         .map(([, its]) => its.sort((a, b) => a.transform[4] - b.transform[4]).map((x) => x.str).join(' '));
     }
-    async function* pagesOf(file, buf) {
+    // 识别（OCR）很慢、很占电脑：扫描页只识别第 1 页（能自动读的单据信息都在第 1 页），而且可以整个关掉（ocr＝false）。
+    // 带文字层的页不识别、直接读，照常全读
+    async function* pagesOf(file, buf, ocr = true) {
       if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
         const lib = await loadPdfjs();
         const doc = await lib.getDocument({ data: new Uint8Array(buf.slice(0)), ...PDF_OPTS }).promise;
+        let scanned = 0;
         for (let i = 1; i <= doc.numPages; i++) {
           const page = await doc.getPage(i);
           const lines = textLines((await page.getTextContent()).items);
           if (lines.join('').replace(/\s/g, '').length >= 30) {
             yield { page: i, n: doc.numPages, lines };
+            continue;
+          }
+          if (!ocr || scanned++ >= 1) {
+            yield { page: i, n: doc.numPages, skipped: true };
             continue;
           }
           const vp0 = page.getViewport({ scale: 1 });
@@ -1472,8 +1484,10 @@
           await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
           yield { page: i, n: doc.numPages, bitmap: await createImageBitmap(c) };
         }
-      } else {
+      } else if (ocr) {
         yield { page: null, n: 1, bitmap: await createImageBitmap(new Blob([buf], { type: file.type || 'image/jpeg' })) };
+      } else {
+        yield { page: null, n: 1, skipped: true };
       }
     }
     // 区分（纸质／电子）的先判。只是草稿：人确认时可以改（对方扫描后用邮件发来的请求书，看着是纸，法律上是电子）。
@@ -1542,9 +1556,11 @@
     async function evAdd(list) {
       if (!dirHandle || !list.length) return;
       const prog = $('ce-ev-progress');
+      const useOcr = $('ce-ev-ocr').checked;
       const t0 = performance.now();
       let pages = 0;
       let dups = 0;
+      let saved = 0;
       for (const [fi, file] of list.entries()) {
         const buf = await file.arrayBuffer();
         const sha = await sha256hex(buf);
@@ -1565,25 +1581,53 @@
           window.sdfSetText(prog, 'ce_ev_err_read', { name: file.name, msg: String((e && e.message) || e) });
           continue;
         }
-        let any = false;
+        // 一个文件的页读完再一次交给引擎：没对上模板的页合成一条草稿（以前每页一条，4 页的合同要确认 4 次）
+        const read = [];
+        let total = 1;
+        let skipped = false;
         try {
-          for await (const pg of pagesOf(file, buf)) {
+          for await (const pg of pagesOf(file, buf, useOcr)) {
+            total = pg.n;
+            if (pg.skipped) {
+              skipped = true;
+              continue;
+            }
             window.sdfSetText(prog, 'ce_ev_reading', { name: file.name, i: fi + 1, n: list.length, p: pg.page || 1, pn: pg.n });
-            const lines = pg.lines || (await ocr(pg.bitmap)).lines;
-            const r = await evAsk('add', [rel, sha, kind, today(), [{ page: pg.page, lines }], basis]);
-            if (r && r.ok === false) throw new Error(r.error);
-            any = true;
+            read.push({ page: pg.page, lines: pg.lines || (await ocr(pg.bitmap)).lines });
             pages++;
           }
         } catch (e) {
           console.error(e);
           window.sdfSetText(prog, 'ce_ev_err_read', { name: file.name, msg: String((e && e.message) || e) });
-          if (!any) await evAsk('add', [rel, sha, kind, today(), [{ page: null, lines: [] }], basis]); // 原件已放进去 → 至少留一行空草稿
+        }
+        try {
+          const r = await evAsk('add', [rel, sha, kind, today(), read, basis, total]); // 读不出也至少留一行（引擎保证）
+          if (r && r.ok === false) throw new Error(r.error);
+          if (skipped && !useOcr) window.sdfSetText(prog, 'ce_ev_skipped', { name: file.name });
+          saved++;
+        } catch (e) {
+          console.error(e);
+          window.sdfSetText(prog, 'ce_ev_err_read', { name: file.name, msg: String((e && e.message) || e) });
         }
       }
       // 全部が取り込み済みだったときは「取り込み済み」の知らせを残す（0 頁を読みました、で上書きしない）
-      if (pages || !dups) window.sdfSetText(prog, 'ce_ev_done', { n: pages, s: Math.round((performance.now() - t0) / 1000) });
+      const secs = Math.round((performance.now() - t0) / 1000);
+      if (!useOcr && saved) window.sdfSetText(prog, 'ce_ev_done_noocr', { f: saved, n: pages, s: secs });
+      else if (pages || !dups) window.sdfSetText(prog, 'ce_ev_done', { n: pages, s: secs });
     }
+    try {
+      const v = localStorage.getItem('ce-ev-ocr');
+      if (v !== null) $('ce-ev-ocr').checked = v === '1';
+    } catch {
+      // 存不了就用默认（勾选）
+    }
+    $('ce-ev-ocr').addEventListener('change', () => {
+      try {
+        localStorage.setItem('ce-ev-ocr', $('ce-ev-ocr').checked ? '1' : '0');
+      } catch {
+        // 同上
+      }
+    });
     // ── 两个入口 ─────────────────────────────────────────────────────────
     // 表格：交给引擎看内容（recognize.classify），页面按答案放进文件夹。认不出来的不放（不猜）。
     const IS_TABLE = /\.(xlsx|xlsm|csv)$/i;
@@ -1645,6 +1689,8 @@
                   msg: o.text,
                 });
             }
+          } else if (r.kind === 'workpaper') {
+            zlog(log, 'ng', 'ce_z_workpaper', { name });
           } else if (r.kind === 'journal') {
             // 弥生的分录：不放进文件夹。引擎和同期的银行流水配对，给出银行规则的候选（写进公司资料要用户勾选）
             const j = await evAsk('import_journal', [`_inbox/${name}`], [{ path: `_inbox/${name}`, buf: buf.slice(0) }]);
@@ -1937,6 +1983,8 @@
       const open = el('button', 'ce-link');
       open.type = 'button';
       open.textContent = `${name}${e.page ? ` p.${e.page}` : ''}`;
+      if (Number((e.fields || {}).pages) > 1)
+        open.textContent += window.sdfT('ce_ev_pages').replace('{n}', e.fields.pages); // 一条草稿代表整个文件
       open.title = t('ce_ev_open').replace('{name}', e.file);
       const fc = cell(open);
       open.addEventListener('click', () => openOriginal(e.file, fc));
@@ -3222,6 +3270,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=9d58dbc518"></script>
+  <script src="../../js/main.js?v=18442d47e2"></script>
 </body>
 </html>

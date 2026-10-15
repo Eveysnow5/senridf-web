@@ -347,3 +347,21 @@ test('查分录：文案三语齐全，查询交给引擎（closed/ 和上一次
   const worker = readFileSync(path.join(ROOT, 'solutions', 'demo', 'closing-worker.js'), 'utf8');
   assert.match(worker, /jpclose\.web\.search\(\*ce_args\)/);
 });
+
+// 2026-10-15：证凭一个文件一条草稿；扫描只识别第 1 页、可以关掉；年报底稿给出说明
+test('证凭：一个文件读完再交给引擎；扫描只识别第 1 页；读取文字可关；底稿有说明', () => {
+  const ZH = block('zh');
+  for (const k of [
+    'ce_ev_ocr',
+    'ce_ev_ocr_d',
+    'ce_ev_pages',
+    'ce_ev_skipped',
+    'ce_ev_done_noocr',
+    'ce_z_workpaper',
+  ])
+    for (const [lang, t] of Object.entries({ ja: JA, zh: ZH, en: EN }))
+      assert.ok(k in t, `${lang} 缺 ${k}`);
+  assert.match(HTML, /evAsk\('add', \[rel, sha, kind, today\(\), read, basis, total\]\)/);
+  assert.match(HTML, /if \(!ocr \|\| scanned\+\+ >= 1\)/);
+  assert.match(HTML, /r\.kind === 'workpaper'/);
+});

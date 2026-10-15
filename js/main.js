@@ -747,6 +747,16 @@ const T = {
     ce_ev_reading:
       '読み取り中：{name}（{i}/{n} ファイル・{p}/{pn} 頁）——写真は 1 頁 10〜60 秒かかります',
     ce_ev_done: '{n} 頁を読み取りました（{s} 秒）',
+    ce_ev_ocr:
+      '写真・スキャンの文字を読み取る（1 ページ目だけ。1 ページ 10〜60 秒かかり、その間パソコンに負荷がかかります）',
+    ce_ev_ocr_d:
+      '自動で読み取れるのは、電気料金・大阪市の水道料金の請求書、年金の保険料の納入告知書、地方税の納付書（QR）、中国の電子発票だけです。契約書や一般の領収書は、読み取っても下書きは空のままなので、チェックを外すと速く取り込めます。文字の入った PDF は、チェックに関係なくすぐ読みます。',
+    ce_ev_pages: '（全 {n} ページ）',
+    ce_ev_done_noocr:
+      '{f} 個のファイルを保存しました。写真・スキャンの文字は読み取っていません（文字の入った PDF は {n} 頁読みました・{s} 秒）',
+    ce_ev_skipped: '{name}：写真・スキャンは読み取らずに保存しました（チェックが外れています）',
+    ce_z_workpaper:
+      '△ {name}：年次の財務ワークペーパー（貸借対照表・仕訳帳の表があるもの）です。会社の資料ではないため保存していません。この道具はまだワークペーパーから読み込めません。期首残高は、その貸借対照表の期末残高を会社の資料の「期首残高」シートに写すか、弥生会計の期首残高データを入れてください。',
     ce_ev_attached: '照合先を決めました',
     ce_ans_credit_h: '誰が払ったか（貸方）',
     ce_ans_credit: '貸方の科目（立替なら 未払金）',
@@ -1908,6 +1918,15 @@ const T = {
     ce_ev_err_read: '{name} 读取失败：{msg}（原件已保存，请在草稿里手动填写）',
     ce_ev_reading: '识别中：{name}（第 {i}/{n} 个文件・第 {p}/{pn} 页）——照片每页约 10–60 秒',
     ce_ev_done: '已识别 {n} 页（{s} 秒）',
+    ce_ev_ocr: '读取照片・扫描件上的文字（只读第 1 页。每页 10〜60 秒，期间电脑负载较高）',
+    ce_ev_ocr_d:
+      '能自动读出的只有：电费账单、大阪市水费账单、年金保险费缴纳通知、地方税缴纳书（QR）、中国电子发票。合同和一般收据即使读了，草稿也是空的——取消勾选就能快速导入。带文字的 PDF 不管勾不勾都会马上读取。',
+    ce_ev_pages: '（共 {n} 页）',
+    ce_ev_done_noocr:
+      '已保存 {f} 个文件，照片・扫描件没有识别文字（带文字的 PDF 读了 {n} 页・{s} 秒）',
+    ce_ev_skipped: '{name}：照片・扫描件没有识别，直接保存了（未勾选读取文字）',
+    ce_z_workpaper:
+      '△ {name}：这是财务工作底稿（年报），不是公司资料，没有保存。工具目前还不能从底稿读取。期初余额请把底稿资产负债表的期末余额抄到公司资料的「期初余额」表，或者放入弥生会计的期初余额数据。',
     ce_ev_attached: '已对应到这笔流水',
     ce_ans_credit_h: '谁付的（贷方）',
     ce_ans_credit: '贷方科目（垫付就选 未払金）',
@@ -3086,6 +3105,16 @@ const T = {
     ce_ev_reading:
       'Reading {name} (file {i}/{n}, page {p}/{pn}) — photos take about 10–60 s per page',
     ce_ev_done: 'Read {n} page(s) ({s} s)',
+    ce_ev_ocr:
+      'Read text in photos and scans (first page only; about 10–60 s per page, with a heavy load on the computer meanwhile)',
+    ce_ev_ocr_d:
+      'Only these can be read automatically: electricity bills, Osaka City water bills, pension premium notices, local tax payment slips (QR) and Chinese e-fapiao. Contracts and ordinary receipts give an empty draft even when read, so untick this to add them quickly. PDFs with a text layer are read at once either way.',
+    ce_ev_pages: '({n} pages)',
+    ce_ev_done_noocr:
+      'Saved {f} file(s) without reading text in photos or scans (read {n} page(s) of PDFs with text, {s} s)',
+    ce_ev_skipped: '{name}: saved without reading the photo or scan (reading is unticked)',
+    ce_z_workpaper:
+      '△ {name}: this is a financial workpaper (annual), not the company workbook, so it was not saved. The tool cannot read workpapers yet. For opening balances, copy the closing balances from the balance sheet in the workpaper to the Opening balances sheet, or add Yayoi Kaikei opening-balance data.',
     ce_ev_attached: 'Linked to this row',
     ce_ans_credit_h: 'Who paid (credit)',
     ce_ans_credit: 'Credit account (未払金 for an advance)',
