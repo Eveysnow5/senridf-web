@@ -1217,6 +1217,12 @@ const T = {
     ce_pre_ok: 'ファイルはそろっています。締めを実行できます。',
     ce_pre_block:
       '不足または書式の誤りがあります。上の一覧に沿って補ってください：ファイルは下の入口に入れれば、自動でもう一度確認します（フォルダの中のファイルを直接直したときは、フォルダを選び直してください）。',
+    ce_gaps_recheck: '書いたので、もう一度確認',
+    ce_gaps_choices: '（選ぶ：{list}）',
+    ce_gaps_sheet: '表「{sheet}」',
+    ce_gaps_lead:
+      'フォルダの「{book}」を Excel で開き、次の {n} 項目を埋めてください。「方針」の表は、選んだ欄の右の「判断者」「日付」も書きます。保存したら「書いたので、もう一度確認」を押してください。',
+    ce_pre_gaps: '会社の資料に、まだ決めていない設定があります（下の一覧）。',
     ce_pre_engine_err: 'エンジンが読み込みで問題を見つけました：',
     ce_step_run: '締める',
     ce_step_month: '締める月',
@@ -2415,6 +2421,12 @@ const T = {
     ce_pre_ok: '文件齐全，可以结账。',
     ce_pre_block:
       '有缺少或格式错误的文件。请按上面的清单补齐：把文件放进下面的入口即可，放进去后会自动重新检查（直接改了文件夹里的文件时，请重新选择文件夹）。',
+    ce_gaps_recheck: '填好了，重新检查',
+    ce_gaps_choices: '（可选：{list}）',
+    ce_gaps_sheet: '「{sheet}」表',
+    ce_gaps_lead:
+      '请用 Excel 打开文件夹里的「{book}」，填好下面 {n} 项。「方针」表在选好之后，右边的「判断人」「日期」也要填。保存后点「填好了，重新检查」。',
+    ce_pre_gaps: '公司资料里还有没决定的设定（见下面的清单）。',
     ce_pre_engine_err: '引擎读取时发现问题：',
     ce_step_run: '结账',
     ce_step_month: '结账月份',
@@ -3696,6 +3708,12 @@ const T = {
     ce_pre_ok: 'All set. You can run the close.',
     ce_pre_block:
       'Some files are missing or malformed. Add them following the list above: drop files into the boxes below and the check runs again by itself (if you edited files in the folder directly, choose the folder again).',
+    ce_gaps_recheck: 'Done — check again',
+    ce_gaps_choices: '(choose: {list})',
+    ce_gaps_sheet: 'Sheet “{sheet}”',
+    ce_gaps_lead:
+      'Open “{book}” in the folder with Excel and fill in the {n} items below. On the policy sheet, also fill in “decided by” and “date” to the right of each choice. Save, then click “Done — check again”.',
+    ce_pre_gaps: 'Some settings in the company workbook are not decided yet (see the list below).',
     ce_pre_engine_err: 'The engine found a problem:',
     ce_step_run: 'Close the month',
     ce_step_month: 'Month',

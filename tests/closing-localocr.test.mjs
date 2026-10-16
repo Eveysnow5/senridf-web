@@ -306,3 +306,29 @@ test('页面：用 locateHelper，三种结果各有说法；银行流水放进�
       `${k} 三语`,
     );
 });
+
+test('缺的设定一次列全：按表分组、照抄工作簿里的行名和选项、可以重新检查（作者 2026-10-16）', () => {
+  const html = fs.readFileSync(
+    fileURLToPath(new URL('../solutions/demo/closing.html', import.meta.url)),
+    'utf8',
+  );
+  assert.match(html, /<div id="ce-gaps" class="hidden"><\/div>/);
+  assert.match(html, /renderGaps\(r\.gaps \|\| \[\]\);/);
+  const fn = html.slice(
+    html.indexOf('function renderGaps('),
+    html.indexOf('function renderGaps(') + 2400,
+  );
+  assert.match(fn, /'ce_gaps_recheck'/);
+  assert.match(fn, /files = await readDir\(dirHandle, ''\);/);
+  // 有缺项时说「见清单」，不再显示引擎的一句话
+  assert.ok(html.indexOf("'ce_pre_gaps'") < html.indexOf("'ce_pre_engine_err', ` ${r.error}`"));
+  const main = fs.readFileSync(fileURLToPath(new URL('../js/main.js', import.meta.url)), 'utf8');
+  for (const k of [
+    'ce_pre_gaps',
+    'ce_gaps_lead',
+    'ce_gaps_sheet',
+    'ce_gaps_choices',
+    'ce_gaps_recheck',
+  ])
+    assert.equal(main.split(`\n    ${k}:`).length - 1, 3, `${k} 三语`);
+});

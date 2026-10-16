@@ -240,6 +240,10 @@
     .ce-zlog { list-style:none;margin:8px 0 0;padding:0;font-size:12.5px;line-height:1.7;color:#374151; }
     .ce-zlog li { word-break:break-all; }
     .ce-zlog li.ng { color:#b91c1c; }
+    #ce-gaps { margin:8px 0 4px;padding:10px 14px;border:1px solid #fecaca;border-radius:8px;background:#fff7f7; }
+    .ce-gaps-sheet { margin:10px 0 2px;font-weight:600;font-size:13.5px; }
+    .ce-gaps-list { margin:0 0 6px;padding-left:18px;font-size:13px;line-height:1.7; }
+    .ce-gaps-list li { margin:4px 0; }
     .ce-zlog li.ok { color:#047857; }
     details.ce-listbox.hidden { display:none; }
     .ce-stance { margin:0 0 14px;padding:2px 2px 0;color:#374151;font-size:13px;line-height:1.8; }
@@ -443,6 +447,7 @@
         <p class="ce-hint" style="margin-top:6px" data-i18n="ce_pick_tip">フォルダを選ぶ画面にはフォルダだけが表示されます（中のファイルが見えないのは正常です）。作業フォルダを開いてから「フォルダーの選択」を押してください。</p>
         <p id="ce-open-hint" class="ce-hint hidden" data-i18n="ce_open_hint">Chrome・Edge では、フォルダを直接読み書きできます：締めの結果と回答が自動でフォルダに保存されます（毎回、ブラウザが許可を確認します）。他のブラウザでは「フォルダを選ぶ」を使ってください（読み取りのみで、結果はダウンロードが必要です）。</p>
         <p id="ce-pre" class="ce-status" aria-live="polite"></p>
+        <div id="ce-gaps" class="hidden"></div>
         <div id="ce-zones" class="ce-zones off">
           <div class="ce-zone" id="ce-z-tab">
             <div class="zh"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6M12 11v8"/></svg><span data-i18n="ce_z_tab_t">表（Excel・CSV）</span></div>
@@ -1074,10 +1079,12 @@
           return await precheck();
         }
         renderList(r);
+        renderGaps(r.gaps || []);
         renderRules(r.rules_preview, ((r.items || []).find((x) => x.id === 'bank_rules')?.sheets || [])[0]);
         prechecked = !!r.ready;
         // 有 ⚠ 的项目（流水没到月末・缺开头的月份・本期要用的资料）时，不说「文件齐全」——两句话会打架
         if (r.ready) setStatus($('ce-pre'), (r.items || []).some((x) => x.status === 'warn') ? 'ce_pre_ok_warn' : 'ce_pre_ok');
+        else if ((r.gaps || []).length) setStatus($('ce-pre'), 'ce_pre_gaps', '', true);
         else if (r.error) setStatus($('ce-pre'), 'ce_pre_engine_err', ` ${r.error}`, true);
         else setStatus($('ce-pre'), 'ce_pre_block', '', true);
       } catch (err) {
@@ -1086,6 +1093,57 @@
       } finally {
         if (!running) showProgress(false);
         $('ce-run').disabled = !prechecked;
+      }
+    }
+
+    // 还没决定的设定，一次全列出来（作者 2026-10-16：底稿建的公司只说「company 缺少 prefecture」，一次一项、
+    // 也不说在哪填）。按表分组；行名・选项是公司资料（工作簿）里的原字，选项可以照抄进单元格
+    function renderGaps(gaps) {
+      const box = $('ce-gaps');
+      box.replaceChildren();
+      box.classList.toggle('hidden', !gaps.length);
+      if (!gaps.length) return;
+      const say = (tag, cls, key, params) => {
+        const e = el(tag, cls);
+        window.sdfSetText(e, key, params);
+        return e;
+      };
+      const book = (files.find((f) => BOOKS.includes(f.path)) || {}).path || '';
+      box.appendChild(say('p', 'ce-hint', 'ce_gaps_lead', { n: gaps.length, book }));
+      const sheets = [...new Set(gaps.map((g) => g.sheet))];
+      for (const sh of sheets) {
+        box.appendChild(say('p', 'ce-gaps-sheet', 'ce_gaps_sheet', { sheet: sh }));
+        const ul = el('ul', 'ce-gaps-list');
+        for (const g of gaps.filter((x) => x.sheet === sh)) {
+          const li = document.createElement('li');
+          const b = document.createElement('b');
+          b.textContent = g.row;
+          li.appendChild(b);
+          if (g.choices && g.choices.length) li.append(' ', say('span', '', 'ce_gaps_choices', { list: g.choices.join(' ／ ') }));
+          if (g.help) {
+            const h = document.createElement('div');
+            h.className = 'ce-hint';
+            h.textContent = g.help;
+            li.appendChild(h);
+          }
+          ul.appendChild(li);
+        }
+        box.appendChild(ul);
+      }
+      if (dirHandle) {
+        // 直接读写的文件夹：在 Excel 里改好保存后，点这里重读文件夹（不用重新选文件夹）
+        const btn = el('button', 'ce-btn2', 'ce_gaps_recheck');
+        btn.type = 'button';
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            files = await readDir(dirHandle, '');
+            await afterFiles();
+          } finally {
+            btn.disabled = false;
+          }
+        });
+        box.appendChild(btn);
       }
     }
 
@@ -3473,6 +3531,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=215f171042"></script>
+  <script src="../../js/main.js?v=8c32236ae4"></script>
 </body>
 </html>
