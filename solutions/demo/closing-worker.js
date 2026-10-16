@@ -170,6 +170,7 @@ const EVIDENCE_OPS = new Set([
   'import_journal',
   'import_workpaper',
   'check',
+  'register_bank',
   'add_rules',
 ]);
 const EVIDENCE = `

@@ -976,7 +976,7 @@
     function getWorker() {
       if (!worker) {
         // ?v=：线上给这个文件 4 小时缓存。Worker 的加载方式变了（经典→module）时改这个值，免得新页面配上缓存里的旧 Worker
-        worker = new Worker('closing-worker.js?v=8', { type: 'module' });
+        worker = new Worker('closing-worker.js?v=9', { type: 'module' });
         worker.onmessage = onWorkerMessage;
         worker.onerror = (ev) => {
           console.error(ev);
@@ -1627,8 +1627,15 @@
       window.sdfSetText(prog, 'ce_ev_preparing', { name: list[0].name, i: 1, n: list.length });
       const useOcr = $('ce-ev-ocr').checked;
       // 每次开始前找一次本机识别助手（用户可能刚把它打开）。找不到就用浏览器识别
-      let fast = useOcr ? await (await loadLocalOcr()).findHelper() : null;
-      if (useOcr) window.sdfSetText($('ce-ev-helper'), fast ? 'ce_ev_helper_on' : 'ce_ev_helper_off', { v: fast ? fast.version : '' });
+      // 浏览器要用户允许「连本机」时，先提示去点「允许」再等（说清楚是没运行、还是浏览器不让连）
+      let fast = null;
+      if (useOcr) {
+        const helperBox = $('ce-ev-helper');
+        const h = await (await loadLocalOcr()).locateHelper({ onAsk: () => window.sdfSetText(helperBox, 'ce_ev_helper_ask') });
+        fast = h.state === 'ok' ? h : null;
+        const key = { ok: 'ce_ev_helper_on', denied: 'ce_ev_helper_denied', absent: 'ce_ev_helper_off' }[h.state];
+        window.sdfSetText(helperBox, key, { v: h.version || '' });
+      }
       let lost = false;
       let rereads = 0; // 验算没过、用浏览器补读的页数
       let improved = 0; // 其中补读后验算通过更多的
@@ -1765,8 +1772,40 @@
             files = await readDir(dirHandle, ''); // 接下来的流水要对着新的列名登记来认
           } else if (r.kind === 'bank') {
             await writeFile(['bank', name], buf);
-            zlog(log, 'ok', r.checked ? 'ce_z_bank_ok' : 'ce_z_bank_unchecked', { name });
             filed++;
+            // 公司资料里还没有银行账户（从底稿新建的公司就是这样）：从这份流水登记一个——列名从表头认，
+            // 余额前后接得上才登记；和期初余额对不对得上也说出来（作者 2026-10-16：放了流水还是「缺少」）
+            const g = r.checked ? null : await evAsk('register_bank', [`bank/${name}`], [{ path: `bank/${name}`, buf: buf.slice(0) }]);
+            const old = files.find((f) => BOOKS.includes(f.path));
+            if (g && g.ok && old) {
+              const bk = [outDir(), names().bak, `${stamp()}_${old.path}`];
+              await writeFile(bk, old.buf);
+              await writeFile([old.path], reportBytes({ b64: g.book }));
+              const c = g.cols;
+              zlog(log, 'ok', 'ce_bk_ok', {
+                name,
+                acct: `${g.account} ${g.sub || ''}`.trim(),
+                cols: [c.date, c.desc, c.out, c.in, c.balance].join('・'),
+                n: g.n,
+                from: g.first,
+                to: g.last,
+                path: bk.join('/'),
+              });
+              const yen = (v) => Number(v).toLocaleString('ja-JP');
+              if (g.opening_ok === true) zlog(log, '', 'ce_bk_open_ok', { name, before: yen(g.before) });
+              else if (g.opening_ok === false)
+                zlog(log, 'ng', 'ce_bk_open_ng', { name, before: yen(g.before), opening: yen(g.opening) });
+              files = await readDir(dirHandle, '');
+            } else if (g && ['choose', 'chain', 'cols'].includes(g.error)) {
+              zlog(log, 'ng', `ce_bk_${g.error}`, { name, list: (g.list || []).join('・'), n: g.n });
+            } else if (r.checked) {
+              zlog(log, 'ok', 'ce_z_bank_ok', { name });
+            } else {
+              // 还没有公司资料（以后放进来，检查时再对照列名）；或登记没成（原因写在后面）
+              zlog(log, 'ok', g && g.error === 'no_book' ? 'ce_z_bank_nobook' : 'ce_z_bank_unchecked', { name });
+              if (g && g.ok === false && !['no_book', 'has_banks'].includes(g.error))
+                zlog(log, 'ng', 'ce_z_err', { name, msg: g.text || g.error || '' });
+            }
           } else if (r.kind === 'opening') {
             // 弥生会計的期初余额数据：引擎写进公司资料的「期初余额」表，返回改好的工作簿；这里备份旧的再换上
             const o = await evAsk('import_opening', [`_inbox/${name}`], [{ path: `_inbox/${name}`, buf: buf.slice(0) }]);
@@ -3434,6 +3473,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=fd4eb23da4"></script>
+  <script src="../../js/main.js?v=215f171042"></script>
 </body>
 </html>

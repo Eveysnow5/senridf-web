@@ -761,7 +761,7 @@ const T = {
     ce_ev_helper_on:
       '本機の読み取り助手（{v}）で読みます：1 ページ約 1 秒、全ページ。書類の種類は分かったのに検算が通らなかった頁だけ、ブラウザの中でもう一度読みます（1 頁約 45 秒）',
     ce_ev_helper_off:
-      '本機の読み取り助手が見つからないので、ブラウザの中で 1 ページ目だけ読みます（1 ページ 10〜60 秒、その間パソコンに負荷がかかります）。Windows なら助手を起動すると速くなります',
+      '本機の読み取り助手が動いていません。start-ocr-helper.cmd をダブルクリックして起動し、窓は開いたままにしてください。今回はブラウザの中で 1 ページ目だけ読みます（1 ページ 10〜60 秒、その間パソコンに負荷がかかります）',
     ce_ev_helper_lost:
       '本機の読み取り助手が途中で止まりました（{msg}）。残りのスキャンの頁は読んでいません（原本は保存済み）。助手を起動し直して、もう一度入れてください',
     ce_ev_reading_fast: '読み取り中：{name}（{i}/{n} ファイル・{p}/{pn} 頁）',
@@ -1088,6 +1088,23 @@ const T = {
     ce_z_bank_ok: '✓ {name} → 銀行明細（bank フォルダ）',
     ce_z_bank_unchecked:
       '✓ {name} → 銀行明細（bank フォルダ）。会社の資料に銀行口座がまだ登録されていないので、列名は照らしていません（登録すると次の確認で照らします）',
+    ce_ev_helper_denied:
+      'ブラウザがこのページから本機の読み取り助手へつなぐのを止めています。アドレスバー左のアイコン →「このサイトのアクセス許可」で「ローカル ネットワーク アクセス」（このデバイス上のアプリ）を「許可」にして、ページを読み込み直してください。今回はブラウザの中で 1 ページ目だけ読みます',
+    ce_ev_helper_ask:
+      'ブラウザが「このデバイス上の他のアプリへのアクセス」を許可するか尋ねています。「許可」を押してください（本機の読み取り助手につなぐためです。最大 60 秒待ちます）',
+    ce_bk_cols:
+      '{name}：日付・摘要・出金・入金・残高の列を見出しから見分けられませんでした。会社の資料の「銀行口座」の表に列名を書いてください',
+    ce_bk_chain:
+      '{name}：見出しから当てた列で読むと、残高が {n} か所つながりません。列の当て違いかもしれないので登録していません。会社の資料の「銀行口座」の表に列名を書いてください',
+    ce_bk_choose:
+      '{name}：期首残高に預金の行がいくつもあり（{list}）、どの口座の明細か決められません。会社の資料の「銀行口座」の表に登録してください',
+    ce_bk_open_ng:
+      '{name}：明細の最初の取引の前の残高は {before} 円、期首残高は {opening} 円で合いません。明細が期首から始まっているか、期首残高を確かめてください',
+    ce_bk_open_ok: '{name}：明細の最初の取引の前の残高 {before} 円が、期首残高と一致しました',
+    ce_bk_ok:
+      '✓ {name}：会社の資料に銀行口座「{acct}」を登録しました（列：日付・摘要・出金・入金・残高＝{cols}。{n} 件 {from}〜{to}、残高は前後つながっています）。前のブックは {path} に控えました',
+    ce_z_bank_nobook:
+      '✓ {name} → 銀行明細（bank フォルダ）。会社の資料がまだ無いので、列名は未確認です',
     ce_z_bank_other:
       '✗ {name}：銀行明細のようですが、見出し（{found}）が、会社の資料の「銀行口座」シートに登録した列名（{want}）と違います。登録の列名をファイルの書き方に合わせてから、もう一度入れてください',
     ce_z_unknown:
@@ -1973,7 +1990,7 @@ const T = {
     ce_ev_helper_on:
       '用本机识别助手（{v}）识别：每页约 1 秒，全部页。认出了单据种类但验算没过的页，再在浏览器里读一遍（每页约 45 秒）',
     ce_ev_helper_off:
-      '没有找到本机识别助手，在浏览器里只读第 1 页（每页 10〜60 秒，期间电脑负载较高）。Windows 电脑打开助手会快很多',
+      '本机识别助手没有在运行。请双击 start-ocr-helper.cmd 打开它，窗口保持开着。这次先在浏览器里只读第 1 页（每页 10〜60 秒，期间电脑负载较高）',
     ce_ev_helper_lost:
       '本机识别助手中途停了（{msg}）。剩下的扫描页没有识别（原件已保存）。请重新打开助手，再放一次',
     ce_ev_reading_fast: '识别中：{name}（第 {i}/{n} 个文件・第 {p}/{pn} 页）',
@@ -2278,6 +2295,22 @@ const T = {
     ce_z_bank_ok: '✓ {name} → 银行流水（bank 文件夹）',
     ce_z_bank_unchecked:
       '✓ {name} → 银行流水（bank 文件夹）。公司资料里还没有登记银行账户，列名还没对照（登记后，下次检查会自动对照）',
+    ce_ev_helper_denied:
+      '浏览器挡住了本页连接本机识别助手。请点地址栏左边的图标 →「此站点的权限」，把「本地网络访问」（此设备上的应用）改成「允许」，再刷新页面。这次先在浏览器里只读第 1 页',
+    ce_ev_helper_ask:
+      '浏览器正在询问是否允许「访问此设备上的其他应用」，请点「允许」（这是为了连上本机识别助手；最多等 60 秒）',
+    ce_bk_cols:
+      '{name}：从表头认不出日期・摘要・出金・入金・余额各是哪一列。请在公司资料的「银行账户」表里填列名',
+    ce_bk_chain:
+      '{name}：按表头认出的列读，余额有 {n} 处前后接不上，可能认错了列，所以没有登记。请在公司资料的「银行账户」表里填列名',
+    ce_bk_choose:
+      '{name}：期初余额里有好几个存款明细（{list}），分不出这份流水是哪一个。请在公司资料的「银行账户」表里登记',
+    ce_bk_open_ng:
+      '{name}：流水第一笔之前的余额是 {before} 日元，期初余额是 {opening} 日元，对不上。请确认流水是否从期初开始，或者期初余额是否正确',
+    ce_bk_open_ok: '{name}：流水第一笔之前的余额 {before} 日元，和期初余额一致',
+    ce_bk_ok:
+      '✓ {name}：已在公司资料里登记银行账户「{acct}」（列：日期・摘要・出金・入金・余额＝{cols}；{n} 笔 {from}〜{to}，余额前后相接）。原来的公司资料已备份到 {path}',
+    ce_z_bank_nobook: '✓ {name} → 银行流水（bank 文件夹）。还没有公司资料，列名尚未核对',
     ce_z_bank_other:
       '✗ {name}：看起来是银行流水，但表头（{found}）和公司资料「银行账户」表里登记的列名（{want}）不一样。请把登记的列名改成文件里的写法，再放一次',
     ce_z_unknown: '✗ {name}：不是公司资料、银行流水，也不是弥生会計的期初余额数据，没有保存',
@@ -3199,7 +3232,7 @@ const T = {
     ce_ev_helper_on:
       'Reading with the local helper ({v}): about 1 s per page, all pages. Pages whose kind is recognised but whose cross-check fails are read once more in the browser (about 45 s per page)',
     ce_ev_helper_off:
-      'The local reading helper was not found, so only the first page is read inside the browser (10–60 s per page, with a heavy load on the computer meanwhile). On Windows, starting the helper makes this much faster',
+      'The local reading helper is not running. Double-click start-ocr-helper.cmd and keep its window open. This time only the first page is read inside the browser (10–60 s per page, with a heavy load on the computer meanwhile)',
     ce_ev_helper_lost:
       'The local reading helper stopped part way ({msg}). The remaining scanned pages were not read (the originals are saved). Start the helper again and add the files once more',
     ce_ev_reading_fast: 'Reading {name} (file {i}/{n}, page {p}/{pn})',
@@ -3527,6 +3560,24 @@ const T = {
     ce_z_bank_ok: '✓ {name} → bank statements (“bank” folder)',
     ce_z_bank_unchecked:
       '✓ {name} → bank statements (“bank” folder). No bank account is registered in the company workbook yet, so the column names are not checked (they will be at the next check once one is registered)',
+    ce_ev_helper_denied:
+      'The browser is blocking this page from reaching the local reading helper. Click the icon left of the address bar → site permissions, set “Local network access” (apps on this device) to Allow, and reload. This time only the first page is read inside the browser',
+    ce_ev_helper_ask:
+      'The browser is asking whether to allow access to other apps on this device. Click “Allow” (this connects to the local reading helper; waiting up to 60 s)',
+    ce_bk_cols:
+      '{name}: could not tell the date, description, out, in and balance columns from the header. Enter the column names in the “bank accounts” sheet of the company workbook',
+    ce_bk_chain:
+      '{name}: read with the columns guessed from the header, the balance breaks in {n} place(s); the guess may be wrong, so nothing was registered. Enter the column names in the “bank accounts” sheet of the company workbook',
+    ce_bk_choose:
+      '{name}: the opening balances have several deposit lines ({list}), so it is unclear which account this statement belongs to. Register it in the “bank accounts” sheet of the company workbook',
+    ce_bk_open_ng:
+      '{name}: the balance before the first transaction is {before} yen but the opening balance is {opening} yen. Check that the statement starts at the opening date, or check the opening balance',
+    ce_bk_open_ok:
+      '{name}: the balance before the first transaction ({before} yen) matches the opening balance',
+    ce_bk_ok:
+      '✓ {name}: registered the bank account “{acct}” in the company workbook (columns date・description・out・in・balance = {cols}; {n} rows {from}–{to}, balances chain correctly). The previous workbook was backed up to {path}',
+    ce_z_bank_nobook:
+      '✓ {name} → bank statements (“bank” folder). No company workbook yet, so the column names are unchecked',
     ce_z_bank_other:
       '✗ {name}: this looks like a bank statement, but its headings ({found}) differ from the column names registered on the “Bank accounts” sheet of the company workbook ({want}). Change the registered names to match the file, then add it again',
     ce_z_unknown:

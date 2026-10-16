@@ -36,6 +36,38 @@ export async function findHelper(fetchImpl = fetch, ms = 1200) {
   }
 }
 
+/** 浏览器给不给本页连本机（Local Network Access，Chrome・Edge 142 以后）：'granted'・'prompt'・'denied'；
+ * 没有这个权限的浏览器（旧版・Firefox）是 'unknown'——那里不拦，直接连。
+ * 2026-10-16 实测（Edge 146）：没允许时请求被挡（「access the loopback address space」），允许后连得上。 */
+export async function permissionState(nav = globalThis.navigator) {
+  for (const name of ['loopback-network', 'local-network-access']) {
+    try {
+      return (await nav.permissions.query({ name })).state;
+    } catch {
+      // 这个名字不认识：试下一个
+    }
+  }
+  return 'unknown';
+}
+
+/** 找助手，并说清楚为什么没找到：{state:'ok', version, langs}／{state:'denied'}（浏览器不让连本机）／
+ * {state:'absent'}（没在运行）。浏览器正在问用户时（prompt）请求要等用户点，所以先 onAsk() 提示、再等最多 askMs。
+ * 以前只等 1.2 秒：用户还没来得及点「允许」，页面就说「没找到」并退回慢的浏览器识别（作者 2026-10-16）。 */
+export async function locateHelper({
+  fetchImpl = fetch,
+  nav = globalThis.navigator,
+  onAsk = null,
+  askMs = 60000,
+} = {}) {
+  const perm = await permissionState(nav);
+  if (perm === 'denied') return { state: 'denied' };
+  if (perm === 'prompt' && onAsk) onAsk();
+  const h = await findHelper(fetchImpl, perm === 'prompt' ? askMs : 3000);
+  if (h) return { state: 'ok', ...h };
+  const after = perm === 'prompt' ? await permissionState(nav) : perm;
+  return { state: after === 'denied' ? 'denied' : 'absent' };
+}
+
 /** 一页图片（JPEG Blob）交给助手，返回拼好的行。 */
 export async function helperRead(blob, lang = 'ja', fetchImpl = fetch) {
   const r = await fetchImpl(`${HELPER}/ocr?lang=${encodeURIComponent(lang)}`, {

@@ -10,6 +10,8 @@ import {
   toGray,
   findHelper,
   helperRead,
+  locateHelper,
+  permissionState,
   HELPER,
 } from '../solutions/demo/closing-localocr.mjs';
 
@@ -113,7 +115,7 @@ test('页面：有助手走快路，助手中途没了不悄悄换成浏览器�
     'utf8',
   );
   assert.match(html, /import\('\.\/closing-localocr\.mjs\?v=\d+'\)/);
-  assert.match(html, /findHelper\(\)/);
+  assert.match(html, /locateHelper\(/);
   assert.match(html, /lost = true;/);
   assert.match(html, /id="ce-ev-helper"/);
 });
@@ -168,11 +170,11 @@ test('入口：表格和凭证各排各的队；排队・准备时马上提示�
   assert.match(fn, /'ce_ev_queued'/);
   const ev = html.slice(
     html.indexOf('async function evAdd('),
-    html.indexOf('async function evAdd(') + 600,
+    html.indexOf('async function evAdd(') + 1500,
   );
   assert.ok(
     ev.indexOf("'ce_ev_preparing'") > 0 &&
-      ev.indexOf("'ce_ev_preparing'") < ev.indexOf('findHelper'),
+      ev.indexOf("'ce_ev_preparing'") < ev.indexOf('locateHelper'),
     '找助手之前先提示',
   );
   const main = fs.readFileSync(fileURLToPath(new URL('../js/main.js', import.meta.url)), 'utf8');
@@ -193,4 +195,114 @@ test('判断人：页面顶部一处，记在这台电脑；其他地方空着�
   assert.match(html, /\$\('ce-ev-by'\)\.value = savedBy\(\);/);
   assert.match(html, /\$\('ce-lr-by'\)\.value\.trim\(\) \|\| evBy\(\)/);
   assert.match(html, /\$\('ce-cy-by'\)\.value\.trim\(\) \|\| evBy\(\)/);
+});
+
+// 浏览器的「连本机」权限（Edge 146 实测：没允许时被挡）。nav 是假的：permissions.query 按名字回答
+const navWith = (states) => ({
+  permissions: {
+    query: async ({ name }) => {
+      if (!(name in states)) throw new TypeError('unknown permission');
+      const v = states[name];
+      return { state: typeof v === 'function' ? v() : v };
+    },
+  },
+});
+const okFetch = async () => ({
+  ok: true,
+  json: async () => ({ ok: true, version: '0.1.1', langs: ['ja'] }),
+});
+const failFetch = async () => Promise.reject(new TypeError('Failed to fetch'));
+
+test('权限：先查 loopback-network，没有这个名字的浏览器是 unknown', async () => {
+  assert.equal(await permissionState(navWith({ 'loopback-network': 'granted' })), 'granted');
+  assert.equal(await permissionState(navWith({ 'local-network-access': 'denied' })), 'denied');
+  assert.equal(await permissionState(navWith({})), 'unknown');
+});
+
+test('找助手：被浏览器挡住时说「不让连」，不说「没运行」；也不去请求', async () => {
+  let asked = 0;
+  const r = await locateHelper({
+    nav: navWith({ 'loopback-network': 'denied' }),
+    fetchImpl: async () => {
+      asked++;
+      return okFetch();
+    },
+  });
+  assert.deepEqual([r.state, asked], ['denied', 0]);
+});
+
+test('找助手：浏览器正在问用户时先提示去点「允许」，并等得比平时久', async () => {
+  let told = 0;
+  let waited = 0;
+  const slowOk = (url, opt) =>
+    new Promise((res, rej) => {
+      const t = setTimeout(() => res(okFetch()), 50);
+      opt.signal.addEventListener('abort', () => {
+        clearTimeout(t);
+        rej(new Error('abort'));
+      });
+      waited = 1;
+    });
+  const r = await locateHelper({
+    nav: navWith({ 'loopback-network': 'prompt' }),
+    fetchImpl: slowOk,
+    onAsk: () => told++,
+    askMs: 2000,
+  });
+  assert.deepEqual([r.state, told, waited], ['ok', 1, 1]);
+});
+
+test('找助手：用户点了「拒绝」→ denied；权限没问题但连不上 → absent（请打开助手）', async () => {
+  let st = 'prompt';
+  const nav = navWith({ 'loopback-network': () => st });
+  const denyThenFail = async () => {
+    st = 'denied';
+    throw new TypeError('Failed to fetch');
+  };
+  assert.equal((await locateHelper({ nav, fetchImpl: denyThenFail, askMs: 500 })).state, 'denied');
+  assert.equal(
+    (await locateHelper({ nav: navWith({ 'loopback-network': 'granted' }), fetchImpl: failFetch }))
+      .state,
+    'absent',
+  );
+  assert.equal((await locateHelper({ nav: navWith({}), fetchImpl: okFetch })).state, 'ok');
+});
+
+test('页面：用 locateHelper，三种结果各有说法；银行流水放进来时没有账户就登记', () => {
+  const html = fs.readFileSync(
+    fileURLToPath(new URL('../solutions/demo/closing.html', import.meta.url)),
+    'utf8',
+  );
+  assert.match(html, /locateHelper\(\{ onAsk:/);
+  for (const k of [
+    'ce_ev_helper_on',
+    'ce_ev_helper_denied',
+    'ce_ev_helper_off',
+    'ce_ev_helper_ask',
+  ])
+    assert.ok(html.includes(`'${k}'`), k);
+  assert.match(html, /evAsk\('register_bank', \[`bank\/\$\{name\}`\]/);
+  const worker = fs.readFileSync(
+    fileURLToPath(new URL('../solutions/demo/closing-worker.js', import.meta.url)),
+    'utf8',
+  );
+  assert.match(worker, /'register_bank',/);
+  const main = fs.readFileSync(fileURLToPath(new URL('../js/main.js', import.meta.url)), 'utf8');
+  for (const k of [
+    'ce_bk_ok',
+    'ce_bk_open_ok',
+    'ce_bk_open_ng',
+    'ce_bk_choose',
+    'ce_bk_chain',
+    'ce_bk_cols',
+    'ce_z_bank_nobook',
+    'ce_ev_helper_ask',
+    'ce_ev_helper_denied',
+  ])
+    assert.equal(
+      main.split(`
+    ${k}:`).length - 1,
+      3,
+      `${k} 三语`,
+    );
 });
