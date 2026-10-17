@@ -76,6 +76,7 @@
     .ce-line { display:grid;grid-template-columns:2fr 1.2fr 1.2fr 1fr auto;gap:6px;align-items:center; }
     .ce-grid2 { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
     .ce-err { color:#b91c1c;font-size:12px;min-height:16px; }
+    .ce-input[aria-invalid='true'] { border-color:#b91c1c;box-shadow:0 0 0 1px #b91c1c; }
     .ce-diff { font-size:12px;color:#6b7280; }
     .ce-diff.bad { color:#b91c1c; }
     .ce-answered { font-size:11px;color:#047857;font-weight:600;white-space:nowrap; }
@@ -723,8 +724,13 @@
     initErrorReporting({ db });
 
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+    // 判断人的默认＝登录的人（作者 2026-10-17：判断人不该每次填，自动带入用户名）。在顶部栏改过的名字优先（记在这台电脑）
+    let loginName = '';
     function showEmail(user) {
       document.getElementById('user-email').textContent = user.email;
+      loginName = user.displayName || user.email || '';
+      const by = document.getElementById('ce-ev-by');
+      if (by && !by.value) by.value = savedBy();
     }
     mountAuthGate({ auth, db, onApproved: showEmail, onAdmin: showEmail });
 
@@ -784,18 +790,22 @@
       if ($('ce-result').classList.contains('hidden'))
         $('ce-listbox').open = (result?.items || []).some((x) => ['missing', 'error'].includes(x.status));
       // 上面的两张卡片：公司资料.xlsx ＝ 公司・员工・期初余额三项里最差的；bank ＝ 银行流水那一项
+      // 公司资料在、只是还有设定没定（缺项清单）：不说「缺少」——文件明明放了（作者 2026-10-17）
+      const gapsN = (result?.gaps || []).length;
       const card = (elId, ids) => {
         const xs = ids.map((i) => byId[i]).filter(Boolean);
         const worst = ['error', 'missing', 'warn'].find((s) => xs.some((x) => x.status === s));
-        const status = !xs.length ? 'wait' : worst || 'ok';
+        let status = !xs.length ? 'wait' : worst || 'ok';
+        if (elId === 'ce-c-book' && gapsN && status === 'missing') status = 'gaps';
         const box = $(elId);
         box.classList.toggle('ok', status === 'ok');
         box.classList.toggle('ng', status === 'error' || status === 'missing');
         const st = box.querySelector('.ce-st');
-        st.className = `ce-st ${status}`;
-        window.sdfSetText(st, status === 'warn' ? 'ce_s_note' : `ce_s_${status}`);
+        st.className = `ce-st ${status === 'gaps' ? 'warn' : status}`;
+        if (status === 'gaps') window.sdfSetText(st, 'ce_s_gaps', { n: gapsN });
+        else window.sdfSetText(st, status === 'warn' ? 'ce_s_note' : `ce_s_${status}`);
         const why = box.querySelector('.x');
-        why.classList.toggle('warn', status === 'warn');
+        why.classList.toggle('warn', status === 'warn' || status === 'gaps');
         why.textContent = xs
           .filter((x) => BAD.includes(x.status) && x.detail)
           .map((x) => x.detail)
@@ -2198,7 +2208,7 @@
       const v = $('ce-ev-by').value.trim();
       if (v) {
         try {
-          localStorage.setItem('ce_by', v);
+          if (v !== loginName) localStorage.setItem('ce_by', v); // 自动带入的登录名不记（换人登录时跟着换）
         } catch (e) {
           console.error(e);
         }
@@ -2369,6 +2379,16 @@
         ok.addEventListener('click', async () => {
           const by = evBy();
           if (!by) return window.sdfSetText(err, 'ce_ans_err_by');
+          // 电子帐簿保存法：日期・金额・交易方齐了才能确认。缺哪栏就说哪栏，并把那一栏标出来（作者 2026-10-17）
+          const v0 = values();
+          const need = [
+            [date, !v0.date, 'ce_ev_q_date'],
+            [amount, v0.amount === null || Number.isNaN(v0.amount), 'ce_ev_q_amount'],
+            [party, !v0.party, 'ce_ev_q_party'],
+          ];
+          need.forEach(([f, miss]) => f.setAttribute('aria-invalid', miss ? 'true' : 'false'));
+          const miss = need.filter((x) => x[1]).map((x) => t(x[2]));
+          if (miss.length) return window.sdfSetText(err, 'ce_ev_err_need', { list: miss.join('・') });
           let reason = '';
           if (e.status === '確認済') {
             reason = await askReason(act, 'ce_ev_reason_fix');
@@ -3269,10 +3289,10 @@
     }
     function savedBy() {
       try {
-        return localStorage.getItem('ce_by') || '';
+        return localStorage.getItem('ce_by') || loginName;
       } catch (e) {
         console.error(e);
-        return '';
+        return loginName;
       }
     }
 
@@ -3474,7 +3494,7 @@
           return window.sdfSetText(err, 'ce_ans_err_reason');
         }
         try {
-          localStorage.setItem('ce_by', a.by);
+          if (a.by !== loginName) localStorage.setItem('ce_by', a.by); // 自动带入的登录名不记（换人登录时跟着换）
         } catch (e) {
           console.error(e);
         }
@@ -3545,7 +3565,7 @@
         }
         if (!v.by) return window.sdfSetText(err, 'ce_ans_err_by');
         try {
-          localStorage.setItem('ce_by', v.by);
+          if (v.by !== loginName) localStorage.setItem('ce_by', v.by); // 自动带入的登录名不记（换人登录时跟着换）
         } catch (e) {
           console.error(e);
         }
@@ -3636,6 +3656,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=8317a274aa"></script>
+  <script src="../../js/main.js?v=3b160db8ca"></script>
 </body>
 </html>

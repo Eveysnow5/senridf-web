@@ -109,6 +109,26 @@ test('识别：助手的错误原样报出（页面据此停止快路）', async
   assert.deepEqual(ok.lines, ['領収']);
 });
 
+test('识别：连接断了一次先重试，两次都断才报出（回放 2026-10-17：助手开着也偶尔 Failed to fetch）', async () => {
+  const blob = new Blob([new Uint8Array([1])], { type: 'image/jpeg' });
+  let n = 0;
+  const flaky = async () => {
+    n++;
+    if (n === 1) throw new TypeError('Failed to fetch');
+    return { ok: true, json: async () => ({ ms: 1, lines: [{ words: [w('領', 0)] }] }) };
+  };
+  const r = await helperRead(blob, 'ja', flaky, 0);
+  assert.equal(n, 2);
+  assert.deepEqual(r.lines, ['領']);
+  let m = 0;
+  const dead = async () => {
+    m++;
+    throw new TypeError('Failed to fetch');
+  };
+  await assert.rejects(helperRead(blob, 'ja', dead, 0), /Failed to fetch/);
+  assert.equal(m, 2); // 只重试一次，不会一直等
+});
+
 test('页面：有助手走快路，助手中途没了不悄悄换成浏览器识别', () => {
   const html = fs.readFileSync(
     fileURLToPath(new URL('../solutions/demo/closing.html', import.meta.url)),

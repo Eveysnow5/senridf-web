@@ -69,12 +69,22 @@ export async function locateHelper({
 }
 
 /** 一页图片（JPEG Blob）交给助手，返回拼好的行。 */
-export async function helperRead(blob, lang = 'ja', fetchImpl = fetch) {
-  const r = await fetchImpl(`${HELPER}/ocr?lang=${encodeURIComponent(lang)}`, {
-    method: 'POST',
-    headers: { 'Content-Type': blob.type || 'image/jpeg' },
-    body: blob,
-  });
+export async function helperRead(blob, lang = 'ja', fetchImpl = fetch, retryMs = 400) {
+  const call = () =>
+    fetchImpl(`${HELPER}/ocr?lang=${encodeURIComponent(lang)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': blob.type || 'image/jpeg' },
+      body: blob,
+    });
+  let r;
+  try {
+    r = await call();
+  } catch (e) {
+    // 连接层的一次失败（Failed to fetch）先重试一次：助手开着时也偶尔会断一条连接（回放 2026-10-17）。
+    // 再失败才交给调用方当「中途停了」
+    await new Promise((ok) => setTimeout(ok, retryMs));
+    r = await call();
+  }
   const j = await r.json();
   if (!r.ok) throw new Error(j && j.error ? j.error : `helper ${r.status}`);
   return { lines: toLines(j.lines || []), ms: j.ms, turned: j.turned || 0 };
