@@ -856,8 +856,10 @@
         const st = document.createElement('span');
         const x = byId[id];
         const status = x ? x.status : 'wait';
-        st.className = `ce-st ${status}`;
-        window.sdfSetText(st, `ce_s_${status}`);
+        const gapsOnly = id === 'company' && status === 'missing' && (result?.gaps || []).length;
+        st.className = `ce-st ${gapsOnly ? 'warn' : status}`;
+        if (gapsOnly) window.sdfSetText(st, 'ce_s_gaps', { n: result.gaps.length });
+        else window.sdfSetText(st, `ce_s_${status}`);
         s.appendChild(st);
         if (x && x.detail) {
           const dd = document.createElement('div');
@@ -999,7 +1001,7 @@
     function getWorker() {
       if (!worker) {
         // ?v=：线上给这个文件 4 小时缓存。Worker 的加载方式变了（经典→module）时改这个值，免得新页面配上缓存里的旧 Worker
-        worker = new Worker('closing-worker.js?v=9', { type: 'module' });
+        worker = new Worker('closing-worker.js?v=10', { type: 'module' });
         worker.onmessage = onWorkerMessage;
         worker.onerror = (ev) => {
           console.error(ev);
@@ -1127,17 +1129,51 @@
         return e;
       };
       const book = (files.find((f) => BOOKS.includes(f.path)) || {}).path || '';
-      box.appendChild(say('p', 'ce-hint', 'ce_gaps_lead', { n: gaps.length, book }));
+      box.appendChild(say('p', 'ce-hint', dirHandle ? 'ce_gaps_lead_qa' : 'ce_gaps_lead', { n: gaps.length, book }));
       const sheets = [...new Set(gaps.map((g) => g.sheet))];
       for (const sh of sheets) {
         box.appendChild(say('p', 'ce-gaps-sheet', 'ce_gaps_sheet', { sheet: sh }));
         const ul = el('ul', 'ce-gaps-list');
         for (const g of gaps.filter((x) => x.sheet === sh)) {
           const li = document.createElement('li');
+          li.dataset.key = g.key || '';
+          const lab = document.createElement('label');
           const b = document.createElement('b');
           b.textContent = g.row;
-          li.appendChild(b);
-          if (g.choices && g.choices.length) li.append(' ', say('span', '', 'ce_gaps_choices', { list: g.choices.join(' ／ ') }));
+          lab.appendChild(b);
+          // 有选项：下拉（选项是公司资料里的原字）；没有：输入框（说明里有写法和例子）
+          let c;
+          if (g.choices && g.choices.length && !g.free) {
+            c = el('select', 'ce-input');
+            const none = document.createElement('option');
+            none.value = '';
+            window.sdfSetText(none, 'ce_gaps_pick');
+            c.appendChild(none);
+            for (const w of g.choices) {
+              const o = document.createElement('option');
+              o.value = w;
+              o.textContent = w;
+              c.appendChild(o);
+            }
+          } else {
+            c = el('input', 'ce-input');
+            c.type = 'text';
+            if (g.choices && g.choices.length) {
+              // 选项之外也能填（工资截止日：「月末」或日的数字）：选项只当建议
+              const dl = document.createElement('datalist');
+              dl.id = `ce-gl-${(g.key || '').replace(/\W/g, '_')}`;
+              for (const w of g.choices) {
+                const o = document.createElement('option');
+                o.value = w;
+                dl.appendChild(o);
+              }
+              c.setAttribute('list', dl.id);
+              li.appendChild(dl);
+            }
+          }
+          c.title = g.row;
+          lab.append(' ', c);
+          li.appendChild(lab);
           if (g.help) {
             const h = document.createElement('div');
             h.className = 'ce-hint';
@@ -1148,21 +1184,63 @@
         }
         box.appendChild(ul);
       }
-      if (dirHandle) {
-        // 直接读写的文件夹：在 Excel 里改好保存后，点这里重读文件夹（不用重新选文件夹）
-        const btn = el('button', 'ce-btn2', 'ce_gaps_recheck');
-        btn.type = 'button';
-        btn.addEventListener('click', async () => {
-          btn.disabled = true;
-          try {
+      if (!dirHandle) return; // 只读的旧入口：写不回文件夹，只能用 Excel 填
+      const row = el('div', 'ce-row');
+      const save = el('button', 'ce-btn', 'ce_gaps_save');
+      save.type = 'button';
+      save.id = 'ce-gaps-save';
+      const again = el('button', 'ce-btn2', 'ce_gaps_recheck');
+      again.type = 'button';
+      again.id = 'ce-gaps-recheck';
+      row.append(save, again);
+      box.appendChild(row);
+      const msg = el('p', 'ce-err');
+      msg.setAttribute('aria-live', 'polite');
+      box.appendChild(msg);
+      // 保存：引擎把答案写进公司资料（「方针」连同判断人・日期），读一遍确认没问题才交回；这里先备份旧的再换上
+      save.addEventListener('click', async () => {
+        msg.replaceChildren();
+        const by = evBy();
+        if (!by) return window.sdfSetText(msg, 'ce_ans_err_by');
+        const answers = {};
+        box.querySelectorAll('li[data-key] .ce-input').forEach((c) => {
+          const v = c.value.trim();
+          if (v) answers[c.closest('li').dataset.key] = v;
+        });
+        if (!Object.keys(answers).length) return window.sdfSetText(msg, 'ce_gaps_none');
+        save.disabled = again.disabled = true;
+        try {
+          const a = await evAsk('answer_gaps', [answers, by, today()]);
+          const old = files.find((f) => BOOKS.includes(f.path));
+          if (a && a.ok && old) {
+            const bk = [outDir(), names().bak, `${stamp()}_${old.path}`];
+            await writeFile(bk, old.buf);
+            await writeFile([old.path], reportBytes({ b64: a.book }));
+            window.sdfSetText($('ce-pre'), 'ce_gaps_saved', { n: a.written.length, path: bk.join('/') });
             files = await readDir(dirHandle, '');
             await afterFiles();
-          } finally {
-            btn.disabled = false;
+          } else if (a && a.error === 'check') {
+            window.sdfSetText(msg, 'ce_gaps_bad', { list: (a.problems || []).map((p) => `${p[0]} ${p[1]}：${p[2]}`).join('；') });
+          } else {
+            window.sdfSetText(msg, 'ce_z_err', { name: '', msg: (a && a.error) || '' });
           }
-        });
-        box.appendChild(btn);
-      }
+        } catch (e) {
+          console.error(e);
+          window.sdfSetText(msg, 'ce_z_err', { name: '', msg: String((e && e.message) || e) });
+        } finally {
+          save.disabled = again.disabled = false;
+        }
+      });
+      // 在 Excel 里改好保存后，点这里重读文件夹（不用重新选文件夹）
+      again.addEventListener('click', async () => {
+        save.disabled = again.disabled = true;
+        try {
+          files = await readDir(dirHandle, '');
+          await afterFiles();
+        } finally {
+          save.disabled = again.disabled = false;
+        }
+      });
     }
 
     // 读进来之后共通：要有公司资料（Excel 工作簿或 company.yaml），月份默认取最新的月度文件夹，然后预检。
@@ -3656,6 +3734,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=3b160db8ca"></script>
+  <script src="../../js/main.js?v=e11ee37a3f"></script>
 </body>
 </html>

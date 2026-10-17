@@ -334,12 +334,23 @@ test('缺的设定一次列全：按表分组、照抄工作簿里的行名和�
   );
   assert.match(html, /<div id="ce-gaps" class="hidden"><\/div>/);
   assert.match(html, /renderGaps\(r\.gaps \|\| \[\]\);/);
+  // 函数整段（以前切固定 2400 字，问答加长后切掉了后半——截到下一个函数为止）
   const fn = html.slice(
     html.indexOf('function renderGaps('),
-    html.indexOf('function renderGaps(') + 2400,
+    html.indexOf('async function afterFiles('),
   );
+  assert.ok(fn.length > 500);
   assert.match(fn, /'ce_gaps_recheck'/);
   assert.match(fn, /files = await readDir\(dirHandle, ''\);/);
+  // 问答（作者 2026-10-17）：每项一个下拉或输入框，key 写在行上；保存交给引擎写进公司资料，先备份旧的
+  assert.match(fn, /li\.dataset\.key = g\.key/);
+  assert.match(fn, /evAsk\('answer_gaps', \[answers, by, today\(\)\]\)/);
+  assert.ok(fn.indexOf('await writeFile(bk, old.buf)') < fn.indexOf('await writeFile([old.path]'));
+  const worker = fs.readFileSync(
+    fileURLToPath(new URL('../solutions/demo/closing-worker.js', import.meta.url)),
+    'utf8',
+  );
+  assert.match(worker, /'answer_gaps'/);
   // 有缺项时说「见清单」，不再显示引擎的一句话
   assert.ok(html.indexOf("'ce_pre_gaps'") < html.indexOf("'ce_pre_engine_err', ` ${r.error}`"));
   const main = fs.readFileSync(fileURLToPath(new URL('../js/main.js', import.meta.url)), 'utf8');
@@ -347,8 +358,11 @@ test('缺的设定一次列全：按表分组、照抄工作簿里的行名和�
     'ce_pre_gaps',
     'ce_gaps_lead',
     'ce_gaps_sheet',
-    'ce_gaps_choices',
     'ce_gaps_recheck',
+    'ce_gaps_lead_qa',
+    'ce_gaps_save',
+    'ce_gaps_saved',
+    'ce_gaps_bad',
   ])
     assert.equal(main.split(`\n    ${k}:`).length - 1, 3, `${k} 三语`);
 });

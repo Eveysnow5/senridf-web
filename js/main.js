@@ -1231,6 +1231,14 @@ const T = {
     ce_pre_block:
       '不足または書式の誤りがあります。上の一覧に沿って補ってください：ファイルは下の入口に入れれば、自動でもう一度確認します（フォルダの中のファイルを直接直したときは、フォルダを選び直してください）。',
     ce_gaps_recheck: '書いたので、もう一度確認',
+    ce_gaps_lead_qa:
+      'まだ決まっていない設定が {n} 項目あります。ここで答えて「答えを保存」を押すと「{book}」に書き込みます（前のファイルは控えを残します。判断者と日付も自動で記録）。一部だけ答えて保存してもかまいません。Excel で直接書いたときは「書いたので、もう一度確認」',
+    ce_gaps_save: '答えを保存',
+    ce_gaps_pick: '— 選んでください —',
+    ce_gaps_none: 'まだ何も答えていません',
+    ce_gaps_saved:
+      '{n} 項目の答えを会社資料に書き込みました（前のファイルの控え：{path}）。もう一度確認しています…',
+    ce_gaps_bad: '書けない答えがあります（会社資料は変えていません）：{list}',
     ce_gaps_choices: '（選ぶ：{list}）',
     ce_gaps_sheet: '表「{sheet}」',
     ce_gaps_lead:
@@ -2446,6 +2454,13 @@ const T = {
     ce_pre_block:
       '有缺少或格式错误的文件。请按上面的清单补齐：把文件放进下面的入口即可，放进去后会自动重新检查（直接改了文件夹里的文件时，请重新选择文件夹）。',
     ce_gaps_recheck: '填好了，重新检查',
+    ce_gaps_lead_qa:
+      '还有 {n} 项设定没定。在这里直接回答，按「保存回答」就写进「{book}」（旧文件留备份，判断人和日期自动记上）。可以只答一部分先保存。用 Excel 直接填的，填好后按「填好了，重新检查」',
+    ce_gaps_save: '保存回答',
+    ce_gaps_pick: '— 请选择 —',
+    ce_gaps_none: '还没有回答任何一项',
+    ce_gaps_saved: '已把 {n} 项回答写进公司资料（旧文件备份：{path}），正在重新检查…',
+    ce_gaps_bad: '有的回答写不进去（公司资料没有改动）：{list}',
     ce_gaps_choices: '（可选：{list}）',
     ce_gaps_sheet: '「{sheet}」表',
     ce_gaps_lead:
@@ -3745,6 +3760,14 @@ const T = {
     ce_pre_block:
       'Some files are missing or malformed. Add them following the list above: drop files into the boxes below and the check runs again by itself (if you edited files in the folder directly, choose the folder again).',
     ce_gaps_recheck: 'Done — check again',
+    ce_gaps_lead_qa:
+      '{n} setting(s) are still undecided. Answer them here and press “Save answers” to write them into “{book}” (the old file is backed up; who decided and the date are recorded). You can save a few at a time. If you filled them in Excel instead, press “Done — check again”',
+    ce_gaps_save: 'Save answers',
+    ce_gaps_pick: '— choose —',
+    ce_gaps_none: 'No answers yet',
+    ce_gaps_saved:
+      'Wrote {n} answer(s) into the company data (backup of the old file: {path}). Checking again…',
+    ce_gaps_bad: 'Some answers could not be written (the company data was not changed): {list}',
     ce_gaps_choices: '(choose: {list})',
     ce_gaps_sheet: 'Sheet “{sheet}”',
     ce_gaps_lead:
