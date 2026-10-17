@@ -438,7 +438,15 @@
           <label class="ce-btn2" id="ce-pick" for="ce-folder" data-i18n="ce_pick_folder">作業フォルダを選ぶ</label>
           <input type="file" id="ce-folder" webkitdirectory multiple class="hidden" data-i18n-title="ce_pick_folder" />
           <span id="ce-folder-info" class="ce-hint" data-i18n="ce_upload_none">フォルダが選ばれていません</span>
+          <button type="button" id="ce-reset" class="ce-link hidden" data-i18n="ce_reset">最初からやり直す…</button>
         </div>
+        <!-- やり直し（作者 2026-10-17：試すたびにエクスプローラーで消していた）。消さずに 結果/バックアップ/ へ移す。二段階で確かめる -->
+        <div id="ce-reset-box" class="ce-row hidden" role="group">
+          <span id="ce-reset-q" class="ce-hint"></span>
+          <button type="button" id="ce-reset-go" class="ce-btn2" data-i18n="ce_reset_go">移して最初から</button>
+          <button type="button" id="ce-reset-no" class="ce-link" data-i18n="ce_reset_no">やめる</button>
+        </div>
+        <ul id="ce-reset-log" class="ce-zlog" aria-live="polite"></ul>
         <!-- 判断人は一か所で（作者 2026-10-15：毎回手で書かせない）。このパソコンに記憶し、証憑の確認・回答・銀行ルール・年度の確定で使う -->
         <div class="ce-row" style="margin:8px 0">
           <label class="ce-hint"><span data-i18n="ce_ev_by_label">判断者（このパソコンに記憶します。証憑の確認・質問への回答・銀行ルール・年度の確定に記録されます）</span>
@@ -1178,6 +1186,8 @@
         return;
       }
       dirHandle = null;
+      $('ce-reset').classList.add('hidden');
+      $('ce-reset-box').classList.add('hidden');
       evConnected();
       window.sdfSetText($('ce-folder-info'), 'ce_upload_count', list.length);
       // webkitRelativePath 的第一段是文件夹本身的名字，去掉
@@ -1197,9 +1207,9 @@
     // 工作文件夹里的名字跟着界面语言（日文界面下不出现中文的文件名）。已经有的不改名：
     // 文件夹里原来叫什么就继续用什么（公司资料.xlsx 和 会社資料.xlsx 不会并存；结果文件夹同理）。
     const NAMES = {
-      zh: { book: '公司资料.xlsx', out: '结账结果', bak: '备份', wp: '底稿' },
-      ja: { book: '会社資料.xlsx', out: '締め結果', bak: 'バックアップ', wp: 'ワークペーパー' },
-      en: { book: 'company-data.xlsx', out: 'closing-results', bak: 'backup', wp: 'workpaper' },
+      zh: { book: '公司资料.xlsx', out: '结账结果', bak: '备份', wp: '底稿', reset: '重新开始前' },
+      ja: { book: '会社資料.xlsx', out: '締め結果', bak: 'バックアップ', wp: 'ワークペーパー', reset: 'やり直し前' },
+      en: { book: 'company-data.xlsx', out: 'closing-results', bak: 'backup', wp: 'workpaper', reset: 'before-reset' },
     };
     const BOOKS = Object.values(NAMES).map((n) => n.book);
     const OUTS = Object.values(NAMES).map((n) => n.out);
@@ -1305,12 +1315,107 @@
     }
     async function connectFolder(h) {
       dirHandle = h;
+      $('ce-reset').classList.remove('hidden');
+      $('ce-reset-box').classList.add('hidden');
       files = await readDir(dirHandle, '');
       window.sdfSetText($('ce-folder-info'), 'ce_fs_connected', { name: dirHandle.name, n: files.length });
       saveClient({});
       afterFiles();
       evConnected();
     }
+
+    // ── 重新开始：文件夹里（结果文件夹以外）的东西全部挪进 结果/备份/<时刻>_重新开始前/，页面回到空文件夹的状态。
+    // 不删：选错了文件夹也找得回来。先复制、复制成功再删原处（中途失败时原件还在）。
+    // 结果文件夹本身不动（以前的备份都在里面，读文件夹时也跳过它）
+    async function topEntries() {
+      const out = [];
+      for await (const [name, child] of dirHandle.entries()) {
+        if (OUTS.includes(name) || name.startsWith('.') || name.startsWith('~$')) continue;
+        out.push([name, child]);
+      }
+      return out;
+    }
+    async function countFiles(h) {
+      if (h.kind === 'file') return 1;
+      let n = 0;
+      for await (const [, c] of h.entries()) n += await countFiles(c);
+      return n;
+    }
+    async function copyInto(src, destDir, name) {
+      if (src.kind === 'file') {
+        const w = await (await destDir.getFileHandle(name, { create: true })).createWritable();
+        await w.write(await src.getFile());
+        await w.close();
+        return;
+      }
+      const d = await destDir.getDirectoryHandle(name, { create: true });
+      for await (const [n, c] of src.entries()) await copyInto(c, d, n);
+    }
+    let resetPlan = null;
+    $('ce-reset').addEventListener('click', async () => {
+      if (!dirHandle) return;
+      $('ce-reset-log').replaceChildren();
+      const items = await topEntries();
+      if (!items.length) {
+        zlog('ce-reset-log', '', 'ce_reset_empty');
+        return;
+      }
+      let n = 0;
+      for (const [, c] of items) n += await countFiles(c);
+      const dest = [outDir(), names().bak, `${stamp()}_${names().reset}`];
+      resetPlan = { items, dest, n };
+      window.sdfSetText($('ce-reset-q'), 'ce_reset_q', { n, path: dest.join('/') });
+      $('ce-reset-box').classList.remove('hidden');
+    });
+    $('ce-reset-no').addEventListener('click', () => {
+      resetPlan = null;
+      $('ce-reset-box').classList.add('hidden');
+    });
+    $('ce-reset-go').addEventListener('click', async () => {
+      if (!dirHandle || !resetPlan) return;
+      const { items, dest, n } = resetPlan;
+      resetPlan = null;
+      $('ce-reset-box').classList.add('hidden');
+      $('ce-reset').disabled = true;
+      const left = [];
+      try {
+        let d = dirHandle;
+        for (const part of dest) d = await d.getDirectoryHandle(part, { create: true });
+        for (const [name, child] of items) {
+          try {
+            await copyInto(child, d, name);
+            await dirHandle.removeEntry(name, { recursive: true });
+          } catch (e) {
+            console.error(e);
+            left.push(name); // Excel で開いたままの会社資料など：原件はそのまま残る
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        zlog('ce-reset-log', 'ng', 'ce_reset_err', { name: dest.join('/'), msg: String((e && e.message) || e) });
+        $('ce-reset').disabled = false;
+        return;
+      }
+      if (left.length) zlog('ce-reset-log', 'ng', 'ce_reset_left', { list: left.join('・') });
+      else zlog('ce-reset-log', 'ok', 'ce_reset_done', { n, path: dest.join('/') });
+      // 页面上和旧资料有关的显示全部收起：期间、结果、两个入口的记录、缺项清单
+      $('ce-month').value = '';
+      $('ce-from').value = '';
+      autoMonth = false;
+      periodAuto = false;
+      prechecked = false;
+      answers = {};
+      edits = {};
+      lastRun = null;
+      lastXlsx = null;
+      $('ce-result').classList.add('hidden');
+      $('ce-dl-box').classList.add('hidden');
+      ['ce-z-tab-log', 'ce-z-ev-log', 'ce-fs-out'].forEach((id) => $(id).replaceChildren());
+      setStatus($('ce-ev-progress'), '');
+      renderGaps([]);
+      $('ce-reset').disabled = false;
+      await connectFolder(dirHandle);
+    });
 
     // ── 客户列表（税理士一个人管很多家）：记住打开过的文件夹（句柄存在这个浏览器的 IndexedDB），
     //    显示各家结到哪个月、还有几件要处理。只存句柄和这几项摘要，不存文件夹里的内容
@@ -3531,6 +3636,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=8c32236ae4"></script>
+  <script src="../../js/main.js?v=8317a274aa"></script>
 </body>
 </html>

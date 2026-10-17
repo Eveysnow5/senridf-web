@@ -853,6 +853,16 @@ const T = {
     ce_cl_never: '{name}：まだ締めていません',
     ce_cl_open: '開く',
     ce_cl_forget: '一覧から外す',
+    ce_reset: '最初からやり直す…',
+    ce_reset_q:
+      'このフォルダの {n} 個のファイルを {path} に移して、空のフォルダから始めます（消しません。戻すときはそこから元の場所へ）',
+    ce_reset_go: '移して最初から',
+    ce_reset_no: 'やめる',
+    ce_reset_done: '{n} 個のファイルを {path} に移しました。空のフォルダから始められます',
+    ce_reset_empty: '移すものはありません（もう空のフォルダです）',
+    ce_reset_left:
+      '移せなかったもの：{list}（Excel などで開いていませんか。閉じてからもう一度押してください）',
+    ce_reset_err: '{name} を作れませんでした：{msg}',
     ce_cl_denied:
       '✗ {name}：フォルダを読み書きする許可がありませんでした。開き直すときは、許可を求める画面で「許可する」を押してください。',
     ce_cl_gone:
@@ -2083,6 +2093,15 @@ const T = {
     ce_cl_never: '{name}：还没有结账',
     ce_cl_open: '打开',
     ce_cl_forget: '从列表移除',
+    ce_reset: '重新开始…',
+    ce_reset_q:
+      '把这个文件夹里的 {n} 个文件挪到 {path}，从空文件夹重新开始（不删除；要找回就从那里挪回原处）',
+    ce_reset_go: '挪走并重新开始',
+    ce_reset_no: '取消',
+    ce_reset_done: '已把 {n} 个文件挪到 {path}，可以从空文件夹重新开始',
+    ce_reset_empty: '没有要挪的东西（已经是空文件夹）',
+    ce_reset_left: '没挪走：{list}（是不是还在 Excel 里开着？关掉后再按一次）',
+    ce_reset_err: '建不了 {name}：{msg}',
     ce_cl_denied:
       '✗ {name}：没有得到读写文件夹的许可。重新打开时，请在询问许可的窗口里点「允许」。',
     ce_cl_gone:
@@ -3338,6 +3357,15 @@ const T = {
     ce_cl_never: '{name}: not closed yet',
     ce_cl_open: 'Open',
     ce_cl_forget: 'Remove from list',
+    ce_reset: 'Start over…',
+    ce_reset_q:
+      'Move the {n} file(s) in this folder to {path} and start from an empty folder (nothing is deleted; to undo, move them back from there)',
+    ce_reset_go: 'Move and start over',
+    ce_reset_no: 'Cancel',
+    ce_reset_done: 'Moved {n} file(s) to {path}. You can start from an empty folder',
+    ce_reset_empty: 'Nothing to move (the folder is already empty)',
+    ce_reset_left: 'Not moved: {list} (still open in Excel? Close it and press again)',
+    ce_reset_err: 'Could not create {name}: {msg}',
     ce_cl_denied:
       '✗ {name}: permission to read and write the folder was not given. When reopening, press Allow in the permission prompt.',
     ce_cl_gone:
