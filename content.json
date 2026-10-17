@@ -7,14 +7,14 @@
   },
   "ja": {
     "ms2_desc": "公式ウェブサイトを公開。最初のAIツール「中日翻訳」も同時にリリース。\n\nこのウェブサイトはツール「Claude Code」を用いて開発されました。テクノロジーが暮らしを変える。",
-    "team1_bio": "中国の報道機関で約10年間、記者・首席記者として調査報道や人物取材に従事。その後、メディア関連企業を設立し、人間とAIの関係をテーマにした長編ドキュメンタリー映画『All I Want』に副監督として参加。2025年に千里同風株式会社を創業し、AIエージェント、企業の業務自動化、人とAIのインタラクションの可能性を追求している。",
-    "team2_bio": "創新工場（Sinovation Ventures）にてリスク管理責任者を務め、AI・先端製造・医療テクノロジーなどの投資案件に関する財務デューデリジェンスとリスク評価に従事。それ以前はPwCにて約8年間、監査業務を経験。現在は千里同風株式会社の財務・リスクアドバイザーとして、財務分析とリスク管理の専門的な知見を提供している。",
+    "team1_bio": "中国の複数の大手報道機関で10年以上にわたり記者・首席記者を務め、調査報道や人物取材に長く携わる。その後、メディア関連企業を設立。人間とAIの関係を描いた長編ドキュメンタリー映画『All I Want』にチーフ助監督として参加し、同作は2026年FIRST映画祭のメインコンペティション部門に選出され、最優秀長編ドキュメンタリー賞にノミネートされた。2025年に千里同風株式会社を創業し、AIエージェント、企業の業務自動化、人とAIのインタラクションの可能性を追求している。",
+    "team2_bio": "創新工場（Sinovation Ventures）にてリスク管理責任者を務め、AIをはじめとするテクノロジー分野の投資案件について、財務デューデリジェンスとリスク評価を担当。それ以前はPwC北京事務所にて監査マネージャーとしてチームを率い、海運、インターネット、先端製造業など複数の上場企業の監査業務を手がけた。\n現在は千里同風株式会社の財務・リスクアドバイザーとして、財務分析とリスク管理の専門的な知見を提供している。",
     "team2_role": "財務・リスクアドバイザー"
   },
   "en": {
     "ms2_desc": "Launched the official website, together with our first AI tool: Chinese–Japanese translation.\n\nThis website was built using the tool \"Claude Code.\" Technology transforms life.",
-    "team1_bio": "Worked as a journalist and chief reporter in China for approximately ten years, specializing in investigative reporting and in-depth interviews. Subsequently founded a media-related company and served as co-director of All I Want, a feature documentary exploring the relationship between humans and AI. Founded Senridoufuu Co., Ltd. in 2025, focusing on AI agents, business automation, and human–AI interaction.",
-    "team2_bio": "Former Director of Risk Management at Sinovation Ventures, with experience in financial due diligence and risk assessment across AI, advanced manufacturing, and medical technology investments. Previously spent approximately eight years in auditing at PwC. Currently serves as Finance & Risk Advisor to Senridoufuu Co., Ltd., providing professional support in financial analysis and risk management.",
+    "team1_bio": "Spent more than ten years at several leading Chinese news organizations as a journalist and chief reporter, with a long track record in investigative reporting and in-depth profile interviews. Later founded a media-related company. Served as First Assistant Director on All I Want, a feature documentary exploring the relationship between humans and AI, which was selected for the main competition of the 2026 FIRST Film Festival and nominated for Best Documentary Feature. Founded Senridoufuu Co., Ltd. in 2025, focusing on AI agents, business automation, and human–AI interaction.",
+    "team2_bio": "Former Director of Risk Management at Sinovation Ventures, responsible for financial due diligence and risk assessment on technology investments, including artificial intelligence. Previously an Audit Manager at PwC's Beijing office, leading teams on the audits of multiple listed companies across shipping, internet, and advanced manufacturing.\nCurrently serves as Finance & Risk Advisor to Senridoufuu Co., Ltd., providing professional support in financial analysis and risk management.",
     "team2_role": "Finance & Risk Advisor"
   },
   "images": {
