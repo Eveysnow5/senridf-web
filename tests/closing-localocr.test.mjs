@@ -154,7 +154,13 @@ test('混合：快路读的页对上模板但验算没过，用浏览器补读�
   );
   assert.match(fn, /evAsk\('check', \[lines\]\)/);
   assert.match(fn, /a\.matched > a\.passed/);
-  assert.match(fn, /b\.passed > a\.passed/);
+  // 补读挪到全部读完之后（rereadLater）：快路记下验算通过的张数，补读通过得更多才交给引擎换用
+  assert.match(fn, /passed: a && a\.ok \? a\.passed : 0/);
+  const bg = html.slice(
+    html.indexOf('async function rereadLater('),
+    html.indexOf('async function rereadLater(') + 1500,
+  );
+  assert.match(bg, /b\.passed > q\.passed/);
   const copy = html.indexOf('const copy = retryCopy(pg.canvas)');
   assert.ok(
     copy > 0 && copy < html.indexOf('await fastRead(pg.canvas)', copy),
@@ -405,4 +411,37 @@ test('可读的痕迹：正常页有、横放读出的乱码没有；页面在�
   assert.match(confirm, /r\.staff_added/);
   assert.match(confirm, /replaceBook\(r\.book\)/);
   assert.match(confirm, /afterFiles\(\)/);
+});
+
+// 补读放到最后、在后台做（作者 2026-10-18：补读一页 93〜107 秒，53 页等了 27 分钟）。快路里不等浏览器识别，
+// 读完全部后才补读、不 await；换文件夹（含重新开始）时作废
+test('补读在全部读完之后、后台进行，换文件夹就停', () => {
+  const html = fs.readFileSync(
+    fileURLToPath(new URL('../solutions/demo/closing.html', import.meta.url)),
+    'utf8',
+  );
+  const fast = html.slice(html.indexOf('async function readFast('), html.indexOf('let rereadGen'));
+  assert.doesNotMatch(fast, /[^.\w]ocr\(/);
+  assert.match(fast, /later = await new Promise/);
+  const loop = html.slice(
+    html.indexOf('async function evAdd('),
+    html.indexOf("localStorage.getItem('ce-ev-ocr')"),
+  );
+  assert.match(loop, /\n\s+if \(later\.length\) rereadLater\(later\);/);
+  const bg = html.slice(
+    html.indexOf('async function rereadLater('),
+    html.indexOf('async function rereadLater(') + 1500,
+  );
+  assert.match(bg, /gen !== rereadGen/);
+  assert.match(bg, /evAsk\('reread_page'/);
+  const cf = html.slice(
+    html.indexOf('async function connectFolder('),
+    html.indexOf('async function connectFolder(') + 200,
+  );
+  assert.match(cf, /rereadGen\+\+/);
+  const worker = fs.readFileSync(
+    fileURLToPath(new URL('../solutions/demo/closing-worker.js', import.meta.url)),
+    'utf8',
+  );
+  assert.match(worker, /'reread_page'/);
 });

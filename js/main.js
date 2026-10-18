@@ -757,11 +757,11 @@ const T = {
     ce_ev_helper_idle:
       'Windows のパソコンでは、本機の読み取り助手を起動しておくと、1 ページ約 1 秒で全ページを読みます（画像はこのパソコンから出ません）。無いときはブラウザの中で 1 ページ目だけ読みます（1 ページ 10〜60 秒、その間パソコンに負荷がかかります）。',
     ce_ev_rereading:
-      '読み直し中：{name}（{p}/{pn} 頁）——書類の種類は分かったが検算が通らなかったので、ブラウザの中でもう一度読みます（約 45 秒）',
+      '読み直し中（{i}/{n}）：{name} の {p} 頁目——書類の種類は分かったが検算が通らなかった頁を、ブラウザの中でもう一度読んでいます（1 頁 1〜2 分）。その間に、ほかの下書きを確認してかまいません',
     ce_ev_reread_sum:
       '{r} 頁を、検算が通らなかったのでブラウザでも読み直しました（そのうち {b} 頁は読み直しの方を使いました）',
     ce_ev_helper_on:
-      '本機の読み取り助手（{v}）で読みます：1 ページ約 1 秒、全ページ。書類の種類は分かったのに検算が通らなかった頁だけ、ブラウザの中でもう一度読みます（1 頁約 45 秒）',
+      '本機の読み取り助手（{v}）で読みます：1 ページ約 1 秒、全ページ。書類の種類は分かったのに検算が通らなかった頁だけ、全部読んだ後にブラウザの中でもう一度読みます（1 頁 1〜2 分）',
     ce_ev_helper_off:
       '本機の読み取り助手が動いていません。start-ocr-helper.cmd をダブルクリックして起動し、窓は開いたままにしてください。今回はブラウザの中で 1 ページ目だけ読みます（1 ページ 10〜60 秒、その間パソコンに負荷がかかります）',
     ce_ev_helper_lost:
@@ -2020,10 +2020,10 @@ const T = {
     ce_ev_helper_idle:
       'Windows 电脑上，先打开本机识别助手，每页约 1 秒、全部页都读（图片不离开这台电脑）。没有助手时在浏览器里只读第 1 页（每页 10〜60 秒，期间电脑负载较高）。',
     ce_ev_rereading:
-      '精读中：{name}（第 {p}/{pn} 页）——认出了单据种类但验算没过，在浏览器里再读一遍（约 45 秒）',
+      '后台精读中（{i}/{n}）：{name} 第 {p} 页——认出了单据种类但验算没过的页，在浏览器里再读一遍（每页 1–2 分钟）。这期间可以先确认其他草稿',
     ce_ev_reread_sum: '{r} 页因为验算没过，又用浏览器读了一遍（其中 {b} 页用了再读的结果）',
     ce_ev_helper_on:
-      '用本机识别助手（{v}）识别：每页约 1 秒，全部页。认出了单据种类但验算没过的页，再在浏览器里读一遍（每页约 45 秒）',
+      '用本机识别助手（{v}）识别：每页约 1 秒，全部页。认出了单据种类但验算没过的页，全部读完后再在浏览器里读一遍（每页 1–2 分钟）',
     ce_ev_helper_off:
       '本机识别助手没有在运行。请双击 start-ocr-helper.cmd 打开它，窗口保持开着。这次先在浏览器里只读第 1 页（每页 10〜60 秒，期间电脑负载较高）',
     ce_ev_helper_lost:
@@ -3293,11 +3293,11 @@ const T = {
     ce_ev_helper_idle:
       'On Windows, start the local reading helper first: it reads every page in about 1 s per page (images never leave this computer). Without it, only the first page is read inside the browser (10–60 s per page, with a heavy load on the computer meanwhile).',
     ce_ev_rereading:
-      'Re-reading {name} (page {p}/{pn}) — the kind of document was recognised but the cross-check failed, so the browser reads it once more (about 45 s)',
+      'Re-reading in the background ({i}/{n}): {name}, page {p} — the kind of document was recognised but the cross-check failed, so the browser reads it once more (1–2 min per page). You can confirm the other drafts meanwhile',
     ce_ev_reread_sum:
       '{r} page(s) failed the cross-check and were read again in the browser ({b} of them used the second reading)',
     ce_ev_helper_on:
-      'Reading with the local helper ({v}): about 1 s per page, all pages. Pages whose kind is recognised but whose cross-check fails are read once more in the browser (about 45 s per page)',
+      'Reading with the local helper ({v}): about 1 s per page, all pages. Pages whose kind is recognised but whose cross-check fails are read once more in the browser after all pages (1–2 min per page)',
     ce_ev_helper_off:
       'The local reading helper is not running. Double-click start-ocr-helper.cmd and keep its window open. This time only the first page is read inside the browser (10–60 s per page, with a heavy load on the computer meanwhile)',
     ce_ev_helper_lost:
