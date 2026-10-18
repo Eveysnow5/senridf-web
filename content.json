@@ -39,6 +39,8 @@
   "images": {
     "team1_photo": "assets/images/site/team1_photo-1792249880749.webp",
     "team2_photo": "assets/images/site/team2_photo-1792249939195.webp",
-    "home_visual": "assets/images/site/home_visual-1792306705017.webp"
+    "home_visual": "assets/images/site/home_visual-1792306705017.webp",
+    "showcase_app": "assets/images/site/showcase_app-1792313022483.webp",
+    "showcase_product": "assets/images/site/showcase_product-1792313022483.webp"
   }
 }
