@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400&family=Noto+Serif+JP:wght@300;400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <base href="./">
-  <link rel="stylesheet" href="css/main.css?v=7d88c1a73b">
+  <link rel="stylesheet" href="css/main.css?v=4201d3b49b">
   <!-- 结构化数据（Organization）：设立日＝履歴事項全部証明書（令和7年2月25日）；所在地＝作者 2026-10-06 确认。
        资本金按作者意见不公开。 -->
   <script type="application/ld+json">
@@ -100,45 +100,14 @@
       </div>
     </div>
 
-    <!-- ③ Values -->
-    <section class="section">
-      <div data-animate>
-        <span class="section__eyebrow" data-i18n="values_eyebrow">価値観</span>
-        <h2 class="section__title" data-i18n="values_title">私たちが大切にすること</h2>
-      </div>
-      <div class="values-grid">
-        <div class="value-card" data-animate data-animate-delay="1">
-          <div class="value-card__number">01</div>
-          <h3 class="value-card__name" data-i18n="val1_name">リアリズム</h3>
-          <p class="value-card__desc" data-i18n="val1_desc">
-            現実に根ざした企画と実行。理想を掲げながらも、実現可能な道筋を誠実に追い求めます。だからこそまずはオンラインのツールでAIを日々の仕事に役立つ形にし、その先にAIを組み込んだハードウェアを見据えています。
-          </p>
-        </div>
-        <div class="value-card" data-animate data-animate-delay="2">
-          <div class="value-card__number">02</div>
-          <h3 class="value-card__name" data-i18n="val2_name">明確さ</h3>
-          <p class="value-card__desc" data-i18n="val2_desc">
-            複雑な技術を、誰もが理解できる言葉と形に変える。明確なコミュニケーションが信頼の土台です。AIが何をして、データがどこへ行くのかも、はっきりお伝えします。
-          </p>
-        </div>
-        <div class="value-card" data-animate data-animate-delay="3">
-          <div class="value-card__number">03</div>
-          <h3 class="value-card__name" data-i18n="val3_name">責任</h3>
-          <p class="value-card__desc" data-i18n="val3_desc">
-            テクノロジーの力を持つ者が、その使い方に責任を持つ。私たちはAIの倫理的活用にコミットします。最後の判断は使う人に委ね、結果を人が確かめられる形でお届けします。
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ④ 产品与方案（2026-10-18）：应用方案、产品各一个典型。图片位都可在后台换图。
+    <!-- ③ 产品与方案（2026-10-18）：应用方案、产品各一个典型。图片位都可在后台换图。
          应用卡默认图＝真实素材合成（样例订单 → 受発注页「変換例」的真实输出），不是效果图。
          产品卡：硬件仍在开发中，没有可展示的实物照片 → 占位底图＋「開発中」，有照片后在后台上传。 -->
     <section class="section">
       <div data-animate>
         <span class="section__eyebrow" data-i18n="showcase_eyebrow">プロダクトとソリューション</span>
         <h2 class="section__title" data-i18n="showcase_title">想像を、現実に。</h2>
-        <p class="section__lead home-lead" data-i18n="showcase_lead">
+        <p class="section__lead home-lead home-lead--showcase" data-i18n="showcase_lead">
           デジタルアシスタントから、そばにいるハードウェアまで。AIが現実の場面で活きるかたちを探っています。
         </p>
       </div>
@@ -175,7 +144,7 @@
       </div>
     </section>
 
-    <!-- ⑤ 博客（2026-10-18）：三个栏目，都链到博客页（目前还没有文章，博客页会显示「近日公開」）。
+    <!-- ④ 博客（2026-10-18）：三个栏目，都链到博客页（目前还没有文章，博客页会显示「近日公開」）。
          缩略图位可在后台换图。 -->
     <section class="section">
       <div data-animate>
@@ -219,6 +188,37 @@
           <span data-i18n="journal_more">すべての記事を読む</span>
           <span class="cta-link__arrow">→</span>
         </a>
+      </div>
+    </section>
+
+    <!-- ⑤ Values（2026-10-18 作者要求紧挨在关于我们之前） -->
+    <section class="section">
+      <div data-animate>
+        <span class="section__eyebrow" data-i18n="values_eyebrow">価値観</span>
+        <h2 class="section__title" data-i18n="values_title">私たちが大切にすること</h2>
+      </div>
+      <div class="values-grid">
+        <div class="value-card" data-animate data-animate-delay="1">
+          <div class="value-card__number">01</div>
+          <h3 class="value-card__name" data-i18n="val1_name">リアリズム</h3>
+          <p class="value-card__desc" data-i18n="val1_desc">
+            現実に根ざした企画と実行。理想を掲げながらも、実現可能な道筋を誠実に追い求めます。だからこそまずはオンラインのツールでAIを日々の仕事に役立つ形にし、その先にAIを組み込んだハードウェアを見据えています。
+          </p>
+        </div>
+        <div class="value-card" data-animate data-animate-delay="2">
+          <div class="value-card__number">02</div>
+          <h3 class="value-card__name" data-i18n="val2_name">明確さ</h3>
+          <p class="value-card__desc" data-i18n="val2_desc">
+            複雑な技術を、誰もが理解できる言葉と形に変える。明確なコミュニケーションが信頼の土台です。AIが何をして、データがどこへ行くのかも、はっきりお伝えします。
+          </p>
+        </div>
+        <div class="value-card" data-animate data-animate-delay="3">
+          <div class="value-card__number">03</div>
+          <h3 class="value-card__name" data-i18n="val3_name">責任</h3>
+          <p class="value-card__desc" data-i18n="val3_desc">
+            テクノロジーの力を持つ者が、その使い方に責任を持つ。私たちはAIの倫理的活用にコミットします。最後の判断は使う人に委ね、結果を人が確かめられる形でお届けします。
+          </p>
+        </div>
       </div>
     </section>
 
