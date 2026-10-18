@@ -1056,6 +1056,11 @@ const T = {
     ce_cy_closed: '確定済みの年度：{list}。締めはその次の年度の初めから計算します。',
     ce_cy_item: '{end} 期（{by}・{at}）',
     ce_lr_h: '弥生の仕訳から見つけた銀行ルールの候補',
+    ce_lr_h_dict: 'よくある摘要から見つけた銀行ルールの候補',
+    ce_lr_sum_dict:
+      '銀行明細のうち {n} 行が、どの会社でも意味の決まる摘要（振込手数料・預金利息・家賃・光熱費・通信費）でした',
+    ce_lr_d_dict:
+      '組み込みの辞書から出した候補で、この会社の過去の記帳ではありません。会社の資料に入れるのは、チェックを付けたものだけです。税務署・市役所・法務局・個人名への振込などは意味が一つに決まらないので、候補にせず一行ずつ聞きます。',
     ce_lr_sum:
       '{name}：仕訳 {v} 件（{from}〜{to}）。そのうち {p} 件を、銀行明細と日付・金額で組めました。同じ摘要の明細が 2 件以上、すべて同じ科目に記帳されていたものを候補にしています。',
     ce_lr_d:
@@ -2294,6 +2299,11 @@ const T = {
     ce_cy_closed: '已确定的年度：{list}。结账从其下一年度的第一个月开始算。',
     ce_cy_item: '{end} 期（{by}・{at}）',
     ce_lr_h: '从弥生分录里找到的银行规则候选',
+    ce_lr_h_dict: '从常见摘要找到的银行规则候选',
+    ce_lr_sum_dict:
+      '银行流水里有 {n} 行是哪家公司都一个意思的摘要（振込手续费・存款利息・家賃・水电燃气・通信）',
+    ce_lr_d_dict:
+      '这些是内置字典给出的候选，不是这家公司过去的记账。只有打勾的才写进公司资料。税务署・市役所・法务局・转给个人的款项等，意思不止一种，不做候选，逐条问你。',
     ce_lr_sum:
       '{name}：分录 {v} 条（{from}〜{to}），其中 {p} 条按日期和金额对上了银行流水。同一摘要的流水有 2 条以上、而且都记到同一个科目的，列为候选。',
     ce_lr_d:
@@ -3578,6 +3588,11 @@ const T = {
     ce_cy_closed: 'Closed years: {list}. Closes start from the following year.',
     ce_cy_item: 'year ending {end} ({by}, {at})',
     ce_lr_h: 'Bank rule candidates found in the Yayoi entries',
+    ce_lr_h_dict: 'Bank rule candidates from common descriptions',
+    ce_lr_sum_dict:
+      '{n} bank line(s) have descriptions that mean the same for any company (transfer fees, deposit interest, rent, utilities, phone)',
+    ce_lr_d_dict:
+      'These come from a built-in dictionary, not from this company’s past bookkeeping. Only the ticked ones are written into the company data. Tax office, city hall, legal affairs bureau and transfers to people can mean several things, so they are not suggested; you will be asked line by line.',
     ce_lr_sum:
       '{name}: {v} entries ({from} to {to}), of which {p} were paired with bank rows by date and amount. A description becomes a candidate when two or more rows with it were all booked to the same account.',
     ce_lr_d:

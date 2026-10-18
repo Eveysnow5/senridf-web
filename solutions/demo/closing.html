@@ -474,9 +474,9 @@
             <input type="file" id="ce-in-tab" multiple accept=".xlsx,.xlsm,.csv" class="hidden" data-i18n-title="ce_z_tab_t" />
             <ul id="ce-z-tab-log" class="ce-zlog" aria-live="polite"></ul>
             <div id="ce-learn" class="ce-learn hidden">
-              <h3 class="ce-h3" data-i18n="ce_lr_h">弥生の仕訳から見つけた銀行ルールの候補</h3>
+              <h3 id="ce-lr-h" class="ce-h3" data-i18n="ce_lr_h">弥生の仕訳から見つけた銀行ルールの候補</h3>
               <p id="ce-lr-sum" class="ce-hint"></p>
-              <p class="ce-hint" data-i18n="ce_lr_d">候補は候補です。会社の資料に入れるのは、チェックを付けたものだけです。給与・社会保険・税金の支払は、締めが計算から照合するので候補にしていません。</p>
+              <p id="ce-lr-d" class="ce-hint" data-i18n="ce_lr_d">候補は候補です。会社の資料に入れるのは、チェックを付けたものだけです。給与・社会保険・税金の支払は、締めが計算から照合するので候補にしていません。</p>
               <ul id="ce-lr-list"></ul>
               <div id="ce-lr-split" class="ce-hint"></div>
               <div id="ce-lr-unknown" class="ce-hint"></div>
@@ -1002,7 +1002,7 @@
     function getWorker() {
       if (!worker) {
         // ?v=：线上给这个文件 4 小时缓存。Worker 的加载方式变了（经典→module）时改这个值，免得新页面配上缓存里的旧 Worker
-        worker = new Worker('closing-worker.js?v=10', { type: 'module' });
+        worker = new Worker('closing-worker.js?v=11', { type: 'module' });
         worker.onmessage = onWorkerMessage;
         worker.onerror = (ev) => {
           console.error(ev);
@@ -2000,6 +2000,7 @@
       if (!dirHandle || !list.length) return;
       const log = 'ce-z-tab-log';
       let filed = 0;
+      let bankIn = 0;
       for (const file of list) {
         const name = file.name;
         const wait = zlog(log, '', 'ce_z_looking', { name });
@@ -2025,6 +2026,7 @@
           } else if (r.kind === 'bank') {
             await writeFile(['bank', name], buf);
             filed++;
+            bankIn++;
             // 公司资料里还没有银行账户（从底稿新建的公司就是这样）：从这份流水登记一个——列名从表头认，
             // 余额前后接得上才登记；和期初余额对不对得上也说出来（作者 2026-10-16：放了流水还是「缺少」）
             const g = r.checked ? null : await evAsk('register_bank', [`bank/${name}`], [{ path: `bank/${name}`, buf: buf.slice(0) }]);
@@ -2148,6 +2150,16 @@
         window.sdfSetText($('ce-folder-info'), 'ce_fs_connected', { name: dirHandle.name, n: files.length });
         afterFiles();
       }
+      // 放了银行流水：用内置字典（手续费・利息・家賃…哪家公司都一样的摘要）给出银行规则的候选。
+      // 写进公司资料仍要用户勾选（同弥生的候选）。没有候选就不显示（作者 2026-10-17：工具能复原的范围）
+      if (bankIn) {
+        try {
+          const j = await evAsk('suggest_rules', []);
+          if (j && j.ok && (j.rules || []).length) renderLearn('', j);
+        } catch (e) {
+          console.error(e);
+        }
+      }
     }
     // 弥生分录 → 银行规则的候选。勾选后由引擎写进公司资料的「银行规则」表（先备份旧工作簿）
     let learnRules = [];
@@ -2160,13 +2172,19 @@
       learnRules = j.rules || [];
       $('ce-learn').classList.remove('hidden');
       $('ce-lr-log').replaceChildren();
-      window.sdfSetText($('ce-lr-sum'), 'ce_lr_sum', {
-        name,
-        v: j.vouchers,
-        from: (j.period || [])[0] || '',
-        to: (j.period || [])[1] || '',
-        p: j.paired,
-      });
+      // 来源：弥生的分录（这家公司过去怎么记的）／内置的常见摘要字典（哪家公司都一样的手续费・利息・家賃…）
+      const dict = j.source === 'dict';
+      window.sdfSetText($('ce-lr-h'), dict ? 'ce_lr_h_dict' : 'ce_lr_h');
+      window.sdfSetText($('ce-lr-d'), dict ? 'ce_lr_d_dict' : 'ce_lr_d');
+      if (dict) window.sdfSetText($('ce-lr-sum'), 'ce_lr_sum_dict', { n: learnRules.reduce((a, c) => a + c.n, 0) });
+      else
+        window.sdfSetText($('ce-lr-sum'), 'ce_lr_sum', {
+          name,
+          v: j.vouchers,
+          from: (j.period || [])[0] || '',
+          to: (j.period || [])[1] || '',
+          p: j.paired,
+        });
       const list = $('ce-lr-list');
       list.replaceChildren();
       if (!learnRules.length) list.appendChild(el('li', 'ce-hint', 'ce_lr_none'));
@@ -3735,6 +3753,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=e11ee37a3f"></script>
+  <script src="../../js/main.js?v=26f46405c0"></script>
 </body>
 </html>
