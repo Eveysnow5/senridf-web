@@ -439,6 +439,14 @@ test('补读在全部读完之后、后台进行，换文件夹就停', () => {
     html.indexOf('async function connectFolder(') + 200,
   );
   assert.match(cf, /rereadGen\+\+/);
+  // 补读完（或作废）就关掉浏览器识别：模型常驻约 1–2GB（回放 10-18 实测），8GB 的电脑吃不消
+  assert.match(html, /finally \{\s+releaseOcr\(\);/);
+  assert.match(cf, /releaseOcr\(\)/);
+  const rel = html.slice(
+    html.indexOf('function releaseOcr('),
+    html.indexOf('function releaseOcr(') + 200,
+  );
+  assert.match(rel, /!ocrWait\.size/);
   const worker = fs.readFileSync(
     fileURLToPath(new URL('../solutions/demo/closing-worker.js', import.meta.url)),
     'utf8',

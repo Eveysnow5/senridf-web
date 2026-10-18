@@ -1412,6 +1412,7 @@
     }
     async function connectFolder(h) {
       rereadGen++; // 后台补读的是旧文件夹的页：停
+      releaseOcr();
       dirHandle = h;
       $('ce-reset').classList.remove('hidden');
       $('ce-reset-box').classList.add('hidden');
@@ -1675,6 +1676,14 @@
       }
       return ocrWorker;
     }
+    // 浏览器识别的模型常驻内存（回放 2026-10-18 实测：补读时页面＋GPU 共约 2GB，8GB 的电脑只剩 0.5GB）。
+    // 没有识别在进行时把它关掉；下次要用时 getOcr 重新加载（多等几秒）
+    function releaseOcr() {
+      if (ocrWorker && !ocrWait.size) {
+        ocrWorker.terminate();
+        ocrWorker = null;
+      }
+    }
     function ocr(bitmap) {
       return new Promise((resolve, reject) => {
         const id = ++ocrSeq;
@@ -1853,6 +1862,14 @@
       let improved = 0;
       let done = 0;
       const li = zlog('ce-z-ev-log', '', 'ce_ev_rereading', { name: queue[0].name, p: queue[0].page || 1, i: 1, n: queue.length });
+      try {
+        await rereadEach(queue, gen, li, (b) => (improved += b ? 1 : 0), () => done++);
+      } finally {
+        releaseOcr();
+      }
+      if (gen === rereadGen) window.sdfSetText(li, 'ce_ev_reread_sum', { r: done, b: improved });
+    }
+    async function rereadEach(queue, gen, li, onImproved, onDone) {
       for (const [k, q] of queue.entries()) {
         if (gen !== rereadGen || !dirHandle) return;
         window.sdfSetText(li, 'ce_ev_rereading', { name: q.name, p: q.page || 1, i: k + 1, n: queue.length });
@@ -1862,14 +1879,13 @@
           const b = await evAsk('check', [slow]);
           if (b && b.ok && b.passed > q.passed) {
             const r = await evAsk('reread_page', [q.sha, q.page, slow]);
-            if (r && r.ok !== false && (r.updated || []).length) improved++;
+            onImproved(!!(r && r.ok !== false && (r.updated || []).length));
           }
         } catch (e) {
           console.error(e); // 补读失败：草稿照样留着（用户可以照原件填）
         }
-        done++;
+        onDone();
       }
-      window.sdfSetText(li, 'ce_ev_reread_sum', { r: done, b: improved });
     }
     // 区分（纸质／电子）的先判。只是草稿：人确认时可以改（对方扫描后用邮件发来的请求书，看着是纸，法律上是电子）。
     // 依据（2026-10-12 用 6 份真实 PDF 量过）：软件生成的 PDF 要么有文字层，要么每页上千条绘图指令（TKC 的
