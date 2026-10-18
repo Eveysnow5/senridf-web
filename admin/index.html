@@ -179,7 +179,14 @@ let editingOriginal = '';
 
 const FRAME_STYLE = `
   [data-i18n]:hover { outline: 1px dashed #2563eb; outline-offset: 2px; cursor: text; }
-  [data-i18n][contenteditable="true"] { outline: 2px solid #2563eb; outline-offset: 2px; cursor: text; background: #eef2ff; }
+  /* 编辑中：强制深字浅底。原来只换底色不换字色，首页标语等白字处变成浅底白字，不全选就看不见（2026-10-18 Yuki 反馈）。
+     -webkit-text-fill-color / opacity / text-shadow 也一并压住，防止页面自身的渐变字、淡入动画、阴影透出来。 */
+  [data-i18n][contenteditable="true"] {
+    outline: 2px solid #2563eb; outline-offset: 2px; cursor: text;
+    background: #ffffff !important; color: #1f2937 !important; -webkit-text-fill-color: #1f2937 !important;
+    opacity: 1 !important; text-shadow: none !important; caret-color: #2563eb;
+  }
+  [data-i18n][contenteditable="true"]::selection { background: #bfdbfe; color: #1f2937; -webkit-text-fill-color: #1f2937; }
   [data-image-key] { cursor: pointer; }
   [data-image-key]:hover { outline: 2px dashed #2563eb; outline-offset: 2px; }
   .cms-pill {
@@ -342,11 +349,16 @@ function startEdit(doc, el) {
   el.contentEditable = 'true';
   el.focus();
 
-  el.addEventListener('paste', (e) => {
-    e.preventDefault();
-    const text = (e.clipboardData || doc.defaultView.clipboardData).getData('text/plain');
-    doc.execCommand('insertText', false, text);
-  });
+  // 粘贴只插纯文本。监听器每个元素只挂一次：原来每进一次编辑就多挂一个，同一处第 N 次编辑时
+  // 粘贴会插入 N 遍（简介里文字重复 2〜4 遍的真因，2026-10-18 查明）。
+  if (!el.dataset.cmsPasteBound) {
+    el.dataset.cmsPasteBound = '1';
+    el.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const text = (e.clipboardData || doc.defaultView.clipboardData).getData('text/plain');
+      doc.execCommand('insertText', false, text);
+    });
+  }
 
   const range = doc.createRange();
   range.selectNodeContents(el);
