@@ -12,6 +12,9 @@ import {
   helperRead,
   locateHelper,
   permissionState,
+  readable,
+  TURN_BELOW,
+  TURN_TAKE,
   HELPER,
 } from '../solutions/demo/closing-localocr.mjs';
 
@@ -365,4 +368,41 @@ test('缺的设定一次列全：按表分组、照抄工作簿里的行名和�
     'ce_gaps_bad',
   ])
     assert.equal(main.split(`\n    ${k}:`).length - 1, 3, `${k} 三语`);
+});
+
+// 横放的扫描页（作者的 3 月・5 月勤務表）：Windows 读出上百个乱码字，助手按「字数 < 40」判断不会转向。
+// 行的形状照真实输出写（人名・公司名是架空的）
+test('可读的痕迹：正常页有、横放读出的乱码没有；页面在没有痕迹时转着再读', () => {
+  const garbage = [
+    'ニ一ョ三芒~Ø一一 単7こ9~0の山Ø7)Ø 嬖ミト翠きト(9',
+    'ミ「〉「99代0代2OVN)」を" 言==ごま弌町こ892ミトエ899""・',
+  ];
+  const upright = [
+    '従業員月間勤務時間集計表',
+    '従業員氏名(Name):山田花子',
+    '対象月(Month):2026年3月',
+    '当月給与=40時間x1.150円/時=46.000円',
+  ];
+  assert.equal(readable(garbage), 0);
+  assert.ok(readable(upright) >= TURN_TAKE, String(readable(upright)));
+  assert.ok(TURN_BELOW <= TURN_TAKE);
+  const html = fs.readFileSync(
+    fileURLToPath(new URL('../solutions/demo/closing.html', import.meta.url)),
+    'utf8',
+  );
+  const fast = html.slice(
+    html.indexOf('async function fastRead('),
+    html.indexOf('function retryCopy('),
+  );
+  assert.match(fast, /lo\.readable\(lines\)/);
+  assert.match(fast, /\[90, 270, 180\]/);
+  assert.match(fast, /n >= lo\.TURN_TAKE && n > best/);
+  // 确认勤務表后引擎加了人：换上新的公司资料（先备份）、再预检（问答里出现这个人的缺项）
+  const confirm = html.slice(
+    html.indexOf("evDo('confirm'"),
+    html.indexOf("const fix = el('button'"),
+  );
+  assert.match(confirm, /r\.staff_added/);
+  assert.match(confirm, /replaceBook\(r\.book\)/);
+  assert.match(confirm, /afterFiles\(\)/);
 });

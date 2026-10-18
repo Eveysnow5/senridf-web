@@ -90,6 +90,19 @@ export async function helperRead(blob, lang = 'ja', fetchImpl = fetch, retryMs =
   return { lines: toLines(j.lines || []), ms: j.ms, turned: j.turned || 0 };
 }
 
+// 单据上一定有的「可读的痕迹」：数字连着年・月・日・円，或几个常见的词。横放・倒放的扫描页 Windows 也会读出
+// 上百个字，但全是乱码，这些痕迹一个都没有（作者的 35 页：正常页最少 4 处，横放的 3 月・5 月勤務表 0 处，
+// 转正后 24・20 处。2026-10-18）。助手自己只在「字数 < 40」时转向，乱码字多时不转
+const TRACE =
+  /\d\s*[年月日円]|[年月日円]\s*\d|合計|金額|株式会社|請求|領収|保険|日付|氏名|住所|電話/g;
+export const TURN_BELOW = 1; // 痕迹少于这个数就转着再读
+export const TURN_TAKE = 3; // 转过的读法至少有这么多痕迹、且比原来多，才换用
+
+/** 一页的行里有几处可读的痕迹。 */
+export function readable(lines) {
+  return ((lines || []).join('\n').normalize('NFKC').match(TRACE) || []).length;
+}
+
 /** RGBA 像素就地转灰度：和 Python 的 PIL convert('L') 逐个像素相同（参数是用它量的）。 */
 export function toGray(data) {
   for (let i = 0; i < data.length; i += 4) {

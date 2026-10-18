@@ -1212,12 +1212,9 @@
         save.disabled = again.disabled = true;
         try {
           const a = await evAsk('answer_gaps', [answers, by, today()]);
-          const old = files.find((f) => BOOKS.includes(f.path));
-          if (a && a.ok && old) {
-            const bk = [outDir(), names().bak, `${stamp()}_${old.path}`];
-            await writeFile(bk, old.buf);
-            await writeFile([old.path], reportBytes({ b64: a.book }));
-            window.sdfSetText($('ce-pre'), 'ce_gaps_saved', { n: a.written.length, path: bk.join('/') });
+          const bk = a && a.ok ? await replaceBook(a.book) : null;
+          if (bk) {
+            window.sdfSetText($('ce-pre'), 'ce_gaps_saved', { n: a.written.length, path: bk });
             files = await readDir(dirHandle, '');
             await afterFiles();
           } else if (a && a.error === 'check') {
@@ -1242,6 +1239,16 @@
           save.disabled = again.disabled = false;
         }
       });
+    }
+
+    // 引擎改好的公司资料（base64）换上：旧的先抄进「结账结果/备份/」。返回备份的路径；文件夹里没有公司资料就不换（null）
+    async function replaceBook(b64) {
+      const old = files.find((f) => BOOKS.includes(f.path));
+      if (!old || !b64) return null;
+      const bk = [outDir(), names().bak, `${stamp()}_${old.path}`];
+      await writeFile(bk, old.buf);
+      await writeFile([old.path], reportBytes({ b64 }));
+      return bk.join('/');
     }
 
     // 读进来之后共通：要有公司资料（Excel 工作簿或 company.yaml），月份默认取最新的月度文件夹，然后预检。
@@ -1768,11 +1775,45 @@
       const im = x.getImageData(0, 0, canvas.width, canvas.height);
       lo.toGray(im.data);
       x.putImageData(im, 0, 0);
-      const blob = await new Promise((resolve, reject) =>
-        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('jpeg'))), 'image/jpeg', lo.JPEG_QUALITY),
-      );
-      canvas.width = canvas.height = 0; // 4500 像素的画布占几十 MB，用完马上放掉
-      return (await lo.helperRead(blob)).lines;
+      const jpeg = (c) =>
+        new Promise((resolve, reject) =>
+          c.toBlob((b) => (b ? resolve(b) : reject(new Error('jpeg'))), 'image/jpeg', lo.JPEG_QUALITY),
+        );
+      try {
+        let lines = (await lo.helperRead(await jpeg(canvas))).lines;
+        // 横放・倒放的扫描页：读出一堆乱码、一处可读的痕迹也没有 → 转 90°・270°・180° 再读，取痕迹最多的
+        // （回放 2026-10-18：3 月・5 月的勤務表横着扫，工资就少了两个月）
+        let best = lo.readable(lines);
+        if (best < lo.TURN_BELOW) {
+          for (const deg of [90, 270, 180]) {
+            const c = turned(canvas, deg);
+            try {
+              const t = (await lo.helperRead(await jpeg(c))).lines;
+              const n = lo.readable(t);
+              if (n >= lo.TURN_TAKE && n > best) {
+                best = n;
+                lines = t;
+              }
+            } finally {
+              c.width = c.height = 0;
+            }
+          }
+        }
+        return lines;
+      } finally {
+        canvas.width = canvas.height = 0; // 4500 像素的画布占几十 MB，用完马上放掉
+      }
+    }
+    function turned(canvas, deg) {
+      const c = document.createElement('canvas');
+      const side = deg % 180 !== 0;
+      c.width = side ? canvas.height : canvas.width;
+      c.height = side ? canvas.width : canvas.height;
+      const x = c.getContext('2d');
+      x.translate(c.width / 2, c.height / 2);
+      x.rotate((deg * Math.PI) / 180);
+      x.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+      return c;
     }
     // 补读用的彩色小副本（长边 3000，和浏览器识别原来的读法一样）。要在 fastRead 转灰度之前拿
     function retryCopy(canvas) {
@@ -2517,6 +2558,15 @@
             evEditing.delete(e.no);
             evUnsaved.delete(e.no);
             renderEv();
+            // 确认的是勤務時間集計表、表上的人不在员工表里：引擎把这个人加进了公司资料（身份・生日等进上面的问答）
+            if (r.staff_added && r.staff_added.length) {
+              const bk = await replaceBook(r.book);
+              if (bk) {
+                window.sdfSetText($('ce-pre'), 'ce_ev_staff_added', { names: r.staff_added.join('・'), path: bk });
+                files = await readDir(dirHandle, '');
+                await afterFiles();
+              }
+            }
           }
         });
         act.appendChild(ok);
@@ -3753,6 +3803,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=26f46405c0"></script>
+  <script src="../../js/main.js?v=013af38c2e"></script>
 </body>
 </html>

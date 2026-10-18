@@ -1241,6 +1241,8 @@ const T = {
     ce_gaps_save: '答えを保存',
     ce_gaps_pick: '— 選んでください —',
     ce_gaps_none: 'まだ何も答えていません',
+    ce_ev_staff_added:
+      '勤務時間集計表の {names} を従業員の表に加えました（元の会社資料のバックアップ：{path}）。区分・生年月日などは上の質問に答えてください。',
     ce_gaps_saved:
       '{n} 項目の答えを会社資料に書き込みました（前のファイルの控え：{path}）。もう一度確認しています…',
     ce_gaps_bad: '書けない答えがあります（会社資料は変えていません）：{list}',
@@ -2469,6 +2471,8 @@ const T = {
     ce_gaps_save: '保存回答',
     ce_gaps_pick: '— 请选择 —',
     ce_gaps_none: '还没有回答任何一项',
+    ce_ev_staff_added:
+      '已把工时汇总表上的 {names} 加进员工表（旧的公司资料备份：{path}）。身份・出生日期等请回答上面的问题。',
     ce_gaps_saved: '已把 {n} 项回答写进公司资料（旧文件备份：{path}），正在重新检查…',
     ce_gaps_bad: '有的回答写不进去（公司资料没有改动）：{list}',
     ce_gaps_choices: '（可选：{list}）',
@@ -3780,6 +3784,8 @@ const T = {
     ce_gaps_save: 'Save answers',
     ce_gaps_pick: '— choose —',
     ce_gaps_none: 'No answers yet',
+    ce_ev_staff_added:
+      'Added {names} from the timesheet to the employee table (previous company data backed up to {path}). Please answer the questions above (role, date of birth and so on).',
     ce_gaps_saved:
       'Wrote {n} answer(s) into the company data (backup of the old file: {path}). Checking again…',
     ce_gaps_bad: 'Some answers could not be written (the company data was not changed): {list}',
