@@ -4228,6 +4228,43 @@ function applyImages(images) {
   });
 }
 
+/* === TIMELINE（大事记，2026-10-18）===
+   content.json 的 timeline：[{ id: 'ms5', date: '2026.10' }, ...]，数组顺序＝显示顺序，由后台增删移。
+   有就按它重绘 .timeline；没有就保留页面里写死的条目（静态兜底，也是首次编辑时的起点）。
+   文字仍是 msN_event / msN_desc 三语键；新加的条目若某语言还没翻译，先显示中文、再退到日文，
+   不留空白。后台预览改动后也调这个（window.sdfRenderTimeline）。 */
+function renderTimeline(list, { visible = false } = {}) {
+  const box = document.querySelector('.timeline');
+  if (!box || !Array.isArray(list)) return;
+  const t = T[currentLang] || T.ja;
+  const pick = (k) => (t[k] !== undefined ? t[k] : T.zh[k] !== undefined ? T.zh[k] : T.ja[k] || '');
+  box.querySelectorAll('.timeline__item').forEach((el) => el.remove());
+  list.forEach(({ id, date }, i) => {
+    const item = document.createElement('div');
+    item.className = 'timeline__item';
+    item.dataset.msId = id;
+    item.setAttribute('data-animate', '');
+    if (i > 0) item.dataset.animateDelay = String(Math.min(i, 5));
+    if (visible) item.classList.add('is-visible');
+    const year = document.createElement('div');
+    year.className = 'timeline__year';
+    year.textContent = date;
+    const body = document.createElement('div');
+    const ev = document.createElement('h3');
+    ev.className = 'timeline__event';
+    ev.dataset.i18n = id + '_event';
+    ev.textContent = pick(id + '_event');
+    const desc = document.createElement('p');
+    desc.className = 'timeline__desc';
+    desc.dataset.i18n = id + '_desc';
+    desc.textContent = pick(id + '_desc');
+    body.append(ev, desc);
+    item.append(year, body);
+    box.appendChild(item);
+  });
+}
+window.sdfRenderTimeline = (list) => renderTimeline(list, { visible: true });
+
 /* === Cloudflare Web Analytics ===
    隐私优先、无 cookie 的访问统计（替代手搓 Firestore 统计的更好仪表盘）。
    token 是公开的客户端标识，非密钥。动态注入以覆盖所有加载 main.js 的页面。 */
@@ -4267,6 +4304,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (ov.images) applyImages(ov.images);
       } catch (err) {
         console.error('[main] applyImages failed:', err);
+      }
+      try {
+        if (Array.isArray(ov.timeline)) renderTimeline(ov.timeline);
+      } catch (err) {
+        console.error('[main] renderTimeline failed:', err);
       }
     })
     .catch((err) => console.warn('[main] content.json 加载失败，页面用的是内置兜底文案：', err))

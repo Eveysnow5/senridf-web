@@ -37,9 +37,20 @@ export async function getFile(repo, path, token) {
 // 写文件：每次现取最新 sha 再提交；409/422 视为并发冲突，重取一次再试。
 // content 默认当文本处理（UTF-8→base64）；alreadyBase64=true 时按图片等二进制数据处理，
 // content 本身已经是算好的 base64 字符串，直接透传给 GitHub API。
-export async function putFile(repo, path, content, message, token, { alreadyBase64 = false } = {}) {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const { sha } = await getFile(repo, path, token);
+// expectSha（2026-10-18）：传了就**只用这个 sha 写一次**，不再现取最新——内容是基于这个版本
+// 合并出来的，若期间文件被别人改过（409/422），抛 code='CONFLICT' 让调用方重读重合并。
+// 不传时保持原行为（现取 sha 覆盖），图片等新文件用这条路。
+export async function putFile(
+  repo,
+  path,
+  content,
+  message,
+  token,
+  { alreadyBase64 = false, expectSha } = {},
+) {
+  const pinned = expectSha !== undefined;
+  for (let attempt = 0; attempt < (pinned ? 1 : 2); attempt++) {
+    const sha = pinned ? expectSha : (await getFile(repo, path, token)).sha;
     const body = { message, content: alreadyBase64 ? content : b64encodeUtf8(content) };
     if (sha) body.sha = sha;
     const res = await fetch(`${GH}/repos/${repo}/contents/${path}`, {
@@ -61,7 +72,9 @@ export async function putFile(repo, path, content, message, token, { alreadyBase
       throw new Error(`GitHub 写入失败（${res.status}${detail ? `：${detail}` : ''}）`);
     }
   }
-  throw new Error('保存冲突，请刷新页面重试');
+  const err = new Error('保存冲突，请刷新页面重试');
+  err.code = 'CONFLICT';
+  throw err;
 }
 
 // 删除文件（下架文章用）。文件已不存在时视为已删除，幂等返回。
