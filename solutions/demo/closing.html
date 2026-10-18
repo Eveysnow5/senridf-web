@@ -856,7 +856,8 @@
         const st = document.createElement('span');
         const x = byId[id];
         const status = x ? x.status : 'wait';
-        const gapsOnly = id === 'company' && status === 'missing' && (result?.gaps || []).length;
+        // 公司・员工・固定资产：文件在、只是还有要问的设定（缺项清单）→「N 项待填」
+        const gapsOnly = ['company', 'employees', 'fixed_assets'].includes(id) && status === 'missing' && (result?.gaps || []).length;
         st.className = `ce-st ${gapsOnly ? 'warn' : status}`;
         if (gapsOnly) window.sdfSetText(st, 'ce_s_gaps', { n: result.gaps.length });
         else window.sdfSetText(st, `ce_s_${status}`);
