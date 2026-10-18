@@ -56,6 +56,29 @@ const T = {
       'テクノロジーの力を持つ者が、その使い方に責任を持つ。私たちはAIの倫理的活用にコミットします。最後の判断は使う人に委ね、結果を人が確かめられる形でお届けします。',
 
     /* About teaser (homepage) */
+    showcase_eyebrow: 'プロダクトとソリューション',
+    showcase_title: '想像を、現実に。',
+    showcase_lead:
+      'デジタルアシスタントから、そばにいるハードウェアまで。AIが現実の場面で活きるかたちを探っています。',
+    showcase_app_tag: 'ソリューション',
+    showcase_app_desc:
+      'PDF・Excelの注文書をAIが読み取り、受注台帳に自動で整理。登録なしで無料でお試しいただけます。',
+    showcase_hw_tag: 'プロダクト',
+    showcase_hw_desc: '生成AIを玩具・教具・IoTデバイスに組み込み、日常に寄り添う製品を開発中です。',
+    showcase_more: '製品・ソリューション一覧',
+    journal_eyebrow: 'ブログ',
+    journal_title: '探索を記録し、考えを分かち合う。',
+    journal_lead: '技術とプロダクト、そして人とAIのあいだで起きている変化について。',
+    journal1_tag: 'Perspectives',
+    journal1_name: '視点と考察',
+    journal1_desc: 'AI・社会・未来の関係についての考察。',
+    journal2_tag: 'Building',
+    journal2_name: '開発ノート',
+    journal2_desc: '構想から実験、製品化までのありのままの記録。',
+    journal3_tag: 'Updates',
+    journal3_name: 'お知らせ',
+    journal3_desc: 'プロジェクトの進捗、協業のお知らせ、会社の日常。',
+    journal_more: 'すべての記事を読む',
     about_teaser_eyebrow: '千里同風とは',
     about_teaser_title: '大阪から、AIと人をつなぐ新しい形を探して。',
     about_teaser_body:
@@ -1348,6 +1371,27 @@ const T = {
     val3_desc:
       '拥有技术力量的人，对其使用方式负责。我们致力于AI的伦理化应用。最后的判断交给使用的人，结果始终以人能核对的形式交付。',
 
+    showcase_eyebrow: '产品与方案',
+    showcase_title: '让想象，成为现实。',
+    showcase_lead: '从数字助手到实体陪伴，探索 AI 在真实场景中的更多可能。',
+    showcase_app_tag: '应用方案',
+    showcase_app_desc: 'AI 读取 PDF・Excel 订单，自动整理成受注台账。无需注册即可免费试用。',
+    showcase_hw_tag: '产品',
+    showcase_hw_desc: '将生成式 AI 融入玩具、教具与 IoT 设备，打造陪伴日常的产品，现正开发中。',
+    showcase_more: '查看全部产品与方案',
+    journal_eyebrow: '博客',
+    journal_title: '记录探索，分享思考。',
+    journal_lead: '关于技术、产品，以及人与 AI 之间正在发生的变化。',
+    journal1_tag: 'Perspectives',
+    journal1_name: '观点与观察',
+    journal1_desc: '关于 AI、社会与未来关系的思考。',
+    journal2_tag: 'Building',
+    journal2_name: '研发手记',
+    journal2_desc: '从概念、实验到产品落地的真实记录。',
+    journal3_tag: 'Updates',
+    journal3_name: '公司动态',
+    journal3_desc: '项目进展、合作消息与公司的日常。',
+    journal_more: '阅读全部文章',
     about_teaser_eyebrow: '关于我们',
     about_teaser_title: '从大阪出发，探索连接人与AI的新形式。',
     about_teaser_body:
@@ -2560,6 +2604,30 @@ const T = {
     val3_desc:
       'Those with the power of technology must be responsible for how it is used. We are committed to the ethical application of AI. The final judgement stays with the people who use our tools, and results are always delivered in a form a person can check.',
 
+    showcase_eyebrow: 'Products & Solutions',
+    showcase_title: 'Turning imagination into reality.',
+    showcase_lead:
+      'From digital assistants to physical companions — exploring what AI can do in real settings.',
+    showcase_app_tag: 'Solution',
+    showcase_app_desc:
+      'AI reads PDF and Excel purchase orders and turns them into an order ledger. Try it free, no sign-up needed.',
+    showcase_hw_tag: 'Product',
+    showcase_hw_desc:
+      'Bringing generative AI into toys, learning tools and IoT devices as everyday companions. Currently in development.',
+    showcase_more: 'All products & solutions',
+    journal_eyebrow: 'Journal',
+    journal_title: 'Recording the journey, sharing our thinking.',
+    journal_lead: 'On technology, products, and the changing relationship between people and AI.',
+    journal1_tag: 'Perspectives',
+    journal1_name: 'Perspectives',
+    journal1_desc: 'Thoughts on AI, society and the future.',
+    journal2_tag: 'Building',
+    journal2_name: 'Development notes',
+    journal2_desc: 'An honest record from concept and experiment to finished product.',
+    journal3_tag: 'Updates',
+    journal3_name: 'Company news',
+    journal3_desc: 'Project progress, partnership news and everyday life at the company.',
+    journal_more: 'Read all posts',
     about_teaser_eyebrow: 'About',
     about_teaser_title: 'From Osaka, exploring new ways to connect people and AI.',
     about_teaser_body:

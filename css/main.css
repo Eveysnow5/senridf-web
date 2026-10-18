@@ -1588,3 +1588,143 @@ main { padding-top: var(--nav-h); }
   .company-table__cta { margin: 10px 0 0; }
   .company-table dd a[href^='mailto'] { display: block; }
 }
+
+/* === 首页：产品与方案 / 博客（2026-10-18）===
+   沿用首页已有的语汇：等宽小号眉标、衬线标题、细边框、--c-bg-alt 底、绿色 accent，不另起一套。 */
+.home-lead { margin-bottom: 40px; }
+.home-more { text-align: right; }
+.home-more .cta-link { margin-top: 28px; }
+
+.showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px;
+}
+.showcase-card { display: block; color: inherit; }
+.showcase-card__media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: var(--c-bg-alt);
+  border: 1px solid var(--c-border);
+  overflow: hidden;
+  margin-bottom: 22px;
+}
+.showcase-card__media .content-image { transition: transform 700ms var(--ease-out); }
+.showcase-card:hover .showcase-card__media .content-image { transform: scale(1.03); }
+.showcase-card__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: linear-gradient(160deg, var(--c-bg-alt) 0%, var(--c-accent-light) 100%);
+}
+.showcase-card__monogram {
+  font-family: var(--f-serif);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  color: var(--c-accent);
+  opacity: 0.2;
+}
+.showcase-card__tag,
+.journal-item__tag {
+  font-family: var(--f-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.22em;
+  color: var(--c-accent-mid);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.showcase-card__name {
+  font-family: var(--f-serif);
+  font-size: 1.375rem;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  color: var(--c-text);
+  margin-bottom: 8px;
+  transition: color 200ms var(--ease);
+}
+.showcase-card:hover .showcase-card__name { color: var(--c-accent); }
+.showcase-card__desc {
+  font-family: var(--f-sans);
+  font-size: 0.875rem;
+  font-weight: 300;
+  line-height: 1.8;
+  color: var(--c-text-2);
+}
+
+.journal-list { border-top: 1px solid var(--c-border); }
+.journal-item {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr) auto;
+  column-gap: 28px;
+  align-items: center;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--c-border);
+  color: inherit;
+}
+.journal-item__thumb {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: linear-gradient(160deg, var(--c-bg-alt) 0%, var(--c-accent-light) 100%);
+  border: 1px solid var(--c-border);
+  overflow: hidden;
+}
+.journal-item__name {
+  font-family: var(--f-serif);
+  font-size: 1.125rem;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  color: var(--c-text);
+  margin-bottom: 6px;
+  transition: color 200ms var(--ease);
+}
+.journal-item__desc {
+  font-family: var(--f-sans);
+  font-size: 0.875rem;
+  font-weight: 300;
+  line-height: 1.8;
+  color: var(--c-text-2);
+}
+.journal-item__arrow {
+  color: var(--c-text-3);
+  transition: transform 250ms var(--ease), color 200ms var(--ease);
+}
+.journal-item:hover .journal-item__name,
+.journal-item:hover .journal-item__arrow { color: var(--c-accent); }
+.journal-item:hover .journal-item__arrow { transform: translateX(4px); }
+
+/* 解决方案页「開発中」锚点：首页产品卡链到这里，留出固定导航的高度 */
+#hardware { scroll-margin-top: var(--nav-h); }
+
+/* 一屏一页（桌面）：卡片图按屏高收，保证整块放进一屏 */
+@media (min-width: 1025px) and (min-height: 500px) {
+  .home-snap .showcase-card__media {
+    aspect-ratio: auto;
+    height: clamp(150px, calc(100svh - var(--nav-h) - 400px), 360px);
+  }
+}
+@media (min-width: 1025px) and (min-height: 500px) and (max-height: 760px) {
+  .home-snap .home-lead { margin-bottom: 20px; }
+  .home-snap .home-more .cta-link { margin-top: 8px; }
+  .home-snap .showcase-card__media { margin-bottom: 14px; }
+  /* 1272×606 实测：产品块超 51px、博客块超 70px → 导语不限宽（一行放下）、缩略图与行距收小 */
+  .home-snap .home-lead { max-width: none; line-height: 1.7; margin-bottom: 16px; }
+  .home-snap .showcase-card__media { height: clamp(110px, calc(100svh - var(--nav-h) - 390px), 360px); }
+  .home-snap .showcase-card__desc { line-height: 1.6; }
+  .home-snap .journal-item { padding: 7px 0; grid-template-columns: 80px minmax(0, 1fr) auto; }
+  .home-snap .journal-item__name { font-size: 1.0625rem; }
+  .home-snap .journal-item__tag { margin-bottom: 4px; }
+  .home-snap .journal-item__name { margin-bottom: 2px; }
+  .home-snap .journal-item__desc { line-height: 1.6; }
+}
+
+@media (max-width: 768px) {
+  .showcase-grid { grid-template-columns: 1fr; gap: 40px; }
+  .home-more { text-align: left; }
+  .journal-item { grid-template-columns: 88px minmax(0, 1fr); column-gap: 18px; }
+  .journal-item__arrow { display: none; }
+}
