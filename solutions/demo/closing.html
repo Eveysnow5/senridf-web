@@ -1073,8 +1073,9 @@
       setStatus($('ce-pre'), 'ce_pre_running');
       showProgress(!ready);
       try {
-        // 文件内容各给 Worker 一份拷贝（Worker 每次重写内存文件系统）
-        const copy = files.map((f) => ({ path: f.path, buf: f.buf.slice(0) }));
+        // 文件内容各给 Worker 一份拷贝（Worker 每次重写内存文件系统）。证凭的原件（PDF・照片）不给：引擎只读索引簿，
+        // 原件每次都抄一遍，凭证多了预检就慢（回放 2026-10-18：27MB，放进流水后卡片 35 秒才变过来）
+        const copy = evFiles();
         const m = await ask({ cmd: 'precheck', files: copy, month, month_from: from, ui: ui() }, copy.map((f) => f.buf));
         const r = m.result;
         renderPeriod(r.period);
@@ -2562,7 +2563,8 @@
             if (r.staff_added && r.staff_added.length) {
               const bk = await replaceBook(r.book);
               if (bk) {
-                window.sdfSetText($('ce-pre'), 'ce_ev_staff_added', { names: r.staff_added.join('・'), path: bk });
+                // 写在证凭的记录里（常驻）。写在预检栏会马上被预检的结果盖掉，用户看不到（回放 2026-10-18）
+                zlog('ce-z-ev-log', 'ok', 'ce_ev_staff_added', { names: r.staff_added.join('・'), path: bk });
                 files = await readDir(dirHandle, '');
                 await afterFiles();
               }
@@ -2856,8 +2858,8 @@
       try {
         const lang = $('ce-wp-lang').value;
         if (source === 'upload') {
-          // 每次都从选好的文件重新写入（上一次带回答的结账改过的 decisions 不留在 Worker 里）
-          const copy = files.map((f) => ({ path: f.path, buf: f.buf.slice(0) }));
+          // 每次都从选好的文件重新写入（上一次带回答的结账改过的 decisions 不留在 Worker 里）。证凭原件不给（同预检）
+          const copy = evFiles();
           await ask({ cmd: 'precheck', files: copy, month, month_from: from, ui: ui() }, copy.map((f) => f.buf));
         }
         const ans = withAnswers && Object.keys(answers).length ? answers : null;
