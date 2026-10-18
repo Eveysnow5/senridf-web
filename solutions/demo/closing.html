@@ -2225,7 +2225,9 @@
       if (filed) {
         files = await readDir(dirHandle, '');
         window.sdfSetText($('ce-folder-info'), 'ce_fs_connected', { name: dirHandle.name, n: files.length });
-        afterFiles();
+        // 放了流水时先等检查（卡片）更新完，再查规则候选：候选排在两次预检中间时，卡片晚 2〜3 秒（回放 10-18 --trace）
+        if (bankIn) await afterFiles();
+        else afterFiles();
       }
       // 放了银行流水：用内置字典（手续费・利息・家賃…哪家公司都一样的摘要）给出银行规则的候选。
       // 写进公司资料仍要用户勾选（同弥生的候选）。没有候选就不显示（作者 2026-10-17：工具能复原的范围）
