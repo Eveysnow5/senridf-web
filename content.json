@@ -7,7 +7,10 @@
     "footer_copy": "© 2025 千里同風株式会社",
     "vision_title": "让AI融入日常",
     "hero_tagline": "人类对AI陪伴的一切渴望，都是对灵魂共鸣的向往。",
-    "vision_body": "在第一次智能革命的浪潮中，探索人与 AI 共生的新形态。\n每个人都能创造属于自己的 AI，与 AI 彼此成就。\n\n\n千里同風，让连接成为可能。"
+    "vision_body": "在人类第一次智能革命的浪潮中，探索人与 AI 共生的新形态。\n每个人都能创造属于自己的 AI，与 AI 彼此成就。\n\n\n千里同風，让连接成为可能。",
+    "mission_title": "拥抱 AI，技术服务于人",
+    "mission_body": "以客户的真实需求为起点，将人工智能转化为触手可及的产品与服务。\n\n\n让每一次技术创新，都创造切实的价值。",
+    "values_title": "让理想落地，让信任生根"
   },
   "ja": {
     "ms2_desc": "公式ウェブサイトを公開。最初のAIツール「中日翻訳」も同時にリリース。\n\nこのウェブサイトはツール「Claude Code」を用いて開発されました。テクノロジーが暮らしを変える。",
@@ -16,7 +19,10 @@
     "team2_role": "財務・リスクアドバイザー",
     "vision_title": "AIを日常に溶け込ませる",
     "hero_tagline": "AIに寄り添いを求める人間の願いは、すべて魂の共鳴への憧れである。",
-    "vision_body": "第一次知能革命のうねりの中で、人とAIが共に生きる新しいかたちを探る。\n誰もが自分だけのAIを生み出し、AIと互いに高め合える。\n\n\n千里同風は、つながりを可能にする。"
+    "vision_body": "人類初の知的革命の波の中で、人間とAIが共生する新しい形態を探求します。\n誰もが自分だけのAIを創造し、AIと互いに高め合えるように。\n\n千里同風（センリドウフウ）は、つながりを可能にします。",
+    "mission_title": "AIを受け入れ、技術で人を支える",
+    "mission_body": "顧客の真のニーズを起点とし、人工知能を手の届く製品・サービスに変えます。\n\nすべての技術革新が、確かな価値を生み出せるように。",
+    "values_title": "理想を実現し、信頼を根づける"
   },
   "en": {
     "ms2_desc": "Launched the official website, together with our first AI tool: Chinese–Japanese translation.\n\nThis website was built using the tool \"Claude Code.\" Technology transforms life.",
@@ -25,7 +31,10 @@
     "team2_role": "Finance & Risk Advisor",
     "vision_title": "Integrating AI into Daily Life",
     "hero_tagline": "Every human longing for AI companionship is a yearning for the resonance of souls.",
-    "vision_body": "Amid the first wave of the intelligence revolution, we explore new ways for people and AI to live together.\nEveryone can create an AI of their own, and people and AI can bring out the best in each other.\n\n\nSenridoufuu: making connection possible."
+    "vision_body": "In the wave of humanity's first intelligent revolution, we explore new forms of human-AI symbiosis.\nEveryone can create their own AI, achieving mutual growth with it.\n\nQianli Tongfeng makes connection possible.",
+    "mission_title": "Embrace AI, Technology Serving People",
+    "mission_body": "Starting from our customers' real needs, we transform artificial intelligence into accessible products and services.\n\nEnsuring every technological innovation creates tangible value.",
+    "values_title": "Bringing Ideals to Life, Rooting Trust"
   },
   "images": {
     "team1_photo": "assets/images/site/team1_photo-1792249880749.webp",
