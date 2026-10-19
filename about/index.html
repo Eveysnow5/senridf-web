@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400&family=Noto+Serif+JP:wght@300;400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <base href="../">
-  <link rel="stylesheet" href="css/main.css?v=95750fcf4f">
+  <link rel="stylesheet" href="css/main.css?v=4201d3b49b">
 
 
 
@@ -47,38 +47,46 @@
       </div>
     </div>
 
-    <!-- Team Grid -->
+    <!-- Team Grid：左＝照片＋职位（2026-10-17 作者要求职位放到照片下、字号加大），右＝姓名＋简介 -->
     <section class="section">
       <div class="team-grid">
 
         <!-- Member 1: Minami Yuki -->
         <div class="team-member" data-animate data-animate-delay="1">
-          <div class="team-member__photo">
-            <div class="team-member__photo-inner" data-image-key="team1_photo">
-              <span class="team-member__photo-monogram">南</span>
+          <div class="team-member__aside">
+            <div class="team-member__photo">
+              <div class="team-member__photo-inner" data-image-key="team1_photo">
+                <span class="team-member__photo-monogram">南</span>
+              </div>
             </div>
+            <div class="team-member__role" data-i18n="team1_role">代表取締役</div>
           </div>
-          <div class="team-member__role" data-i18n="team1_role">代表取締役</div>
-          <h2 class="team-member__name">南 雪</h2>
-          <div class="team-member__name-en">Minami Yuki</div>
-          <p class="team-member__bio" data-i18n="team1_bio">
-            千里同風株式会社の代表。生成AIを活用したハードウェア製品の事業開発・市場開拓を主導。日本市場向けのAI製品企画・サプライチェーン構築に注力しています。
-          </p>
+          <div class="team-member__body">
+            <h2 class="team-member__name">南 雪</h2>
+            <div class="team-member__name-en">Minami Yuki</div>
+            <p class="team-member__bio" data-i18n="team1_bio">
+              千里同風株式会社の代表。生成AIを活用したハードウェア製品の事業開発・市場開拓を主導。日本市場向けのAI製品企画・サプライチェーン構築に注力しています。
+            </p>
+          </div>
         </div>
 
         <!-- Member 2: Xie Yiran -->
         <div class="team-member" data-animate data-animate-delay="2">
-          <div class="team-member__photo">
-            <div class="team-member__photo-inner" data-image-key="team2_photo">
-              <span class="team-member__photo-monogram">謝</span>
+          <div class="team-member__aside">
+            <div class="team-member__photo">
+              <div class="team-member__photo-inner" data-image-key="team2_photo">
+                <span class="team-member__photo-monogram">謝</span>
+              </div>
             </div>
+            <div class="team-member__role" data-i18n="team2_role">ビジネスアドバイザー</div>
           </div>
-          <div class="team-member__role" data-i18n="team2_role">ビジネスアドバイザー</div>
-          <h2 class="team-member__name">謝 怡然</h2>
-          <div class="team-member__name-en">Xie Yiran</div>
-          <p class="team-member__bio" data-i18n="team2_bio">
-            中国公認会計士（CPA）。財務戦略・クロスボーダービジネスのアドバイザリーを担当。中日間のビジネス開発および財務管理をサポートします。
-          </p>
+          <div class="team-member__body">
+            <h2 class="team-member__name">謝 怡然</h2>
+            <div class="team-member__name-en">Xie Yiran</div>
+            <p class="team-member__bio" data-i18n="team2_bio">
+              中国公認会計士（CPA）。財務戦略・クロスボーダービジネスのアドバイザリーを担当。中日間のビジネス開発および財務管理をサポートします。
+            </p>
+          </div>
         </div>
 
       </div>
@@ -88,7 +96,7 @@
 
   <div id="footer-placeholder"></div>
 
-  <script src="js/main.js?v=74565e3df3"></script>
+  <script src="js/main.js?v=ca285461d1"></script>
   <script type="module" src="js/tracking.js?v=88cdd8560f"></script>
 </body>
 </html>

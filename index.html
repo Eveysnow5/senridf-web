@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400&family=Noto+Serif+JP:wght@300;400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <base href="./">
-  <link rel="stylesheet" href="css/main.css?v=95750fcf4f">
+  <link rel="stylesheet" href="css/main.css?v=4201d3b49b">
   <!-- 结构化数据（Organization）：设立日＝履歴事項全部証明書（令和7年2月25日）；所在地＝作者 2026-10-06 确认。
        资本金按作者意见不公开。 -->
   <script type="application/ld+json">
@@ -100,7 +100,98 @@
       </div>
     </div>
 
-    <!-- ③ Values -->
+    <!-- ③ 产品与方案（2026-10-18）：应用方案、产品各一个典型。图片位都可在后台换图。
+         应用卡默认图＝真实素材合成（样例订单 → 受発注页「変換例」的真实输出），不是效果图。
+         产品卡：硬件仍在开发中，没有可展示的实物照片 → 占位底图＋「開発中」，有照片后在后台上传。 -->
+    <section class="section">
+      <div data-animate>
+        <span class="section__eyebrow" data-i18n="showcase_eyebrow">プロダクトとソリューション</span>
+        <h2 class="section__title" data-i18n="showcase_title">想像を、現実に。</h2>
+        <p class="section__lead home-lead home-lead--showcase" data-i18n="showcase_lead">
+          デジタルアシスタントから、そばにいるハードウェアまで。AIが現実の場面で活きるかたちを探っています。
+        </p>
+      </div>
+      <div class="showcase-grid">
+        <a href="solutions/order-to-ledger.html" class="showcase-card" data-animate data-animate-delay="1">
+          <div class="showcase-card__media" data-image-key="showcase_app">
+            <img class="content-image" src="assets/images/site/showcase-o2l.webp" width="1200" height="750" loading="lazy" alt="" />
+          </div>
+          <div class="showcase-card__tag" data-i18n="showcase_app_tag">ソリューション</div>
+          <h3 class="showcase-card__name" data-i18n="o2l_card_title">受発注 · Excel自動化</h3>
+          <p class="showcase-card__desc" data-i18n="showcase_app_desc">
+            PDF・Excelの注文書をAIが読み取り、受注台帳に自動で整理。登録なしで無料でお試しいただけます。
+          </p>
+        </a>
+        <a href="solutions/#hardware" class="showcase-card" data-animate data-animate-delay="2">
+          <div class="showcase-card__media" data-image-key="showcase_product">
+            <div class="showcase-card__placeholder">
+              <span class="showcase-card__monogram">AI</span>
+              <span class="product-card__coming-label" data-i18n="sol_dev_badge">開発中</span>
+            </div>
+          </div>
+          <div class="showcase-card__tag" data-i18n="showcase_hw_tag">プロダクト</div>
+          <h3 class="showcase-card__name" data-i18n="sol_dev_title">AIを組み込んだハードウェア</h3>
+          <p class="showcase-card__desc" data-i18n="showcase_hw_desc">
+            生成AIを玩具・教具・IoTデバイスに組み込み、日常に寄り添う製品を開発中です。
+          </p>
+        </a>
+      </div>
+      <div class="home-more">
+        <a href="solutions/" class="cta-link">
+          <span data-i18n="showcase_more">製品・ソリューション一覧</span>
+          <span class="cta-link__arrow">→</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- ④ 博客（2026-10-18）：三个栏目，都链到博客页（目前还没有文章，博客页会显示「近日公開」）。
+         缩略图位可在后台换图。 -->
+    <section class="section">
+      <div data-animate>
+        <span class="section__eyebrow" data-i18n="journal_eyebrow">ブログ</span>
+        <h2 class="section__title" data-i18n="journal_title">探索を記録し、考えを分かち合う。</h2>
+        <p class="section__lead home-lead" data-i18n="journal_lead">
+          技術とプロダクト、そして人とAIのあいだで起きている変化について。
+        </p>
+      </div>
+      <div class="journal-list" data-animate>
+        <a href="solutions/blog/" class="journal-item">
+          <div class="journal-item__thumb" data-image-key="journal1_img"></div>
+          <div>
+            <div class="journal-item__tag" data-i18n="journal1_tag">Perspectives</div>
+            <h3 class="journal-item__name" data-i18n="journal1_name">視点と考察</h3>
+            <p class="journal-item__desc" data-i18n="journal1_desc">AI・社会・未来の関係についての考察。</p>
+          </div>
+          <span class="journal-item__arrow" aria-hidden="true">→</span>
+        </a>
+        <a href="solutions/blog/" class="journal-item">
+          <div class="journal-item__thumb" data-image-key="journal2_img"></div>
+          <div>
+            <div class="journal-item__tag" data-i18n="journal2_tag">Building</div>
+            <h3 class="journal-item__name" data-i18n="journal2_name">開発ノート</h3>
+            <p class="journal-item__desc" data-i18n="journal2_desc">構想から実験、製品化までのありのままの記録。</p>
+          </div>
+          <span class="journal-item__arrow" aria-hidden="true">→</span>
+        </a>
+        <a href="solutions/blog/" class="journal-item">
+          <div class="journal-item__thumb" data-image-key="journal3_img"></div>
+          <div>
+            <div class="journal-item__tag" data-i18n="journal3_tag">Updates</div>
+            <h3 class="journal-item__name" data-i18n="journal3_name">お知らせ</h3>
+            <p class="journal-item__desc" data-i18n="journal3_desc">プロジェクトの進捗、協業のお知らせ、会社の日常。</p>
+          </div>
+          <span class="journal-item__arrow" aria-hidden="true">→</span>
+        </a>
+      </div>
+      <div class="home-more">
+        <a href="solutions/blog/" class="cta-link">
+          <span data-i18n="journal_more">すべての記事を読む</span>
+          <span class="cta-link__arrow">→</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- ⑤ Values（2026-10-18 作者要求紧挨在关于我们之前） -->
     <section class="section">
       <div data-animate>
         <span class="section__eyebrow" data-i18n="values_eyebrow">価値観</span>
@@ -131,7 +222,7 @@
       </div>
     </section>
 
-    <!-- ④ About Teaser -->
+    <!-- ⑥ About Teaser -->
     <section class="section section--tight">
       <div class="about-teaser" data-animate>
         <div>
@@ -147,7 +238,8 @@
             <span class="cta-link__arrow">→</span>
           </a>
         </div>
-        <div class="about-teaser__visual" aria-hidden="true">
+        <!-- data-image-key：后台可点击换图（2026-10-18）。未上传时显示「千里」字样占位 -->
+        <div class="about-teaser__visual" aria-hidden="true" data-image-key="home_visual">
           <div class="about-teaser__visual-inner">千里</div>
         </div>
       </div>
@@ -158,7 +250,7 @@
   <!-- Footer (injected by JS) -->
   <div id="footer-placeholder"></div>
 
-  <script src="js/main.js?v=74565e3df3"></script>
+  <script src="js/main.js?v=ca285461d1"></script>
   <script type="module" src="js/tracking.js?v=88cdd8560f"></script>
 </body>
 </html>

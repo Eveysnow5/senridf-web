@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400&family=Noto+Serif+JP:wght@300;400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <base href="../">
-  <link rel="stylesheet" href="css/main.css?v=95750fcf4f">
+  <link rel="stylesheet" href="css/main.css?v=4201d3b49b">
 
 
 
@@ -50,12 +50,13 @@
     <!-- Timeline -->
     <section class="section">
       <div class="timeline">
-        <!-- 日付の根拠（2026-10-06 作者指摘で全面修正）：設立＝履歴事項全部証明書「会社成立の年月日
+        <!-- 下の 4 件は静的な既定値。content.json に timeline があれば main.js が置き換える（後台で増減・並べ替え可）。
+             日付の根拠（2026-10-06 作者指摘で全面修正）：設立＝履歴事項全部証明書「会社成立の年月日
              令和7年2月25日」。サイト＝リポジトリ初回コミット 2026-05-16（中日翻訳を含む）。
              各ツール＝各ページの初回追加日（05-18〜06-17）。受発注＝2026-09-14。
              旧版の「2024 設立」「2024 市場調査開始」「2025 サイト公開」は根拠なし。 -->
 
-        <div class="timeline__item" data-animate>
+        <div class="timeline__item" data-animate data-ms-id="ms1">
           <div class="timeline__year">2025.02</div>
           <div>
             <h3 class="timeline__event" data-i18n="ms1_event">千里同風株式会社 設立</h3>
@@ -65,7 +66,7 @@
           </div>
         </div>
 
-        <div class="timeline__item" data-animate data-animate-delay="1">
+        <div class="timeline__item" data-animate data-animate-delay="1" data-ms-id="ms2">
           <div class="timeline__year">2026.05</div>
           <div>
             <h3 class="timeline__event" data-i18n="ms2_event">公式ウェブサイト 公開</h3>
@@ -75,7 +76,7 @@
           </div>
         </div>
 
-        <div class="timeline__item" data-animate data-animate-delay="2">
+        <div class="timeline__item" data-animate data-animate-delay="2" data-ms-id="ms3">
           <div class="timeline__year">2026.05–06</div>
           <div>
             <h3 class="timeline__event" data-i18n="ms3_event">オンラインAIツール 順次公開</h3>
@@ -85,7 +86,7 @@
           </div>
         </div>
 
-        <div class="timeline__item" data-animate data-animate-delay="3">
+        <div class="timeline__item" data-animate data-animate-delay="3" data-ms-id="ms4">
           <div class="timeline__year">2026.09</div>
           <div>
             <h3 class="timeline__event" data-i18n="ms4_event">受発注の自動化 デモ公開</h3>
@@ -102,7 +103,7 @@
 
   <div id="footer-placeholder"></div>
 
-  <script src="js/main.js?v=74565e3df3"></script>
+  <script src="js/main.js?v=ca285461d1"></script>
   <script type="module" src="js/tracking.js?v=88cdd8560f"></script>
 </body>
 </html>

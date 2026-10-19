@@ -11,13 +11,45 @@ export function allowedOrigin(origin) {
   );
 }
 
-// content.json 载荷形状：{ ja|zh|en|images: { 字段名: 字符串 } }
+// 大事记的时间点列表（2026-10-18）：[{ id: 'ms5', date: '2026.10' }, ...]，数组顺序＝页面顺序。
+// 文字不在这里：msN_event / msN_desc 仍在 ja|zh|en 分组里，和其他文案一样走翻译。
+const TIMELINE_MAX = 60;
+const TIMELINE_ID = /^ms\d{1,4}$/;
+export function validateTimeline(list) {
+  if (!Array.isArray(list)) return { ok: false, error: '大事记列表格式错误' };
+  if (list.length > TIMELINE_MAX) return { ok: false, error: `大事记最多 ${TIMELINE_MAX} 条` };
+  const seen = new Set();
+  for (const item of list) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      return { ok: false, error: '大事记条目格式错误' };
+    }
+    if (Object.keys(item).some((k) => k !== 'id' && k !== 'date')) {
+      return { ok: false, error: '大事记条目只能有 id 和 date' };
+    }
+    if (typeof item.id !== 'string' || !TIMELINE_ID.test(item.id)) {
+      return { ok: false, error: `大事记条目编号非法：${item.id}` };
+    }
+    if (seen.has(item.id)) return { ok: false, error: `大事记条目编号重复：${item.id}` };
+    seen.add(item.id);
+    if (typeof item.date !== 'string' || !item.date.trim() || item.date.length > 30) {
+      return { ok: false, error: `大事记日期须为 1〜30 字：${item.id}` };
+    }
+  }
+  return { ok: true };
+}
+
+// content.json 载荷形状：{ ja|zh|en|images: { 字段名: 字符串 }, timeline?: [{id,date}] }
 export function validateContentPayload(content) {
   if (!content || typeof content !== 'object' || Array.isArray(content)) {
     return { ok: false, error: '内容格式错误' };
   }
   const allowedGroups = [...LANGS, 'images'];
   for (const [group, fields] of Object.entries(content)) {
+    if (group === 'timeline') {
+      const tl = validateTimeline(fields);
+      if (!tl.ok) return tl;
+      continue;
+    }
     if (!allowedGroups.includes(group)) return { ok: false, error: `未知分组：${group}` };
     if (!fields || typeof fields !== 'object' || Array.isArray(fields)) {
       return { ok: false, error: `分组 ${group} 格式错误` };

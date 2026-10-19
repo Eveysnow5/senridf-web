@@ -174,14 +174,31 @@ let pendingZh = {};
 let pendingJa = {};
 let pendingEn = {};
 let pendingImages = {}; // {key: dataURL}，待上传的新图片
+let pendingTimeline = null; // 大事记时间点 [{id,date}]，改过才非 null（保存时整体替换）
 let editingEl = null;
 let editingOriginal = '';
 
 const FRAME_STYLE = `
   [data-i18n]:hover { outline: 1px dashed #2563eb; outline-offset: 2px; cursor: text; }
-  [data-i18n][contenteditable="true"] { outline: 2px solid #2563eb; outline-offset: 2px; cursor: text; background: #eef2ff; }
+  /* 编辑中：强制深字浅底。原来只换底色不换字色，首页标语等白字处变成浅底白字，不全选就看不见（2026-10-18 Yuki 反馈）。
+     -webkit-text-fill-color / opacity / text-shadow 也一并压住，防止页面自身的渐变字、淡入动画、阴影透出来。 */
+  [data-i18n][contenteditable="true"] {
+    outline: 2px solid #2563eb; outline-offset: 2px; cursor: text;
+    background: #ffffff !important; color: #1f2937 !important; -webkit-text-fill-color: #1f2937 !important;
+    opacity: 1 !important; text-shadow: none !important; caret-color: #2563eb;
+  }
+  [data-i18n][contenteditable="true"]::selection { background: #bfdbfe; color: #1f2937; -webkit-text-fill-color: #1f2937; }
   [data-image-key] { cursor: pointer; }
   [data-image-key]:hover { outline: 2px dashed #2563eb; outline-offset: 2px; }
+  /* 大事记：每个时间点下方的操作按钮（只在后台预览里出现） */
+  .cms-tl-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .cms-tl-bar button, .cms-tl-top {
+    font: 12px/1.4 system-ui, sans-serif; padding: 4px 10px; border-radius: 6px; cursor: pointer;
+    border: 1px solid #c7d2fe; background: #eef2ff; color: #1e3a8a;
+  }
+  .cms-tl-bar button:disabled { opacity: .35; cursor: default; }
+  .cms-tl-bar .cms-danger { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+  .cms-tl-top { margin-bottom: 28px; }
   .cms-pill {
     position: absolute; z-index: 999999; display: flex; gap: 6px;
     background: #1f1c17; border-radius: 8px; padding: 5px 7px; box-shadow: 0 4px 14px rgba(0,0,0,.25);
@@ -195,7 +212,8 @@ const FRAME_STYLE = `
 `;
 
 function updateChangesBar() {
-  const count = Object.keys(pendingZh).length + Object.keys(pendingImages).length;
+  const count =
+    Object.keys(pendingZh).length + Object.keys(pendingImages).length + (pendingTimeline ? 1 : 0);
   const bar = document.getElementById('changes-bar');
   bar.hidden = count === 0;
   document.getElementById('changes-count').textContent = `已改 ${count} 处`;
@@ -240,6 +258,9 @@ function initEditableFrame(frame) {
 
   editingEl = null;
 
+  // 大事记页：重绘时间点（本次会话里增删移过的话按改后的顺序），并加上操作按钮
+  if (doc.querySelector('.timeline')) renderTimelineEditor(frame);
+
   doc.addEventListener(
     'click',
     (e) => {
@@ -255,6 +276,147 @@ function initEditableFrame(frame) {
     },
     true,
   );
+}
+
+/* ── 大事记：时间点的插入 / 删除 / 上下移动 / 改日期（2026-10-18）──
+   列表存进 content.json 的 timeline（[{id,date}]，顺序＝显示顺序）；文字仍是 msN_event / msN_desc，
+   和其他文字一样点击就地修改、用「一键同步日英」翻译。改动先暂存在 pendingTimeline，
+   点「保存并发布」才生效。 */
+function timelineFromDom(doc) {
+  return [...doc.querySelectorAll('.timeline__item[data-ms-id]')].map((el) => ({
+    id: el.dataset.msId,
+    date: (el.querySelector('.timeline__year')?.textContent || '').trim(),
+  }));
+}
+
+function currentTimeline(doc) {
+  if (pendingTimeline) return pendingTimeline.map((x) => ({ ...x }));
+  if (Array.isArray(currentOverrides.timeline)) return currentOverrides.timeline.map((x) => ({ ...x }));
+  return timelineFromDom(doc);
+}
+
+// 新编号取「出现过的最大编号 + 1」：删掉的条目文字还留在 content.json / main.js 里，
+// 编号复用的话，没翻译的语言会冒出旧条目的文字。sdfT 能探到 main.js 内置的 ms1〜ms4。
+function nextTimelineId(list, win) {
+  let max = 0;
+  const bump = (k) => {
+    const m = /^ms(\d+)(?:_|$)/.exec(k);
+    if (m) max = Math.max(max, Number(m[1]));
+  };
+  list.forEach((x) => bump(x.id));
+  for (const g of ['ja', 'zh', 'en']) Object.keys(currentOverrides[g] || {}).forEach(bump);
+  Object.keys(pendingZh).forEach(bump);
+  while (win.sdfT && win.sdfT('ms' + (max + 1) + '_event', null) !== null) max++;
+  return 'ms' + (max + 1);
+}
+
+function askDate(initial) {
+  const v = window.prompt('日期（例如 2026.10 或 2026.05–06）：', initial || '');
+  if (v === null) return null;
+  const d = v.trim();
+  if (!d || d.length > 30) {
+    window.alert('日期不能为空，且不超过 30 个字。');
+    return null;
+  }
+  return d;
+}
+
+function renderTimelineEditor(frame) {
+  const doc = frame.contentDocument;
+  const win = frame.contentWindow;
+  if (typeof win.sdfRenderTimeline !== 'function') return; // main.js 还没加载完：保持静态内容
+  const list = currentTimeline(doc);
+  win.sdfRenderTimeline(list);
+  // 重绘会重建元素，把本次会话里还没发布的文字改动重新套上
+  doc.querySelectorAll('.timeline [data-i18n]').forEach((el) => {
+    if (pendingZh[el.dataset.i18n] !== undefined) el.textContent = pendingZh[el.dataset.i18n];
+  });
+
+  const apply = (next) => {
+    commitActiveEdit();
+    pendingTimeline = next;
+    updateChangesBar();
+    renderTimelineEditor(frame);
+  };
+  const insertAt = (at) => {
+    commitActiveEdit();
+    const date = askDate('');
+    if (date === null) return;
+    const next = currentTimeline(doc);
+    const id = nextTimelineId(next, win);
+    pendingZh[id + '_event'] = '新事件（点击修改标题）';
+    pendingZh[id + '_desc'] = '说明（点击修改内容）';
+    next.splice(at, 0, { id, date });
+    apply(next);
+  };
+
+  const box = doc.querySelector('.timeline');
+  box.querySelectorAll('.cms-tl-top').forEach((el) => el.remove());
+  const top = doc.createElement('button');
+  top.type = 'button';
+  top.className = 'cms-tl-top';
+  top.textContent = '＋ 在最前面插入时间点';
+  top.addEventListener('click', () => insertAt(0));
+  box.prepend(top);
+
+  const items = [...doc.querySelectorAll('.timeline__item')];
+  items.forEach((el, i) => {
+    const bar = doc.createElement('div');
+    bar.className = 'cms-tl-bar';
+    const add = (label, onClick, { disabled = false, danger = false } = {}) => {
+      const b = doc.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.disabled = disabled;
+      if (danger) b.className = 'cms-danger';
+      b.addEventListener('click', onClick);
+      bar.appendChild(b);
+    };
+    add(
+      '↑ 上移',
+      () => {
+        const next = currentTimeline(doc);
+        [next[i - 1], next[i]] = [next[i], next[i - 1]];
+        apply(next);
+      },
+      { disabled: i === 0 },
+    );
+    add(
+      '↓ 下移',
+      () => {
+        const next = currentTimeline(doc);
+        [next[i + 1], next[i]] = [next[i], next[i + 1]];
+        apply(next);
+      },
+      { disabled: i === items.length - 1 },
+    );
+    add('改日期', () => {
+      const next = currentTimeline(doc);
+      const date = askDate(next[i].date);
+      if (date === null) return;
+      next[i] = { ...next[i], date };
+      apply(next);
+    });
+    add('＋ 在下方插入', () => insertAt(i + 1));
+    add(
+      '删除',
+      () => {
+        const next = currentTimeline(doc);
+        const title = el.querySelector('.timeline__event')?.textContent.trim() || next[i].id;
+        if (!window.confirm('删除「' + title + '」这个时间点？（点「保存并发布」后才会生效）')) return;
+        const [gone] = next.splice(i, 1);
+        // 还没发布过的新条目，连它的暂存文字一起丢掉，免得把孤儿文字存进 content.json
+        for (const k of [gone.id + '_event', gone.id + '_desc']) {
+          delete pendingZh[k];
+          delete pendingJa[k];
+          delete pendingEn[k];
+        }
+        apply(next);
+      },
+      { danger: true },
+    );
+    el.appendChild(bar);
+  });
 }
 
 /* ── 图片位预览：在容器内插入/更新一张覆盖全区域的 <img>，object-fit:cover 不拉伸 ── */
@@ -342,11 +504,16 @@ function startEdit(doc, el) {
   el.contentEditable = 'true';
   el.focus();
 
-  el.addEventListener('paste', (e) => {
-    e.preventDefault();
-    const text = (e.clipboardData || doc.defaultView.clipboardData).getData('text/plain');
-    doc.execCommand('insertText', false, text);
-  });
+  // 粘贴只插纯文本。监听器每个元素只挂一次：原来每进一次编辑就多挂一个，同一处第 N 次编辑时
+  // 粘贴会插入 N 遍（简介里文字重复 2〜4 遍的真因，2026-10-18 查明）。
+  if (!el.dataset.cmsPasteBound) {
+    el.dataset.cmsPasteBound = '1';
+    el.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const text = (e.clipboardData || doc.defaultView.clipboardData).getData('text/plain');
+      doc.execCommand('insertText', false, text);
+    });
+  }
 
   const range = doc.createRange();
   range.selectNodeContents(el);
@@ -457,6 +624,21 @@ async function waitForDeploy(commitSha, statusEl) {
   statusEl.textContent = '已保存；上线状态未确认，稍后可直接查看网站';
 }
 
+// 旧 Worker 不认 changes：它会把 changes 当成整份内容，存成只有 {images:{}} 的 content.json，
+// 等于清空全站文字。所以保存前先确认 Worker 已是新协议（/health 的 api ≥ 2），否则拒绝保存。
+async function ensureSaveApi() {
+  let data = {};
+  try {
+    const res = await fetch(WORKER_URL + '/health');
+    data = await res.json();
+  } catch {
+    /* 网络错误按版本未知处理 */
+  }
+  if (!(Number(data.api) >= 2)) {
+    throw new Error('保存服务尚未更新到新版本，为避免覆盖网站内容已停止保存，请联系管理员');
+  }
+}
+
 window.save = async function () {
   commitActiveEdit();
   const btn = document.getElementById('save-btn');
@@ -466,20 +648,30 @@ window.save = async function () {
   statusEl.className = 'status';
   statusEl.textContent = '';
   try {
-    const ov = {
-      zh: { ...currentOverrides.zh, ...pendingZh },
-      ja: { ...currentOverrides.ja, ...pendingJa },
-      en: { ...currentOverrides.en, ...pendingEn },
-      images: { ...currentOverrides.images },
-    };
-    const payload = { content: ov };
-    if (Object.keys(pendingImages).length > 0) payload.images = { ...pendingImages };
-    const { commitSha, images } = await api('PUT', '/content', payload);
-    currentOverrides = { ...ov, images: images || ov.images };
+    // 只发「这次改了哪几项」，由 Worker 在最新版 content.json 上合并（2026-10-18）。
+    // 以前发的是打开后台时读到的整份内容＋改动，期间别人改过的会被旧副本盖掉。
+    const changes = {};
+    if (Object.keys(pendingZh).length) changes.zh = { ...pendingZh };
+    if (Object.keys(pendingJa).length) changes.ja = { ...pendingJa };
+    if (Object.keys(pendingEn).length) changes.en = { ...pendingEn };
+    if (pendingTimeline) changes.timeline = pendingTimeline.map(({ id, date }) => ({ id, date }));
+    const hasImages = Object.keys(pendingImages).length > 0;
+    if (!Object.keys(changes).length && !hasImages) {
+      statusEl.textContent = '没有需要保存的改动';
+      btn.disabled = false;
+      btn.textContent = '保存并发布';
+      return;
+    }
+    await ensureSaveApi();
+    const payload = { changes };
+    if (hasImages) payload.images = { ...pendingImages };
+    const { commitSha, content } = await api('PUT', '/content', payload);
+    if (content) currentOverrides = content; // 合并后的完整版本（含别人刚改的）当新基线
     pendingZh = {};
     pendingJa = {};
     pendingEn = {};
     pendingImages = {};
+    pendingTimeline = null;
     updateChangesBar();
     waitForDeploy(commitSha, statusEl);
   } catch (e) {

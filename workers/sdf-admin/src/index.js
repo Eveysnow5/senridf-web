@@ -7,6 +7,7 @@ import { verifyFirebaseToken } from '../../../functions/api/_lib/verifyFirebaseT
 import { CHAT_ENDPOINT, modelFor } from '../../../functions/api/_lib/models.js';
 import { isAdmin } from '../../../js/shared/admins.js';
 import { allowedOrigin, validateContentPayload } from './validate.js';
+import { CONTENT_API_VERSION, saveContentChanges } from './content-save.js';
 import { createRateLimiter } from './rateLimit.js';
 import { getFile, putFile, deleteFile } from './github.js';
 import {
@@ -60,7 +61,8 @@ export default {
       return new Response(null, { status: 204, headers: cors });
     }
 
-    if (url.pathname === '/health') return json(200, { ok: true }, cors);
+    // api：保存协议版本。后台保存前先查它——旧 Worker 不认 changes，会把它当整份内容存下（清空全站文案）
+    if (url.pathname === '/health') return json(200, { ok: true, api: CONTENT_API_VERSION }, cors);
 
     // ── 鉴权：Firebase ID token 有效 + 在管理员名单 ──
     const authHeader = request.headers.get('Authorization') || '';
@@ -90,16 +92,28 @@ export default {
           return json(400, { error: '请求格式错误' }, cors);
         }
 
-        // images 是本次新上传的图片（{key: dataURL}），与 content.images 里已有的路径分开传，
-        // 避免把整段 base64 存进 content.json——这里先落库拿到路径，再写回 content.images。
+        // 旧版后台（2026-10-18 之前打开、没刷新的页面）发的是整份内容 content——
+        // 那正是「用打开时的旧副本覆盖别人刚改的内容」的来源，直接拒绝，请对方刷新。
+        if (body.content !== undefined || !body.changes) {
+          return json(
+            409,
+            {
+              error: '后台页面已更新：请先把刚改的文字复制保存好，再刷新后台页面后重新修改、保存。',
+            },
+            cors,
+          );
+        }
+        if (typeof body.changes !== 'object' || Array.isArray(body.changes)) {
+          return json(400, { error: '请求格式错误' }, cors);
+        }
+
+        // images 是本次新上传的图片（{key: dataURL}），与已有的图片路径分开传，
+        // 避免把整段 base64 存进 content.json——这里先落库拿到路径，再并入 changes.images。
         const images =
           body.images && typeof body.images === 'object' && !Array.isArray(body.images)
             ? body.images
             : {};
-        const content = {
-          ...body.content,
-          images: { ...(body.content && body.content.images) },
-        };
+        const changes = { ...body.changes, images: { ...(body.changes.images || {}) } };
 
         // 先把每张图片的格式校验完、把最终要写入的图片路径也算好，全部通过之后才开始真正落库——
         // 避免"某张图片已经上传成功、但后面发现别的字段不合法"这种半成功的孤儿文件。
@@ -112,14 +126,14 @@ export default {
           if (!imgCheck.ok) return json(400, { error: imgCheck.error }, cors);
           const path = siteImagePath(key);
           uploads.push({ key, path, base64: imgCheck.base64 });
-          content.images[key] = path;
+          changes.images[key] = path;
         }
 
-        const check = validateContentPayload(content);
+        const check = validateContentPayload(changes);
         if (!check.ok) return json(400, { error: check.error }, cors);
 
         // 校验全部通过，这里才开始有副作用的写入。注意：GitHub Contents API 不支持多文件原子提交，
-        // 如果图片都传成功但下面 content.json 那次 putFile 失败（如网络抖动），图片会成为孤儿文件——
+        // 如果图片都传成功但下面 content.json 那次写入失败（如网络抖动），图片会成为孤儿文件——
         // 这是已知取舍，和 Blog 模块"发布产生多次独立 commit"是同一类限制，不在这里解决。
         for (const { key, path, base64 } of uploads) {
           await putFile(REPO, path, base64, `content: upload image ${key}`, env.GITHUB_TOKEN, {
@@ -127,16 +141,26 @@ export default {
           });
         }
 
-        const { commitSha } = await putFile(
-          REPO,
-          CONTENT_PATH,
-          JSON.stringify(content, null, 2) + '\n',
-          'content: update via admin panel',
-          env.GITHUB_TOKEN,
+        // 在最新版 content.json 上合并本次改动（见 content-save.js 顶部说明）
+        const result = await saveContentChanges(changes, {
+          read: () => getFile(REPO, CONTENT_PATH, env.GITHUB_TOKEN),
+          write: (text, sha) =>
+            putFile(REPO, CONTENT_PATH, text, 'content: update via admin panel', env.GITHUB_TOKEN, {
+              expectSha: sha,
+            }),
+        });
+        if (!result.ok) return json(result.status, { error: result.error }, cors);
+        // 带回合并后的完整内容：前端拿它当新的基线（含别人刚改的、和刚上传图片的最终路径）
+        return json(
+          200,
+          {
+            ok: true,
+            commitSha: result.commitSha,
+            content: result.content,
+            images: result.content.images,
+          },
+          cors,
         );
-        // 把最终解析出的图片路径带回前端，前端拿它更新本地的 currentOverrides.images，
-        // 不然下次保存时（同一会话内没刷新页面）还是旧值，会把刚上传的图片路径覆盖掉。
-        return json(200, { ok: true, commitSha, images: content.images }, cors);
       }
 
       if (url.pathname === '/translate' && request.method === 'POST') {
