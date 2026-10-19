@@ -859,7 +859,9 @@
     #summaryContent { margin-bottom:20px; }
     .srp-footer { display:flex;gap:12px; }
   </style>
-  <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js" integrity="sha384-m0l2AUT4Jav54eU04duv01OVjxoNwi2sQ7RYz0dW55Wi9yZlyq/wWWnMCQK30nM0" crossorigin="anonymous"></script>
+  <!-- docx 的浏览器版是 build/index.umd.js（提供 window.docx）。2026-07-16 钉版本时写成了 build/index.js，
+       那个文件在 CDN 上是 404，会议纪要下载一直失败（2026-10-19 发现并修正）。 -->
+  <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js" integrity="sha384-4xaIisuLEy2lo2HkB2C4rEf7v8jbTb2kuogX6TkuEt9feTWKBSFSOzsqNNbV+sKh" crossorigin="anonymous"></script>
 
 
 
