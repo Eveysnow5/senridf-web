@@ -1,39 +1,15 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>お問い合わせ | 千里同風</title>
-  <meta name="description" content="千里同風株式会社へのお問い合わせフォーム。ご質問や機能要望についてお気軽にご連絡ください。">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400&family=Noto+Serif+JP:wght@300;400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/main.css?v=4201d3b49b">
-
-    <style>
-        nav { border-bottom: 1px solid #E0E0D8; }
-        nav a { text-decoration: none; color: #1C1C1C; }
-        nav a:hover { color: #3A6A4A; }
-        .nav-container { max-width: 1280px; margin: 0 auto; padding: 24px 48px; display: flex; justify-content: space-between; align-items: center; }
-        .nav-logo { font-size: 20px; font-weight: 600; color: #1D3D2D; }
-        .nav-links { list-style: none; display: flex; gap: 48px; margin: 0; padding: 0; }
-        .page-container { max-width: 600px; margin: 0 auto; padding: 96px 48px; }
-        h1 { font-size: 40px; font-weight: 600; margin-bottom: 16px; }
-        h2 { font-size: 20px; font-weight: 600; margin-bottom: 16px; margin-top: 48px; }
-        p { font-size: 16px; line-height: 1.8; color: #4A4A47; margin-bottom: 16px; }
-        form { display: flex; flex-direction: column; gap: 24px; }
-        label { display: block; font-weight: 600; margin-bottom: 8px; color: #1C1C1C; }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #E0E0D8; font-size: 16px; font-family: inherit; background-color: white; color: #1C1C1C; }
-        textarea { min-height: 120px; resize: vertical; }
-        button { padding: 16px; background-color: #1D3D2D; color: white; font-weight: 600; font-size: 16px; border: none; cursor: pointer; }
-        button:hover { background-color: #3A6A4A; }
-        .divider { margin-top: 64px; padding-top: 48px; border-top: 1px solid #E0E0D8; }
-        a { color: #1D3D2D; text-decoration: none; }
-        a:hover { color: #3A6A4A; }
-        .footer { padding: 48px; border-top: 1px solid #E0E0D8; background-color: #F2F2EC; text-align: center; font-size: 14px; color: #8C8C88; }
-    </style>
-
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>無料相談・お問い合わせ | 千里同風株式会社</title>
+  <meta name="description" content="千里同風株式会社への無料相談・お問い合わせ。AIの活用や業務の自動化、ツールについてのご質問など、内容を問わずお気軽にどうぞ。1営業日以内にご返信します。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&family=Noto+Serif+JP:wght@300;400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <base href="./">
+  <link rel="stylesheet" href="css/main.css?v=4201d3b49b">
   <!-- head-meta:start（npm run meta 生成，勿手改） -->
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -42,65 +18,83 @@
   <meta property="og:type" content="website">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:url" content="https://www.senridf.com/contact">
-  <meta property="og:title" content="お問い合わせ | 千里同風">
-  <meta property="og:description" content="千里同風株式会社へのお問い合わせフォーム。ご質問や機能要望についてお気軽にご連絡ください。">
+  <meta property="og:title" content="無料相談・お問い合わせ | 千里同風株式会社">
+  <meta property="og:description" content="千里同風株式会社への無料相談・お問い合わせ。AIの活用や業務の自動化、ツールについてのご質問など、内容を問わずお気軽にどうぞ。1営業日以内にご返信します。">
   <meta property="og:image" content="https://www.senridf.com/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <!-- head-meta:end -->
 </head>
-<body style="background-color: #F8F8F5; color: #1C1C1C;">
-    <nav>
-        <div class="nav-container">
-            <a href="/" class="nav-logo" style="text-decoration: none;">千里同風</a>
-            <ul class="nav-links">
-                <li><a href="/">ホーム</a></li>
-                <li><a href="/solutions/automation.html">ソリューション</a></li>
-                <li><a href="/about/">について</a></li>
-                <li><a href="/privacy/">プライバシー</a></li>
-                <li><a href="/contact.html">お問い合わせ</a></li>
-            </ul>
+<body data-page-title="contact_page_title">
+
+  <div id="nav-placeholder"></div>
+
+  <main>
+
+    <div class="page-header">
+      <div class="page-header__container">
+        <div data-animate>
+          <span class="section__eyebrow" data-i18n="contact_eyebrow">お問い合わせ</span>
+          <h1 class="section__title" data-i18n="contact_title">無料相談</h1>
+          <p class="section__lead" data-i18n="contact_lead">
+            AIの活用や業務の自動化、ツールについてのご質問など、内容を問わずお気軽にご相談ください。1営業日以内にご返信します。費用はかかりません。
+          </p>
         </div>
-    </nav>
+      </div>
+    </div>
 
-    <div class="page-container">
-        <h1>お問い合わせ</h1>
-        <p>ご不明な点や機能要望についてはお気軽にお問い合わせください。</p>
-
-        <form>
-            <div>
-                <label>お名前</label>
-                <input type="text" name="name" placeholder="例：山田太郎" required>
-            </div>
-
-            <div>
-                <label>メールアドレス</label>
-                <input type="email" name="email" placeholder="例：yamada@example.com" required>
-            </div>
-
-            <div>
-                <label>ご所属企業（任意）</label>
-                <input type="text" name="company" placeholder="例：〇〇株式会社">
-            </div>
-
-            <div>
-                <label>お問い合わせ内容</label>
-                <textarea name="message" placeholder="ご質問内容をお書きください" required></textarea>
-            </div>
-
-            <button type="submit">送信</button>
+    <!-- 汎用の相談窓口（2026-10-07 作者：無料相談は受発注に限らない共通機能）。
+         送信先は受発注ページと同じ Firestore leads（source=contact で区別）。 -->
+    <section class="section">
+      <div class="contact-form" data-animate>
+        <form class="o2l-form" data-lead-form data-lead-source="contact" novalidate>
+          <label class="o2l-field">
+            <span class="o2l-field__label" data-i18n="o2l_f_name">お名前</span>
+            <input type="text" name="name" required maxlength="100" autocomplete="name" />
+          </label>
+          <label class="o2l-field">
+            <span class="o2l-field__label" data-i18n="o2l_f_company">会社名（任意）</span>
+            <input type="text" name="company" maxlength="150" autocomplete="organization" />
+          </label>
+          <label class="o2l-field">
+            <span class="o2l-field__label" data-i18n="o2l_f_email">メールアドレス</span>
+            <input type="email" name="email" required maxlength="200" autocomplete="email" />
+          </label>
+          <label class="o2l-field">
+            <span class="o2l-field__label" data-i18n="o2l_f_message">ご相談内容</span>
+            <textarea name="message" required maxlength="2000" rows="6"></textarea>
+          </label>
+          <!-- ハニーポット：人間には見えない。ボットが埋めたら送信しない（CSS で隠す）。 -->
+          <div class="o2l-hp" aria-hidden="true">
+            <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+          </div>
+          <button type="submit" class="o2l-btn" data-i18n="o2l_f_submit">送信する</button>
+          <span class="o2l-form__status" data-lead-status hidden>
+            <span data-msg="sending" data-i18n="o2l_f_sending" hidden></span>
+            <span data-msg="ok" data-i18n="o2l_f_ok" hidden></span>
+            <span data-msg="invalid" data-i18n="o2l_f_invalid" hidden></span>
+            <span data-msg="error" data-i18n="o2l_f_error" hidden></span>
+          </span>
         </form>
+        <p class="o2l-form__privacy">
+          <span data-i18n="o2l_f_privacy_pre">送信により</span>
+          <a href="/privacy/" data-i18n="o2l_f_privacy_link">プライバシーポリシー</a>
+          <span data-i18n="o2l_f_privacy_post">に同意したものとみなします。</span>
+        </p>
+        <p class="contact-mail">
+          <span data-i18n="contact_mail_pre">メールでも受け付けています：</span>
+          <a href="mailto:yuki.minami@senridf.com">yuki.minami@senridf.com</a>
+        </p>
+      </div>
+    </section>
 
-        <div class="divider">
-            <h2>別の方法でのお問い合わせ</h2>
-            <p>メールで直接お問い合わせください：</p>
-            <p><a href="mailto:team@senridf.com">team@senridf.com</a></p>
-        </div>
-    </div>
+  </main>
 
-    <div class="footer">
-        <p>お送りいただいた情報は当社のプライバシーポリシーに基づき管理されます。</p>
-    </div>
+  <div id="footer-placeholder"></div>
+
+  <script src="js/main.js?v=ca285461d1"></script>
+  <script type="module" src="js/tracking.js?v=88cdd8560f"></script>
+  <script src="js/lead-form.js?v=79f82c44f2"></script>
 </body>
 </html>
