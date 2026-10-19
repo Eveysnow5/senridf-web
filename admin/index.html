@@ -96,6 +96,7 @@
     }
     .btn-sync:hover { opacity: .88; }
     .btn-sync:disabled { opacity: .5; cursor: default; }
+    .unsynced-note { color: #b45309; font-size: 13px; cursor: help; }
 
     /* ── Preview iframe ── */
     #preview-frame {
@@ -154,6 +155,7 @@
 
   <div class="changes-bar" id="changes-bar" hidden>
     <span id="changes-count">已改 0 处</span>
+    <span id="unsynced-note" class="unsynced-note" hidden></span>
     <button type="button" class="btn-sync" id="sync-btn" onclick="syncTranslate()">✨ 一键同步日英</button>
   </div>
 
@@ -211,12 +213,26 @@ const FRAME_STYLE = `
   .cms-pill .cms-cancel { background: #4b5563; color: #fff; }
 `;
 
+/* 已发布但日英还没跟上的中文（服务端记录的 unsynced，扣掉本次已同步过的） */
+function unsyncedKeys() {
+  const list = Array.isArray(currentOverrides.unsynced) ? currentOverrides.unsynced : [];
+  return list.filter((k) => !(k in pendingJa && k in pendingEn));
+}
+
 function updateChangesBar() {
   const count =
-    Object.keys(pendingZh).length + Object.keys(pendingImages).length + (pendingTimeline ? 1 : 0);
+    Object.keys(pendingZh).length +
+    Object.keys(pendingJa).filter((k) => !(k in pendingZh)).length +
+    Object.keys(pendingImages).length +
+    (pendingTimeline ? 1 : 0);
+  const stale = unsyncedKeys();
   const bar = document.getElementById('changes-bar');
-  bar.hidden = count === 0;
+  bar.hidden = count === 0 && stale.length === 0;
   document.getElementById('changes-count').textContent = `已改 ${count} 处`;
+  const note = document.getElementById('unsynced-note');
+  note.hidden = stale.length === 0;
+  note.textContent = stale.length ? `⚠ 有 ${stale.length} 处中文改过、日英还是旧的` : '';
+  note.title = stale.map((k) => `${k}：${(currentOverrides.zh || {})[k] || ''}`.slice(0, 80)).join('\n');
 }
 
 // 保存/同步/切页前都要调用：如果有字段还在编辑中（用户没点"✓ 完成"就去点了别的按钮），
@@ -656,6 +672,18 @@ window.save = async function () {
     if (Object.keys(pendingEn).length) changes.en = { ...pendingEn };
     if (pendingTimeline) changes.timeline = pendingTimeline.map(({ id, date }) => ({ id, date }));
     const hasImages = Object.keys(pendingImages).length > 0;
+    const notSynced = Object.keys(pendingZh).filter((k) => !(k in pendingJa && k in pendingEn));
+    if (
+      notSynced.length &&
+      !window.confirm(
+        `有 ${notSynced.length} 处中文还没点「一键同步日英」，保存后日文、英文页面会继续显示旧内容。\n\n` +
+          '仍要保存吗？（之后随时可以再点「一键同步日英」补上）',
+      )
+    ) {
+      btn.disabled = false;
+      btn.textContent = '保存并发布';
+      return;
+    }
     if (!Object.keys(changes).length && !hasImages) {
       statusEl.textContent = '没有需要保存的改动';
       btn.disabled = false;
@@ -684,7 +712,12 @@ window.save = async function () {
 
 window.syncTranslate = async function () {
   commitActiveEdit();
+  // 本次改的中文 ＋ 以前存了中文却没同步的（unsynced），一起翻
+  const zhNow = { ...(currentOverrides.zh || {}) };
   const fields = Object.entries(pendingZh).map(([key, zh]) => ({ key, zh }));
+  for (const key of unsyncedKeys()) {
+    if (!(key in pendingZh) && zhNow[key]) fields.push({ key, zh: zhNow[key] });
+  }
   if (fields.length === 0) return;
   const btn = document.getElementById('sync-btn');
   btn.disabled = true;
@@ -695,7 +728,8 @@ window.syncTranslate = async function () {
     Object.assign(pendingEn, result.en || {});
     const synced = Object.keys(result.ja || {}).length;
     btn.textContent =
-      synced >= fields.length ? '✓ 已同步日英' : `已同步 ${synced}/${fields.length} 处，可重试补齐`;
+      synced >= fields.length ? '✓ 已同步日英（点「保存并发布」生效）' : `已同步 ${synced}/${fields.length} 处，可重试补齐`;
+    updateChangesBar();
   } catch (e) {
     btn.textContent = '同步失败，点击重试';
   }

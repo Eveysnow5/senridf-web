@@ -421,7 +421,7 @@
         btn.classList.add('hidden');
       } else {
         btn.classList.remove('hidden');
-        btn.textContent = showingDismissed ? `隐藏已忽略 (${n})` : `显示已忽略 (${n})`;
+        window.sdfSetText(btn, showingDismissed ? 'pf_hide_dismissed' : 'pf_show_dismissed', n);
       }
     }
 
@@ -596,6 +596,6 @@
       }
     });
   </script>
-  <script src="../../js/main.js?v=ca285461d1"></script>
+  <script src="../../js/main.js?v=eff5bf1df7"></script>
 </body>
 </html>

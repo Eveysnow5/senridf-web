@@ -3,15 +3,10 @@
    i18n | Navigation | Scroll Animations
    ============================================================ */
 
-/* 版权年取当前年份，不写死。
-   写死的后果实测过：站上挂着「© 2024」一直挂到 2026 年 9 月才被发现，
-   而且三语各一份、account.html 还有第四份，改一处不够。
-   —— 这个数每年一月一日必然过期，是最典型的会腐烂的常量。
-
-   ⚠️ T 里的值必须是**普通字符串 + {year} 占位符**，走下面已有的 fillParams，
-   不要图省事写成模板字符串直接内插：tests/i18n-numbers.test.mjs 只认单双引号，
-   反引号会让那个键**解析不出值而被静默跳过**（护栏自检会红，我试过一次）。 */
-const COPY_YEAR = new Date().getFullYear();
+/* 页脚版权年＝公司成立年 2025，固定不变（作者 2026-10-19 决定，三语统一）。
+   以前取当年年份（{year} 占位符），但后台编辑器改的是渲染后的文字，中文被存成了
+   「© 2025」、日英仍是当年，三语对不上。现在 footer_copy 三语 + account.html 共四处都是 2025，
+   tests/i18n-runtime.test.mjs 断言四处一致。 */
 
 /* === TRANSLATION DATA === */
 const T = {
@@ -101,7 +96,7 @@ const T = {
     contact_lead:
       'AIの活用や業務の自動化、ツールについてのご質問など、内容を問わずお気軽にご相談ください。1営業日以内にご返信します。費用はかかりません。',
     contact_mail_pre: 'メールでも受け付けています：',
-    footer_copy: '© {year} 千里同風株式会社',
+    footer_copy: '© 2025 千里同風株式会社',
     addr_street: '大阪府大阪市淀川区西三国4丁目4-9-7',
     addr_city: '大阪市, 日本',
 
@@ -463,7 +458,7 @@ const T = {
     tl_input_placeholder: '中国語または日本語を入力してください…',
     tl_notice: 'ローカルプレビューでは翻訳機能をご利用いただけません。デプロイ後にお試しください。',
     tl_output_placeholder: '翻訳結果がここに表示されます',
-    tl_voice_feed_empty: '「我说」または「对方说」を押して通訳を開始します',
+    tl_voice_feed_empty: '「自分が話す」または「相手が話す」を押して通訳を開始します',
     tl_history_label: '対話記録 / 对话记录',
     tl_history_empty: '翻訳を開始すると記録が表示されます。',
     tl_cta: '翻訳ツールを開く',
@@ -507,6 +502,19 @@ const T = {
     tl_marker_them_title: '相手が話すときに押してください',
     tl_marker_selected: '選択中',
     tl_marker_unselected: '未選択',
+    tl_marker_recording: '● 録音中',
+    tl_confirm_clear: '記録をクリアしますか？',
+    tl_confirm_new_meeting: '文字起こしの記録をクリアしますか？',
+    tl_speak_title: '読み上げ',
+    tl_generating: '作成中…',
+    tl_local_no_voice: 'ローカル環境では音声機能を使用できません。',
+    tl_connecting: '接続中…',
+    tl_ws_error: 'WebSocket エラーが発生しました。',
+    tl_mic_denied: 'マイクへのアクセスが拒否されました。ブラウザの設定で許可してください。',
+    tl_no_speech: '音声を認識できませんでした。マイクの入力と権限をご確認ください。',
+    tl_err_download: 'ファイルのダウンロードに失敗しました。もう一度お試しください。',
+    tl_err_no_transcript: '文字起こしの記録がないため、議事録を作成できません。',
+    tl_err_summary: '議事録の作成に失敗しました（{msg}）。しばらくしてからもう一度お試しください。',
     tl_tts_title: '読み上げ',
     tl_badge_auto: '— 自動検出 —',
     tl_badge_zh_ja: '中国語 → 日本語',
@@ -680,6 +688,8 @@ const T = {
     pf_item_suggestion: '提案',
     pf_dismiss_title: '問題なしとして印を付ける',
     pf_dismissed_title: '確認済みです。クリックで元に戻します',
+    pf_show_dismissed: '確認済みを表示（{n}）',
+    pf_hide_dismissed: '確認済みを隠す（{n}）',
     pf_need_paste: 'まず原稿を貼り付けてください',
     pf_need_upload: 'まずファイルをアップロードしてください',
     pf_request_failed: 'リクエストに失敗しました',
@@ -1351,8 +1361,24 @@ const T = {
     an_btn_clear: 'クリア',
     an_result_header: '分析レポート',
     an_loading: '分析中…',
-    auto_hero_subtitle:
-      '毎日の手作業を AI に任せて、チームは本来の仕事に集中。1 回のクリック、1 つの動作で完了。',
+    an_sections_info: '{n} 個のセクション · {sel} 個を選択 · 約 {chars} 文字',
+    an_chars: '{chars} 文字',
+    an_chars_sel: '{sel} / {total} 文字',
+    an_file_reading: '読み込み中…',
+    an_file_error: 'エラー',
+    an_file_scanned: '0 文字 — スキャンした PDF かもしれません',
+    an_remove_title: '削除',
+    an_drop_more: 'クリックして追加',
+    an_skip_limit: 'ファイル数の上限は {max} 件です。追加されなかったファイル：{list}',
+    an_skip_type: '対応していない形式です：{list}',
+    an_skip_dup: '同じ名前のファイルはすでに追加されています：{list}',
+    an_err_local: 'ローカル環境では動作しません。デプロイ後にお試しください。',
+    an_err_empty: '分析結果が空でした。',
+    an_err_server: 'サーバーエラー（HTTP {status}）',
+    an_err_server_hint: 'ファイルを減らすか、質問を分けてお試しください。',
+    an_err_fallback: '（画像解析に失敗したためテキスト解析で再試行しましたが、それも失敗しました）',
+    an_round: '**ラウンド {round}/{max}** · {note}',
+    an_reading_pages: '読み込み中：{pages}',
   },
 
   zh: {
@@ -1431,7 +1457,7 @@ const T = {
     contact_lead:
       'AI 的应用、业务自动化、工具使用上的疑问等，内容不限，欢迎随时咨询。我们会在 1 个工作日内回复，不收费。',
     contact_mail_pre: '也可以直接发邮件：',
-    footer_copy: '© {year} 千里同風株式会社',
+    footer_copy: '© 2025 千里同風株式会社',
     addr_street: '大阪府大阪市淀川区西三国4丁目4-9-7',
     addr_city: '大阪市, 日本',
 
@@ -1807,6 +1833,19 @@ const T = {
     tl_marker_them_title: '对方说话时按此按钮',
     tl_marker_selected: '选中',
     tl_marker_unselected: '未选中',
+    tl_marker_recording: '● 录音中',
+    tl_confirm_clear: '确认清空记录？',
+    tl_confirm_new_meeting: '确定要清空转录记录吗？',
+    tl_speak_title: '朗读',
+    tl_generating: '生成中…',
+    tl_local_no_voice: '本地环境不支持语音功能。',
+    tl_connecting: '连接中…',
+    tl_ws_error: 'WebSocket 连接出错。',
+    tl_mic_denied: '麦克风权限被拒绝，请在浏览器设置中允许访问。',
+    tl_no_speech: '没有识别到语音，请检查麦克风输入和权限。',
+    tl_err_download: '下载文件失败，请重试。',
+    tl_err_no_transcript: '没有转录记录，无法生成纪要。',
+    tl_err_summary: '生成纪要失败（{msg}），请稍后重试。',
     tl_tts_title: '朗读',
     tl_badge_auto: '— 自动检测 —',
     tl_badge_zh_ja: '中文 → 日文',
@@ -1968,6 +2007,8 @@ const T = {
     pf_item_suggestion: '建议',
     pf_dismiss_title: '标记为无误',
     pf_dismissed_title: '已确认无误，点击恢复',
+    pf_show_dismissed: '显示已忽略（{n}）',
+    pf_hide_dismissed: '隐藏已忽略（{n}）',
     pf_need_paste: '请先粘贴文稿',
     pf_need_upload: '请先上传文件',
     pf_request_failed: '请求失败',
@@ -2596,8 +2637,24 @@ const T = {
     an_btn_clear: '清空',
     an_result_header: '分析报告',
     an_loading: '分析中…',
-    auto_hero_subtitle:
-      '毎日の手作業を AI に任せて、チームは本来の仕事に集中。1 回のクリック、1 つの動作で完了。',
+    an_sections_info: '{n} 个章节 · 已选 {sel} 个 · 约 {chars} 字',
+    an_chars: '{chars} 字',
+    an_chars_sel: '{sel} / {total} 字',
+    an_file_reading: '读取中…',
+    an_file_error: '错误',
+    an_file_scanned: '0 字 — 可能是扫描版 PDF',
+    an_remove_title: '移除',
+    an_drop_more: '点击继续添加',
+    an_skip_limit: '文件数上限为 {max} 个，以下未添加：{list}',
+    an_skip_type: '以下格式不支持：{list}',
+    an_skip_dup: '以下文件同名，已添加过：{list}',
+    an_err_local: '本地环境不可用，请部署后使用。',
+    an_err_empty: '分析结果为空。',
+    an_err_server: '服务器错误（HTTP {status}）',
+    an_err_server_hint: '请减少文件数量，或把问题拆开后重试。',
+    an_err_fallback: '（图像解析失败后已自动改用文本解析重试，仍未成功）',
+    an_round: '**第 {round}/{max} 轮** · {note}',
+    an_reading_pages: '正在读：{pages}',
   },
 
   en: {
@@ -2684,7 +2741,7 @@ const T = {
     contact_lead:
       'Questions about using AI, automating your work, or our tools — whatever the topic, feel free to ask. We reply within 1 business day, free of charge.',
     contact_mail_pre: 'Or email us: ',
-    footer_copy: '© {year} Senridoufuu Co., Ltd.',
+    footer_copy: '© 2025 Senridoufuu Co., Ltd.',
     addr_street: '4-9-7, Nishimikuni 4-chome, Yodogawa-ku',
     addr_city: 'Osaka, Japan',
 
@@ -3047,7 +3104,7 @@ const T = {
     tl_input_placeholder: 'Enter Chinese or Japanese…',
     tl_notice: 'Translation is unavailable in local preview. Please try it on the deployed site.',
     tl_output_placeholder: 'The translation will appear here',
-    tl_voice_feed_empty: 'Press “我说” or “对方说” to start interpreting',
+    tl_voice_feed_empty: 'Press “I speak” or “They speak” to start interpreting',
     tl_history_label: 'Session Log / 対話記録 / 对话记录',
     tl_history_empty: 'Your translation history will appear here.',
     tl_cta: 'Open Translation Tool',
@@ -3088,6 +3145,19 @@ const T = {
     tl_marker_them_title: 'Press this while the other party is speaking',
     tl_marker_selected: 'Selected',
     tl_marker_unselected: 'Not selected',
+    tl_marker_recording: '● Recording',
+    tl_confirm_clear: 'Clear the record?',
+    tl_confirm_new_meeting: 'Clear the transcript?',
+    tl_speak_title: 'Read aloud',
+    tl_generating: 'Generating…',
+    tl_local_no_voice: 'Voice features are not available in the local environment.',
+    tl_connecting: 'Connecting…',
+    tl_ws_error: 'A WebSocket error occurred.',
+    tl_mic_denied: 'Microphone access was denied. Please allow it in your browser settings.',
+    tl_no_speech: 'No speech was recognized. Please check your microphone input and permissions.',
+    tl_err_download: 'The download failed. Please try again.',
+    tl_err_no_transcript: 'There is no transcript yet, so a summary cannot be generated.',
+    tl_err_summary: 'The summary could not be generated ({msg}). Please try again later.',
     tl_tts_title: 'Read aloud',
     tl_badge_auto: '— Auto-detect —',
     tl_badge_zh_ja: 'Chinese → Japanese',
@@ -3258,6 +3328,8 @@ const T = {
     pf_item_suggestion: 'Suggestion',
     pf_dismiss_title: 'Mark as verified',
     pf_dismissed_title: 'Verified — click to undo',
+    pf_show_dismissed: 'Show dismissed ({n})',
+    pf_hide_dismissed: 'Hide dismissed ({n})',
     pf_need_paste: 'Please paste your manuscript first',
     pf_need_upload: 'Please upload a file first',
     pf_request_failed: 'Request failed',
@@ -3940,8 +4012,24 @@ const T = {
     an_btn_clear: 'Clear',
     an_result_header: 'Analysis Report',
     an_loading: 'Analysing…',
-    auto_hero_subtitle:
-      'Entrust daily manual work to AI, and let your team focus on what truly matters. One click, one action—done.',
+    an_sections_info: '{n} sections · {sel} selected · about {chars} characters',
+    an_chars: '{chars} characters',
+    an_chars_sel: '{sel} / {total} characters',
+    an_file_reading: 'Reading…',
+    an_file_error: 'Error',
+    an_file_scanned: '0 characters — this may be a scanned PDF',
+    an_remove_title: 'Remove',
+    an_drop_more: 'Click to add more',
+    an_skip_limit: 'Up to {max} files are allowed. Not added: {list}',
+    an_skip_type: 'Unsupported format: {list}',
+    an_skip_dup: 'A file with the same name has already been added: {list}',
+    an_err_local: 'This does not work in the local environment. Please try it after deployment.',
+    an_err_empty: 'The analysis returned no result.',
+    an_err_server: 'Server error (HTTP {status})',
+    an_err_server_hint: 'Try fewer files, or split your question into smaller ones.',
+    an_err_fallback: '(Image analysis failed, so text analysis was retried — that failed too.)',
+    an_round: '**Round {round}/{max}** · {note}',
+    an_reading_pages: 'Reading: {pages}',
   },
 };
 
@@ -4041,7 +4129,7 @@ const FOOTER_HTML = `
       </div>
     </div>
     <div class="footer__bottom">
-      <span class="footer__copy" data-i18n="footer_copy" data-i18n-params='{"year":${COPY_YEAR}}'></span>
+      <span class="footer__copy" data-i18n="footer_copy"></span>
       <a href="privacy/" class="footer__link" data-i18n="nav_privacy"></a>
     </div>
   </div>

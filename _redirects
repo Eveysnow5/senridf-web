@@ -23,6 +23,12 @@
 #
 # 【维护提醒】新增了不属于网站的顶层目录时，记得来这里补一条。
 
+# --- 已下线的页面：旧网址（已被 Google 收录）跳到对应的现行页面 ---
+# 2026-10-19 作者决定删除 /solutions/automation（10-07 未经审查上线：全页写死日文、
+# 数字无出处、与受発注页重复）。301＝永久迁移，搜索引擎会把收录转给目标页。
+/solutions/automation       /solutions/order-to-ledger  301
+/solutions/automation.html  /solutions/order-to-ledger  301
+
 # --- 内部文档（架构说明、实施方案、工具档案） ---
 /docs/*             /404   302
 
