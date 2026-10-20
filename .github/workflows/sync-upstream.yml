@@ -46,6 +46,17 @@ jobs:
                                         # erasing newer commits from the mirror.
           fetch-depth: 0
           persist-credentials: false   # don't let GITHUB_TOKEN's extraheader override the PAT
+      # 上线闸门（2026-10-19）：检查不过就不镜像，线上保持上一个通过的版本。
+      # 以前部署不等 CI——推到 main 的东西无论检查结果都会上线，而推送前跑 check 只靠各自
+      # 本机自觉（作者机器上有 pre-push 钩子，另一台机器没有）。检查放在这里、和推送同一个
+      # job、同一份 checkout，保证「检查过的」就是「推上去的」那个提交。
+      # 失败时 GitHub 会发邮件；修好再推一次即可（后台保存也会因此卡住，直到 main 修好）。
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: npm run check (gate)
+        run: npm run check
       - name: Force-push main to deploy repo
         env:
           MIRROR_PAT: ${{ secrets.MIRROR_PAT }}

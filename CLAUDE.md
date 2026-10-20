@@ -1,6 +1,7 @@
 # CLAUDE.md
 
 千里同風株式会社官网 senridf.com 的仓库。**推到 `main` 的提交约 1 分钟后自动上线，中间没有人工审核**，所以下面这几条规则就是审核本身。
+GitHub 上 `npm run check` 不通过的提交不会上线（线上停在上一个通过的版本，GitHub 发失败邮件），所以推完要到 GitHub Actions 看「Mirror to deploy repo」是否成功，才算上线。检查只抓得到写成测试的问题，测试之外的部分靠下面的规则。
 这个仓库由两个人、两台电脑上的 Claude Code 一起改（sherlockafa 与 Yuki）。双方读的都是这一份文件，规则以这里为准。
 
 ## 协作规则
@@ -74,6 +75,6 @@ _redirects                 ← Cloudflare 跳转规则（下线页面的旧网�
 ## 后端与部署
 
 - `functions/api/*` 由 `functions/api/_middleware.js` 统一要求 Firebase ID token；前端用 `apiFetch` 带上。密钥（`QWEN_API_KEY`、`DEEPGRAM_API_KEY` 等）只放在 Cloudflare Pages 的环境变量里。
-- 部署链：推到 GitHub `sherlockafa007/senridoufuu-web` 的 `main` → `.github/workflows/sync-upstream.yml` 镜像到部署仓库 → Cloudflare Pages 构建 → senridf.com。
+- 部署链：推到 GitHub `sherlockafa007/senridoufuu-web` 的 `main` → `.github/workflows/sync-upstream.yml` 先跑 `npm run check`、通过才镜像到部署仓库 → Cloudflare Pages 构建 → senridf.com。
 - `workers/sdf-admin` 改了之后要 `cd workers/sdf-admin && npx wrangler deploy`（需要 sherlockafa 的 Cloudflare 账号），否则线上后台还是旧版本。
 - `netlify/`、`netlify.toml` 若出现在旧文档里，是迁移到 Cloudflare 之前的遗留，已不使用。
