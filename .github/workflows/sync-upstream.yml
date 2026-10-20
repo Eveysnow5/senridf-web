@@ -35,6 +35,9 @@ jobs:
   mirror:
     if: github.repository == 'sherlockafa007/senridoufuu-web'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -68,3 +71,48 @@ jobs:
           echo "Mirroring $(git rev-parse --short HEAD) to Eveysnow5/senridf-web ..."
           git push --force "https://x-access-token:${MIRROR_PAT}@github.com/Eveysnow5/senridf-web.git" HEAD:main
           echo "Done."
+
+      # 检查没过＝网站停在上一个版本。GitHub 的失败邮件只发给推送的人（可能是 Yuki 那边），
+      # 作者收不到，所以开 issue 并 @ 作者（2026-10-20）。已有开着的就追评论，不堆新的。
+      - name: 检查没过就通知作者
+        if: failure()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const TITLE = '🔴 上线被检查拦下（网站停在上一个版本）';
+            const sha = context.sha.slice(0, 7);
+            const body = [
+              '@sherlockafa007 提交 `' + sha + '`（' + (context.payload.head_commit?.author?.name || '?') +
+                '）没通过 `npm run check`，**没有上线**。之后的推送只要检查通过就会一起上线。',
+              '',
+              '- 看哪一项没过：[这次运行](' + context.serverUrl + '/' + context.repo.owner + '/' +
+                context.repo.repo + '/actions/runs/' + context.runId + ')',
+              '- 修法：本地 `git pull` → `npm run check` → 改到全绿再推。别靠删测试、把日文抄进中文键来过。',
+              '- 后台保存的文案也会卡在这里，直到 main 修好。',
+              '',
+              '修好、网站更新后关掉这个 issue。',
+            ].join('\n');
+            const open = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'deploy-gate',
+              per_page: 20,
+            });
+            const found = open.data.find((i) => i.title === TITLE);
+            if (found) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: found.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: TITLE,
+                body,
+                labels: ['deploy-gate'],
+              });
+            }

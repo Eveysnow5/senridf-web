@@ -51,3 +51,6 @@
 /.prettierignore    /404   302
 /CLAUDE.md          /404   302
 /README.md          /404   302
+# Firestore 规则与部署配置（CI 用 deploy-firestore-rules.yml 部署，网站本身不读）。2026-10-20 全站检查发现可直接访问
+/firestore.rules    /404   302
+/firebase.json      /404   302

@@ -41,7 +41,34 @@
       您访问的页面不存在。<br>
       Page not found.
     </p>
-    <a class="home" href="/">トップページへ / 回到首页</a>
+    <a class="home" href="/">トップページへ / 回到首页 / Home</a>
   </div>
+  <!-- 按访客语言只显示一种（与 main.js 同一顺序：?lang= → localStorage → 日文）。
+       本页不加载 main.js（资源少、不依赖其它文件），脚本不运行时仍是上面的三语并列。2026-10-20 -->
+  <script>
+    (function () {
+      var L = {
+        ja: ['ページが見つかりません · 千里同風株式会社', 'お探しのページは見つかりませんでした。', 'トップページへ'],
+        zh: ['页面不存在 · 千里同風株式会社', '您访问的页面不存在。', '回到首页'],
+        en: ['Page not found · Senridoufuu Co., Ltd.', 'The page you are looking for could not be found.', 'Back to home'],
+      };
+      var lang = new URLSearchParams(location.search).get('lang');
+      if (!L[lang]) {
+        try {
+          lang = localStorage.getItem('sdf_lang');
+        } catch (e) {
+          lang = null;
+        }
+      }
+      if (!L[lang]) lang = 'ja';
+      var t = L[lang];
+      document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang;
+      document.title = t[0];
+      document.querySelector('.msg').textContent = t[1];
+      var a = document.querySelector('.home');
+      a.textContent = t[2];
+      if (lang !== 'ja') a.href = '/?lang=' + lang;
+    })();
+  </script>
 </body>
 </html>
