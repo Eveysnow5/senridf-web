@@ -1,0 +1,33 @@
+name: LLM usage report
+
+# 手动触发：打印最近 N 天的大模型调用量（按天、按端点），用来估算付费后的每日成本。
+# 详见 scripts/usage-report/index.js。
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: '看最近几天'
+        default: '60'
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    if: github.repository == 'sherlockafa007/senridoufuu-web'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        working-directory: scripts/usage-report
+        run: npm install
+      - name: Report
+        working-directory: scripts/usage-report
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          DAYS: ${{ inputs.days }}
+        run: node index.js

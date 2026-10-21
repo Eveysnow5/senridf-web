@@ -1,0 +1,9 @@
+{
+  "name": "usage-report",
+  "version": "1.0.0",
+  "description": "Print daily LLM token usage from Firestore llm_usage (manual Actions run)",
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

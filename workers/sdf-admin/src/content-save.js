@@ -14,7 +14,8 @@ export const CONTENT_API_VERSION = 2;
 
 const MERGE_GROUPS = ['ja', 'zh', 'en', 'images'];
 
-/** 在 current 上应用 changes，返回新对象（不改入参）。timeline 整体替换（由编辑器维护完整顺序）。 */
+/** 在 current 上应用 changes，返回新对象（不改入参）。timeline 整体替换（由编辑器维护完整顺序）；
+ *  unsynced 由服务端维护（客户端传来的会被忽略）。 */
 export function mergeContent(current, changes) {
   const out = { ...(current || {}) };
   for (const g of MERGE_GROUPS) {
@@ -23,6 +24,20 @@ export function mergeContent(current, changes) {
   if (Array.isArray(changes.timeline)) {
     out.timeline = changes.timeline.map(({ id, date }) => ({ id, date: date.trim() }));
   }
+  // 「中文改了、日英还没跟上」的键（2026-10-19）。以前后台的「一键同步日英」只翻本次会话里改过的中文，
+  // 存了中文却没点同步的话，下次打开后台就再也补不上——日英一直停在旧译文、没有任何提示
+  // （团队简介、页脚版权都是这样对不上的）。现在服务端记下来，后台据此提示并允许补同步。
+  // 规则：中文值有变化 → 记上；同一次保存里日、英都给了这个键 → 划掉。只改日或只改英不划掉。
+  const unsynced = new Set(Array.isArray(out.unsynced) ? out.unsynced : []);
+  const curZh = (current && current.zh) || {};
+  for (const [k, v] of Object.entries(changes.zh || {})) {
+    if (curZh[k] !== v) unsynced.add(k);
+  }
+  for (const k of [...unsynced]) {
+    if (changes.ja && k in changes.ja && changes.en && k in changes.en) unsynced.delete(k);
+  }
+  if (unsynced.size) out.unsynced = [...unsynced].sort();
+  else delete out.unsynced;
   return out;
 }
 

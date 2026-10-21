@@ -859,7 +859,9 @@
     #summaryContent { margin-bottom:20px; }
     .srp-footer { display:flex;gap:12px; }
   </style>
-  <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js" integrity="sha384-m0l2AUT4Jav54eU04duv01OVjxoNwi2sQ7RYz0dW55Wi9yZlyq/wWWnMCQK30nM0" crossorigin="anonymous"></script>
+  <!-- docx 的浏览器版是 build/index.umd.js（提供 window.docx）。2026-07-16 钉版本时写成了 build/index.js，
+       那个文件在 CDN 上是 404，会议纪要下载一直失败（2026-10-19 发现并修正）。 -->
+  <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js" integrity="sha384-4xaIisuLEy2lo2HkB2C4rEf7v8jbTb2kuogX6TkuEt9feTWKBSFSOzsqNNbV+sKh" crossorigin="anonymous"></script>
 
 
 
@@ -942,7 +944,7 @@
           <div class="voice-feed-wrap">
             <div class="voice-feed" id="voiceStream"></div>
             <div class="voice-feed-empty" data-i18n="tl_voice_feed_empty">
-              「我说」または「对方说」を押して通訳を開始します
+              「自分が話す」または「相手が話す」を押して通訳を開始します
             </div>
           </div>
 
@@ -1066,7 +1068,7 @@
   </div>
 
   <div id="footer-placeholder"></div>
-  <script src="js/main.js?v=9cf1af8b61"></script>
+  <script src="js/main.js?v=dcfe95cd3c"></script>
   <script>
 // api-json.js 是 ESM，本块是**普通** <script>，拿不到 import。
 // 由下面的 module 块挂到 window 上；本块所有调用都发生在事件处理器里，
@@ -1180,6 +1182,8 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
        Runtime voice messages in this file are bilingual ja/zh literals rather
        than i18n keys — that is the existing convention here, kept for
        consistency; the i18n'd strings are the static ones with data-i18n. */
+    // 带 {name} 参数的三语文案（2026-10-19：原先这里写死中文或「日文 / 中文」并排）
+    const tf = (k, p = {}) => Object.entries(p).reduce((s, [a, b]) => s.split('{' + a + '}').join(String(b)), window.sdfT(k));
     function setInterim(text, kind = 'live') {
       elInterim.textContent = text;
       elInterim.classList.toggle('voice-interim-line--msg', kind !== 'live');
@@ -1240,8 +1244,8 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
     function updateBtnLabels() {
       // Marker buttons display status based on current marker state
       if (!isRecording) {
-        elMarkerMeStatus.textContent = currentMarker === "我说" ? '选中' : '未选中';
-        elMarkerThemStatus.textContent = currentMarker === "对方说" ? '选中' : '未选中';
+        window.sdfSetText(elMarkerMeStatus, currentMarker === "我说" ? 'tl_marker_selected' : 'tl_marker_unselected');
+        window.sdfSetText(elMarkerThemStatus, currentMarker === "对方说" ? 'tl_marker_selected' : 'tl_marker_unselected');
       }
     }
 
@@ -1282,7 +1286,7 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
     function toggleSpeaker(spk) {
       if (!hasGetUserMedia) return;
       if (isLocal) {
-        setInterim('本地环境不支持语音功能 / ローカル環境では音声機能を使用できません', 'status');
+        setInterim(window.sdfT('tl_local_no_voice'), 'status');
         return;
       }
       if (activeSpeaker === spk) {
@@ -1319,7 +1323,7 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
       currentMarker = (spk === 'A') ? "我说" : "对方说";
       setMicState(spk, true);
       isStopping = false;
-      setInterim('接続中… / 连接中…', 'status');
+      setInterim(window.sdfT('tl_connecting'), 'status');
       try {
         const tokenPromise = cachedToken
           ? Promise.resolve({ access_token: cachedToken })
@@ -1402,7 +1406,7 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
         };
 
         dgSocket.onerror = () => {
-          setInterim('WebSocket エラー / WebSocket错误', 'error');
+          setInterim(window.sdfT('tl_ws_error'), 'error');
         };
 
         dgSocket.onclose = () => {
@@ -1429,8 +1433,8 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
         activeSpeaker = null;
         setMicState(null, false);
         const msg = err.name === 'NotAllowedError'
-          ? 'マイクへのアクセスが拒否されました。ブラウザの設定で許可してください。/ 麦克风权限被拒绝，请在浏览器设置中允许访问。'
-          : `エラー: ${err.message}`;
+          ? window.sdfT('tl_mic_denied')
+          : `${window.sdfT('tl_error_prefix')}: ${err.message}`;
         setInterim(msg, 'error');
       }
     }
@@ -1469,7 +1473,7 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
         // exist, so the session ended in complete silence: no entry, no error,
         // no hint — indistinguishable from the tool being broken.
         setInterim(
-          '音声を認識できませんでした。マイクの入力と権限をご確認ください。 / 没有识别到语音，请检查麦克风输入和权限。',
+          window.sdfT('tl_no_speech'),
           'error',
         );
       }
@@ -1495,11 +1499,11 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
       elBtnMarkerMe.classList.toggle('is-active', spk === 'A');
       elBtnMarkerThem.classList.toggle('is-active', spk === 'B');
       if (recording) {
-        elMarkerMeStatus.textContent = spk === 'A' ? '● 录音中' : '未选中';
-        elMarkerThemStatus.textContent = spk === 'B' ? '● 录音中' : '未选中';
+        window.sdfSetText(elMarkerMeStatus, spk === 'A' ? 'tl_marker_recording' : 'tl_marker_unselected');
+        window.sdfSetText(elMarkerThemStatus, spk === 'B' ? 'tl_marker_recording' : 'tl_marker_unselected');
       } else {
-        elMarkerMeStatus.textContent = currentMarker === "我说" ? '选中' : '未选中';
-        elMarkerThemStatus.textContent = currentMarker === "对方说" ? '选中' : '未选中';
+        window.sdfSetText(elMarkerMeStatus, currentMarker === "我说" ? 'tl_marker_selected' : 'tl_marker_unselected');
+        window.sdfSetText(elMarkerThemStatus, currentMarker === "对方说" ? 'tl_marker_selected' : 'tl_marker_unselected');
       }
       if (!recording) setInterim('', 'live');
     }
@@ -1771,11 +1775,11 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
     function errorStreamItem(el, msg) {
       const tl = el.querySelector('.cue-tl');
       tl.classList.remove('cue-tl--pending');
-      tl.innerHTML = `<span class="cue-error">エラー: ${escapeHtml(msg)}</span>`;
+      tl.innerHTML = `<span class="cue-error">${escapeHtml(window.sdfT('tl_error_prefix'))}: ${escapeHtml(msg)}</span>`;
     }
 
     elVoiceClear.addEventListener('click', () => {
-      if (voiceHistory.length > 0 && !confirm('記録をクリアしますか？ / 确认清空记录？')) return;
+      if (voiceHistory.length > 0 && !confirm(window.sdfT('tl_confirm_clear'))) return;
       if (isRecording) stopRecording();
       voiceHistory = [];
       pendingBuffer = '';
@@ -1899,7 +1903,7 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
         w.className = `tl-block tl-block--${block.type}`;
         const ttsBtn =
           block.type === 'trans' && window.sdfTtsSupported?.()
-            ? `<button type="button" class="tl-speak-btn" title="朗读 / 読み上げ">🔊</button>`
+            ? `<button type="button" class="tl-speak-btn" title="${escapeHtml(window.sdfT('tl_speak_title'))}">🔊</button>`
             : '';
         w.innerHTML = `
           <div class="tl-block__label">${escapeHtml(block.label)}${ttsBtn}</div>
@@ -1988,7 +1992,7 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
     });
 
     elClear.addEventListener('click', () => {
-      if (conversationHistory.length > 0 && !confirm('記録をクリアしますか？ / 确认清空记录？')) return;
+      if (conversationHistory.length > 0 && !confirm(window.sdfT('tl_confirm_clear'))) return;
       conversationHistory = [];
       elInput.value = '';
       elHistoryList.innerHTML = '';
@@ -2106,13 +2110,13 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
         URL.revokeObjectURL(url);
       } catch (err) {
         console.error('DOCX generation error:', err);
-        alert('下载文件失败，请重试');
+        alert(window.sdfT('tl_err_download'));
       }
     }
 
     async function generateSummary() {
       if (!voiceHistory || voiceHistory.length === 0) {
-        alert('没有转录记录，无法生成纪要');
+        alert(window.sdfT('tl_err_no_transcript'));
         return;
       }
 
@@ -2121,7 +2125,7 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
       // Show loading state
       btnGenSummary.disabled = true;
       const originalText = btnGenSummary.textContent;
-      btnGenSummary.innerHTML = '<div class="tl-spinner" style="display: inline-block; margin-right: 8px;"></div>生成中...';
+      btnGenSummary.innerHTML = '<div class="tl-spinner" style="display: inline-block; margin-right: 8px;"></div>' + escapeHtml(window.sdfT('tl_generating'));
 
       try {
         // Call backend API
@@ -2135,7 +2139,7 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
         showSummaryResult(result);
 
       } catch (err) {
-        alert('生成纪要失败：' + err.message + '，请稍后重试');
+        alert(tf('tl_err_summary', { msg: err.message }));
         console.error(err);
       } finally {
         // Restore button state
@@ -2196,7 +2200,7 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
     });
 
     summaryNewMeetingBtn.addEventListener('click', () => {
-      if (confirm('确定要清空转录记录吗？')) {
+      if (confirm(window.sdfT('tl_confirm_new_meeting'))) {
         voiceHistory = [];
         state.currentSummary = null;
         state.docxData = { base64: null, filename: null };

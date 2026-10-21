@@ -74,8 +74,10 @@ jobs:
               log = '(读日志失败：' + e.message + ')';
             }
             const TITLE = '🔴 信源体检报警';
+            // @ 作者：只开 issue / 追评论不会给作者发邮件（2026-10-20 发现这三个报警红了几周没人看到）。
+            // 被 @ 才会收到 GitHub 通知邮件——与 scripts/lead-notifier 同一机制。
             const body = [
-              '`' + context.workflow + '` 在 ' + new Date().toISOString().slice(0, 16) + 'Z 失败。',
+              '@sherlockafa007 `' + context.workflow + '` 在 ' + new Date().toISOString().slice(0, 16) + 'Z 失败。',
               '',
               '两种失败，处理方式不同（看下面日志里的行首符号）：',
               '',

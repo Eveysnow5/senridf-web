@@ -5,16 +5,19 @@
 # - Referrer-Policy: 跨站跳转时不泄露完整 URL
 # - Permissions-Policy: 关闭定位/摄像头；麦克风仅允许本站（翻译语音需要）
 # - Strict-Transport-Security: 强制 HTTPS 一年（本站 Cloudflare 全 HTTPS）
-# - Content-Security-Policy-Report-Only: CSP 观察期版本（只报告、不拦截，漏配也不会白屏）
+# - Content-Security-Policy: 强制拦截（2026-10-20 起；此前是 Report-Only 观察期）
 #
 # 【CSP 说明】站点零构建 + 大量内联 <script>/style=，静态 _headers 无法注入 per-request nonce，
 #   所以 script-src/style-src 只能用 'unsafe-inline'（牺牲了防内联 XSS 的能力）；但对 connect-src、
 #   script-src 的“外部主机”做了严格白名单——即使被注入 XSS，也无法把数据外传到攻击者域名、无法加载
 #   攻击者脚本。这是本站 CSP 的主要价值。
-# 【当前是 Report-Only】违规只会打印到浏览器 DevTools 控制台（本站未接集中收集端点），不拦截任何请求。
-#   观察期做法：镜像修好上线后，逐个打开各工具页（翻译/分析/校对/blog/admin 等），F12 看 Console 有无
-#   CSP 违规；确认无遗漏来源后，把下面这行的 header 名从 Content-Security-Policy-Report-Only 改成
-#   Content-Security-Policy 即可转为强制拦截。
+# 【2026-10-20 转为强制】依据：① 线上 errors 集合（report-error.js 上报的 securitypolicyviolation）
+#   里 CSP 违规 0 种（scripts/usage-report 读出）；② 公开页三语 39 次加载 0 违规；③ 预览服务器上
+#   工具页/后台页 18 页在 Report-Only 与强制两档各跑一遍 0 违规，月结引擎（Pyodide，module worker）
+#   在强制档下完整启动到 ready。
+#   ⚠️ 新增外部来源（CDN、API 域名、iframe）时必须同时加进下面的白名单，否则会被直接拦下——
+#   表现常常和「网络失败」一样（调用处的 catch 会吞掉）。tests/csp-coverage.test.mjs 只看得见字面量 URL。
+#   出事时的退路：把 header 名改回 Content-Security-Policy-Report-Only 推上去即可。
 # 【白名单来源出处】fonts.googleapis/gstatic=Google字体；www.gstatic=Firebase SDK；*.googleapis.com
 #   +securetoken.google.com=Firebase后端；api.deepgram.com(+wss)=语音；sdf-admin.*.workers.dev=管理后台
 #   Worker；cdn.jsdelivr/cdnjs.cloudflare=marked/dompurify/pdf.js/mammoth(均带SRI)；
@@ -54,4 +57,4 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), camera=(), microphone=(self)
   Strict-Transport-Security: max-age=31536000; includeSubDomains
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.sheetjs.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://securetoken.google.com https://api.deepgram.com wss://api.deepgram.com https://sdf-admin.sherlockafa.workers.dev https://api.github.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://cdn.jsdelivr.net http://127.0.0.1:47611; worker-src 'self' blob: https://cdnjs.cloudflare.com; frame-src 'self' https://senridfauthentication.firebaseapp.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.sheetjs.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://securetoken.google.com https://api.deepgram.com wss://api.deepgram.com https://sdf-admin.sherlockafa.workers.dev https://api.github.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://cdn.jsdelivr.net http://127.0.0.1:47611; worker-src 'self' blob: https://cdnjs.cloudflare.com; frame-src 'self' https://senridfauthentication.firebaseapp.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'

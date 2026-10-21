@@ -531,7 +531,7 @@
   </main>
 
   <div id="footer-placeholder"></div>
-  <script src="js/main.js?v=9cf1af8b61"></script>
+  <script src="js/main.js?v=dcfe95cd3c"></script>
 
   <!-- PDF.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e" crossorigin="anonymous"></script>
@@ -655,26 +655,19 @@
       updateUI();
     }
 
+    // 带 {name} 参数的三语文案（2026-10-19：原先这里写死中文或「日文 / 中文」并排）
+    const tf = (k, p = {}) => Object.entries(p).reduce((s, [a, b]) => s.split('{' + a + '}').join(String(b)), window.sdfT(k));
     /** 把被跳过的文件说清楚：少了哪几份、为什么。静默丢弃是分析类工具最危险的失败。 */
     function reportSkipped(skipped) {
       const lines = [];
       if (skipped.limit.length) {
-        lines.push(
-          `ファイル数の上限は ${MAX_FILES} 件です。未追加：${skipped.limit.join('、')}`,
-          `文件数上限为 ${MAX_FILES} 个，以下未添加：${skipped.limit.join('、')}`,
-        );
+        lines.push(tf('an_skip_limit', { max: MAX_FILES, list: skipped.limit.join('、') }));
       }
       if (skipped.type.length) {
-        lines.push(
-          `未対応の形式です：${skipped.type.join('、')}`,
-          `以下格式不支持：${skipped.type.join('、')}`,
-        );
+        lines.push(tf('an_skip_type', { list: skipped.type.join('、') }));
       }
       if (skipped.dup.length) {
-        lines.push(
-          `同名のファイルは追加済みです：${skipped.dup.join('、')}`,
-          `以下文件同名、已添加过：${skipped.dup.join('、')}`,
-        );
+        lines.push(tf('an_skip_dup', { list: skipped.dup.join('、') }));
       }
       if (lines.length) showError(lines.join('\n'));
     }
@@ -973,12 +966,12 @@
       const chars = selectedSectionChars(file).toLocaleString();
       const el    = document.getElementById(`sp-info-${idx}`);
       if (el) {
-        el.textContent  = `${file.sections.length} 个章节 · 已选 ${sel} 个 · 约 ${chars} 字符`;
+        window.sdfSetText(el, 'an_sections_info', { n: file.sections.length, sel, chars });
         el.className    = `an-section-info${sel > 0 ? ' an-section-info--sel' : ''}`;
       }
       // Refresh file-level chars display
       const fc = document.getElementById(`fc-${idx}`);
-      if (fc) fc.textContent = `${selectedSectionChars(file).toLocaleString()} / ${(file.chars || 0).toLocaleString()} 字`;
+      if (fc) window.sdfSetText(fc, 'an_chars_sel', { sel: selectedSectionChars(file).toLocaleString(), total: (file.chars || 0).toLocaleString() });
     }
 
     function toggleSection(idx, si) {
@@ -1045,19 +1038,19 @@
 
         let chars;
         if (f.loading) {
-          chars = `<span class="an-file-chars">読込中… / 读取中…</span>`;
+          chars = `<span class="an-file-chars" data-i18n="an_file_reading">${escHtml(window.sdfT('an_file_reading'))}</span>`;
         } else if (f.error) {
-          chars = `<span class="an-file-chars an-file-chars--warn">エラー / 错误</span>`;
+          chars = `<span class="an-file-chars an-file-chars--warn" data-i18n="an_file_error">${escHtml(window.sdfT('an_file_error'))}</span>`;
         } else if (f.chars === 0) {
-          chars = `<span class="an-file-chars an-file-chars--warn">0 文字 — スキャン版？ / 扫描版？</span>`;
+          chars = `<span class="an-file-chars an-file-chars--warn" data-i18n="an_file_scanned">${escHtml(window.sdfT('an_file_scanned'))}</span>`;
         } else if (f.sections && f.sections.length > 0) {
           const selChars = selectedSectionChars(f);
-          chars = `<span class="an-file-chars" id="fc-${idx}">${selChars.toLocaleString()} / ${f.chars.toLocaleString()} 字</span>`;
+          chars = `<span class="an-file-chars" id="fc-${idx}">${escHtml(tf('an_chars_sel', { sel: selChars.toLocaleString(), total: f.chars.toLocaleString() }))}</span>`;
         } else {
-          chars = `<span class="an-file-chars">${f.chars.toLocaleString()} 文字</span>`;
+          chars = `<span class="an-file-chars">${escHtml(tf('an_chars', { chars: f.chars.toLocaleString() }))}</span>`;
         }
 
-        const rm    = `<button class="an-file-remove" data-idx="${idx}" title="削除 / 移除">×</button>`;
+        const rm    = `<button class="an-file-remove" data-idx="${idx}" title="${escHtml(window.sdfT('an_remove_title'))}">×</button>`;
         const panel = (f.sections && f.sections.length > 0) ? buildSectionPanel(idx) : '';
         return `<div><div class="an-file-item">${badge}${name}${chars}${rm}</div>${panel}</div>`;
       }).join('');
@@ -1076,9 +1069,9 @@
       elDrop.classList.toggle('has-files', uploadedFiles.length > 0);
       const dropText = elDrop.querySelector('.an-drop-text');
       if (uploadedFiles.length > 0) {
-        dropText.childNodes[0].textContent = 'クリックして追加 / 点击继续添加';
+        dropText.childNodes[0].textContent = window.sdfT('an_drop_more');
       } else {
-        dropText.childNodes[0].textContent = 'ファイルをドロップ、またはクリックして選択 / 拖放文件或点击选择';
+        dropText.childNodes[0].textContent = window.sdfT('an_drop_text');
       }
     }
 
@@ -1109,10 +1102,7 @@
     }
 
     function roundProgress(round, note) {
-      return [
-        `**第 ${round}/${MAX_ROUNDS} ラウンド** · ${note}`,
-        `**第 ${round}/${MAX_ROUNDS} 轮** · ${note}`,
-      ].join('\n\n');
+      return tf('an_round', { round, max: MAX_ROUNDS, note });
     }
 
     /** 一轮请求：发出去、读流、把文本累积起来。渲染进度交给调用方。 */
@@ -1259,7 +1249,7 @@
           .map(p => `${p.name} p${p.pages.map(x => x.page).join(', p')}`)
           .join(' / ') || '（本轮无新页面）';
         elReport.innerHTML = renderMarkdown(
-          `${roundProgress(round, `読み込み中 / 正在读 ${reading}`)}\n\n${trail}`
+          `${roundProgress(round, tf('an_reading_pages', { pages: reading }))}\n\n${trail}`
         );
 
         // ── 发一轮 ──
@@ -1272,7 +1262,7 @@
           roundState: findBlock ? `${findBlock}\n\n${findings}`.trim() : findings,
         }, partial => {
           elReport.innerHTML = renderMarkdown(
-            `${roundProgress(round, `読み込み中 / 正在读 ${reading}`)}\n\n${trail}\n\n${partial}`
+            `${roundProgress(round, tf('an_reading_pages', { pages: reading }))}\n\n${trail}\n\n${partial}`
           );
         });
 
@@ -1339,7 +1329,7 @@
 
     async function runAnalysis() {
       if (isLocal) {
-        showError('ローカル環境では動作しません。デプロイ後にお試しください。\n本地环境不可用，请部署后使用。');
+        showError(window.sdfT('an_err_local'));
         return;
       }
 
@@ -1380,7 +1370,7 @@
             const answer = await runMultiRound(mrCands, ready.filter(f => !mrCands.includes(f)), question);
             elLoading.classList.add('is-hidden');
             elReport.innerHTML = renderMarkdown(answer);
-            if (!answer.trim()) showError('分析結果が空です。/ 分析结果为空。');
+            if (!answer.trim()) showError(window.sdfT('an_err_empty'));
             return;
           } catch (e) {
             // 留在 console：别为了"能用"把唯一的诊断线索也吞掉
@@ -1432,18 +1422,17 @@
           let msg;
           if (ct.includes('application/json')) {
             const data = await res.json().catch(() => ({}));
-            msg = data.error || `サーバーエラー（HTTP ${res.status}）\n服务器错误（HTTP ${res.status}）`;
+            msg = data.error || tf('an_err_server', { status: res.status });
           } else {
             // 非 JSON 的 5xx 说明请求根本没到我们的函数里（Cloudflare 自己拦掉的，
             // 通常是超了 10ms CPU 配额），这跟"模型报错"是两回事，得分开说。
-            msg = `サーバーエラー（HTTP ${res.status}）\n服务器错误（HTTP ${res.status}）`;
+            msg = tf('an_err_server', { status: res.status });
             if (res.status >= 500) {
-              msg += '\nファイルを減らすか、質問を分けてお試しください。\n请减少文件数量或把问题拆开后重试。';
+              msg += '\n' + window.sdfT('an_err_server_hint');
             }
           }
           if (didFallback) {
-            msg += '\n（画像解析に失敗したためテキスト解析を再試行しましたが、それも失敗しました）'
-                 + '\n（图像解析失败后已自动改用文本解析重试，仍未成功）';
+            msg += '\n' + window.sdfT('an_err_fallback');
           }
           throw new Error(msg);
         }
@@ -1485,7 +1474,7 @@
         }
 
         if (!accumulated) {
-          showError('分析結果が空です。/ 分析结果为空。');
+          showError(window.sdfT('an_err_empty'));
         }
 
       } catch (err) {

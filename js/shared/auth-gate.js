@@ -12,15 +12,69 @@ import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase
 import { ADMINS } from './admins.js';
 import { resolveGateState } from './auth-gate-state.js';
 
-function renderMessage(gate, { icon, title, body }) {
-  gate.innerHTML = `<div style="text-align:center;max-width:340px;padding:32px 24px;font-family:sans-serif"><div style="font-size:2.5rem;margin-bottom:16px">${icon}</div><h2 style="font-size:18px;font-weight:600;margin-bottom:12px;color:#1f2937">${title}</h2><p style="color:#6b7280;font-size:13px;line-height:1.8">${body}</p><a href="/account.html" style="display:inline-block;margin-top:20px;color:#9ca3af;font-size:12px;text-decoration:none">← 返回</a></div>`;
+// 页面语言：与 main.js / account.html 同一顺序（?lang= → localStorage → 日文）。
+// 2026-10-19：原来跳登录页时不带语言、提示只有中文——带着 ?lang=en 的链接点进工具页，
+// 没登录的新访客看到的是日文登录页；审核中的日英用户看到中文「审核中」。
+function pageLang() {
+  const p = new URLSearchParams(location.search).get('lang');
+  if (['ja', 'zh', 'en'].includes(p)) return p;
+  const s = localStorage.getItem('sdf_lang');
+  return ['ja', 'zh', 'en'].includes(s) ? s : 'ja';
 }
 
+/** 登录页地址：把当前语言带过去（只在 URL 里显式指定了语言时才需要，localStorage 两边共用） */
+function accountUrl() {
+  const p = new URLSearchParams(location.search).get('lang');
+  return ['ja', 'zh', 'en'].includes(p) ? `/account.html?lang=${p}` : '/account.html';
+}
+
+function renderMessage(gate, { icon, title, body }) {
+  gate.innerHTML = `<div style="text-align:center;max-width:340px;padding:32px 24px;font-family:sans-serif"><div style="font-size:2.5rem;margin-bottom:16px">${icon}</div><h2 style="font-size:18px;font-weight:600;margin-bottom:12px;color:#1f2937">${title}</h2><p style="color:#6b7280;font-size:13px;line-height:1.8">${body}</p><a href="${accountUrl()}" style="display:inline-block;margin-top:20px;color:#9ca3af;font-size:12px;text-decoration:none">← ${BACK[pageLang()]}</a></div>`;
+}
+
+const BACK = { ja: '戻る', zh: '返回', en: 'Back' };
 const MESSAGES = {
-  pending: { icon: '⏳', title: '审核中', body: '账号正在审核中，审核通过后即可使用。' },
-  disabled: { icon: '🚫', title: '账号已停用', body: '您的账号已被停用，请联系管理员。' },
-  error: { icon: '⚠️', title: '出错了', body: '页面加载时出现问题，请刷新页面重试。' },
+  ja: {
+    pending: {
+      icon: '⏳',
+      title: '審査中',
+      body: 'アカウントは審査中です。承認後にご利用いただけます。',
+    },
+    disabled: {
+      icon: '🚫',
+      title: 'アカウントは停止されています',
+      body: 'このアカウントは停止されています。管理者にお問い合わせください。',
+    },
+    error: {
+      icon: '⚠️',
+      title: 'エラーが発生しました',
+      body: 'ページの読み込み中に問題が発生しました。ページを再読み込みしてください。',
+    },
+  },
+  zh: {
+    pending: { icon: '⏳', title: '审核中', body: '账号正在审核中，审核通过后即可使用。' },
+    disabled: { icon: '🚫', title: '账号已停用', body: '您的账号已被停用，请联系管理员。' },
+    error: { icon: '⚠️', title: '出错了', body: '页面加载时出现问题，请刷新页面重试。' },
+  },
+  en: {
+    pending: {
+      icon: '⏳',
+      title: 'Under review',
+      body: 'Your account is being reviewed. You can use the tools once it is approved.',
+    },
+    disabled: {
+      icon: '🚫',
+      title: 'Account disabled',
+      body: 'This account has been disabled. Please contact the administrator.',
+    },
+    error: {
+      icon: '⚠️',
+      title: 'Something went wrong',
+      body: 'There was a problem loading the page. Please reload and try again.',
+    },
+  },
 };
+const msg = (state) => MESSAGES[pageLang()][state];
 
 export function mountAuthGate({ auth, db, gateElId = 'auth-gate', onApproved, onAdmin }) {
   return onAuthStateChanged(auth, async (user) => {
@@ -34,7 +88,7 @@ export function mountAuthGate({ auth, db, gateElId = 'auth-gate', onApproved, on
       if (resolveGateState({ user }) === 'guest') {
         // 匿名会话不该留着：留着的话下一个页面又会看到一个 truthy 的 user。
         localStorage.removeItem('sdf_user_email');
-        window.location.replace('/account.html');
+        window.location.replace(accountUrl());
         return;
       }
       localStorage.setItem('sdf_user_email', user.email);
@@ -58,10 +112,10 @@ export function mountAuthGate({ auth, db, gateElId = 'auth-gate', onApproved, on
         onApproved?.(user);
         return;
       }
-      if (gate) renderMessage(gate, MESSAGES[state]);
+      if (gate) renderMessage(gate, msg(state));
     } catch (err) {
       console.error('[auth-gate]', err);
-      if (gate) renderMessage(gate, MESSAGES.error);
+      if (gate) renderMessage(gate, msg('error'));
     }
   });
 }

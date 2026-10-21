@@ -126,7 +126,8 @@ test('saveContentChanges 正常保存：在最新版上合并并写回，返回�
   const repo = fakeRepo({ zh: { a: '1' }, en: { b: 'B' } });
   const r = await saveContentChanges({ zh: { c: '3' } }, repo.io());
   assert.equal(r.ok, true);
-  assert.deepEqual(repo.json, { zh: { a: '1', c: '3' }, en: { b: 'B' } });
+  // 只改了中文 c、日英没给 → c 进 unsynced（见下方「日英未同步清单」）
+  assert.deepEqual(repo.json, { zh: { a: '1', c: '3' }, en: { b: 'B' }, unsynced: ['c'] });
   assert.deepEqual(r.content, repo.json);
 });
 
@@ -201,4 +202,38 @@ test('Worker：/health 报协议版本；旧格式 body.content 被拒绝（409�
   assert.match(worker, /body\.content !== undefined \|\| !body\.changes/);
   assert.match(worker, /saveContentChanges\(changes,/);
   assert.match(worker, /expectSha: sha/);
+});
+
+// ── 日英未同步清单（2026-10-19）──
+// 起因：「一键同步日英」只翻本次会话里改过的中文；存了中文没同步的，下次打开后台就补不上，
+// 日英一直显示旧译文且没有任何提示（团队简介、页脚版权）。服务端在 content.json 里记 unsynced。
+test('★ 中文改了而日英没给 → 记进 unsynced；同一次保存日英都给了 → 不记', () => {
+  const cur = { zh: { a: '旧' }, ja: { a: '古い' }, en: { a: 'old' } };
+  assert.deepEqual(mergeContent(cur, { zh: { a: '新' } }).unsynced, ['a']);
+  const both = mergeContent(cur, { zh: { a: '新' }, ja: { a: '新しい' }, en: { a: 'new' } });
+  assert.equal(both.unsynced, undefined);
+});
+
+test('unsynced：之后补了日英才划掉；只补一种语言不划掉；中文值没变不记', () => {
+  const step1 = mergeContent({ zh: { a: '旧', b: '乙' } }, { zh: { a: '新', b: '乙' } });
+  assert.deepEqual(step1.unsynced, ['a'], '中文值没变（b）不该被记');
+  const onlyJa = mergeContent(step1, { ja: { a: '新しい' } });
+  assert.deepEqual(onlyJa.unsynced, ['a'], '只补了日文，英文还是旧的');
+  const done = mergeContent(onlyJa, { ja: { a: '新しい' }, en: { a: 'new' } });
+  assert.equal(done.unsynced, undefined);
+});
+
+test('unsynced 由服务端维护：客户端在 changes 里传的会被忽略；校验拒绝非法键名', () => {
+  const m = mergeContent({ zh: { a: '1' } }, { unsynced: ['x'], zh: { a: '1' } });
+  assert.equal(m.unsynced, undefined);
+  assert.equal(validateContentPayload({ unsynced: ['team1_bio'] }).ok, true);
+  assert.equal(validateContentPayload({ unsynced: ['<script>'] }).ok, false);
+  assert.equal(validateContentPayload({ unsynced: 'a' }).ok, false);
+});
+
+test('后台：「一键同步日英」会把 unsynced 的旧条目一起送去翻译，并显示未同步提示', () => {
+  const sync = admin.slice(admin.indexOf('window.syncTranslate = async function'));
+  assert.match(sync.slice(0, sync.indexOf('\n};')), /for \(const key of unsyncedKeys\(\)\)/);
+  assert.match(admin, /id="unsynced-note"/);
+  assert.match(admin, /notSynced\.length &&\s*!window\.confirm\(/);
 });

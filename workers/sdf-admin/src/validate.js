@@ -50,6 +50,15 @@ export function validateContentPayload(content) {
       if (!tl.ok) return tl;
       continue;
     }
+    // 服务端维护的「日英未同步」键名清单（content-save.js），只允许键名格式的字符串
+    if (group === 'unsynced') {
+      if (!Array.isArray(fields) || fields.length > 2000)
+        return { ok: false, error: 'unsynced 格式错误' };
+      if (!fields.every((k) => typeof k === 'string' && /^[a-z][a-z0-9_]{0,63}$/.test(k))) {
+        return { ok: false, error: 'unsynced 含非法键名' };
+      }
+      continue;
+    }
     if (!allowedGroups.includes(group)) return { ok: false, error: `未知分组：${group}` };
     if (!fields || typeof fields !== 'object' || Array.isArray(fields)) {
       return { ok: false, error: `分组 ${group} 格式错误` };
