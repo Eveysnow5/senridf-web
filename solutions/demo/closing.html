@@ -168,6 +168,7 @@
     /* 证凭 */
     .ce-ev-q { gap:10px;margin:8px 0;align-items:center; }
     .ce-ev-table .ce-ev-in { width:100%;min-width:7em; }
+    .ce-ev-table .ce-ev-code { min-width:6.5em;font-family:ui-monospace,monospace; }
     .ce-ev-st { font-size:11px;font-weight:600;padding:1px 6px;border-radius:9px;white-space:nowrap;background:#fef3c7;color:#92400e; }
     .ce-ev-st.ok { background:#d1fae5;color:#065f46; }
     .ce-ev-st.void { background:#f3f4f6;color:#6b7280; }
@@ -524,7 +525,7 @@
           </div>
           <div class="ce-table-wrap">
             <table class="ce-table ce-ev-table">
-              <thead><tr><th>#</th><th data-i18n="ce_ev_col_status">状態</th><th data-i18n="ce_ev_q_date">取引日</th>
+              <thead><tr><th>#</th><th data-i18n="ce_ev_col_code">証憑番号</th><th data-i18n="ce_ev_col_status">状態</th><th data-i18n="ce_ev_q_date">取引日</th>
                 <th data-i18n="ce_ev_q_amount">金額</th><th data-i18n="ce_ev_q_party">取引先</th><th data-i18n="ce_ev_col_doc">書類</th><th data-i18n="ce_ev_col_kind">区分</th>
                 <th data-i18n="ce_ev_col_file">ファイル</th><th data-i18n="ce_ev_col_bank">照合先の明細</th><th></th></tr></thead>
               <tbody id="ce-ev-list"></tbody>
@@ -2484,6 +2485,24 @@
         return td;
       };
       cell(String(e.no));
+      // 附件编号（作者的资料编码规范：写在纸右上角的编号，从序时账找到纸）。灰字是建议的下一个编号。
+      // 已确认、还没编号的行可以直接补（确认之后才在纸上写编号是常态，不用写理由）
+      const code = input(e.code || '', t('ce_ev_code_title'));
+      code.classList.add('ce-ev-in', 'ce-ev-code');
+      code.placeholder = e.code_suggest || '';
+      const codeFirst = e.status === '確認済' && !e.code && !evEditing.has(e.no);
+      code.disabled = e.status === '取消' || (locked && !codeFirst);
+      const cc = cell(code);
+      if (codeFirst) {
+        const save = el('button', 'ce-link', 'ce_ev_code_save');
+        save.type = 'button';
+        const cerr = el('div', 'ce-err');
+        save.addEventListener('click', async () => {
+          const v = code.value.trim() || e.code_suggest;
+          if (v) await evDo('confirm', [e.no, { code: v }, evBy() || '', ''], cerr);
+        });
+        cc.append(save, cerr);
+      }
       const st = el('span', `ce-ev-st ${EV_STATUS[e.status] || ''}`, `ce_ev_st_${EV_STATUS[e.status] || 'draft'}`);
       cell(st);
       const date = input(e.date, t('ce_ev_q_date'));
@@ -2535,9 +2554,11 @@
         amount.value = un.amount;
         party.value = un.party;
         kind.value = un.kind;
+        code.value = un.code || code.value;
       }
-      const keep = () => evUnsaved.set(e.no, { date: date.value, amount: amount.value, party: party.value, kind: kind.value });
-      for (const i of [date, amount, party, kind]) {
+      const keep = () =>
+        evUnsaved.set(e.no, { date: date.value, amount: amount.value, party: party.value, kind: kind.value, code: code.value });
+      for (const i of [date, amount, party, kind, code]) {
         i.addEventListener('input', keep);
         i.addEventListener('change', keep);
       }
@@ -2548,7 +2569,12 @@
       else cell('—');
       const act = el('div', 'ce-row');
       const err = el('div', 'ce-err');
-      const values = () => ({ date: date.value, amount: amount.value === '' ? null : Number(amount.value), party: party.value.trim() });
+      const values = () => ({
+        date: date.value,
+        amount: amount.value === '' ? null : Number(amount.value),
+        party: party.value.trim(),
+        code: code.value.trim(),
+      });
       if (e.status === '下書き' || evEditing.has(e.no)) {
         const ok = el('button', 'ce-btn2', 'ce_ev_confirm');
         ok.type = 'button';
@@ -2638,7 +2664,7 @@
         // 没有对应的读取模板：三个栏是空的。不说的话，用户只看到「明明有字却什么都没读出来」
         const nr = el('tr', 'ce-ev-note');
         const td = el('td', '', 'ce_ev_no_template');
-        td.colSpan = 10;
+        td.colSpan = 11;
         nr.appendChild(td);
         out.push(nr);
       }
@@ -2647,7 +2673,7 @@
       if (fx) {
         const nr = el('tr', 'ce-ev-note');
         const td = el('td');
-        td.colSpan = 10;
+        td.colSpan = 11;
         const amt = fx.foreign ? Number(fx.foreign).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '';
         const key = !fx.foreign
           ? 'ce_ev_fx_unread'
@@ -2665,7 +2691,7 @@
       if (gen) {
         const nr = el('tr', 'ce-ev-note');
         const td = el('td');
-        td.colSpan = 10;
+        td.colSpan = 11;
         const k = e.fields.generic_amount;
         window.sdfSetText(td, k ? 'ce_ev_generic' : 'ce_ev_generic_nokey', { key: k || '' });
         nr.appendChild(td);
@@ -2674,7 +2700,7 @@
       if (e.note && !(fx && fx.foreign) && !gen) {
         const nr = el('tr', 'ce-ev-note');
         const td = el('td');
-        td.colSpan = 10;
+        td.colSpan = 11;
         td.textContent = e.note;
         nr.appendChild(td);
         out.push(nr);
@@ -3842,6 +3868,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=ca285461d1"></script>
+  <script src="../../js/main.js?v=6f9ee92c59"></script>
 </body>
 </html>
