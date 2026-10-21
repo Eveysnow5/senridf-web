@@ -3669,6 +3669,34 @@
       const g = el('div', 'ce-grid2');
       g.append(field('ce_ans_evidence', evidence), field('ce_ans_by', by));
       form.append(g, field('ce_ans_reason', reason));
+      // 流水里没有的预定缴款（社保・源泉・住民税）：答「已处理」时写实际缴款日，引擎拿它和期限比（E1）。
+      // 理由里写了日期而这栏空着，就给一个按钮把那个日期填进来（不猜：用户点了才填）
+      const isPay = /^missing:(gensen|jumin|shaho):/.test(x.key);
+      const paidOn = input(prev.paid_on, t('ce_ans_paid_on_hint'));
+      paidOn.type = 'date';
+      if (isPay) {
+        const pick = el('button', 'ce-link');
+        pick.type = 'button';
+        const pickRow = el('div', 'ce-hint');
+        pickRow.appendChild(pick);
+        const fromReason = () => {
+          const s = reason.value;
+          let m = s.match(/(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})/);
+          let d = m ? [m[1], m[2], m[3]] : null;
+          if (!d && (m = s.match(/(^|[^\d])(\d{1,2})\/(\d{1,2})(?!\d)/))) d = [String(x.date || today()).slice(0, 4), m[2], m[3]];
+          const iso = d ? `${d[0]}-${d[1].padStart(2, '0')}-${d[2].padStart(2, '0')}` : '';
+          pickRow.classList.toggle('hidden', !iso || !!paidOn.value);
+          if (iso) window.sdfSetText(pick, 'ce_ans_paid_on_pick', { d: iso });
+          pick.onclick = () => {
+            paidOn.value = iso;
+            pickRow.classList.add('hidden');
+          };
+        };
+        reason.addEventListener('input', fromReason);
+        paidOn.addEventListener('input', fromReason);
+        fromReason();
+        form.append(field('ce_ans_paid_on', paidOn), pickRow);
+      }
       const at = el('div', 'ce-hint');
       window.sdfSetText(at, 'ce_ans_at', { d: today() });
       const err = el('div', 'ce-err');
@@ -3688,6 +3716,7 @@
         const a = { action: action.value, by: by.value.trim(), at: today() };
         if (evidence.value.trim()) a.evidence = evidence.value.trim();
         if (reason.value.trim()) a.reason = reason.value.trim();
+        if (isPay && a.action === 'done' && paidOn.value) a.paid_on = paidOn.value;
         if (!a.by) return window.sdfSetText(err, 'ce_ans_err_by');
         if (a.action === 'book') {
           const ls = lines();
@@ -3868,6 +3897,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=6f9ee92c59"></script>
+  <script src="../../js/main.js?v=9cf1af8b61"></script>
 </body>
 </html>
