@@ -1,0 +1,245 @@
+{
+  "note": "sync-upstream.yml 在 main 上最近 30 次运行的真实记录（2026-10-22 取自 GitHub API，只留判定用到的字段）。10-21 15:24〜15:25 是那次被检查拦下的 blog 发布。",
+  "workflow_runs": [
+    {
+      "id": 39786551244,
+      "head_sha": "9e3a2eeee39c06d231455fb6d71d7d4fdcc0f832",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39786551244",
+      "created_at": "2026-10-22T13:24:28Z"
+    },
+    {
+      "id": 39782955912,
+      "head_sha": "3ef3561ec9012a5d5658aea04ca05145189c0958",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39782955912",
+      "created_at": "2026-10-22T12:59:35Z"
+    },
+    {
+      "id": 39625529830,
+      "head_sha": "b48385a00bfb7e31c882b89a7b2290f29ed762bf",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39625529830",
+      "created_at": "2026-10-21T15:25:25Z"
+    },
+    {
+      "id": 39625524943,
+      "head_sha": "ab308d2dd9b0f9089b1eea2f330a716daea45d38",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39625524943",
+      "created_at": "2026-10-21T15:25:23Z"
+    },
+    {
+      "id": 39625404532,
+      "head_sha": "d99223ecc8f73bfa42e3ab0d9d8b5eae369f9fa8",
+      "status": "completed",
+      "conclusion": "failure",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39625404532",
+      "created_at": "2026-10-21T15:24:39Z"
+    },
+    {
+      "id": 39625393179,
+      "head_sha": "1fc4ba7c444a4d4798162512204969ce29d2da1a",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39625393179",
+      "created_at": "2026-10-21T15:24:35Z"
+    },
+    {
+      "id": 39625388678,
+      "head_sha": "0efd5faeb602c27aab4c98fc45de55fcdad32040",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39625388678",
+      "created_at": "2026-10-21T15:24:33Z"
+    },
+    {
+      "id": 39624027140,
+      "head_sha": "b4ac6e93e654773c3edb7d80c7ff303a27ca191e",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39624027140",
+      "created_at": "2026-10-21T15:15:44Z"
+    },
+    {
+      "id": 39448873511,
+      "head_sha": "20463a40b9eda1bcca8fbbd3ea3bce6266a66e1b",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39448873511",
+      "created_at": "2026-10-20T15:29:24Z"
+    },
+    {
+      "id": 39447116961,
+      "head_sha": "925116febd47322671f83dc5461018b6fb83ec78",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39447116961",
+      "created_at": "2026-10-20T15:18:01Z"
+    },
+    {
+      "id": 39392819851,
+      "head_sha": "c2a9647d6596166a7c006e547d4e78c7de08dc44",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39392819851",
+      "created_at": "2026-10-20T08:21:35Z"
+    },
+    {
+      "id": 39267366635,
+      "head_sha": "9bc00f4fbdeb8a6305527fd0c1ddb7d902978893",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39267366635",
+      "created_at": "2026-10-19T14:15:49Z"
+    },
+    {
+      "id": 39263798163,
+      "head_sha": "134e2fb1317fac7ae0edb548f99fa8711232119e",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39263798163",
+      "created_at": "2026-10-19T13:51:52Z"
+    },
+    {
+      "id": 39243968157,
+      "head_sha": "0f08f2ab57f437c880c854676b3c6d9ff1f17bea",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39243968157",
+      "created_at": "2026-10-19T11:20:48Z"
+    },
+    {
+      "id": 39222553734,
+      "head_sha": "7150209f247a906e31aa78d5212f6a4de88a2b87",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39222553734",
+      "created_at": "2026-10-19T08:24:35Z"
+    },
+    {
+      "id": 39116873105,
+      "head_sha": "bd059395f250a80f88021acd50544de1c92b728e",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39116873105",
+      "created_at": "2026-10-18T09:49:49Z"
+    },
+    {
+      "id": 39114442728,
+      "head_sha": "0ab2b2fc6d320e6c850c01f1842013163897e655",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39114442728",
+      "created_at": "2026-10-18T09:12:47Z"
+    },
+    {
+      "id": 39113291500,
+      "head_sha": "10dcff3e46b1a5ad35d1fa1df90ac012eccf90db",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39113291500",
+      "created_at": "2026-10-18T08:54:59Z"
+    },
+    {
+      "id": 39113263549,
+      "head_sha": "ef76dd9eb03c3c08c2edafb5c061d3b231a06a11",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39113263549",
+      "created_at": "2026-10-18T08:54:32Z"
+    },
+    {
+      "id": 39113262184,
+      "head_sha": "61da6ad8c14e527d59ff24cee7c484a13456bbfd",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39113262184",
+      "created_at": "2026-10-18T08:54:30Z"
+    },
+    {
+      "id": 39113259807,
+      "head_sha": "e10ca589e85c030cbc7f9ec9931d9e47227c686f",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39113259807",
+      "created_at": "2026-10-18T08:54:28Z"
+    },
+    {
+      "id": 39113258505,
+      "head_sha": "9baeb61b8cb15d0c4bc180c21209e3298a15e4d5",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39113258505",
+      "created_at": "2026-10-18T08:54:27Z"
+    },
+    {
+      "id": 39112613524,
+      "head_sha": "d58d17f71841b4326a3b388a57efdf7378683203",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39112613524",
+      "created_at": "2026-10-18T08:44:30Z"
+    },
+    {
+      "id": 39112611922,
+      "head_sha": "afe84d33fc8668f203b4a4c4771c09cf985ca1bf",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39112611922",
+      "created_at": "2026-10-18T08:44:28Z"
+    },
+    {
+      "id": 39112570677,
+      "head_sha": "66c86d33d7d79e4161c7f1ed4011fc61a38d9adc",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39112570677",
+      "created_at": "2026-10-18T08:43:48Z"
+    },
+    {
+      "id": 39112568959,
+      "head_sha": "1a9f9ca69306404f8239259919cff52ad0f177a3",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39112568959",
+      "created_at": "2026-10-18T08:43:47Z"
+    },
+    {
+      "id": 39112567193,
+      "head_sha": "fca885e981424755d1b34f750fb5e4dfbbb7a8d2",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39112567193",
+      "created_at": "2026-10-18T08:43:45Z"
+    },
+    {
+      "id": 39111666326,
+      "head_sha": "5a6050ff54fa97ec9a6100a6b78fc3d64aa52131",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39111666326",
+      "created_at": "2026-10-18T08:29:56Z"
+    },
+    {
+      "id": 39108403912,
+      "head_sha": "c91f5f288d79fd4a610d02836a3eb5692f32aa92",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39108403912",
+      "created_at": "2026-10-18T07:38:08Z"
+    },
+    {
+      "id": 39107873341,
+      "head_sha": "a69718c4225fe3e5f0b84fed131e323cc9b07b73",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sherlockafa007/senridoufuu-web/actions/runs/39107873341",
+      "created_at": "2026-10-18T07:29:54Z"
+    }
+  ]
+}

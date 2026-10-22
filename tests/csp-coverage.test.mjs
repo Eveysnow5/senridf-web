@@ -109,7 +109,7 @@ function collect(re) {
 }
 
 // fetch('https://…') / new WebSocket('wss://…')，以及先存进常量再 fetch 的写法
-// （admin 的 MIRROR_API 正是后者，所以只匹配 fetch( 会漏掉它）。
+// （admin 的 WORKER_URL 正是后者，所以只匹配 fetch( 会漏掉它）。
 const CONNECT_RE =
   /(?:fetch|WebSocket|EventSource)\s*\(\s*['"`]((?:https?|wss):\/\/[^'"`]+)|(?:const|let|var)\s+\w*(?:URL|API|ENDPOINT|_URL|_API)\w*\s*=\s*['"`]((?:https?|wss):\/\/[^'"`]+)/gi;
 
@@ -152,7 +152,8 @@ const STYLES = collectStyles();
 test('护栏自身有效：三个提取器都抓到了已知存在的来源', () => {
   // 这些数字不是"当前值"，是**下限**：站点确实有这么多外部依赖。
   // 提取器哪天被改坏（正则失配、目录被排除掉），这三条先红。
-  assert.ok(CONNECTS.length >= 5, `外连只抓到 ${CONNECTS.length} 处`);
+  // 外连 2026-10-22 从 6 处降到 4 处：两个 admin 页的 MIRROR_API（直连 GitHub）改由 Worker 代查。
+  assert.ok(CONNECTS.length >= 4, `外连只抓到 ${CONNECTS.length} 处`);
   assert.ok(SCRIPTS.length >= 5, `外部 <script src> 只抓到 ${SCRIPTS.length} 处`);
   assert.ok(STYLES.length >= 3, `外部样式表只抓到 ${STYLES.length} 处`);
   // 抓到的必须真是外部主机，不能是把相对路径也算进来凑数

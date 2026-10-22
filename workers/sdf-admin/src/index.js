@@ -9,7 +9,8 @@ import { isAdmin } from '../../../js/shared/admins.js';
 import { allowedOrigin, validateContentPayload } from './validate.js';
 import { CONTENT_API_VERSION, saveContentChanges } from './content-save.js';
 import { createRateLimiter } from './rateLimit.js';
-import { getFile, putFile, commitFiles } from './github.js';
+import { getFile, putFile, commitFiles, listWorkflowRuns } from './github.js';
+import { DEPLOY_WORKFLOW, deployState } from './deploy-status.js';
 import { readFingerprints } from '../../../scripts/qa/cache-bust-core.mjs';
 import {
   validateTranslateFields,
@@ -212,6 +213,20 @@ export default {
         );
         if (!parsed) return json(502, { error: '翻译服务返回格式异常，可重试' }, cors);
         return json(200, parsed, cors);
+      }
+
+      // 上线状态：前端保存/发布后轮询（deploy-status.js）。sha 只收 40 位十六进制
+      if (url.pathname === '/deploy-status' && request.method === 'GET') {
+        const sha = url.searchParams.get('sha') || '';
+        if (!/^[0-9a-f]{40}$/.test(sha)) return json(400, { error: 'sha 格式不对' }, cors);
+        try {
+          const runs = await listWorkflowRuns(REPO, DEPLOY_WORKFLOW, env.GITHUB_TOKEN);
+          return json(200, deployState(runs, sha), cors);
+        } catch (err) {
+          if (err.code === 'NO_ACTIONS_PERMISSION')
+            return json(200, { state: 'no_permission' }, cors);
+          throw err;
+        }
       }
 
       if (url.pathname === '/blog/posts' && request.method === 'GET') {

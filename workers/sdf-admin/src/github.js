@@ -170,3 +170,21 @@ export async function deleteFile(repo, path, message, token) {
   }
   return { deleted: true };
 }
+
+// 某个 workflow 在 main 上最近的运行记录（查上线状态用，见 deploy-status.js）。
+// 需要令牌有 Actions: Read；没有时 GitHub 回 403（细粒度令牌缺权限也可能回 404），
+// 抛 code='NO_ACTIONS_PERMISSION'，让前端说清楚是令牌少了权限，而不是「部署慢」。
+export async function listWorkflowRuns(repo, workflow, token) {
+  const { res, data } = await gh(
+    'GET',
+    `/repos/${repo}/actions/workflows/${workflow}/runs?branch=main&per_page=30`,
+    token,
+  );
+  if (res.status === 403 || res.status === 404) {
+    const err = new Error(`GitHub 拒绝读取运行记录（${res.status}）`);
+    err.code = 'NO_ACTIONS_PERMISSION';
+    throw err;
+  }
+  if (!res.ok) throw new Error(`GitHub 读取运行记录失败（${res.status}）`);
+  return data.workflow_runs || [];
+}
