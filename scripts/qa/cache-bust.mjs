@@ -5,6 +5,8 @@
 // 老访客看到的是 HTML 里写死的日文——中文页上出现中日混排（作者实机截图发现）。
 // 手动加 ?v= 迟早会忘；按内容指纹自动写，文件一变网址就变，任何缓存都失效。
 //
+// 资源清单和改写规则在 cache-bust-core.mjs（2026-10-22 拆出，后台发布 blog 的 Worker 也用）。
+//
 // 用法：node scripts/qa/cache-bust.mjs        —— 改写所有引用
 //       node scripts/qa/cache-bust.mjs --check —— 只检查，不一致就退出码 1（测试也用同一逻辑）
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -12,16 +14,11 @@ import { createHash } from 'node:crypto';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ASSETS, applyFingerprints } from './cache-bust-core.mjs';
+
+export { ASSETS };
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-// 共用、且改动会影响页面行为/文案的本地资源。新增共用脚本时加进来。
-export const ASSETS = [
-  'js/main.js',
-  'css/main.css',
-  'js/tracking.js',
-  'js/order-to-ledger-demo.js',
-  'js/lead-form.js',
-];
 
 // 换行符先统一成 LF 再算：Windows 上 git 会按 autocrlf 把工作区转成 CRLF，仓库里是 LF。
 // 直接按字节算的话，同一份内容换台机器 checkout 指纹就变，测试会误报。
@@ -36,12 +33,6 @@ export function htmlFiles() {
     .filter(Boolean);
 }
 
-// 引用的样子：src="js/main.js" / "../../js/main.js" / "/js/main.js" / 带或不带 ?v=xxx
-function refRegex(asset) {
-  const esc = asset.replace(/[.]/g, '\\.');
-  return new RegExp(`((?:\\.\\./)*/?${esc})(\\?v=[A-Za-z0-9]+)?(?=["'])`, 'g');
-}
-
 export function scan({ write = false } = {}) {
   const want = Object.fromEntries(ASSETS.map((a) => [a, fingerprint(a)]));
   const stale = [];
@@ -49,16 +40,10 @@ export function scan({ write = false } = {}) {
   for (const f of htmlFiles()) {
     const p = path.join(ROOT, f);
     const src = readFileSync(p, 'utf8');
-    let out = src;
-    for (const a of ASSETS) {
-      out = out.replace(refRegex(a), (m, base, v) => {
-        refs++;
-        const good = `?v=${want[a]}`;
-        if (v !== good) stale.push(`${f}: ${base}${v || ''}`);
-        return base + good;
-      });
-    }
-    if (write && out !== src) writeFileSync(p, out);
+    const r = applyFingerprints(src, want);
+    refs += r.refs;
+    stale.push(...r.stale.map((s) => `${f}: ${s}`));
+    if (write && r.out !== src) writeFileSync(p, r.out);
   }
   return { want, refs, stale };
 }

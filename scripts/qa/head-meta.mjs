@@ -5,34 +5,20 @@
 // 所以由脚本按下表生成，包在标记之间，可重复运行（npm run meta）。
 // 分享卡片的标题和描述直接取各页现有的 <title> 和 meta description，不另写一份（避免两处不一致）。
 //
+// 生成逻辑在 head-meta-core.mjs（2026-10-22 拆出，后台发布 blog 文章的 Worker 也用它）。
+// 公开页面＝PUBLIC 表 ＋ posts.json 里的每篇 blog 文章。
+//
 // 用法：node scripts/qa/head-meta.mjs          —— 改写
 //       node scripts/qa/head-meta.mjs --check  —— 只检查（tests/head-meta.test.mjs 用同一逻辑）
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ORIGIN, PUBLIC, apply, render, blogRoutes } from './head-meta-core.mjs';
+
+export { ORIGIN, PUBLIC, apply, render };
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-export const ORIGIN = 'https://www.senridf.com';
-
-// 公开页面 → 规范网址（与 sitemap.xml 一致：目录以 / 结尾，其余不带 .html）
-export const PUBLIC = {
-  'index.html': '/',
-  'about/index.html': '/about/',
-  'about/company.html': '/about/company',
-  'about/milestones.html': '/about/milestones',
-  'solutions/index.html': '/solutions/',
-  'solutions/demo.html': '/solutions/demo',
-  'solutions/order-to-ledger.html': '/solutions/order-to-ledger',
-  'solutions/blog/index.html': '/solutions/blog/',
-  'privacy/index.html': '/privacy/',
-  'contact.html': '/contact',
-};
-
-const START = '<!-- head-meta:start（npm run meta 生成，勿手改） -->';
-const END = '<!-- head-meta:end -->';
-
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
 export function htmlFiles() {
   return execSync('git ls-files "*.html"', { cwd: ROOT, encoding: 'utf8' })
@@ -40,53 +26,21 @@ export function htmlFiles() {
     .filter((f) => f && !/^(tests|docs|node_modules)\//.test(f));
 }
 
-export function render(file, src) {
-  const lines = [
-    '<link rel="icon" href="/favicon.ico" sizes="any">',
-    '<link rel="apple-touch-icon" href="/apple-touch-icon.png">',
-  ];
-  const route = PUBLIC[file];
-  if (route) {
-    const title = (src.match(/<title>([^<]*)<\/title>/) || [])[1] || '千里同風株式会社';
-    const desc = (src.match(/<meta\s+name="description"\s+content="([^"]*)"/) || [])[1] || '';
-    const url = ORIGIN + route;
-    lines.push(
-      `<link rel="canonical" href="${url}">`,
-      '<meta property="og:site_name" content="千里同風株式会社">',
-      '<meta property="og:type" content="website">',
-      '<meta property="og:locale" content="ja_JP">',
-      `<meta property="og:url" content="${url}">`,
-      `<meta property="og:title" content="${esc(title)}">`,
-      `<meta property="og:description" content="${esc(desc)}">`,
-      `<meta property="og:image" content="${ORIGIN}/og-image.png">`,
-      '<meta property="og:image:width" content="1200">',
-      '<meta property="og:image:height" content="630">',
-      '<meta name="twitter:card" content="summary_large_image">',
-    );
-  }
-  return `  ${START}\n${lines.map((l) => '  ' + l).join('\n')}\n  ${END}\n`;
-}
-
-// 去掉块外散落的旧标签（首页原有手写的 og:*），再把块放到 </head> 前。
-export function apply(file, src) {
-  let out = src.replace(
-    new RegExp(`[ \\t]*${START.replace(/[.*+?^${}()|[\]\\（）]/g, '\\$&')}[\\s\\S]*?${END}\\n?`),
-    '',
-  );
-  out = out
-    .replace(/^[ \t]*<meta\s+property="og:[^"]*"[^>]*>\s*\n/gm, '')
-    .replace(/^[ \t]*<meta\s+name="twitter:[^"]*"[^>]*>\s*\n/gm, '')
-    .replace(/^[ \t]*<link\s+rel="(?:canonical|icon|apple-touch-icon)"[^>]*>\s*\n/gm, '');
-  return out.replace(/([ \t]*)<\/head>/, (m) => render(file, out) + m);
+/** PUBLIC ＋ posts.json 里登记的 blog 文章。 */
+export function publicRoutes() {
+  const p = path.join(ROOT, 'solutions/blog/posts.json');
+  const posts = existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : [];
+  return { ...PUBLIC, ...blogRoutes(posts) };
 }
 
 export function scan({ write = false } = {}) {
+  const routes = publicRoutes();
   const stale = [];
   for (const f of htmlFiles()) {
     const p = path.join(ROOT, f);
     const src = readFileSync(p, 'utf8');
     if (!/<\/head>/.test(src)) continue;
-    const out = apply(f, src);
+    const out = apply(f, src, routes);
     if (out !== src) {
       stale.push(f);
       if (write) writeFileSync(p, out);

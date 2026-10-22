@@ -96,7 +96,7 @@
     .blog-list-date { color: var(--text3); width: 90px; flex-shrink: 0; }
     .blog-list-title { flex: 1; }
 
-    #blog-compose { max-width: 720px; margin: 0 auto; padding: 24px; }
+    #blog-compose { max-width: 900px; margin: 0 auto; padding: 24px; }
     .compose-row { margin-bottom: 16px; }
     .compose-label { display: block; font-size: 12px; color: var(--text3); margin-bottom: 5px; }
     .compose-input, .compose-textarea {
@@ -106,17 +106,37 @@
     }
     .compose-input:focus, .compose-textarea:focus { border-color: var(--accent); }
     .compose-textarea { line-height: 1.7; }
-    .compose-toolbar { margin-bottom: 6px; display: flex; gap: 6px; }
-    .compose-toolbar button {
-      padding: 4px 10px; border: 1px solid var(--border); border-radius: 5px;
-      background: var(--paper); font-size: 12px; cursor: pointer;
+    /* 编辑器工具栏（admin/blog/editor.js 生成）：吸顶，长文往下写时也够得着 */
+    .compose-toolbar {
+      position: sticky; top: 56px; z-index: 20; background: var(--bg);
+      padding: 6px 0; margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
     }
+    .compose-toolbar button, .compose-toolbar select {
+      padding: 4px 10px; border: 1px solid var(--border); border-radius: 5px;
+      background: var(--paper); font-size: 12px; font-family: inherit; cursor: pointer; color: var(--text);
+    }
+    .compose-toolbar button:hover { border-color: var(--accent); }
+    .ed-colors { display: inline-flex; gap: 4px; align-items: center; padding: 0 4px; }
+    .compose-toolbar .ed-swatch {
+      width: 20px; height: 20px; padding: 0; border-radius: 50%; border: 1px solid var(--border);
+      color: #fff; font-size: 11px; line-height: 18px;
+    }
+    .ed-colors input[type="color"] { width: 26px; height: 22px; padding: 0; border: none; background: none; cursor: pointer; }
+    /* 编辑区：iframe 里是和文章页同一份样式（admin/blog/frame.html），高度随内容伸展 */
+    .ed-frame { display: block; width: 100%; height: 420px; border: 1px solid var(--border); border-radius: 7px; background: #F8F8F5; }
+    .ed-frame[hidden] { display: none; }
+    .compose-hint { font-size: 12px; color: var(--text3); margin-top: 4px; }
+    .status.warn { color: #b45309; }
     .compose-cover-preview {
       max-width: 200px; border-radius: 6px; margin-top: 8px; display: none;
     }
     .lang-tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
   </style>
   <link rel="stylesheet" href="/css/admin-header.css">
+  <!-- 与文章页（workers/sdf-admin/src/blog.js 的模板）同版本同 SRI：编辑器载入旧 Markdown 稿、保存时过滤，
+       都要和文章页渲染用同一个库，否则「看到的」和「发布后的」可能不同 -->
+  <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.4.16/dist/purify.min.js" integrity="sha384-a7SzOxErzJ3ZpQz0zJ32d67dSitNzPcbfybc/ykU9KJhMgZkwqfSxlhhdJRS+XGL" crossorigin="anonymous"></script>
 
 
   <!-- head-meta:start（npm run meta 生成，勿手改） -->
@@ -158,22 +178,18 @@
 
   <div class="blog-toolbar">
     <button type="button" class="btn-save" onclick="startNewPost()">+ 写新文章</button>
+    <!-- 自动保存的草稿（含已发布过的那一份）。发布后又下架的文章，从这里接着改 -->
+    <button type="button" class="btn-link" onclick="restoreDraft()" title="载入最近一次自动保存的稿子">载入上次的稿子</button>
+    <span id="blog-deploy-status" class="status"></span>
   </div>
   <div id="blog-list"></div>
 
   <div id="blog-compose" hidden>
     <div class="compose-row">
-      <label class="compose-label">标签</label>
-      <select id="compose-tag-select" class="compose-input" onchange="onTagSelect()" title="文章分类">
-        <option value="ai_hardware">AI 与硬件</option>
-        <option value="research">市场调研</option>
-        <option value="product">产品开发</option>
-        <option value="news">公司动态</option>
-        <option value="tech">技术笔记</option>
-        <option value="__custom">其他（自由输入，不翻译）</option>
-      </select>
-      <input type="text" id="compose-tag" class="compose-input" placeholder="自定义分类（三语页面都原样显示）"
-        oninput="onComposeInput()" hidden>
+      <label class="compose-label" for="compose-tag">标签（可留空）</label>
+      <!-- 2026-10-22 作者要求：不设下拉，手工输入或留白。三语页面都原样显示这几个字（不翻译）。 -->
+      <input type="text" id="compose-tag" class="compose-input" maxlength="40"
+        placeholder="例如：思考、产品、公司动态……留空则文章页只显示日期" oninput="onComposeInput()">
     </div>
     <div class="compose-row">
       <label class="compose-label">封面图（可选）</label>
@@ -185,15 +201,12 @@
       <input type="text" id="compose-title-zh" class="compose-input" oninput="onComposeInput()">
     </div>
     <div class="compose-row">
-      <label class="compose-label">正文（中文，Markdown）</label>
-      <div class="compose-toolbar">
-        <button type="button" onclick="wrapSelection('**','**')">B 加粗</button>
-        <button type="button" onclick="insertLinePrefix('## ')">H 小标题</button>
-        <button type="button" onclick="insertLinePrefix('- ')">• 列表</button>
-        <button type="button" onclick="insertImage()">🖼 插图</button>
-      </div>
+      <label class="compose-label">正文（中文）</label>
+      <div class="compose-toolbar" id="toolbar-zh"></div>
       <input type="file" id="compose-inline-image-file" accept="image/*" style="display:none" onchange="handleInlineImageFile(this.files[0])">
-      <textarea id="compose-body-zh" class="compose-textarea" rows="14" oninput="onComposeInput()"></textarea>
+      <!-- 编辑区就是发布后的样子：同一份样式、同一组字体、同一套过滤（见 admin/blog/frame.html） -->
+      <iframe id="ed-zh" class="ed-frame" src="/admin/blog/frame.html" title="中文正文编辑区"></iframe>
+      <div class="compose-hint">选中文字后点工具栏改字体・字号・颜色。粘贴进来的内容按纯文本处理（格式用工具栏加）。</div>
     </div>
     <div class="compose-row">
       <button type="button" class="btn-sync" id="compose-sync-btn" onclick="syncBlogTranslate()">✨ 一键同步日英</button>
@@ -209,7 +222,9 @@
     </div>
     <div class="compose-row">
       <label class="compose-label" id="other-lang-body-label">正文（日本語）</label>
-      <textarea id="compose-body-other" class="compose-textarea" rows="14" oninput="onComposeInput()"></textarea>
+      <div class="compose-toolbar" id="toolbar-other"></div>
+      <iframe id="ed-ja" class="ed-frame" src="/admin/blog/frame.html" title="日文正文编辑区"></iframe>
+      <iframe id="ed-en" class="ed-frame" src="/admin/blog/frame.html" title="英文正文编辑区" hidden></iframe>
     </div>
     <div class="compose-row">
       <button type="button" class="btn-save" onclick="publishPost()">发布</button>
@@ -284,18 +299,10 @@ function editPost(slug) {
 }
 
 function renderCompose() {
-  // 标签：已登记的分类走下拉（存 key，前台按语言取文案）；
-  // 不认识的值落到「其他」，原样保存、三语页面原样显示。
-  const tagSel = document.getElementById('compose-tag-select');
-  const tagInput = document.getElementById('compose-tag');
-  const known = Array.from(tagSel.options).some(
-    (o) => o.value === composeState.tag && o.value !== '__custom',
-  );
-  tagSel.value = known ? composeState.tag : '__custom';
-  tagInput.hidden = known;
-  tagInput.value = known ? '' : composeState.tag || '';
+  // 标签：自由输入、可留空（2026-10-22 起不再有下拉）。旧文章存的分类 key（如 ai_hardware）原样显示在框里，
+  // 前台仍按 js/shared/blog-tags.js 翻成三语；新写的文字三语页面原样显示。
+  document.getElementById('compose-tag').value = composeState.tag || '';
   document.getElementById('compose-title-zh').value = composeState.title.zh;
-  document.getElementById('compose-body-zh').value = composeState.body.zh;
   const preview = document.getElementById('compose-cover-preview');
   if (composeState.cover) {
     preview.src = composeState.cover.startsWith('data:') ? composeState.cover : '/' + composeState.cover;
@@ -304,6 +311,8 @@ function renderCompose() {
     preview.style.display = 'none';
   }
   renderOtherLangFields();
+  // 正文写进三个编辑区（旧的 Markdown 稿在这里自动转成带格式的内容）
+  for (const l of ['zh', 'ja', 'en']) window.sdfBlogEd.setBody(l, composeState.body[l]);
 }
 
 function renderOtherLangFields() {
@@ -311,7 +320,8 @@ function renderOtherLangFields() {
   document.getElementById('other-lang-title-label').textContent = `标题（${langLabel}）`;
   document.getElementById('other-lang-body-label').textContent = `正文（${langLabel}）`;
   document.getElementById('compose-title-other').value = composeState.title[composeOtherLang];
-  document.getElementById('compose-body-other').value = composeState.body[composeOtherLang];
+  document.getElementById('ed-ja').hidden = composeOtherLang !== 'ja';
+  document.getElementById('ed-en').hidden = composeOtherLang !== 'en';
   document.querySelectorAll('.lang-tabs .page-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.otherLang === composeOtherLang);
   });
@@ -322,27 +332,20 @@ function switchComposeOtherLang(lang) {
   renderOtherLangFields();
 }
 
-// 标签取值：下拉选中「其他」时用自由输入框的值，否则用下拉的 key。
-function currentTagValue() {
-  const sel = document.getElementById('compose-tag-select');
-  if (!sel) return '';
-  return sel.value === '__custom' ? document.getElementById('compose-tag').value : sel.value;
-}
-
-function onTagSelect() {
-  const sel = document.getElementById('compose-tag-select');
-  document.getElementById('compose-tag').hidden = sel.value !== '__custom';
-  onComposeInput();
-}
-
-// 任意撰写字段变化时，把当前 DOM 值同步进 composeState，并安排一次草稿自动保存。
+// 标签・标题变化时同步进 composeState，并安排一次草稿自动保存。
+// 正文不在这里读：编辑区有变化时由编辑器回调 onBodyChange 单独写回（见下方 module），
+// 免得编辑区还没载入完时把正文读成空、覆盖掉稿子。
 function onComposeInput() {
   if (!composeState) return;
-  composeState.tag = currentTagValue();
+  composeState.tag = document.getElementById('compose-tag').value.trim();
   composeState.title.zh = document.getElementById('compose-title-zh').value;
-  composeState.body.zh = document.getElementById('compose-body-zh').value;
   composeState.title[composeOtherLang] = document.getElementById('compose-title-other').value;
-  composeState.body[composeOtherLang] = document.getElementById('compose-body-other').value;
+  scheduleDraftSave();
+}
+
+function onBodyChange(lang) {
+  if (!composeState) return;
+  composeState.body[lang] = window.sdfBlogEd.getBody(lang);
   scheduleDraftSave();
 }
 
@@ -355,24 +358,6 @@ function cancelCompose() {
 function scheduleDraftSave() {
   clearTimeout(draftSaveTimer);
   draftSaveTimer = setTimeout(() => saveDraft(), 2000);
-}
-
-/* ── Markdown 工具栏 ── */
-function wrapSelection(before, after) {
-  const ta = document.getElementById('compose-body-zh');
-  const { selectionStart: s, selectionEnd: e, value } = ta;
-  ta.value = value.slice(0, s) + before + value.slice(s, e) + after + value.slice(e);
-  ta.focus();
-  onComposeInput();
-}
-
-function insertLinePrefix(prefix) {
-  const ta = document.getElementById('compose-body-zh');
-  const { selectionStart: s, value } = ta;
-  const lineStart = value.lastIndexOf('\n', s - 1) + 1;
-  ta.value = value.slice(0, lineStart) + prefix + value.slice(lineStart);
-  ta.focus();
-  onComposeInput();
 }
 
 const MAX_IMAGE_BYTES = 1_000_000;
@@ -432,17 +417,13 @@ function handleCoverFile(file) {
   );
 }
 
-/* ── 正文插图：选完立即压缩并上传（方案A），成功后把 markdown 图片语法插入光标位置 ── */
-function insertImage() {
-  document.getElementById('compose-inline-image-file').click();
-}
-
-function insertAtCursor(text) {
-  const ta = document.getElementById('compose-body-zh');
-  const { selectionStart: s, selectionEnd: e, value } = ta;
-  ta.value = value.slice(0, s) + text + value.slice(e);
-  ta.focus();
-  onComposeInput();
+/* ── 正文插图：选完立即压缩并上传（方案A），成功后插进点「插图」时所在那个语言的编辑区光标处 ── */
+let imageTargetLang = 'zh';
+function insertImage(lang) {
+  imageTargetLang = lang || 'zh';
+  const input = document.getElementById('compose-inline-image-file');
+  input.value = ''; // 同一张图连插两次也要触发 change
+  input.click();
 }
 
 function handleInlineImageFile(file) {
@@ -450,7 +431,7 @@ function handleInlineImageFile(file) {
   compressImageToWebp(
     file,
     MAX_IMAGE_BYTES,
-    (dataUrl) => window.uploadInlineImage(dataUrl),
+    (dataUrl) => window.uploadInlineImage(dataUrl, imageTargetLang),
     (message) => alert(message),
   );
 }
@@ -465,8 +446,29 @@ import { onAuthStateChanged, signInWithEmailAndPassword, signOut }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import { doc, setDoc, getDoc, serverTimestamp }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import * as ed from '/admin/blog/editor.js?v=b08ba0e80b';
 
 initErrorReporting({ db });
+
+// 所见即所得编辑器：中文一个、日英各一个（同一时间只显示其一），各自一条工具栏
+window.sdfBlogEd = ed;
+ed.init(
+  {
+    zh: document.getElementById('ed-zh'),
+    ja: document.getElementById('ed-ja'),
+    en: document.getElementById('ed-en'),
+  },
+  (lang) => onBodyChange(lang),
+);
+ed.buildToolbar(document.getElementById('toolbar-zh'), () => 'zh', { onImage: insertImage });
+ed.buildToolbar(document.getElementById('toolbar-other'), () => composeOtherLang, {
+  onImage: insertImage,
+});
+
+/** 发布 / 翻译前把三个编辑区的正文读回 composeState（以编辑区为准）。 */
+function readBodies() {
+  for (const l of ['zh', 'ja', 'en']) composeState.body[l] = ed.getBody(l);
+}
 
 // 保存通道：站长自己 CF 账号下的 sdf-admin Worker（服务端持有 GitHub 令牌）
 const WORKER_URL = 'https://sdf-admin.sherlockafa.workers.dev';
@@ -509,7 +511,11 @@ async function waitForDeploy(commitSha, statusEl) {
     console.warn('镜像状态查询全程失败，最后一次错误：', r.lastError);
     return;
   }
-  statusEl.textContent = '已保存；上线状态未确认，稍后可直接查看网站';
+  // 等满了还没同步：多半是上线前的自动检查没通过（2026-10-21 就是这样：发布成功、前台一直空白）。
+  // 检查没过时 GitHub 会开 issue 并发邮件给作者。
+  statusEl.className = 'status warn';
+  statusEl.textContent =
+    '已保存，但几分钟内没有上线。可能是上线前的自动检查没通过——请看 GitHub 发来的邮件，或稍后刷新网站确认';
 }
 
 window.loadBlogPosts = async function () {
@@ -544,24 +550,47 @@ window.saveDraft = async function () {
   }
 };
 
+// 「载入上次的稿子」：不管有没有发布过，都把最近一次自动保存的稿子拿出来接着改。
+// 为什么（2026-10-22）：发布后又下架的文章，草稿标成了「已发布」，checkDraft 不再提示，
+// 后台也就找不回原文（只剩 git 历史）。
+window.restoreDraft = async function () {
+  try {
+    const snap = await getDoc(doc(db, 'blog_drafts', 'current'));
+    if (!snap.exists()) {
+      alert('没有找到保存过的稿子');
+      return;
+    }
+    const d = snap.data();
+    const t = (d.title && d.title.zh) || '（无标题）';
+    if (composeState && !confirm(`载入「${t}」会替换正在编辑的内容，继续吗？`)) return;
+    fillFromDraft(d);
+  } catch (err) {
+    alert('读取稿子失败：' + err.message);
+  }
+};
+
+function fillFromDraft(d) {
+  composeState = {
+    slug: d.slug || null,
+    tag: d.tag || '',
+    date: d.date || new Date().toISOString().slice(0, 10),
+    cover: null,
+    coverChanged: false,
+    title: { zh: '', ja: '', en: '', ...(d.title || {}) },
+    body: { zh: '', ja: '', en: '', ...(d.body || {}) },
+  };
+  composeOtherLang = 'ja';
+  renderCompose();
+  document.getElementById('blog-compose').hidden = false;
+}
+
 window.checkDraft = async function () {
   try {
     const snap = await getDoc(doc(db, 'blog_drafts', 'current'));
     if (!snap.exists() || snap.data().published !== false) return;
     const d = snap.data();
     if (!confirm('检测到未发布的草稿，是否恢复？')) return;
-    composeState = {
-      slug: d.slug || null,
-      tag: d.tag || '',
-      date: d.date || new Date().toISOString().slice(0, 10),
-      cover: null,
-      coverChanged: false,
-      title: d.title || { zh: '', ja: '', en: '' },
-      body: d.body || { zh: '', ja: '', en: '' },
-    };
-    composeOtherLang = 'ja';
-    renderCompose();
-    document.getElementById('blog-compose').hidden = false;
+    fillFromDraft(d);
   } catch (err) {
     // 不阻塞正常使用，但要留痕：读不到草稿和“本来就没草稿”在界面上无法区分。
     console.warn('草稿读取失败：', err);
@@ -570,10 +599,18 @@ window.checkDraft = async function () {
 
 window.syncBlogTranslate = async function () {
   onComposeInput();
+  readBodies();
   const btn = document.getElementById('compose-sync-btn');
   const statusEl = document.getElementById('compose-sync-status');
+  if (!composeState.body.zh) {
+    statusEl.className = 'status err';
+    statusEl.textContent = '中文正文是空的';
+    return;
+  }
   btn.disabled = true;
-  btn.textContent = '同步中…';
+  btn.textContent = '同步中…（长文约 1 分钟）';
+  statusEl.className = 'status';
+  statusEl.textContent = '';
   try {
     const result = await api('POST', '/translate', {
       fields: [
@@ -582,20 +619,38 @@ window.syncBlogTranslate = async function () {
       ],
     });
     if (result.ja?.title) composeState.title.ja = result.ja.title;
-    if (result.ja?.body) composeState.body.ja = result.ja.body;
     if (result.en?.title) composeState.title.en = result.en.title;
-    if (result.en?.body) composeState.body.en = result.en.body;
+    const got = { ja: result.ja?.body || '', en: result.en?.body || '' };
+    for (const l of ['ja', 'en']) {
+      if (!got[l]) continue;
+      await ed.setBody(l, got[l]);
+      composeState.body[l] = ed.getBody(l);
+    }
     renderOtherLangFields();
-    statusEl.textContent = '✓ 已同步';
+    // 译文的格式标签和中文对不上＝模型动了格式：说出来，让作者对照检查（不悄悄发布）
+    const missing = ['ja', 'en'].filter((l) => !got[l]);
+    const off = ed.formatMismatch(composeState.body.zh, composeState.body);
+    const name = { ja: '日文', en: '英文' };
+    if (missing.length) {
+      statusEl.className = 'status err';
+      statusEl.textContent = `${missing.map((l) => name[l]).join('、')}没有译出来，可重试`;
+    } else if (off.length) {
+      statusEl.className = 'status warn';
+      statusEl.textContent = `✓ 已同步；但${off.map((l) => name[l]).join('、')}的格式（字体・颜色・标题等）和中文不完全一致，请对照检查`;
+    } else {
+      statusEl.className = 'status ok';
+      statusEl.textContent = '✓ 已同步（格式与中文一致）';
+    }
     scheduleDraftSave();
   } catch (e) {
+    statusEl.className = 'status err';
     statusEl.textContent = '同步失败：' + e.message;
   }
   btn.disabled = false;
   btn.textContent = '✨ 一键同步日英';
 };
 
-window.uploadInlineImage = async function (dataUrl) {
+window.uploadInlineImage = async function (dataUrl, lang = 'zh') {
   const statusEl = document.getElementById('compose-sync-status');
   statusEl.className = 'status';
   statusEl.textContent = '图片上传中…';
@@ -609,15 +664,22 @@ window.uploadInlineImage = async function (dataUrl) {
   }
   // 上传已经成功，插入光标这步理论上不会失败；即使真的抛错，也不该报成"上传失败"
   // 误导用户重传——上传和插入是两个独立的失败域，分开处理。
-  window.insertAtCursor(`![图片](/${path})`);
+  ed.insertImage(lang, path);
   statusEl.textContent = '✓ 图片已插入';
 };
 
 window.publishPost = async function () {
   onComposeInput();
+  readBodies();
   const statusEl = document.getElementById('compose-publish-status');
   statusEl.className = 'status';
   statusEl.textContent = '发布中…';
+  const empty = ['zh', 'ja', 'en'].filter((l) => !composeState.title[l].trim() || !composeState.body[l]);
+  if (empty.length) {
+    statusEl.className = 'status err';
+    statusEl.textContent = `✗ ${empty.join('・')} 的标题或正文是空的（可先点「一键同步日英」）`;
+    return;
+  }
   const payload = {
     tag: composeState.tag,
     date: composeState.date,
@@ -627,16 +689,19 @@ window.publishPost = async function () {
   if (composeState.slug) payload.slug = composeState.slug;
   if (composeState.coverChanged && composeState.cover) payload.cover = composeState.cover;
   try {
-    const { commitSha } = await api('POST', '/blog/publish', payload);
+    const { commitSha, slug } = await api('POST', '/blog/publish', payload);
+    // 记下 slug：之后「载入上次的稿子」再发布时更新的是同一篇，而不是多出一篇
     await setDoc(
       doc(db, 'blog_drafts', 'current'),
-      { published: true, updatedAt: serverTimestamp() },
+      { published: true, slug, updatedAt: serverTimestamp() },
       { merge: true },
     );
     composeState = null;
     document.getElementById('blog-compose').hidden = true;
     await loadBlogPosts();
-    waitForDeploy(commitSha, statusEl);
+    // 编辑面板已收起，上线进度显示在列表上方（原来写在面板里，发布后就看不见了）
+    statusEl.textContent = '';
+    waitForDeploy(commitSha, document.getElementById('blog-deploy-status'));
   } catch (e) {
     statusEl.className = 'status err';
     statusEl.textContent = '✗ 发布失败：' + e.message;

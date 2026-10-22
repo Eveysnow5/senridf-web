@@ -49,6 +49,7 @@ const PAGES = {
 
   'admin/index.html': 'admin',
   'admin/blog/index.html': 'admin',
+  'admin/blog/frame.html': 'iframe', // Blog 编辑区（被 admin/blog/index.html 内嵌，无逻辑、无数据）
   'admin/macro.html': 'admin',
   'admin/macro-dashboard.html': 'iframe', // 被 admin/macro.html 内嵌；只显示公开宏观数据
   // 自动化结账の入口。⚠️ 意図的に**財務数字を一切載せない**静的説明ページ。
@@ -68,6 +69,13 @@ const PAGES = {
   //    只对管理员显示「真题演练」入口。它在 /solutions/demo/ 下、被 noindex 覆盖。
   'solutions/demo/japanese_learner.html': 'special-tool',
 };
+
+// ── 后台发布的 blog 文章（2026-10-22）──────────────────────────────────────
+// solutions/blog/<slug>.html 由 sdf-admin Worker 生成，篇数随发布变化，不可能逐篇手写进上表。
+// 判据改成**对应关系**：posts.json 里登记的每篇＝public；目录里有、posts.json 没有的＝孤儿（红）。
+// 以前没有这条，Worker 新写的文章页被当成「未声明的孤儿」，上线检查拦下、文章永远上不了线（10-21）。
+const POSTS = JSON.parse(readFileSync(path.join(ROOT, 'solutions/blog/posts.json'), 'utf8'));
+for (const p of POSTS) PAGES[`solutions/blog/${p.slug}.html`] = 'public';
 
 const PUBLIC_CLASSES = new Set(['public']);
 
@@ -103,6 +111,23 @@ test('★ 每个 served 页都在暴露面清单里（新孤儿会红）', () =>
     [],
     `这些页没在 tests/exposure-surface.test.mjs 的 PAGES 里声明分类：\n${missing.join('\n')}\n` +
       '每加一个对外页，都要在这里声明它的暴露级别（顺带想清楚它该不该被公网访问）。',
+  );
+});
+
+test('★ blog 文章页与 posts.json 一一对应（目录里多出的＝孤儿，posts.json 里多出的＝死链）', () => {
+  const files = servedHtml().filter(
+    (f) => f.startsWith('solutions/blog/') && f !== 'solutions/blog/index.html',
+  );
+  const listed = new Set(POSTS.map((p) => `solutions/blog/${p.slug}.html`));
+  assert.deepEqual(
+    files.filter((f) => !listed.has(f)),
+    [],
+    '这些文章页不在 posts.json 里（后台下架没删干净？）',
+  );
+  assert.deepEqual(
+    [...listed].filter((f) => !files.includes(f)),
+    [],
+    'posts.json 里登记了、但文章页文件不存在',
   );
 });
 

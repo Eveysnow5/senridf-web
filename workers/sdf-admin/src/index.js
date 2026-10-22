@@ -9,7 +9,8 @@ import { isAdmin } from '../../../js/shared/admins.js';
 import { allowedOrigin, validateContentPayload } from './validate.js';
 import { CONTENT_API_VERSION, saveContentChanges } from './content-save.js';
 import { createRateLimiter } from './rateLimit.js';
-import { getFile, putFile, deleteFile } from './github.js';
+import { getFile, putFile, commitFiles } from './github.js';
+import { readFingerprints } from '../../../scripts/qa/cache-bust-core.mjs';
 import {
   validateTranslateFields,
   buildTranslatePrompt,
@@ -21,6 +22,11 @@ import {
   upsertPost,
   removePost,
   renderArticleHtml,
+  addToSitemap,
+  removeFromSitemap,
+  ARTICLE_ASSETS,
+  LISTING_PATH,
+  SITEMAP_PATH,
 } from './blog.js';
 import {
   validateImageKey,
@@ -32,6 +38,8 @@ import {
 const REPO = 'sherlockafa007/senridoufuu-web';
 const CONTENT_PATH = 'content.json';
 const POSTS_PATH = 'solutions/blog/posts.json';
+// slug 会拼进文件路径：只接受 generateSlug 产出的形状（日期-4位十六进制），防止 ../ 之类写到别处
+const SLUG_RE = /^\d{4}-\d{2}-\d{2}-[0-9a-f]{4}$/;
 
 const isLimited = createRateLimiter({ limit: 30 });
 
@@ -185,7 +193,9 @@ export default {
             // 免费额度按模型分桶，换模型只改那一处。
             model: modelFor('adminTranslate', env),
             messages: [{ role: 'user', content: buildTranslatePrompt(body.fields) }],
-            max_tokens: 4000,
+            // 2026-10-22：4000 → 8000。一篇 1750 字的中文博客，日英译文合计就接近 4000 token，
+            // 正文改成 HTML（带格式标签）后必然截断，截断的 JSON 解析失败＝「返回格式异常」。
+            max_tokens: 8000,
             // Qwen3 在 DashScope 上默认开混合思考。本调用只读 message.content，
             // 推理内容被直接丢弃——花钱买了扔掉，还慢好几倍。
             // 2026-08-25：六个 Pages Functions 端点关掉了，但**爬虫和 Worker 漏了**，
@@ -219,55 +229,54 @@ export default {
         const check = validatePublishPayload(body);
         if (!check.ok) return json(400, { error: check.error }, cors);
 
-        const slug = body.slug || generateSlug(body.date);
-        const { text: postsText } = await getFile(REPO, POSTS_PATH, env.GITHUB_TOKEN);
-        const posts = postsText ? JSON.parse(postsText) : [];
-        const existing = posts.find((p) => p.slug === slug);
-
-        let coverPath = existing ? existing.cover : null;
-        if (body.cover) {
-          coverPath = `assets/images/blog/${slug}-cover.webp`;
-          const base64Data = body.cover.replace(/^data:image\/\w+;base64,/, '');
-          await putFile(
-            REPO,
-            coverPath,
-            base64Data,
-            'blog: publish cover image',
-            env.GITHUB_TOKEN,
-            { alreadyBase64: true },
-          );
+        if (body.slug !== undefined && !SLUG_RE.test(body.slug)) {
+          return json(400, { error: 'slug 格式错误' }, cors);
         }
+        const slug = body.slug || generateSlug(body.date);
+        const tag = typeof body.tag === 'string' ? body.tag.trim() : '';
+        const coverUpload = body.cover ? body.cover.replace(/^data:image\/\w+;base64,/, '') : null;
 
-        const html = renderArticleHtml({
-          slug,
-          date: body.date,
-          tag: body.tag,
-          title: body.title,
-          body: body.body,
-          cover: coverPath,
-        });
-        await putFile(
+        // 封面・文章页・posts.json・sitemap **一次提交**（见 github.js commitFiles）。
+        // 每次尝试都重读 posts.json / sitemap / 列表页指纹：期间有人推了别的提交时基于最新内容重算。
+        const { commitSha } = await commitFiles(
           REPO,
-          `solutions/blog/${slug}.html`,
-          html,
-          'blog: publish article',
-          env.GITHUB_TOKEN,
-        );
+          async () => {
+            const [{ text: postsText }, { text: listing }, { text: sitemap }] = await Promise.all([
+              getFile(REPO, POSTS_PATH, env.GITHUB_TOKEN),
+              getFile(REPO, LISTING_PATH, env.GITHUB_TOKEN),
+              getFile(REPO, SITEMAP_PATH, env.GITHUB_TOKEN),
+            ]);
+            const posts = postsText ? JSON.parse(postsText) : [];
+            const existing = posts.find((p) => p.slug === slug);
+            const want = readFingerprints(listing || '', ARTICLE_ASSETS);
+            const lacking = ARTICLE_ASSETS.filter((a) => !want[a]);
+            // 读不到指纹就停：写出没有 ?v= 的页面只会被上线检查拦下，作者看到的是「发布成功但前台空白」
+            if (lacking.length) throw new Error(`读不到资源指纹（${lacking.join('、')}），未发布`);
+            if (!sitemap) throw new Error('读不到 sitemap.xml，未发布');
 
-        const entry = {
-          slug,
-          date: body.date,
-          tag: body.tag,
-          title: body.title,
-          body: body.body,
-          cover: coverPath,
-        };
-        const updated = upsertPost(posts, entry);
-        const { commitSha } = await putFile(
-          REPO,
-          POSTS_PATH,
-          JSON.stringify(updated, null, 2) + '\n',
-          'blog: update posts.json',
+            const coverPath = coverUpload
+              ? `assets/images/blog/${slug}-cover.webp`
+              : (existing && existing.cover) || null;
+            const entry = {
+              slug,
+              date: body.date,
+              tag,
+              title: body.title,
+              body: body.body,
+              cover: coverPath,
+            };
+            const changes = [
+              {
+                path: `solutions/blog/${slug}.html`,
+                text: renderArticleHtml(entry, want),
+              },
+              { path: POSTS_PATH, text: JSON.stringify(upsertPost(posts, entry), null, 2) + '\n' },
+              { path: SITEMAP_PATH, text: addToSitemap(sitemap, slug, body.date) },
+            ];
+            if (coverUpload) changes.push({ path: coverPath, base64: coverUpload });
+            return changes;
+          },
+          `blog: publish ${slug}`,
           env.GITHUB_TOKEN,
         );
 
@@ -281,25 +290,31 @@ export default {
         } catch {
           return json(400, { error: '请求格式错误' }, cors);
         }
-        if (!body.slug || typeof body.slug !== 'string') {
-          return json(400, { error: '缺少 slug' }, cors);
+        if (typeof body.slug !== 'string' || !SLUG_RE.test(body.slug)) {
+          return json(400, { error: '缺少 slug 或格式错误' }, cors);
         }
+        const slug = body.slug;
+        const articlePath = `solutions/blog/${slug}.html`;
 
-        await deleteFile(
+        // 文章页・posts.json・sitemap 一次提交（封面图留着：之后重新发布还能用）
+        const { commitSha } = await commitFiles(
           REPO,
-          `solutions/blog/${body.slug}.html`,
-          'blog: unpublish article',
-          env.GITHUB_TOKEN,
-        );
-
-        const { text } = await getFile(REPO, POSTS_PATH, env.GITHUB_TOKEN);
-        const posts = text ? JSON.parse(text) : [];
-        const updated = removePost(posts, body.slug);
-        const { commitSha } = await putFile(
-          REPO,
-          POSTS_PATH,
-          JSON.stringify(updated, null, 2) + '\n',
-          'blog: remove from posts.json',
+          async () => {
+            const [{ text }, { text: sitemap }, { sha: articleSha }] = await Promise.all([
+              getFile(REPO, POSTS_PATH, env.GITHUB_TOKEN),
+              getFile(REPO, SITEMAP_PATH, env.GITHUB_TOKEN),
+              getFile(REPO, articlePath, env.GITHUB_TOKEN),
+            ]);
+            const posts = text ? JSON.parse(text) : [];
+            const changes = [
+              { path: POSTS_PATH, text: JSON.stringify(removePost(posts, slug), null, 2) + '\n' },
+            ];
+            if (sitemap)
+              changes.push({ path: SITEMAP_PATH, text: removeFromSitemap(sitemap, slug) });
+            if (articleSha) changes.push({ path: articlePath, delete: true });
+            return changes;
+          },
+          `blog: unpublish ${slug}`,
           env.GITHUB_TOKEN,
         );
 
