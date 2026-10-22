@@ -1,0 +1,9 @@
+{
+  "name": "firestore-backup",
+  "version": "1.0.0",
+  "description": "Weekly Firestore export to the private docs repo (counts only in logs); restore.js restores one collection",
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}
