@@ -18,7 +18,9 @@ import { visitDocId } from './track-visit-id.js';
 // 6个月，配合 Firestore TTL 策略（expireAt 字段）自动清理过期记录。
 const RETENTION_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 
-export function trackVisit({ db, email, anonId, page, device }) {
+// refSource：从哪个外站来（page-name.js 的 visitSource）。null 时不写这个字段，merge 才不会抹掉当天早先记下的来源。
+// 字段名特意不叫 source：leads 里的 source 是「从哪个页面提交的」，同名不同义会混。
+export function trackVisit({ db, email, anonId, page, device, refSource = null }) {
   const identity = email || anonId || 'unknown';
   const docId = visitDocId(identity, page);
   setDoc(
@@ -30,6 +32,7 @@ export function trackVisit({ db, email, anonId, page, device }) {
       device,
       timestamp: serverTimestamp(),
       expireAt: Timestamp.fromMillis(Date.now() + RETENTION_MS),
+      ...(refSource ? { refSource } : {}),
     },
     { merge: true },
   ).catch((err) => console.warn('[visits] 写入失败，这次访问不会出现在后台统计里：', err));

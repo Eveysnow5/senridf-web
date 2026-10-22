@@ -145,14 +145,27 @@ async function main() {
       [pg, a.people.size, Math.round((100 * a.mobile) / rows) + '%', med, short].join(' | '),
     );
   }
+  // 来源（2026-10-22 起才记录 refSource，之前的记录都算「直接/未知」）
+  const bySrc = {};
+  for (const v of ext) {
+    const k = v.refSource || '(直接/未知)';
+    const a = (bySrc[k] = bySrc[k] || { people: new Set(), pages: {} });
+    a.people.add(who(v));
+    a.pages[v.page] = (a.pages[v.page] || 0) + 1;
+  }
+  console.log('来源 | 匿名访客 | 落在哪些页面');
+  for (const [k, a] of Object.entries(bySrc).sort((x, y) => y[1].people.size - x[1].people.size)) {
+    console.log([k, a.people.size, JSON.stringify(a.pages)].join(' | '));
+  }
   const depth = {};
   for (const p of people.values()) depth[p.pages.size] = (depth[p.pages.size] || 0) + 1;
   console.log('每人看过几类页面 → 人数', JSON.stringify(depth));
   console.log(
-    '看过 solutions 的人里也看过 contact 的',
-    [...people.values()].filter((p) => p.pages.has('solutions') && p.pages.has('contact')).length,
+    '看过受発注 LP 的人里也看过 contact 的',
+    [...people.values()].filter((p) => p.pages.has('order-to-ledger') && p.pages.has('contact'))
+      .length,
     '/',
-    [...people.values()].filter((p) => p.pages.has('solutions')).length,
+    [...people.values()].filter((p) => p.pages.has('order-to-ledger')).length,
   );
 }
 
