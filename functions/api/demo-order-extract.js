@@ -96,8 +96,11 @@ async function extractOne({ endpoint, apiKey, env, text, idToken, context }) {
     }),
   });
   if (!res.ok) {
-    const err = await res.text().catch(() => '');
-    throw new Error('AI: ' + err);
+    const detail = await res.text().catch(() => '');
+    const err = new Error('AI: ' + detail);
+    err.upstreamStatus = res.status;
+    err.upstreamDetail = detail.slice(0, 160);
+    throw err;
   }
   const dataR = await res.json();
   recordUsage({
@@ -261,7 +264,18 @@ export async function onRequest(context) {
     }),
   );
   const perFile = settled.filter((r) => r.status === 'fulfilled').map((r) => r.value);
-  if (!perFile.length) return json(502, { error: 'unavailable' });
+  // 全滅＝AI 側が断った（キーの無料枠切れ・停止・モデル廃止など）。2026-10-23 まではここで 502 を
+  // 返していたが、本番では Cloudflare の HTML の 502 ページしか届かず、AI が**なぜ**断ったのかが
+  // 誰にも見えなかった（同日、本番の整形が 0.9 秒で 502 になるのを確認）。5xx 以外の 424 で返し、
+  // AI 側の状態コードと短い理由を載せる。キーそのものは含まれない（相手の返答の先頭だけ）。
+  if (!perFile.length) {
+    const why = settled.find((r) => r.status === 'rejected')?.reason;
+    return json(424, {
+      error: 'ai_upstream',
+      upstreamStatus: why?.upstreamStatus ?? null,
+      upstreamDetail: String(why?.upstreamDetail ?? why?.message ?? '').slice(0, 160),
+    });
+  }
 
   const merged = mergeRows(perFile);
   // 自動チェック（書式に依存しない検算）。結果はコードだけ、文言は画面側。

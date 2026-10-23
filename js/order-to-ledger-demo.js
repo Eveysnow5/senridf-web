@@ -514,6 +514,14 @@
       .then(function (r) {
         extractBtn.disabled = false;
         if (!r.ok) {
+          // AI 側が断った理由（状態コード・先頭の文）は画面には出さず、調査用にコンソールへ残す
+          if (r.body && r.body.error === 'ai_upstream') {
+            console.warn(
+              '[order-to-ledger] AI 側のエラー:',
+              r.body.upstreamStatus,
+              r.body.upstreamDetail,
+            );
+          }
           showAiStatus(aiStatusKeyFor(r.status, r.body && r.body.error));
           return;
         }
