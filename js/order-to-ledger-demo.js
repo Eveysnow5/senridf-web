@@ -32,6 +32,15 @@
 
   var lastFiles = []; // [{name, text} | {name, image, needsVision:true}]
   var lastMerged = null;
+  var checksEl = document.getElementById('o2lChecks');
+  // 要約の「小計／合計」は翻訳済みの語を引数で埋めているので、data-i18n の再翻訳では変わらない。
+  // 言語切替（main.js が <html lang> を書き換える）を見て要約だけ描き直す。
+  // renderChecks は sdfSetText しか使わない（applyTranslations を呼ばない）ので、ここから再帰はしない。
+  if (checksEl && typeof MutationObserver === 'function') {
+    new MutationObserver(function () {
+      if (lastMerged && lastMerged.checks) renderChecks(lastMerged.rows, lastMerged.checks);
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+  }
 
   if (typeof pdfjsLib !== 'undefined') {
     pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -126,10 +135,21 @@
     return text.trim();
   }
 
+  // cMapUrl：フォントを埋め込まない日本語 PDF（UniJIS-UTF16-H 等の定義済みエンコーディング）は、
+  // pdf.js が別途エンコーディング表を読まないと文字を復元できない。無いと**エラーを出さずに字が落ちる**：
+  // TKC の残高試算表は 0 字になり「スキャン画像」と誤判定されていた（2026-10-23、本番ページで確認）。
+  // closing.html の PDF_OPTS と同じ設定。cdnjs には cmaps が無い（403）ので jsDelivr の同じ版を読む。
+  // isEvalSupported:false は CVE-2024-4367 の緩和。
+  var PDF_OPTS = {
+    isEvalSupported: false,
+    cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+    cMapPacked: true,
+  };
+
   function parsePdfText(buf) {
     if (typeof pdfjsLib === 'undefined') return Promise.reject(new Error('pdf.js'));
     return pdfjsLib
-      .getDocument({ data: buf.slice(0), isEvalSupported: false })
+      .getDocument(Object.assign({ data: buf.slice(0) }, PDF_OPTS))
       .promise.then(function (pdf) {
         var n = Math.min(pdf.numPages, MAX_PDF_PAGES);
         var out = [];
@@ -169,7 +189,7 @@
   // スキャンPDF：先頭ページを画像(dataURL)に。OCR は視覚モデル側。
   function pdfFirstPageToImage(buf) {
     return pdfjsLib
-      .getDocument({ data: buf.slice(0), isEvalSupported: false })
+      .getDocument(Object.assign({ data: buf.slice(0) }, PDF_OPTS))
       .promise.then(function (pdf) {
         return pdf.getPage(1);
       })
@@ -371,6 +391,10 @@
   function resetAi() {
     if (ledgerEl) ledgerEl.hidden = true;
     lastMerged = null;
+    if (checksEl) {
+      checksEl.innerHTML = '';
+      checksEl.hidden = true;
+    }
     showAiStatus(null);
     if (extractBtn) extractBtn.disabled = false;
   }
@@ -392,14 +416,35 @@
     return 'error';
   }
 
-  function renderMerged(columns, rows) {
+  // checks：サーバの自動チェック結果（functions/api/_lib/ledgerChecks.js）。
+  //   rows[i] ＝ i 行目の問題コード配列、files ＝ ファイルごとの合計照合。
+  // 問題のある行は色を付け、末尾の「確認」列に理由を出す。文言は data-i18n（言語切替に追従）。
+  function rowIssues(checks, i) {
+    return (checks && checks.rows && checks.rows[i]) || [];
+  }
+
+  function renderMerged(columns, rows, checks) {
+    // 「確認」列は画面では先頭に置く（表は横に長く、末尾だと横スクロールしないと見えない）。
+    // ダウンロードする Excel では末尾（台帳の列順を崩さない）。
     var html = '<table class="o2l-table"><thead><tr>';
+    if (checks) html += '<th data-i18n="o2l_chk_col"></th>';
     columns.forEach(function (c) {
       html += '<th>' + escapeHtml(c) + '</th>';
     });
     html += '</tr></thead><tbody>';
-    rows.slice(0, MAX_ROWS_SHOWN).forEach(function (row) {
-      html += '<tr>';
+    rows.slice(0, MAX_ROWS_SHOWN).forEach(function (row, i) {
+      var issues = rowIssues(checks, i);
+      html += issues.length ? '<tr class="o2l-row--warn">' : '<tr>';
+      if (checks) {
+        html +=
+          '<td class="o2l-chk-cell">' +
+          issues
+            .map(function (code) {
+              return '<span data-i18n="o2l_chk_' + escapeHtml(code) + '"></span>';
+            })
+            .join('<br>') +
+          '</td>';
+      }
       columns.forEach(function (c) {
         html += '<td>' + escapeHtml(row[c] != null ? String(row[c]) : '') + '</td>';
       });
@@ -407,6 +452,47 @@
     });
     html += '</tbody></table>';
     ledgerWrap.innerHTML = html;
+    renderChecks(rows, checks);
+    if (typeof window.sdfApplyI18n === 'function') window.sdfApplyI18n();
+  }
+
+  // 表の上の要約：要確認の行数 ＋ ファイルごとの合計照合。照合していないものは「していない」と書く。
+  function renderChecks(rows, checks) {
+    if (!checksEl) return;
+    checksEl.innerHTML = '';
+    if (!checks) {
+      checksEl.hidden = true;
+      return;
+    }
+    var bad = (checks.rows || []).filter(function (c) {
+      return c && c.length;
+    }).length;
+    var yen = function (v) {
+      return Number(v).toLocaleString('ja-JP');
+    };
+    var lines = [];
+    lines.push(
+      bad
+        ? { key: 'o2l_chk_rows_ng', arg: { bad: bad }, warn: true }
+        : { key: 'o2l_chk_rows_ok', arg: { n: rows.length } },
+    );
+    (checks.files || []).forEach(function (f) {
+      var basis = f.basis && window.sdfT ? window.sdfT('o2l_chk_basis_' + f.basis) : '';
+      var arg = { file: f.file, sum: yen(f.sum), printed: yen(f.printed), basis: basis };
+      if (f.status === 'ok') lines.push({ key: 'o2l_chk_total_ok', arg: arg });
+      else if (f.status === 'mismatch')
+        lines.push({ key: 'o2l_chk_total_ng', arg: arg, warn: true });
+      else if (f.status === 'no_total') lines.push({ key: 'o2l_chk_total_none', arg: arg });
+      else if (f.status === 'partial') lines.push({ key: 'o2l_chk_total_partial', arg: arg });
+      // no_amount（金額の無い注文書）は照合の対象外なので何も書かない
+    });
+    lines.forEach(function (l) {
+      var p = document.createElement('p');
+      p.className = l.warn ? 'o2l-checks__line o2l-checks__line--warn' : 'o2l-checks__line';
+      if (typeof window.sdfSetText === 'function') window.sdfSetText(p, l.key, l.arg);
+      checksEl.appendChild(p);
+    });
+    checksEl.hidden = false;
   }
 
   function sendItems(items, truncated) {
@@ -440,8 +526,9 @@
           showAiStatus(visionPending ? 'vision_pending' : 'error');
           return;
         }
-        lastMerged = { columns: columns, rows: rows };
-        renderMerged(columns, rows);
+        var checks = (r.body && r.body.checks) || null;
+        lastMerged = { columns: columns, rows: rows, checks: checks };
+        renderMerged(columns, rows, checks);
         if (ledgerEl) ledgerEl.hidden = false;
         showAiStatus(visionPending ? 'vision_pending' : truncated ? 'toobig' : null);
       })
@@ -493,13 +580,28 @@
     ledgerDownloadBtn.addEventListener('click', function () {
       if (!lastMerged) return;
       var cols = lastMerged.columns;
-      var aoa = [cols.slice()];
-      lastMerged.rows.forEach(function (row) {
-        aoa.push(
-          cols.map(function (c) {
-            return row[c] != null ? row[c] : '';
-          }),
-        );
+      var checks = lastMerged.checks;
+      var t =
+        window.sdfT ||
+        function (k) {
+          return k;
+        };
+      // 自動チェックの結果も「確認」列として残す（列名は他の列と同じく日本語固定、理由は画面の言語）
+      var aoa = [checks ? cols.concat(['確認']) : cols.slice()];
+      lastMerged.rows.forEach(function (row, i) {
+        var line = cols.map(function (c) {
+          return row[c] != null ? row[c] : '';
+        });
+        if (checks) {
+          line.push(
+            rowIssues(checks, i)
+              .map(function (code) {
+                return t('o2l_chk_' + code);
+              })
+              .join(' / '),
+          );
+        }
+        aoa.push(line);
       });
       var ws = XLSX.utils.aoa_to_sheet(aoa);
       var wb = XLSX.utils.book_new();

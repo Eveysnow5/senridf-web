@@ -531,7 +531,7 @@
   </main>
 
   <div id="footer-placeholder"></div>
-  <script src="js/main.js?v=dcfe95cd3c"></script>
+  <script src="js/main.js?v=8df1fbbc2b"></script>
 
   <!-- PDF.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e" crossorigin="anonymous"></script>
@@ -672,6 +672,15 @@
       if (lines.length) showError(lines.join('\n'));
     }
 
+    // cMapUrl：字体不嵌入的日文 PDF（UniJIS-UTF16-H 等预定义编码）要另读编码表才能解出文字，
+    // 不给时**不报错、只是少字**（TKC 残高試算表 0 字→1,160 字）。与 closing.html、受発注页同一设置；
+    // cdnjs 没有 cmaps（403），从 jsDelivr 的同一版本读。isEvalSupported:false 缓解 CVE-2024-4367。
+    const PDF_OPTS = {
+      isEvalSupported: false,
+      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+      cMapPacked: true,
+    };
+
     async function extractText(file, ext, store) {
       const buf = await file.arrayBuffer();
       if (ext === 'pdf')  return extractPDF(buf, store);
@@ -686,7 +695,7 @@
     async function extractPDF(buf, store) {
       if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js not loaded');
       // pdf.js 会消费掉传入的 buffer，后面渲染要用，先留一份副本
-      const pdf = await pdfjsLib.getDocument({ data: buf.slice(0), isEvalSupported: false }).promise;
+      const pdf = await pdfjsLib.getDocument({ data: buf.slice(0), ...PDF_OPTS }).promise;
       const pageTexts = [];
       for (let i = 1; i <= pdf.numPages; i++) {
         const page    = await pdf.getPage(i);
@@ -736,7 +745,7 @@
     // 5 份，后两份被挤掉。所以多轮的调用方只在"本轮还一页都没渲染出来"时才给 true——
     // 保住"不静默变空"的原意，同时让全局预算重新成为硬约束。
     async function renderPagesToImages(buf, rankedPages, byteBudget, forceFirst = true) {
-      const pdf = await pdfjsLib.getDocument({ data: buf.slice(0), isEvalSupported: false }).promise;
+      const pdf = await pdfjsLib.getDocument({ data: buf.slice(0), ...PDF_OPTS }).promise;
       const out = [];
       let used = 0;
       // rankedPages 是**优先级顺序**（稀有词覆盖在前）。预算不够时从后往前丢，

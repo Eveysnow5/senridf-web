@@ -75,6 +75,11 @@
     .o2l-table { border-collapse: collapse; width: 100%; font-size: 13px; }
     .o2l-table td { border: 1px solid #ece9e3; padding: 6px 10px; white-space: nowrap; color: #3a3a3a; }
     .o2l-table tr:nth-child(odd) td { background: #faf9f6; }
+    .o2l-table tr.o2l-row--warn td { background: #fdf1e6; }
+    .o2l-chk-cell { color: #9a4a1c; font-size: 12px; white-space: normal; min-width: 160px; }
+    .o2l-checks { margin: 0 0 10px; padding: 10px 14px; background: #f6f4ef; border-radius: 6px; }
+    .o2l-checks__line { margin: 2px 0; font-size: 13px; color: #3a3a3a; }
+    .o2l-checks__line--warn { color: #9a4a1c; font-weight: 600; }
     .o2l-result__note { margin-top: 12px; font-size: 12px; color: #9a9a9a; }
     .o2l-filelist { margin-top: 4px; }
     .o2l-files { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
@@ -383,6 +388,8 @@
                 受注台帳をExcelでダウンロード
               </button>
             </div>
+            <!-- 自動チェックの要約（functions/api/_lib/ledgerChecks.js の結果。文言は js/main.js の o2l_chk_*）-->
+            <div id="o2lChecks" class="o2l-checks" aria-live="polite" hidden></div>
             <div id="o2lLedgerWrap" class="o2l-tablewrap"></div>
           </div>
 
@@ -579,7 +586,7 @@
     crossorigin="anonymous"
   ></script>
 
-  <script src="js/main.js?v=dcfe95cd3c"></script>
+  <script src="js/main.js?v=8df1fbbc2b"></script>
   <script type="module" src="js/tracking.js?v=8ed70b0d06"></script>
 
   <!-- デモ送信用トークン：会員（既定 app にログイン済み）ならその ID トークン、
@@ -603,6 +610,6 @@
   <!-- ?v= は内容指纹（npm run bust が自動で書く。tests/cache-bust が更新漏れを検出）。
        JS は 4 時間ブラウザにキャッシュされるため、指纹が変わらないと古い JS を掴む。 -->
   <script src="js/lead-form.js?v=79f82c44f2"></script>
-  <script src="js/order-to-ledger-demo.js?v=d423d98571"></script>
+  <script src="js/order-to-ledger-demo.js?v=6e843c64fd"></script>
 </body>
 </html>
