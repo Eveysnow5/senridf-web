@@ -111,7 +111,9 @@ async function main() {
     credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
   });
   const db = admin.firestore();
-  const { CHAT_ENDPOINT, modelFor } = await loadModelConfig();
+  const { chatRoute } = await loadModelConfig();
+  // 硅基流动キー（SILICONFLOW_API_KEY）があればそちら、無ければ DashScope（models.js の chatRoute）
+  const route = chatRoute('aiIntel', process.env);
   const usage = emptyUsage();
 
   let rebuilt = 0;
@@ -142,9 +144,9 @@ async function main() {
 
     try {
       const res = await axios.post(
-        CHAT_ENDPOINT,
+        route.endpoint,
         {
-          model: modelFor('aiIntel', process.env),
+          model: route.model,
           messages: [{ role: 'user', content: buildDigestPrompt(items, week) }],
           max_tokens: 2000,
           // 见 index.js 里同一段说明：推理内容会被丢弃，开着只是慢和费钱。
@@ -152,7 +154,7 @@ async function main() {
         },
         {
           headers: {
-            Authorization: `Bearer ${process.env.QWEN_API_KEY}`,
+            Authorization: `Bearer ${route.apiKey}`,
             'Content-Type': 'application/json',
           },
           timeout: DIGEST_TIMEOUT_MS,

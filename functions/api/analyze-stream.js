@@ -1,7 +1,7 @@
 // Cloudflare Pages Function — streaming proxy for DashScope analysis
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
 import { recordUsage } from './_lib/usageRecorder.js';
-import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
+import { chatRoute } from './_lib/models.js';
 import { selectRelevantPassages } from '../../js/shared/select-relevant-passages.js';
 import { selectKbEntries, renderKbBlock } from '../../js/shared/kb-select.js';
 import { KB_ENTRIES } from '../../js/shared/kb/accounting-cn.js';
@@ -26,9 +26,10 @@ export async function onRequest(context) {
     });
   }
 
-  const apiKey = env.QWEN_API_KEY;
+  const route = chatRoute('analyze', env);
+  const apiKey = route.apiKey;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'QWEN_API_KEY not configured.' }), {
+    return new Response(JSON.stringify({ error: 'AI API key not configured.' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -228,14 +229,14 @@ ${buildRoundTail(round, maxRounds)}`;
   }
 
   try {
-    const upstream = await fetchWithTimeout(CHAT_ENDPOINT, {
+    const upstream = await fetchWithTimeout(route.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: modelFor('analyze', env),
+        model: route.model,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userContent },

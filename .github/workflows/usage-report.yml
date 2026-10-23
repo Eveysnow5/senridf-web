@@ -1,6 +1,6 @@
 name: LLM usage report
 
-# 手动触发：打印最近 N 天的大模型调用量（按天、按端点），用来估算付费后的每日成本。
+# 手动触发：打印最近 N 天的大模型调用量（按天、按端点）、CSP 违规、访客统计（只有计数）。
 # 详见 scripts/usage-report/index.js。
 
 on:

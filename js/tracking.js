@@ -11,6 +11,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js';
 import { createVisitDuration } from '/js/shared/visit-duration.js';
+import { pageName, visitSource } from '/js/shared/page-name.js';
 
 const app = initializeApp(
   {
@@ -51,20 +52,6 @@ window.sdfSubmitLead = async (lead) => {
   });
 };
 
-function getPageName() {
-  const p = location.pathname;
-  if (p.includes('japanese_learner')) return 'japanese_learner';
-  if (p.includes('analysis')) return 'analysis';
-  if (p.includes('lifestory')) return 'lifestory';
-  if (p.includes('translation')) return 'translation';
-  if (p.includes('/solutions/demo')) return 'demo-index';
-  if (p.includes('/solutions')) return 'solutions';
-  if (p.includes('/about')) return 'about';
-  if (p.includes('/blog')) return 'blog';
-  if (p.includes('/contact')) return 'contact';
-  return 'home';
-}
-
 function getAnonId() {
   let id = localStorage.getItem('sdf_anon_id');
   if (!id) {
@@ -85,7 +72,8 @@ async function track() {
       db,
       email,
       anonId: getAnonId(),
-      page: getPageName(),
+      page: pageName(location.pathname),
+      refSource: visitSource(document.referrer, location.search, location.hostname),
       device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
     });
   } catch (err) {

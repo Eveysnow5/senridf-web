@@ -1,5 +1,5 @@
 // 受発注デモの画像OCR：スキャン/画像ファイルを視覚モデルに送って読み取り＋構造化する。
-// 送り先は models.js の demoProvider（専用鍵ありなら SiliconFlow の Gemma 4）。
+// 送り先は models.js の demoProvider（硅基流动キーがあれば SiliconFlow 海外站、モデルは DEMO_PROVIDER）。
 // 専用鍵が無い間は demo-order-extract.js が画像を「準備中」として外すので、ここは呼ばれない。
 //
 // ⚠️⚠️ プライバシー上の重要な違い：

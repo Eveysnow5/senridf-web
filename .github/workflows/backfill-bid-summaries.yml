@@ -38,6 +38,7 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
           LIMIT: ${{ inputs.limit }}
           APPLY: ${{ inputs.apply }}
         run: |

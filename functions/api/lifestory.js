@@ -2,18 +2,19 @@
 import { buildProbePrompt, parseProbeJson } from './_lib/lifestory-probe.js';
 import { normalizeLang, langSpec, langDirective } from './_lib/lifestory-lang.js';
 import { recordUsage } from './_lib/usageRecorder.js';
-import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
+import { chatRoute } from './_lib/models.js';
 
-async function qwen(apiKey, system, user, maxTokens = 800, temp = 0.7, onUsage) {
-  const res = await fetch(CHAT_ENDPOINT, {
+// route＝chatRoute('lifestory', env)（送り先・キー・モデル）。以前はここで env を受け取れず、
+// モデルの env 上書きも効かなかった。
+async function qwen(route, system, user, maxTokens = 800, temp = 0.7, onUsage) {
+  const res = await fetch(route.endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${route.apiKey}`,
     },
     body: JSON.stringify({
-      // No env override here: this helper is module-level and never receives env.
-      model: modelFor('lifestory'),
+      model: route.model,
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: user },
@@ -90,8 +91,8 @@ export async function onRequest(context) {
       waitUntil: context.waitUntil?.bind(context),
     });
 
-  const apiKey = env.QWEN_API_KEY;
-  if (!apiKey) {
+  const route = chatRoute('lifestory', env);
+  if (!route.apiKey) {
     return new Response(JSON.stringify({ error: '未配置 API Key' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -122,7 +123,7 @@ export async function onRequest(context) {
         });
       }
       const raw = await qwen(
-        apiKey,
+        route,
         '你是访谈分析与追问系统，严格按用户消息的要求只输出 JSON。',
         buildProbePrompt(question, answer, recentHistory, knownTags, lang),
         500,
@@ -142,7 +143,7 @@ export async function onRequest(context) {
         });
       }
       const bridge = await qwen(
-        apiKey,
+        route,
         bridgeSys(lang),
         `用户刚才的回答：\n${lastAnswer}\n\n即将提出的下一个问题：\n${nextQuestion}\n\n请输出衔接语：`,
         100,
@@ -170,7 +171,7 @@ export async function onRequest(context) {
         )
         .join('\n\n');
       const story = await qwen(
-        apiKey,
+        route,
         storySys(lang),
         `以下是受访者亲口说出的所有信息。请严格基于这些内容撰写，禁止添加任何未提及的细节。标记为 [用户选择不分享] 的部分保持空白。\n\n${qaText}`,
         3000,

@@ -83,7 +83,7 @@ test('② 共有鍵だけ → DashScope ＋ Qwen 表示 ＋ TIERS のモデル',
   assert.equal(modelFor('demoExtract', env), TIERS.fast);
 });
 
-test('② DEMO_API_KEY だけ入れれば SiliconFlow 国際站 ＋ Gemma（端点/モデルの env 不要）', () => {
+test('② DEMO_API_KEY だけ入れれば SiliconFlow 国際站 ＋ DEMO_PROVIDER のモデル（端点/モデルの env 不要）', () => {
   const env = { QWEN_API_KEY: 'q', DEMO_API_KEY: 'sf' };
   const r = demoProvider(env);
   assert.equal(r.apiKey, 'sf');

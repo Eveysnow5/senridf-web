@@ -917,6 +917,59 @@ main { padding-top: var(--nav-h); }
   margin-bottom: 0;
 }
 
+/* === BLOG 文章正文（2026-10-22）===
+   后台编辑器（admin/blog/frame.html）也加载这份 main.css、编辑区用同一个 class，
+   所以「编辑时看到的＝发布后的」。改这里两边一起变。默认字号 16px＝js/shared/blog-content.js 的「标准」。
+   编辑器里加的字体・字号・颜色写在正文的 style 属性里，优先于这里。 */
+.section.blog-post { padding-top: 48px; }
+.blog-post__cover {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto 40px;
+  border-radius: 4px;
+}
+.blog-post__body {
+  max-width: 760px;
+  margin: 0 auto;
+  font-family: var(--f-sans);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 2;
+  color: var(--c-text);
+  overflow-wrap: anywhere;
+}
+.blog-post__body > * + * { margin-top: 1.2em; }
+.blog-post__body h2 {
+  font-family: var(--f-serif);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1.5;
+  margin-top: 2.2em;
+}
+.blog-post__body h3 { font-size: 20px; font-weight: 500; line-height: 1.6; margin-top: 1.8em; }
+.blog-post__body h4 { font-size: 17px; font-weight: 500; }
+.blog-post__body strong,
+.blog-post__body b { font-weight: 700; }
+.blog-post__body em,
+.blog-post__body i { font-style: italic; }
+.blog-post__body a { color: var(--c-accent-mid); text-decoration: underline; }
+.blog-post__body ul { list-style: disc; padding-left: 1.6em; }
+.blog-post__body ol { list-style: decimal; padding-left: 1.6em; }
+.blog-post__body li + li { margin-top: 0.4em; }
+.blog-post__body blockquote {
+  border-left: 3px solid var(--c-border);
+  padding-left: 1em;
+  color: var(--c-text-2);
+}
+.blog-post__body img { margin: 1.6em auto; border-radius: 4px; }
+.blog-post__body hr { border: 0; border-top: 1px solid var(--c-border); }
+.blog-post__body pre,
+.blog-post__body code { font-family: var(--f-mono); font-size: 0.875em; }
+.blog-post__body pre { background: var(--c-bg-alt); padding: 1em; overflow-x: auto; }
+@media (max-width: 768px) {
+  .section.blog-post { padding-top: 24px; }
+}
+
 /* === BLOG === */
 .blog-list {
   margin-top: 72px;

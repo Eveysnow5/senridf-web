@@ -16,6 +16,7 @@ import { demoProvider, modelFor } from './_lib/models.js';
 import { checkInputSize, quotaDecision, limitsFor, DEMO_LIMITS } from './_lib/demoQuota.js';
 import { bumpDemoCounters } from './_lib/demoCounters.js';
 import { buildDemoOrderPrompt, LEDGER_COLUMNS } from './_lib/buildDemoOrderPrompt.js';
+import { checkLedger } from './_lib/ledgerChecks.js';
 import { visionExtract, MAX_IMAGE_CHARS } from './_lib/demoVision.js';
 import { normalizeJa } from './_lib/normalizeJa.js';
 
@@ -57,7 +58,30 @@ export function parseLedger(content) {
   return [];
 }
 
-// 1 ファイル分のテキストを LLM で構造化して行配列にする。
+// 注文書に印字された小計・消費税・合計（AI が写した文字列）。無い・壊れている → null。
+// parseLedger と同じ剥がし方で JSON を取り出す。行の取り出しとは独立に失敗してよい（照合しないだけ）。
+const TOTAL_KEYS = ['小計', '消費税', '合計'];
+export function parseTotals(content) {
+  if (typeof content !== 'string') return null;
+  let s = content.trim();
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) s = fence[1].trim();
+  const first = s.indexOf('{');
+  const last = s.lastIndexOf('}');
+  if (first === -1 || last <= first) return null;
+  try {
+    const t = JSON.parse(s.slice(first, last + 1)).totals;
+    if (!t || typeof t !== 'object') return null;
+    const out = {};
+    for (const k of TOTAL_KEYS)
+      out[k] = t[k] == null ? '' : normalizeJa(String(t[k])).trim().slice(0, 40);
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+// 1 ファイル分のテキストを LLM で構造化して、モデルの返答（文字列）を返す。行と合計は呼び出し側で取り出す。
 async function extractOne({ endpoint, apiKey, env, text, idToken, context }) {
   const res = await fetchWithTimeout(endpoint, {
     method: 'POST',
@@ -72,8 +96,11 @@ async function extractOne({ endpoint, apiKey, env, text, idToken, context }) {
     }),
   });
   if (!res.ok) {
-    const err = await res.text().catch(() => '');
-    throw new Error('AI: ' + err);
+    const detail = await res.text().catch(() => '');
+    const err = new Error('AI: ' + detail);
+    err.upstreamStatus = res.status;
+    err.upstreamDetail = detail.slice(0, 160);
+    throw err;
   }
   const dataR = await res.json();
   recordUsage({
@@ -82,7 +109,7 @@ async function extractOne({ endpoint, apiKey, env, text, idToken, context }) {
     idToken,
     waitUntil: context.waitUntil?.bind(context),
   });
-  return parseLedger(dataR.choices?.[0]?.message?.content ?? '');
+  return dataR.choices?.[0]?.message?.content ?? '';
 }
 
 // 複数ファイルの行を 1 枚に合并。列は「ファイル」＋固定の LEDGER_COLUMNS。
@@ -219,6 +246,7 @@ export async function onRequest(context) {
         return visionExtract({ env, dataUrl: it.image, idToken, context }).then((content) => ({
           name: it.name,
           rows: parseLedger(content),
+          totals: parseTotals(content),
         }));
       }
       return extractOne({
@@ -228,16 +256,37 @@ export async function onRequest(context) {
         text: it.text.slice(0, lim.maxChars),
         idToken,
         context,
-      }).then((rows) => ({ name: it.name, rows }));
+      }).then((content) => ({
+        name: it.name,
+        rows: parseLedger(content),
+        totals: parseTotals(content),
+      }));
     }),
   );
   const perFile = settled.filter((r) => r.status === 'fulfilled').map((r) => r.value);
-  if (!perFile.length) return json(502, { error: 'unavailable' });
+  // 全滅＝AI 側が断った（キーの無料枠切れ・停止・モデル廃止など）。2026-10-23 まではここで 502 を
+  // 返していたが、本番では Cloudflare の HTML の 502 ページしか届かず、AI が**なぜ**断ったのかが
+  // 誰にも見えなかった（同日、本番の整形が 0.9 秒で 502 になるのを確認）。5xx 以外の 424 で返し、
+  // AI 側の状態コードと短い理由を載せる。キーそのものは含まれない（相手の返答の先頭だけ）。
+  if (!perFile.length) {
+    const why = settled.find((r) => r.status === 'rejected')?.reason;
+    return json(424, {
+      error: 'ai_upstream',
+      upstreamStatus: why?.upstreamStatus ?? null,
+      upstreamDetail: String(why?.upstreamDetail ?? why?.message ?? '').slice(0, 160),
+    });
+  }
 
   const merged = mergeRows(perFile);
+  // 自動チェック（書式に依存しない検算）。結果はコードだけ、文言は画面側。
+  const checks = checkLedger(
+    merged.rows,
+    Object.fromEntries(perFile.map((f) => [f.name, f.totals])),
+  );
   return json(200, {
     columns: merged.columns,
     rows: merged.rows,
+    checks,
     ai: aiRoute.label,
     files: perFile.length,
     failed: servedItems.length - perFile.length,

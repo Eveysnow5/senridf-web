@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog 编辑区</title>
+  <!-- Blog 后台的所见即所得编辑区，被 admin/blog/index.html 以 iframe 内嵌（每种语言一个）。2026-10-22
+       为什么单独一页：编辑区必须和文章页处在**同一个样式环境**——同一份 css/main.css（.blog-post__body）、
+       同一组字体（与 js/shared/blog-content.js 的 FONT_CSS_URL 一字不差，tests/blog-article.test.mjs 校验）。
+       放进后台页面本身的话，后台自己的样式会混进来，「编辑时看到的」就不再等于「发布后的」。
+       本页没有逻辑：编辑命令、粘贴处理、保存都由父页面（admin/blog/editor.js）通过 contentDocument 操作。 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&family=Noto+Serif+SC:wght@400;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css?v=32595707f0">
+  <style>
+    body { padding: 28px 24px 96px; }
+    .blog-post__body { min-height: 360px; outline: none; }
+    .blog-post__body:empty::before { content: attr(data-placeholder); color: var(--c-text-3); }
+  </style>
+  <!-- head-meta:start（npm run meta 生成，勿手改） -->
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <!-- head-meta:end -->
+</head>
+<body>
+  <div id="ed" class="blog-post__body" contenteditable="true"></div>
+</body>
+</html>

@@ -3,7 +3,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { CHAT_ENDPOINT, modelFor, TIERS, TASK_TIER } from '../functions/api/_lib/models.js';
+import {
+  CHAT_ENDPOINT,
+  SF_ENDPOINT,
+  SF_TIERS,
+  DEMO_PROVIDER,
+  chatRoute,
+  demoProvider,
+  modelFor,
+  TIERS,
+  TASK_TIER,
+} from '../functions/api/_lib/models.js';
 
 const TASKS = [
   'translate',
@@ -110,18 +120,18 @@ test('生产代码里没有任何硬编码的 qwen 模型 id', () => {
   assert.deepEqual(offenders, [], `这些文件仍在硬编码 model：${offenders.join(', ')}`);
 });
 
-// 集中化之后调用方里已经不再出现供应商域名，所以不能拿域名当筛选条件——
-// 那样条件永远不成立，测试会空转通过。改成以 CHAT_ENDPOINT 的使用者为准，
-// 并断言这个集合非空，避免“没有文件匹配 => 通过”。
-test('每个调用大模型的地方都同时用了 CHAT_ENDPOINT 和 modelFor', () => {
-  const callers = sourcesUnderScan().filter(({ src }) => src.includes('CHAT_ENDPOINT'));
-  const missing = callers.filter(({ src }) => !src.includes('modelFor(')).map(({ label }) => label);
-  assert.ok(callers.length >= 9, `只找到 ${callers.length} 个调用方，断言可能已失效`);
-  assert.deepEqual(
-    missing,
-    [],
-    `这些地方用了 CHAT_ENDPOINT 但没用 modelFor：${missing.join(', ')}`,
-  );
+// 2026-10-23 起调用方一律经 chatRoute 取「送り先・キー・モデル」（硅基流动への段階移行）。
+// 直接读 CHAT_ENDPOINT 或 QWEN_API_KEY 的调用方会绕过切换——有密钥也不会换过去。
+// 以 chatRoute 的使用者为准并断言集合大小，避免「没有文件匹配 => 通过」。
+test('每个调用大模型的地方都经 chatRoute，没有直接读端点或 QWEN_API_KEY', () => {
+  const sources = sourcesUnderScan();
+  const callers = sources.filter(({ src }) => src.includes('chatRoute('));
+  assert.ok(callers.length >= 10, `只找到 ${callers.length} 个调用方，断言可能已失效`);
+  const bypass = sources
+    .filter(({ label }) => !label.endsWith('/_lib/models.js'))
+    .filter(({ src }) => /\bCHAT_ENDPOINT\b|env\.QWEN_API_KEY/.test(src))
+    .map(({ label }) => label);
+  assert.deepEqual(bypass, [], `这些地方绕过了 chatRoute：${bypass.join(', ')}`);
 });
 
 // 供应商迁移（百炼 → 硅基流动）时，URL 必须只有一处需要改。
@@ -162,4 +172,63 @@ test('两个爬虫任务都归在 batch 档（保留独立分配的能力）', (
 
 test('后台批量翻译留在最强档（产出会直接发布到线上）', () => {
   assert.equal(TASK_TIER.adminTranslate, 'strong');
+});
+
+// ── 硅基流动への段階移行（2026-10-23）──
+// 期待値は手書き：キーのある場所だけ切り替わる・無い場所は従来どおり。
+
+test('chatRoute：SILICONFLOW_API_KEY があれば海外站＋SF_TIERS、キーもそれを使う', () => {
+  const r = chatRoute('translate', { SILICONFLOW_API_KEY: 'sf', QWEN_API_KEY: 'qw' });
+  assert.deepEqual(r, {
+    provider: 'siliconflow',
+    endpoint: 'https://api.siliconflow.com/v1/chat/completions',
+    apiKey: 'sf',
+    model: 'Qwen/Qwen3.8-27B',
+  });
+  assert.equal(
+    chatRoute('translateStream', { SILICONFLOW_API_KEY: 'sf' }).model,
+    'Qwen/Qwen3.6-35B-A3B',
+  );
+});
+
+test('chatRoute：無ければ従来どおり DashScope＋QWEN_API_KEY＋TIERS', () => {
+  const r = chatRoute('summary', { QWEN_API_KEY: 'qw' });
+  assert.equal(r.provider, 'dashscope');
+  assert.equal(r.endpoint, CHAT_ENDPOINT);
+  assert.equal(r.apiKey, 'qw');
+  assert.equal(r.model, TIERS.balanced);
+  assert.equal(
+    chatRoute('summary', undefined).apiKey,
+    '',
+    'env 無し → 空キー（呼び出し側が「未設定」を返す）',
+  );
+});
+
+test('chatRoute：モデルの env 上書きはどちらの経路でも優先', () => {
+  assert.equal(
+    chatRoute('summary', { SILICONFLOW_API_KEY: 'sf', QWEN_MODEL_SUMMARY: 'x' }).model,
+    'x',
+  );
+  assert.equal(chatRoute('summary', { QWEN_MODEL_SUMMARY: 'y' }).model, 'y');
+  assert.throws(() => chatRoute('nope', {}), /Unknown model task/);
+});
+
+test('SF_TIERS は全档位に値があり、送り先は SF_ENDPOINT（海外站）', () => {
+  for (const tier of Object.keys(TIERS)) assert.ok(SF_TIERS[tier], `SF_TIERS.${tier} が無い`);
+  assert.equal(SF_ENDPOINT, 'https://api.siliconflow.com/v1/chat/completions');
+});
+
+test('受発注デモ：専用キーが無くても硅基流动キーがあれば同じ海外站・同じモデルで送る', () => {
+  const p = demoProvider({ SILICONFLOW_API_KEY: 'sf', QWEN_API_KEY: 'qw' });
+  assert.equal(p.dedicated, true);
+  assert.equal(p.apiKey, 'sf');
+  assert.equal(p.endpoint, DEMO_PROVIDER.endpoint);
+  assert.equal(p.label, DEMO_PROVIDER.label);
+  assert.equal(modelFor('demoExtract', { SILICONFLOW_API_KEY: 'sf' }), DEMO_PROVIDER.model);
+  // 専用キーが優先
+  assert.equal(demoProvider({ DEMO_API_KEY: 'd', SILICONFLOW_API_KEY: 'sf' }).apiKey, 'd');
+  // どちらも無ければ従来の共有キー（DashScope）
+  const q = demoProvider({ QWEN_API_KEY: 'qw' });
+  assert.equal(q.dedicated, false);
+  assert.equal(q.endpoint, CHAT_ENDPOINT);
 });

@@ -56,17 +56,12 @@ test('博客列表按当前语言渲染分类，而不是直接吐原始值', ()
   assert.doesNotMatch(BLOG, /blog-item__tag">\$\{escapeHtmlList\(p\.tag\)\}/);
 });
 
-test('后台下拉的每个 key 都在映射表里（选了却渲染不出来最难查）', () => {
-  const opts = [...ADMIN.matchAll(/<option value="([^"]+)"/g)]
-    .map((m) => m[1])
-    .filter((v) => v !== '__custom');
-  assert.ok(opts.length >= 3, `只解析出 ${opts.length} 个选项，护栏可能失效`);
-  for (const v of opts) assert.ok(BLOG_TAGS[v], `后台有选项 ${v}，但映射表里没有`);
-});
-
-test('后台保留了自定义输入的回退路径', () => {
-  assert.match(ADMIN, /__custom/);
-  assert.match(ADMIN, /function currentTagValue\(\)/);
+// 2026-10-22 作者要求：标签不设下拉，手工输入或留白。原来的「下拉 key 都在映射表里」
+// 「保留自定义输入回退」两条随下拉一起删除；映射表仍保留，给已经用 key 发布过的旧文章翻三语。
+test('后台标签是自由输入框（不是下拉），可留空', () => {
+  assert.match(ADMIN, /<input type="text" id="compose-tag"/);
+  assert.doesNotMatch(ADMIN, /id="compose-tag-select"/);
+  assert.ok(Object.keys(BLOG_TAGS).length >= 3, '旧分类的三语映射还要留着');
 });
 
 // 真实渲染里抓到的：分类曾显示成原始 key `AI_HARDWARE`。

@@ -1,0 +1,102 @@
+name: Firestore backup
+
+# 每周把 Firestore 业务数据（线索・会员・草稿・招标・情报等）导出成 JSON，推进**私有**仓库
+# sherlockafa007/senridoufuu-docs 的 backups/firestore/。详见 scripts/firestore-backup/index.js。
+#
+# 本仓库公开、日志公开：脚本只打印集合名和条数；数据只经过 runner 磁盘、直接推进私有仓库。
+# 写私有仓库用的是 DOCS_DEPLOY_KEY：只对 senridoufuu-docs 一个仓库有写权限的 Deploy Key（2026-10-22 设置）。
+# 恢复：scripts/firestore-backup/restore.js（默认演练，--apply 才写）。
+
+on:
+  schedule:
+    - cron: '0 19 * * 0' # 每周一 04:00 JST
+  workflow_dispatch:
+    inputs:
+      allow_shrink:
+        description: '确认正常的骤减集合（逗号分隔），如 leads；平时留空'
+        default: ''
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: firestore-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    if: github.repository == 'sherlockafa007/senridoufuu-web'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Checkout private backup repo
+        uses: actions/checkout@v7
+        with:
+          repository: sherlockafa007/senridoufuu-docs
+          ssh-key: ${{ secrets.DOCS_DEPLOY_KEY }}
+          path: private-docs
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        working-directory: scripts/firestore-backup
+        run: npm install
+      - name: Export
+        working-directory: scripts/firestore-backup
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          ALLOW_SHRINK: ${{ inputs.allow_shrink }}
+        run: node index.js "$GITHUB_WORKSPACE/private-docs/backups/firestore"
+      - name: Commit to private repo
+        working-directory: private-docs
+        run: |
+          git config user.name 'firestore-backup'
+          git config user.email 'firestore-backup@users.noreply.github.com'
+          git add backups/firestore
+          git commit -q -m "backup: firestore $(date -u +%F)"
+          git push -q
+          echo "已推送到私有仓库"
+
+      # 备份坏了不能悄悄过去：开 issue @作者（GitHub 会发邮件）。已有开着的就追评论。
+      - name: 失败就通知作者
+        if: failure()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const TITLE = '🔴 Firestore 备份失败';
+            const body = [
+              '@sherlockafa007 每周备份没有完成，**旧备份没有被覆盖**。',
+              '',
+              '- 看原因：[这次运行](' + context.serverUrl + '/' + context.repo.owner + '/' +
+                context.repo.repo + '/actions/runs/' + context.runId + ')',
+              '- 「条数比上次少了一半以上」：先确认是不是误删。是正常清理的话，手动运行本 workflow，' +
+                '在 allow_shrink 里填那个集合名。',
+              '- 恢复方法：scripts/firestore-backup/restore.js（默认演练）。',
+            ].join('\n');
+            const open = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'backup',
+              per_page: 20,
+            });
+            const found = open.data.find((i) => i.title === TITLE);
+            if (found) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: found.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: TITLE,
+                body,
+                labels: ['backup'],
+              });
+            }

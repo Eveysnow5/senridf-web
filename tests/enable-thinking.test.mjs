@@ -49,14 +49,17 @@ function walk(dir, acc = []) {
 const EXEMPT = new Set(['scripts/ai-intel-scraper/probe-model.js']);
 
 function llmCallers() {
-  return walk(ROOT)
-    .filter((p) => !EXEMPT.has(path.relative(ROOT, p).split(path.sep).join('/')))
-    .map((p) => ({
-      name: path.relative(ROOT, p).split(path.sep).join('/'),
-      src: readFileSync(p, 'utf8'),
-    }))
-    .filter((f) => /CHAT_ENDPOINT|chat\/completions/.test(f.src))
-    .filter((f) => /max_tokens/.test(f.src));
+  return (
+    walk(ROOT)
+      .filter((p) => !EXEMPT.has(path.relative(ROOT, p).split(path.sep).join('/')))
+      .map((p) => ({
+        name: path.relative(ROOT, p).split(path.sep).join('/'),
+        src: readFileSync(p, 'utf8'),
+      }))
+      // 2026-10-23 起调用方经 chatRoute 取送り先（硅基流动への段階移行）
+      .filter((f) => /chatRoute\(|CHAT_ENDPOINT|chat\/completions/.test(f.src))
+      .filter((f) => /max_tokens/.test(f.src))
+  );
 }
 
 const ENDPOINTS = llmCallers();
@@ -123,7 +126,8 @@ test('每个调模型的端点都显式关掉了思考模式', () => {
 // 于是正确的代码被判成不合格。**又一次"护栏只认作者当时想到的那一种形态"。**
 // 改成数花括号深度，两种写法都覆盖。
 function inSameObjectAsModel(src) {
-  const start = src.search(/\bmodel:\s*modelFor\(/);
+  // model の値は modelFor(...) か、chatRoute 経由の route.model（2026-10-23〜）
+  const start = src.search(/\bmodel:\s*(?:modelFor\(|route\.model\b)/);
   if (start < 0) return false;
   let depth = 0;
   for (let i = start; i >= 0; i--) {
