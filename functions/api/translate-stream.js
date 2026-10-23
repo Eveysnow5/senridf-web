@@ -2,7 +2,7 @@
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
 import { recordUsage } from './_lib/usageRecorder.js';
 import { buildGlossaryPrompt } from './_lib/buildGlossaryPrompt.js';
-import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
+import { chatRoute } from './_lib/models.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -14,9 +14,10 @@ export async function onRequest(context) {
     });
   }
 
-  const apiKey = env.QWEN_API_KEY;
+  const route = chatRoute('translateStream', env);
+  const apiKey = route.apiKey;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'QWEN_API_KEY not configured.' }), {
+    return new Response(JSON.stringify({ error: 'AI API key not configured.' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -77,14 +78,14 @@ export async function onRequest(context) {
       ' Detect the input language and translate to the most appropriate target language among Japanese, Simplified Chinese, and English.');
 
   try {
-    const upstream = await fetchWithTimeout(CHAT_ENDPOINT, {
+    const upstream = await fetchWithTimeout(route.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: modelFor('translateStream', env),
+        model: route.model,
         messages: [
           {
             role: 'system',

@@ -1,7 +1,7 @@
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
 import { recordUsage } from './_lib/usageRecorder.js';
 import { buildProofreadPrompt } from './_lib/buildProofreadPrompt.js';
-import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
+import { chatRoute } from './_lib/models.js';
 
 const MAX_CHARS = 20000;
 
@@ -33,15 +33,16 @@ export async function onRequest(context) {
   const refTruncated = refRaw.length > MAX_CHARS;
   const reference = refTruncated ? refRaw.slice(0, MAX_CHARS) : refRaw;
 
+  const route = chatRoute('proofread', context.env);
   try {
-    const qwenRes = await fetchWithTimeout(CHAT_ENDPOINT, {
+    const qwenRes = await fetchWithTimeout(route.endpoint, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${context.env.QWEN_API_KEY}`,
+        Authorization: `Bearer ${route.apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: modelFor('proofread', context.env),
+        model: route.model,
         messages: [{ role: 'user', content: buildProofreadPrompt(input, reference) }],
         max_tokens: 6000,
         // Qwen3 在 DashScope 上默认开启混合思考模式。开着的话模型会先生成一大段

@@ -2,7 +2,7 @@
 import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
 import { recordUsage } from './_lib/usageRecorder.js';
 import { buildGlossaryPrompt } from './_lib/buildGlossaryPrompt.js';
-import { CHAT_ENDPOINT, modelFor } from './_lib/models.js';
+import { chatRoute } from './_lib/models.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -14,9 +14,10 @@ export async function onRequest(context) {
     });
   }
 
-  const apiKey = env.QWEN_API_KEY;
+  const route = chatRoute('translate', env);
+  const apiKey = route.apiKey;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'QWEN_API_KEY not configured.' }), {
+    return new Response(JSON.stringify({ error: 'AI API key not configured.' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -72,14 +73,14 @@ ACCURACY OUTRANKS FLUENCY (信 > 达 > 雅). Much of this text comes from live s
 - You may translate an obvious mis-hearing as its most likely reading, but 【回訳】 must faithfully reflect what you actually wrote — never quietly restore it to what the speaker probably meant. 【回訳】 is the reader's only way to catch a mis-hearing, so it must expose the difference, not hide it.`;
 
   try {
-    const upstream = await fetchWithTimeout(CHAT_ENDPOINT, {
+    const upstream = await fetchWithTimeout(route.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: modelFor('translate', env),
+        model: route.model,
         messages: [
           {
             role: 'system',

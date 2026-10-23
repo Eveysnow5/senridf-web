@@ -115,11 +115,13 @@ async function translate(bid) {
 【发注元】发注单位的中文译名
 【截标】截止日期（用中文表达，如"2026年3月12日（星期三）下午2时"；若信息中确无截止日期则写"信息未提供"）`;
 
-  const { CHAT_ENDPOINT, modelFor } = await loadModelConfig();
+  const { chatRoute } = await loadModelConfig();
+  // 硅基流动キー（SILICONFLOW_API_KEY）があればそちら、無ければ DashScope（models.js の chatRoute）
+  const route = chatRoute('bidSummary', process.env);
   const res = await axios.post(
-    CHAT_ENDPOINT,
+    route.endpoint,
     {
-      model: modelFor('bidSummary', process.env),
+      model: route.model,
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 300,
       // Qwen3 在 DashScope 上默认开混合思考。本调用只读 message.content，
@@ -131,7 +133,7 @@ async function translate(bid) {
     },
     {
       headers: {
-        Authorization: `Bearer ${process.env.QWEN_API_KEY}`,
+        Authorization: `Bearer ${route.apiKey}`,
         'Content-Type': 'application/json',
       },
       timeout: 30000,

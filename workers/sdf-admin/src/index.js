@@ -4,7 +4,7 @@
 // 注意：ADMINS 名单变更后需重新 `npx wrangler deploy`（名单在部署时打包进 Worker）。
 
 import { verifyFirebaseToken } from '../../../functions/api/_lib/verifyFirebaseToken.js';
-import { CHAT_ENDPOINT, modelFor } from '../../../functions/api/_lib/models.js';
+import { chatRoute } from '../../../functions/api/_lib/models.js';
 import { isAdmin } from '../../../js/shared/admins.js';
 import { allowedOrigin, validateContentPayload } from './validate.js';
 import { CONTENT_API_VERSION, saveContentChanges } from './content-save.js';
@@ -182,17 +182,18 @@ export default {
         const check = validateTranslateFields(body.fields);
         if (!check.ok) return json(400, { error: check.error }, cors);
 
-        const qwenRes = await fetch(CHAT_ENDPOINT, {
+        const route = chatRoute('adminTranslate', env);
+        const qwenRes = await fetch(route.endpoint, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${env.QWEN_API_KEY}`,
+            Authorization: `Bearer ${route.apiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             // 内容编辑/Blog 翻译调用频率低（非实时口译场景），要的是质量，故走
             // 最强档；模型名与端点统一由 functions/api/_lib/models.js 决定，
             // 免费额度按模型分桶，换模型只改那一处。
-            model: modelFor('adminTranslate', env),
+            model: route.model,
             messages: [{ role: 'user', content: buildTranslatePrompt(body.fields) }],
             // 2026-10-22：4000 → 8000。一篇 1750 字的中文博客，日英译文合计就接近 4000 token，
             // 正文改成 HTML（带格式标签）后必然截断，截断的 JSON 解析失败＝「返回格式异常」。

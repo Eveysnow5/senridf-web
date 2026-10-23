@@ -45,6 +45,11 @@
 // written: pointing it at SiliconFlow while the colleague still holds a
 // DashScope key would 401 every web tool. Phasing would require per-surface
 // endpoint config first.
+// → 2026-10-23: DONE. Callers now go through chatRoute(), which switches per
+//   surface on the presence of SILICONFLOW_API_KEY (see the 硅基流动 section
+//   below). Items 2 and 3 above were measured that day: SF_TIERS, and
+//   enable_thinking:false is honoured (0 reasoning tokens, also when streaming).
+//   QWEN_API_KEY stays as the fallback until every surface has the new key.
 //
 // TIERS, not raw ids: each task declares the *kind* of model it needs, so the
 // intent survives both a quota shuffle and a provider swap. TASK_TIER is the
@@ -236,6 +241,58 @@ const ENV_KEY = {
   demoVision: 'DEMO_VISION_MODEL',
 };
 
+// ── 硅基流动（SiliconFlow 海外站）への段階移行（2026-10-23） ─────────────────────
+// 百炼（DashScope）の無料枠が切れ、「無料枠のみ」モードのまま全 AI 機能が 403 で止まっていた
+// （demo-smoke で確認）。作者の決定：費用は硅基流动で払う。上の「段階移行は書いたままでは無理」
+// （CHAT_ENDPOINT 共有）を解くため、**キーのある場所だけ切り替わる**ようにした：
+//   SILICONFLOW_API_KEY がある  → 海外站 + SF_TIERS
+//   無い                        → 従来どおり DashScope + QWEN_API_KEY + TIERS
+// 3 つの置き場所（Pages env＝同事 / sdf-admin の secret / GitHub secret）はそれぞれ独立に入れてよい。
+// 入れる順番がずれても、入っていない場所は今までどおり動く（＝ダウンタイムなし）。
+//
+// 海外站（api.siliconflow.com、SILICONFLOW LABS PTE. LTD.＝シンガポール法人）を選ぶ理由：
+// 客は日本の会社。受発注デモも同じ海外站（DEMO_PROVIDER）。
+//
+// モデルは 2026-10-23 に作者の海外站キーで実測して決めた：
+//   ・enable_thinking:false を受け付け、推理トークン 0（流式でも reasoning_content は出ない）
+//   ・Qwen/Qwen3.8-27B：今の DashScope の qwen3.8-27b と同系列同世代＝書式のずれが最小
+//     （跨系列は作者が否決済み、上の注記）。画像入力も可（台帳スクショの数字を正しく読んだ、3.5 秒）
+//   ・fast＝Qwen/Qwen3.6-35B-A3B：流式で初字 1.2 秒（実時間通訳用）
+//   ・除外：Qwen/Qwen3-30B-A3B-Instruct-2507（日本語訳に韓国語「준비」が混入）
+export const SF_ENDPOINT = 'https://api.siliconflow.com/v1/chat/completions';
+export const SF_TIERS = {
+  strong: 'Qwen/Qwen3.8-27B',
+  balanced: 'Qwen/Qwen3.8-27B',
+  fast: 'Qwen/Qwen3.6-35B-A3B',
+  batch: 'Qwen/Qwen3.8-27B',
+  vision: 'Qwen/Qwen3.8-27B',
+};
+
+/**
+ * タスクの送り先を 1 か所で決める：{ provider, endpoint, apiKey, model }。
+ * env は Pages の context.env / Worker の env / スクレイパーの process.env のどれでもよい。
+ * モデルの env 上書き（QWEN_MODEL_* 等）はどちらの経路でも優先する。
+ */
+export function chatRoute(task, env) {
+  const tier = TASK_TIER[task];
+  if (!tier) throw new Error(`Unknown model task: ${task}`);
+  const override = env?.[ENV_KEY[task]];
+  if (env?.SILICONFLOW_API_KEY) {
+    return {
+      provider: 'siliconflow',
+      endpoint: SF_ENDPOINT,
+      apiKey: env.SILICONFLOW_API_KEY,
+      model: override || SF_TIERS[tier],
+    };
+  }
+  return {
+    provider: 'dashscope',
+    endpoint: CHAT_ENDPOINT,
+    apiKey: env?.QWEN_API_KEY || '',
+    model: modelFor(task, env),
+  };
+}
+
 // ── 受発注デモ専用プロバイダ（2026-10-06）────────────────────────────────────
 // 専用鍵 DEMO_API_KEY（予充值）があるときは、デモだけ SiliconFlow 国際站
 // （運営 SILICONFLOW LABS PTE. LTD.＝シンガポール法人）の Google Gemma 4 で回す。
@@ -253,12 +310,19 @@ const ENV_KEY = {
 //    VISION_READY=false で閉じている。visionModel を変えたら正解表を通してから開けること。
 // ⚠️ SiliconFlow の規約はサーバーの所在地を明記していない。「中国を経由しない」とは
 //    書けない。書いてよいのは「シンガポール法人の SiliconFlow 経由で Google Gemma 4」まで。
+// 2026-10-23：モデルを Gemma 4 → Qwen/Qwen3.6-35B-A3B に変更。同じプロンプト・サンプル注文書で実測：
+//   Gemma 4    初回 25.1 秒・2 回目 5.1 秒（初回が端点の 30 秒タイムアウトに迫る。実際に 1 回切れた）
+//   Qwen3.6    初回 7.8 秒・2 回目 4.4 秒
+//   どちらも 5 行・得意先・E-5005 の納期・小計照合まで正解。サイト全体の fast と同じモデルにそろう。
+// 公開文言（js/main.js の pp_s3_sf、プライバシーポリシー）もモデル名を合わせて更新。
+// visionModel は画像を正しく読めた Qwen/Qwen3.8-27B に。ただし受発注の画像経路は正解表で未検証なので
+// VISION_READY=false のまま。
 export const DEMO_PROVIDER = {
   endpoint: 'https://api.siliconflow.com/v1/chat/completions',
-  model: 'google/gemma-4-26B-A4B-it',
-  visionModel: 'google/gemma-4-26B-A4B-it',
+  model: 'Qwen/Qwen3.6-35B-A3B',
+  visionModel: 'Qwen/Qwen3.8-27B',
   // 公開ページに出す名称。固有名詞だけなので三語共通。
-  label: 'Google Gemma 4 · SiliconFlow',
+  label: 'Qwen 3.6 · SiliconFlow',
 };
 // 専用鍵が無い間の暫定経路（共有 QWEN 鍵・DashScope）の表示名。
 export const DEMO_FALLBACK_LABEL = 'Qwen · Alibaba Cloud';
@@ -270,10 +334,11 @@ const DEMO_MODEL_FIELD = { demoExtract: 'model', demoVision: 'visionModel' };
  * 経路と表示がずれないよう、送信側（端点）と表示側の両方がここだけを読む。
  */
 export function demoProvider(env) {
-  const dedicated = !!env?.DEMO_API_KEY;
+  // 専用キー（DEMO_API_KEY）が無くても、サイト共通の硅基流动キーがあれば同じ海外站・同じモデルで送る。
+  const dedicated = !!(env?.DEMO_API_KEY || env?.SILICONFLOW_API_KEY);
   return {
     dedicated,
-    apiKey: env?.DEMO_API_KEY || env?.QWEN_API_KEY || '',
+    apiKey: env?.DEMO_API_KEY || env?.SILICONFLOW_API_KEY || env?.QWEN_API_KEY || '',
     endpoint: env?.DEMO_CHAT_ENDPOINT || (dedicated ? DEMO_PROVIDER.endpoint : CHAT_ENDPOINT),
     // env でモデルを上書きした場合は、その id をそのまま表示する（名称を偽らない）。
     label: env?.DEMO_MODEL || (dedicated ? DEMO_PROVIDER.label : DEMO_FALLBACK_LABEL),
@@ -292,6 +357,8 @@ export function modelFor(task, env) {
   const override = env?.[ENV_KEY[task]];
   if (override) return override;
   // デモは専用鍵があれば専用プロバイダのモデル（DashScope の id は通らない）。
-  if (DEMO_MODEL_FIELD[task] && env?.DEMO_API_KEY) return DEMO_PROVIDER[DEMO_MODEL_FIELD[task]];
+  if (DEMO_MODEL_FIELD[task] && (env?.DEMO_API_KEY || env?.SILICONFLOW_API_KEY)) {
+    return DEMO_PROVIDER[DEMO_MODEL_FIELD[task]];
+  }
   return TIERS[tier];
 }

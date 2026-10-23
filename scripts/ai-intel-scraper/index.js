@@ -62,11 +62,13 @@ async function fetchSource(src) {
 
 // ── Qwen 调用 ────────────────────────────────────────────────────────────────
 async function qwen(prompt, maxTokens, timeout) {
-  const { CHAT_ENDPOINT, modelFor } = await loadModelConfig();
+  const { chatRoute } = await loadModelConfig();
+  // 硅基流动キー（SILICONFLOW_API_KEY）があればそちら、無ければ DashScope（models.js の chatRoute）
+  const route = chatRoute('aiIntel', process.env);
   const res = await axios.post(
-    CHAT_ENDPOINT,
+    route.endpoint,
     {
-      model: modelFor('aiIntel', process.env),
+      model: route.model,
       messages: [{ role: 'user', content: prompt }],
       max_tokens: maxTokens,
       // Qwen3 在 DashScope 上默认开混合思考。本调用只读 message.content，
@@ -78,7 +80,7 @@ async function qwen(prompt, maxTokens, timeout) {
     },
     {
       headers: {
-        Authorization: `Bearer ${process.env.QWEN_API_KEY}`,
+        Authorization: `Bearer ${route.apiKey}`,
         'Content-Type': 'application/json',
       },
       timeout,

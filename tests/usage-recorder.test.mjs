@@ -92,7 +92,8 @@ test('六个端点全部接上了用量记录（漏一个就有一块消耗看�
   const endpoints = readdirSync(API).filter((f) => f.endsWith('.js') && f !== '_middleware.js');
   const llm = endpoints.filter((f) => {
     const s = readFileSync(path.join(API, f), 'utf8');
-    return s.includes('CHAT_ENDPOINT') || s.includes('modelFor');
+    // 2026-10-23 起调用方经 chatRoute（硅基流动への段階移行）
+    return s.includes('chatRoute(') || s.includes('CHAT_ENDPOINT') || s.includes('modelFor');
   });
   assert.ok(llm.length >= 6, `只识别出 ${llm.length} 个 LLM 端点，护栏可能失效`);
   // ⚠️ 不能只查 'recordUsage' 出现过：import 那一行就满足了，把调用删掉也照样绿
