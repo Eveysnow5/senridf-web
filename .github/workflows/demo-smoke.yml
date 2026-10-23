@@ -1,0 +1,23 @@
+name: Demo smoke test
+
+# 手动触发：真的走一遍本番的受発注 AI 整形（匿名登录 → POST 样例注文书），
+# 打印状态码、AI 侧拒绝的原因、自动检查结果。详见 scripts/demo-smoke/index.mjs。
+# 每跑一次消耗 1 次演示额度，AI 费用不到 1 日元。
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: github.repository == 'sherlockafa007/senridoufuu-web'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Smoke
+        run: node scripts/demo-smoke/index.mjs
