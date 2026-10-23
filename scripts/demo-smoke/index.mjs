@@ -7,6 +7,7 @@
 // 手順は本物の訪問者と同じ：Firebase の匿名ログイン（公開 API キー）→ 本番の /api/demo-order-extract に
 // サンプル注文書のテキストを POST → 状態コード・AI 側が断った理由・自動チェックの結果を表示。
 // 1 回走らせるとデモの回数を 1 回消費する（Actions の IP・新しい匿名ユーザー）。AI 代は 1 円未満。
+// ROUTE_ONLY=1 なら送り先の確認だけ（AI を呼ばない・回数も消費しない）。
 // 出力に個人情報やキーは含まれない（公開リポジトリのログ）。
 
 const SITE = 'https://www.senridf.com';
@@ -46,7 +47,22 @@ async function main() {
   const H = { Authorization: `Bearer ${idToken}` };
 
   const g = await fetch(`${SITE}/api/demo-order-extract`, { headers: H });
-  console.log('GET（送り先の AI）:', g.status, (await g.text()).slice(0, 120));
+  const gText = await g.text();
+  console.log('GET（送り先の AI）:', g.status, gText.slice(0, 120));
+  // 送り先の表示名＝models.js の demoProvider().label。AI は呼ばず回数も消費しない。
+  // Pages に SILICONFLOW_API_KEY が入ると「… · SiliconFlow」に変わる（2026-10-23 の段階移行の確認用）。
+  let label = '';
+  try {
+    label = JSON.parse(gText).ai || '';
+  } catch {
+    /* 下で「不明」と表示 */
+  }
+  console.log(
+    /SiliconFlow/.test(label)
+      ? '→ 本番サイトの AI は硅基流动（海外站）に切り替わっている'
+      : `→ 本番サイトの AI はまだ切り替わっていない（表示名：${label || '不明'}）＝Pages に SILICONFLOW_API_KEY が未設定か、設定後に再デプロイしていない`,
+  );
+  if (process.env.ROUTE_ONLY) return; // 送り先の確認だけ（AI を呼ばない）
 
   const t0 = Date.now();
   const p = await fetch(`${SITE}/api/demo-order-extract`, {

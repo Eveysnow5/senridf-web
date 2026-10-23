@@ -1,14 +1,26 @@
 name: Demo smoke test
 
-# 手动触发：真的走一遍本番的受発注 AI 整形（匿名登录 → POST 样例注文书），
-# 打印状态码、AI 侧拒绝的原因、自动检查结果。详见 scripts/demo-smoke/index.mjs。
-# 每跑一次消耗 1 次演示额度，AI 费用不到 1 日元。
+# 真的走一遍本番的受発注 AI 整形（匿名登录 → POST 样例注文書），
+# 打印 AI 的送り先、状态码、AI 侧拒绝的原因、自动检查结果。详见 scripts/demo-smoke/index.mjs。
+# 每跑一次（full）消耗 1 次演示额度，AI 费用不到 1 日元；route 只查送り先，不调 AI。
+#
+# 每周一自动跑一次：2026-10-23 发现本番 AI 因免费额度用完停了约一个月没人察觉
+# （页面只说「整形に失敗しました」）。没过就开 issue @ 作者（GitHub 会发邮件）。
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'full＝真的整形一次；route＝只看 AI 送り先（不调 AI）'
+        default: full
+        type: choice
+        options: [full, route]
+  schedule:
+    - cron: '0 1 * * 1' # 毎週月曜 10:00 JST
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   smoke:
@@ -20,4 +32,36 @@ jobs:
         with:
           node-version: '22'
       - name: Smoke
+        env:
+          ROUTE_ONLY: ${{ inputs.mode == 'route' && '1' || '' }}
         run: node scripts/demo-smoke/index.mjs
+
+      - name: 没过就通知作者
+        if: failure()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const TITLE = '🔴 受発注デモの AI 整形が本番で動いていない';
+            const body = [
+              '@sherlockafa007 本番の AI 整形スモークテストが失敗しました。',
+              '',
+              '- 理由（AI 側の状態コード・送り先）：[このラン](' + context.serverUrl + '/' + context.repo.owner + '/' +
+                context.repo.repo + '/actions/runs/' + context.runId + ') のログの「→」の行',
+              '- 403 / Free quota → AI のキーの残高・上限（硅基流动の控制台）を確認',
+              '- 送り先がまだ Alibaba Cloud → Pages に SILICONFLOW_API_KEY が未設定（同事）',
+              '',
+              '直ったら Actions → Demo smoke test を手動で回して緑を確認し、この issue を閉じてください。',
+            ].join('\n');
+            const open = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo, state: 'open', labels: 'demo-smoke', per_page: 20,
+            });
+            const found = open.data.find((i) => i.title === TITLE);
+            if (found) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number: found.number, body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo, title: TITLE, body, labels: ['demo-smoke'],
+              });
+            }
