@@ -1110,6 +1110,16 @@ const T = {
     ce_lr_none:
       '新しく足せる候補はありません（同じ摘要のルールがもうあるか、2 件以上そろった摘要がありません）。',
     ce_lr_split_h: '過去の記帳で科目が割れているため、候補にしなかった摘要',
+    ce_lr_h_ans: '回答から見つけた銀行ルールの候補',
+    ce_lr_sum_ans:
+      '同じ摘要の明細に、2 か月以上同じ科目で「仕訳する」と回答したものが {n} 件あります。ルールにすると、来月からはその明細を聞かずに記帳します。',
+    ce_lr_d_ans:
+      '会社の資料に入れるのは、チェックを付けたものだけです。これまでの回答はそのまま使います。回答の科目が割れている摘要、内訳のある回答、仮払金・仮受金、給与・社会保険・税金の支払は候補にしていません。',
+    ce_lr_n_ans: '{n} 件・{m} か月',
+    ce_lr_split_h_ans: '回答の科目が割れているため、候補にしなかった摘要',
+    ce_next_ans_rules:
+      '回答から銀行ルールの候補が {n} 件あります。入れると、同じ明細は来月から聞きません',
+    ce_next_ans_rules_go: '候補を見る',
     ce_lr_unknown_h: '科目表に無い科目（「追加科目」に登録すると、その科目の候補も入れられます）',
     ce_lr_unknown_mark: '科目表に無い科目',
     ce_lr_by: '判断者',
@@ -2412,6 +2422,15 @@ const T = {
     ce_lr_n: '{n} 条',
     ce_lr_none: '没有可以新增的候选（同一摘要已经有规则，或者没有凑够 2 条的摘要）。',
     ce_lr_split_h: '过去记账时科目不一致、没有列为候选的摘要',
+    ce_lr_h_ans: '从回答中找到的银行规则候选',
+    ce_lr_sum_ans:
+      '有 {n} 个摘要，连续 2 个月以上都回答了「入账」且科目相同。做成规则后，下个月起同样的流水直接入账，不再询问。',
+    ce_lr_d_ans:
+      '只有勾选的才会写进公司资料。以前的回答照常使用。回答的科目不一致的摘要、拆分了明细的回答、暂付款・暂收款、工资・社保・税金的支付，都不列为候选。',
+    ce_lr_n_ans: '{n} 条・{m} 个月',
+    ce_lr_split_h_ans: '回答的科目不一致、没有列为候选的摘要',
+    ce_next_ans_rules: '从回答中找到 {n} 条银行规则候选。加进去以后，下个月起同样的流水不再询问',
+    ce_next_ans_rules_go: '查看候选',
     ce_lr_unknown_h: '科目表里没有的科目（在「追加科目」里登记后，这些科目的候选也能写入）',
     ce_lr_unknown_mark: '科目表里没有',
     ce_lr_by: '判断人',
@@ -3766,6 +3785,16 @@ const T = {
     ce_lr_none:
       'No new candidates (a rule for the description already exists, or no description has two matching rows).',
     ce_lr_split_h: 'Descriptions not offered because past entries used different accounts',
+    ce_lr_h_ans: 'Bank rule candidates from your answers',
+    ce_lr_sum_ans:
+      '{n} descriptions were answered “Book” with the same account in two or more months. As a rule, those rows are booked from next month without asking.',
+    ce_lr_d_ans:
+      'Only the checked candidates go into the company file. Your earlier answers stay in use. Not offered: descriptions answered with different accounts, answers split into lines, suspense accounts, and payroll, social insurance and tax payments.',
+    ce_lr_n_ans: '{n} rows・{m} months',
+    ce_lr_split_h_ans: 'Descriptions not offered because the answers used different accounts',
+    ce_next_ans_rules:
+      '{n} bank rule candidates from your answers. Add them and the same rows are not asked again next month',
+    ce_next_ans_rules_go: 'Show candidates',
     ce_lr_unknown_h:
       'Accounts not in the chart (register them on “Extra accounts” to add their candidates too)',
     ce_lr_unknown_mark: 'not in the chart',

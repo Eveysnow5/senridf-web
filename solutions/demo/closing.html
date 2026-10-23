@@ -2252,11 +2252,15 @@
       learnRules = j.rules || [];
       $('ce-learn').classList.remove('hidden');
       $('ce-lr-log').replaceChildren();
-      // 来源：弥生的分录（这家公司过去怎么记的）／内置的常见摘要字典（哪家公司都一样的手续费・利息・家賃…）
+      // 来源：弥生的分录（这家公司过去怎么记的）／内置的常见摘要字典（哪家公司都一样的手续费・利息・家賃…）／
+      // 用户的回答（同一摘要 2 个月以上答得一样。作者 2026-10-23：同一个对象别每个月都让人答一遍）
       const dict = j.source === 'dict';
-      window.sdfSetText($('ce-lr-h'), dict ? 'ce_lr_h_dict' : 'ce_lr_h');
-      window.sdfSetText($('ce-lr-d'), dict ? 'ce_lr_d_dict' : 'ce_lr_d');
+      const ans = j.source === 'answers';
+      const sfx = dict ? '_dict' : ans ? '_ans' : '';
+      window.sdfSetText($('ce-lr-h'), `ce_lr_h${sfx}`);
+      window.sdfSetText($('ce-lr-d'), `ce_lr_d${sfx}`);
       if (dict) window.sdfSetText($('ce-lr-sum'), 'ce_lr_sum_dict', { n: learnRules.reduce((a, c) => a + c.n, 0) });
+      else if (ans) window.sdfSetText($('ce-lr-sum'), 'ce_lr_sum_ans', { n: learnRules.length });
       else
         window.sdfSetText($('ce-lr-sum'), 'ce_lr_sum', {
           name,
@@ -2281,7 +2285,7 @@
         const tax = c.tax && c.tax !== '対象外' ? ` ${c.tax}` : '';
         lab.textContent = ` ${c.desc_contains}（${window.sdfT(c.direction === 'in' ? 'ce_lr_inn' : 'ce_lr_out')}）→ ${acc}${tax}・`;
         const n = el('span');
-        window.sdfSetText(n, 'ce_lr_n', { n: c.n });
+        window.sdfSetText(n, ans ? 'ce_lr_n_ans' : 'ce_lr_n', { n: c.n, m: c.months });
         lab.appendChild(n);
         if (!c.known) lab.appendChild(el('span', 'ex', 'ce_lr_unknown_mark'));
         lab.title = (c.examples || []).join('\n');
@@ -2291,7 +2295,7 @@
       const split = $('ce-lr-split');
       split.replaceChildren();
       if ((j.split || []).length) {
-        split.appendChild(el('p', '', 'ce_lr_split_h'));
+        split.appendChild(el('p', '', ans ? 'ce_lr_split_h_ans' : 'ce_lr_split_h'));
         for (const x of j.split) split.appendChild(txt('p', 'ex', `${x.desc_contains}：${x.accounts.join('・')}`));
       }
       const unk = $('ce-lr-unknown');
@@ -3140,7 +3144,7 @@
       parent.appendChild(d);
     }
     // 結果の上の「次にすること」：検査を先に、要確認はどこで済むかで数え、開く表を並べる
-    function renderSteps(r) {
+    function renderSteps(r, nAnsRules) {
       const ol = $('ce-steps-list');
       ol.replaceChildren();
       const add = (key, arg) => {
@@ -3165,6 +3169,19 @@
         for (const f of x.next.files) if (!files.includes(f)) files.push(f);
       }
       if (sheets.length) add('ce_next_sheets', { list: sheets.map((s) => `「${s}」`).join(''), files: files.join('・') });
+      if (nAnsRules) {
+        // 文字は span に（语言切换时 data-i18n 的元素会被整个重写，按钮要在它外面）
+        const li = document.createElement('li');
+        const tx = document.createElement('span');
+        window.sdfSetText(tx, 'ce_next_ans_rules', { n: nAnsRules });
+        li.appendChild(tx);
+        ol.appendChild(li);
+        const go = el('button', 'ce-btn2', 'ce_next_ans_rules_go');
+        go.type = 'button';
+        go.style.marginLeft = '8px';
+        go.addEventListener('click', () => $('ce-learn').scrollIntoView({ behavior: 'smooth', block: 'center' }));
+        li.appendChild(go);
+      }
       if (!ol.children.length) add('ce_next_none');
       $('ce-steps').classList.remove('hidden');
     }
@@ -3172,6 +3189,9 @@
     function render(r, isSample, switching) {
       shown = r;
       if (!isSample && r.rules_preview) renderRules(r.rules_preview);
+      // 回答 → 银行规则的候选。切语言重画时不动（勾选和记录留着）
+      const ansRules = !isSample && r.answer_rules ? r.answer_rules.rules || [] : [];
+      if (ansRules.length && !switching) renderLearn('', r.answer_rules);
       $('ce-result').classList.remove('hidden');
       $('ce-sample-banner').classList.toggle('hidden', !isSample);
       $('ce-fix-where').classList.toggle('hidden', isSample || !dirHandle); // 示例・只读方式没有「工作文件夹里的那一份」
@@ -3183,7 +3203,7 @@
       sum.className = `ce-summary ${r.ok ? 'ok' : 'ng'}`;
       window.sdfSetText(sum, 'ce_summary', { pass: n - fail - skip, n, fail, skip, na: r.not_applicable.length });
       $('ce-company').textContent = `${r.company} · ${r.month}`;
-      renderSteps(r);
+      renderSteps(r, ansRules.length);
 
       const tb = $('ce-checks');
       tb.replaceChildren();
@@ -3897,6 +3917,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=dcfe95cd3c"></script>
+  <script src="../../js/main.js?v=2d322c83c5"></script>
 </body>
 </html>

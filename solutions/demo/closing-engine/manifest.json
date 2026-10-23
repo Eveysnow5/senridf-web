@@ -1,11 +1,11 @@
 {
  "pyodide": "314.0.7",
- "source_revision": "22ae45a",
+ "source_revision": "ffe18b5",
  "bundle": {
   "name": "jpclose-bundle.zip",
-  "sha256": "07b94e4d7191f098cba19f3b617296894c130209958b838b2c71aaf0690d8a7a",
+  "sha256": "a5f2ab9c3a7639460c13653b8f9731971c0bb014793ae511e8d8c537d92019ca",
   "files": 104,
-  "bytes": 499984
+  "bytes": 501603
  },
  "wheels": [
   {
@@ -32,16 +32,16 @@
  },
  "template_xlsx": {
   "name": "template.xlsx",
-  "sha256": "ba20df89e5877539349401ef483be091a8af6766c6ebcdc57825768303f1edb2"
+  "sha256": "f8c2da21d3ad2ff85766671f2e5a71b545668219c2ba63d2171bde3ecf292b9e"
  },
  "template_xlsx_lang": {
   "ja": {
    "name": "template_ja.xlsx",
-   "sha256": "cc33a9c43d4850f068743abdf07926f96b214328fdf602a2faf9fc4d7ff2f60e"
+   "sha256": "2afb27be99a26457c72fc16a800bc1d03d52b5d370cc6020251970f04cc631f9"
   },
   "en": {
    "name": "template_en.xlsx",
-   "sha256": "3bc7f97f35fad693ffb98616f3a4fac1947ac62bbe52c42f8b896c08d2e8fc05"
+   "sha256": "4b0084bfca6d4c71f56b6fca1f7cd2aeb878ee82242cc9348a122f9a91f81623"
   }
  },
  "note": "引擎在浏览器内运行，财务数据不上传。/ エンジンはブラウザ内で動き、財務データは送信されない。"
