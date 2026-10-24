@@ -1,200 +1,27 @@
-// Single source of truth for the LLM provider endpoint and the model each task
-// uses. Every /api/* endpoint that calls a chat-completions API reads from here.
+// 全站调用大模型的唯一配置源：送到哪里（端点）、用哪把密钥、每个任务用哪个模型。
+// functions/api/*、workers/sdf-admin、scripts/*（爬虫）都经 chatRoute()，tests/models.test.mjs 盯着没人绕过。
 //
-// WHY THIS FILE EXISTS
-// The endpoint URL and model ids used to be hardcoded in 6 endpoints (8 counting
-// the two scrapers). Free quota is granted *per model*, so when one model's
-// quota runs dry the fix is to point tasks at another model — which meant
-// editing 6 files and hoping none was missed. The site is deployed from a
-// colleague's Cloudflare account, so we cannot set environment variables
-// ourselves; this has to be changeable in code and shipped through the normal
-// push → mirror → deploy path.
+// 供应商：硅基流动海外站（api.siliconflow.com，SILICONFLOW LABS PTE. LTD.＝新加坡法人）。
+// 2026-10-23 从阿里云百炼（DashScope）迁过来：百炼免费额度用尽、开着「只用免费额度」，全站 AI 403 了约一个月。
+// 2026-10-24 拆掉了「没有硅基流动密钥就退回百炼」的后路——隐私政策只列硅基流动，
+// 后路在密钥被误删/填错时会把用户内容悄悄发到政策里没写的地方（百炼会先收下请求内容再拒绝）。
+// 现在没有密钥＝调用方直接报「未配置」，不发请求。tests/models.test.mjs 断言代码里不再出现百炼的地址。
+// 百炼时代的选型记录（免费桶、到期日、a95b 不能关思考等）在 git 历史里：git log -p -- functions/api/_lib/models.js
 //
-// HOW TO SWITCH MODELS
-// Change the three TIERS values below, push, done (~3 min to go live).
-// A wrong id is safe to try: the provider replies with an explicit
-// "model not found" error that the endpoints already surface to the UI.
+// 密钥放在三处，各自独立（变量名都是 SILICONFLOW_API_KEY）：
+//   · Pages Functions（functions/api/*）→ 同事 Cloudflare Pages 项目的环境变量（我们改不了，要她改）
+//   · workers/sdf-admin                  → 我们自己的 Worker secret（wrangler secret put）
+//   · scripts/*（爬虫）                  → 本仓库的 GitHub secret
 //
-// HOW TO SWITCH PROVIDER (e.g. 硅基流动 / SiliconFlow — planned)
-// Both expose an OpenAI-compatible /v1/chat/completions, so the request and
-// response *shapes* need no changes. But this is not a two-string edit — three
-// things below were verified on 2026-08-11 and each needs work:
-//
-//   1. Endpoint: https://api.siliconflow.cn/v1/chat/completions
-//   2. Model ids use a VENDOR-PREFIXED namespace, not DashScope's bare names:
-//      `Qwen/Qwen2.5-72B-Instruct`, `Pro/deepseek-ai/DeepSeek-R1`. Every TIERS
-//      value has to be re-chosen, not just renamed.
-//   3. SiliconFlow also streams `delta.reasoning_content`, and its docs
-//      document no `enable_thinking` switch. Our two streaming endpoints render
-//      `delta.content` only, so a reasoning model there reproduces the 20s
-//      "hangs then dumps" bug with no parameter to turn it off — the fix would
-//      be to pick a non-reasoning model for `fast` and `balanced`.
-//
-// KEY OWNERSHIP — the real constraint. The three surfaces read the same var
-// name from three different places, and we control only two:
-//   · Pages Functions (functions/api/*)  → the COLLEAGUE's Cloudflare Pages
-//     project env. We cannot change it; she has to.
-//   · workers/sdf-admin                  → our own Worker secret (wrangler)
-//   · scripts/*-scraper                  → our repo's GitHub secret (gh)
-// Keep the var name `QWEN_API_KEY` even after moving off Qwen: renaming means
-// the code change and the secret change must land together, and we do not
-// control when the colleague acts — any gap is downtime. An inaccurate name is
-// the cheaper problem.
-//
-// Because CHAT_ENDPOINT is shared, a phased migration is NOT possible as
-// written: pointing it at SiliconFlow while the colleague still holds a
-// DashScope key would 401 every web tool. Phasing would require per-surface
-// endpoint config first.
-// → 2026-10-23: DONE. Callers now go through chatRoute(), which switches per
-//   surface on the presence of SILICONFLOW_API_KEY (see the 硅基流动 section
-//   below). Items 2 and 3 above were measured that day: SF_TIERS, and
-//   enable_thinking:false is honoured (0 reasoning tokens, also when streaming).
-//   QWEN_API_KEY stays as the fallback until every surface has the new key.
-//
-// TIERS, not raw ids: each task declares the *kind* of model it needs, so the
-// intent survives both a quota shuffle and a provider swap. TASK_TIER is the
-// durable record — `proofread` was deliberately moved to the strongest tier for
-// deep semantic proofreading (2026-07-28), and `translateStream` is on a fast
-// tier because it runs once per utterance during live interpretation.
+// 模型按「档位」选（TASK_TIER → SF_TIERS），换模型只改 SF_TIERS。换之前先用
+// .github/workflows/probe-model.yml 手动探一次：能不能用、接不接受 enable_thinking:false。
+// 教训（2026-08-25）：同家族的模型行为不一定一致。qwen3.8-2.4t-a95b 只能思考，传 false 直接
+//   HTTP 400 "The value of the enable_thinking parameter is restricted to True."
+// 我们只读 message.content、推理 token 全部丢弃，这种模型在本项目里是纯浪费，不许进任何档位。
 //
 // NOTE: translation-specialised `qwen-mt-*` models are NOT drop-in here — they
 // take `translation_options` instead of a system prompt, which would break the
 // glossary injection and the 【原文】/【日本語訳】/【回訳】 output format.
-
-// Provider base. Kept as one exported constant so a provider migration does not
-// mean grepping for the URL across every endpoint again.
-export const CHAT_ENDPOINT = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
-
-// Chosen from the 百炼 free-quota console on 2026-08-10. Two rules drove it:
-//   1. Runway. Most buckets in that account expire 2026-08-11, so anything
-//      expiring "tomorrow" is worthless no matter how full it is.
-//   2. Spread. Every model has its OWN 1M-token bucket, so pointing the tiers
-//      at three different models multiplies the usable free tokens instead of
-//      draining one pool. Do not collapse these to save a line.
-// Remaining quota / expiry as observed:
-//   qwen3.8-max              1,000,000  2026-11-01
-//   qwen3.7-flash            1,000,000  2026-10-23
-//   qwen3.7-plus-2026-05-26  1,000,000  2026-09-01
-// Alternates with runway, if one of the above drains:
-//   strong    qwen3.7-max-2026-06-08 (09-08) · qwen3.7-max-preview (08-24)
-//   balanced  glm-5.2 (09-15) · qwen3.7-plus (944k left, 09-01)
-//   fast      deepseek-v4-flash-0731 (10-31)
-// Excluded regardless of quota: *-ocr and qwen-vl-* (OCR/vision),
-// qwen-math-turbo (maths), kimi-k2-thinking and qwen3-vl-*-thinking (reasoning
-// models — latency is unacceptable for live interpretation), kimi-k2.7-code.
-// `batch` is for the unattended nightly scrapers. It gets its own model on
-// purpose: they run in bulk every night and would otherwise drain the same
-// bucket the interactive tools depend on during the day. It stays inside the
-// Qwen family rather than moving to deepseek/glm because the bid summaries must
-// keep hitting a strict 【内容】【发注元】【截标】 format unattended, and a
-// silent format drift there lands straight in the user-facing bids table.
-// 2026-08-11 重新分配：balanced 与 batch 原本各占一个桶，但那两个桶分别
-// 09-01 / 09-08 到期，而切换供应商要等同事改 Pages 环境变量、不由我们控制，
-// 赶在那之前完成的把握不够。于是把悬崖推到 10-23 之后，争取从容期。
-//
-// 为什么合并而不是换到别的满额度桶：Qwen 家族里到期晚于 09-08 的只剩
-// qwen3.8-max(11-01) 和 qwen3.7-flash(10-23)，两个都已在用。其余晚期桶
-// （deepseek-v4-flash-0731 10-31、glm-5.2 09-15）都是**跨家族**——作者明确
-// 否决了，因为会议纪要要稳定输出【议题】【客户反馈】【行动项】、分析要出
-// markdown 报告，跨家族有格式漂移风险，而这类漂移是无人值守时才发作的。
-// 爬虫作者判断"量不大，可以凑合"，故一并并入。
-//
-// ⚠️⚠️ 2026-08-13 更正：上面那个"每月 300~400K"的估算**已经作废**。多轮取页上线后，
-// **一天就烧了 451K**（19 次调用，控制台实测），qwen3.8-max 桶从 100% 掉到剩 248K。
-// 成本结构变了：单次调用约 23.7K token，其中**页面索引占 21.9K（85%）且每轮重发**。
-// 按这个速率，剩余额度只够约 3 次完整多轮分析——**撑不到 11-01，会先被额度打停**
-// （「免费额度用完即停」是开着的，所以不会产生费用，但会直接 403 停服）。
-//
-// ⚠️ 另一条已过期的判断：下面"Excluded regardless of quota: *-ocr and qwen-vl-*"
-// 是 2026-08-10 定的，**当时文书分析是纯文本**；08-11 改成页面图像路径之后，
-// analyze 这一档**恰恰需要视觉能力**。视觉模型有自己独立的桶（控制台「视觉模型」
-// 页签），一个都没用过。换过去之前必须先验证两件事：① 它接不接受 image_url 形式的
-// dataURL ② 输出格式会不会漂。qwen3-vl-*-thinking 仍应排除（推理模型延迟不可接受）。
-//
-// ⚠️ 代价：strong/balanced/batch 现在共用一个 1M 桶。粗估每月 300~400K
-// （爬虫约 200K/月 + 交互工具几十 K），到 11-01 约 2.7 个月——**贴着边**。
-// 观测点是百炼控制台的「模型用量」；若消耗快于预期，先关掉四个非流式端点
-// 的 thinking（推理 token 同样计费却被直接丢弃），那是最便宜的止血。
-// ⚠️⚠️ 2026-08-24：qwen3.8-max **已用尽**（控制台「我的试用」显示 0 tokens / 0%）。
-// 08-13 那条预言应验了，而且比预期早：三个档位同时指向它，于是翻译、会议纪要、
-// 文档分析、校对、人生故事、招标摘要、AI 情报、后台一键同步日英**全部 403**，
-// 只有走 fast 的实时口译幸免。
-//
-// 症状是怎么被发现的，值得记：**不是靠监控，是靠作者发现 AI 情报页停在 W31**。
-// GitHub Actions 连续四周报 success（简报失败被设计成"不中断整轮"），
-// 而 403 的响应体没被记录，日志里只有 "Request failed with status code 403"。
-// 中间三周各死一种（103×403 / 60s 超时 / 49×403），一次都没人知道。
-//
-// 换成控制台里还满额的两个**同家族**模型。跨家族（kimi-k3、deepseek-v4-*）
-// 额度也满，但上面那条否决仍然成立：招标摘要要稳定输出【内容】【发注元】【截标】、
-// 会议纪要要输出【议题】【客户反馈】【行动项】，格式漂移只在无人值守时发作。
-// ⚠️ 2026-08-25 二次调整：strong 原本选了 qwen3.8-2.4t-a95b（2.4T 的 MoE），
-// 结果校对端点回 **HTTP 502**，响应体是 Cloudflare 的 HTML 错误页。
-// 判据：我们的函数全程 try/catch、**任何路径都返回 JSON**（连超时都是），
-// 所以 HTML 一定是平台发的，不是我们的代码。
-// 与 2026-08-12 那次 502 **不同源**：那次是请求体 5.3MB、`request.json()` 解析
-// 撞 10ms CPU 上限；这次输入只有 78 个字，CPU 不可能是瓶颈——是模型太慢，
-// Cloudflare 在我们 30 秒超时之前就断了连接。
-// 交互端点对延迟敏感，大模型在这条路上不可用；把它留给不受 Cloudflare 限制的
-// GitHub Actions 爬虫（batch）。
-// ⚠️⚠️ 2026-08-25 三次调整：**qwen3.8-2.4t-a95b 是只能思考的模型**。
-// 它拒绝 enable_thinking: false，直接回
-//   HTTP 400 InternalError.Algo.InvalidParameter:
-//   The value of the enable_thinking parameter is restricted to True.
-// 也就是说这个模型的推理 token **无法关闭**，而我们所有调用都只读
-// message.content、把推理直接丢弃 —— 它在这个项目里是纯粹的浪费，
-// 无论跑在哪个平台。已从全部档位移除。
-//
-// **教训写在这里，别只留在提交信息里**：换模型时必须先验证
-// "这个模型接不接受我们要传的参数"，不能假设同家族行为一致。
-// 验证成本极低（一次调用），而没验证的代价是一整轮部署 + 一次用户点击。
-// 见 scripts/ai-intel-scraper/probe-model.js。
-export const TIERS = {
-  strong: 'qwen3.8-27b', // 100%，2026-11-18。接受 enable_thinking:false（实测 17.6s → 2.2s）
-  balanced: 'qwen3.8-27b', // 同上，共桶
-  fast: 'qwen3.7-flash', // 余量未核实，见下方待办
-  batch: 'qwen3.8-27b', // 同上。原为 a95b，因无法关闭思考而换掉
-  // 受発注デモの画像OCR用の視覚モデル（独立バケット、テキストとは別系統）。
-  // デモは付費/予充值 key で回すので免費桶の悬崖は無い。SiliconFlow 等へは
-  // ENV_KEY の DEMO_VISION_MODEL で上書きする。⚠️ この視覚モデルが
-  // enable_thinking:false を受けるかは初回のスモークテストで要確認。
-  vision: 'qwen-vl-plus',
-};
-
-// ⚠️ **batch 与 strong 共桶是妥协，不是设计。** 上面写着"batch 单独一个模型是
-// 刻意的：爬虫每晚成批跑，否则会喝掉白天交互工具依赖的那个桶"——这条判断没变，
-// 只是控制台里**同家族且满额的文本模型只剩这两个**（作者只翻了第一页，共 486 个
-// 模型 / 49 页，很可能还有）。
-// 选择让 batch 跟 strong 共桶而不是跟 balanced：balanced 挂着 analyze，
-// 而 analyze 单次约 23.7K token、08-13 一天烧掉 451K，是全站最大的消耗源；
-// strong 那几个任务（翻译/校对/后台同步）量小且不定期。
-//
-// 🧑 待办：在控制台「我的试用」用模型名搜索框确认这几个的余量，
-// 若有同家族、满额、到期晚于 11-12 的第三个文本模型，就把 batch 拆出去：
-//   qwen3.7-flash（fast 正在用，余量未知）· qwen3.8-flash · qwen3.7-plus
-//   qwen3.8-plus · qwen3.8-turbo
-// 排除项不变：*-ocr / qwen-vl-*（视觉，另有独立桶）、*-thinking（推理，延迟不可接受）、
-// qwen-math-*、*-code。
-
-// 免费额度的**到期日**。这里是机器可读的那一份 —— 上面注释里也写着这些日期，
-// 但注释救不了人：2026-08-24 qwen3.8-max 桶用尽，翻译/纪要/分析/校对/人生故事/
-// 招标摘要/AI 情报/后台同步**全部 403**，而 GitHub Actions 连报四周 success，
-// 最后是作者发现 AI 情报页停在 W31 才知道的。**没有人会去读注释里的日期。**
-//
-// 悬崖和"模型还能不能答"是两件事：桶空了模型照样存在，探针照样绿。
-// 所以 probe-model.js 会读这张表，在到期前 21 天开始报警（`.github/workflows/probe-model.yml`
-// 每周跑一次，失败就开 issue）。**改 TIERS 的时候必须同时改这里**，
-// `tests/probe-model.test.js` 有一条断言盯着：TIERS 里的每个模型都得在这张表里。
-//
-// ⚠️ 这些日期来自百炼控制台「我的试用」，是**人工抄下来的**，没有接口可以核。
-// 抄错或桶被提前用尽，这张表都不会知道 —— 它防的是"忘了这回事"，不是"额度用完"。
-export const TIER_EXPIRY = {
-  'qwen3.8-27b': '2026-11-18', // 2026-08-25 抄，当时 100%
-  'qwen3.7-flash': '2026-10-23', // 2026-08-10 抄；⚠️ 余量一直未核实
-  // 視覚モデルは付費/予充值 key 運用で免費桶の悬崖が無いため、遠期のプレースホルダ日付
-  // （probe-model の誤報を避ける）。実運用の課金は残高で頭打ち。
-  'qwen-vl-plus': '2027-12-31',
-};
 
 // Which tier each task needs, and why. This is the durable record of intent:
 // tiers may collapse onto one model when quota forces it, but these
@@ -215,9 +42,8 @@ export const TASK_TIER = {
   // so quality matters far more than latency or token spend.
   adminTranslate: 'strong',
   // 受発注ランディングの無料デモ抽出（functions/api/demo-order-extract.js）。
-  // cheap 档。ただし実運用は**別プロバイダ・別鍵**（SiliconFlow 予充值）で回す想定：
-  // 鍵は DEMO_API_KEY、エンドポイントは DEMO_CHAT_ENDPOINT、モデル id は下の
-  // ENV_KEY 経由の DEMO_MODEL で上書きする（共有の QWEN 桶とは分離してコスト隔離）。
+  // モデルは DEMO_PROVIDER（下）。専用鍵 DEMO_API_KEY があればそれで回してコストを分けられる。
+  // 端点は DEMO_CHAT_ENDPOINT、モデル id は ENV_KEY 経由の DEMO_MODEL で上書き可。
   demoExtract: 'fast',
   // 受発注デモの画像OCR（スキャン/画像 → 視覚モデル）。functions/api/_lib/demoVision.js。
   demoVision: 'vision',
@@ -241,22 +67,11 @@ const ENV_KEY = {
   demoVision: 'DEMO_VISION_MODEL',
 };
 
-// ── 硅基流动（SiliconFlow 海外站）への段階移行（2026-10-23） ─────────────────────
-// 百炼（DashScope）の無料枠が切れ、「無料枠のみ」モードのまま全 AI 機能が 403 で止まっていた
-// （demo-smoke で確認）。作者の決定：費用は硅基流动で払う。上の「段階移行は書いたままでは無理」
-// （CHAT_ENDPOINT 共有）を解くため、**キーのある場所だけ切り替わる**ようにした：
-//   SILICONFLOW_API_KEY がある  → 海外站 + SF_TIERS
-//   無い                        → 従来どおり DashScope + QWEN_API_KEY + TIERS
-// 3 つの置き場所（Pages env＝同事 / sdf-admin の secret / GitHub secret）はそれぞれ独立に入れてよい。
-// 入れる順番がずれても、入っていない場所は今までどおり動く（＝ダウンタイムなし）。
-//
-// 海外站（api.siliconflow.com、SILICONFLOW LABS PTE. LTD.＝シンガポール法人）を選ぶ理由：
-// 客は日本の会社。受発注デモも同じ海外站（DEMO_PROVIDER）。
-//
+// ── 硅基流动海外站 ─────────────────────────────────────────────────────────────
 // モデルは 2026-10-23 に作者の海外站キーで実測して決めた：
 //   ・enable_thinking:false を受け付け、推理トークン 0（流式でも reasoning_content は出ない）
-//   ・Qwen/Qwen3.8-27B：今の DashScope の qwen3.8-27b と同系列同世代＝書式のずれが最小
-//     （跨系列は作者が否決済み、上の注記）。画像入力も可（台帳スクショの数字を正しく読んだ、3.5 秒）
+//   ・Qwen/Qwen3.8-27B：旧 DashScope の qwen3.8-27b と同系列同世代＝書式のずれが最小
+//     （跨系列は作者が否決済み：招標摘要・会議纪要の固定書式が無人運用でずれるため）。画像入力も可
 //   ・fast＝Qwen/Qwen3.6-35B-A3B：流式で初字 1.2 秒（実時間通訳用）
 //   ・除外：Qwen/Qwen3-30B-A3B-Instruct-2507（日本語訳に韓国語「준비」が混入）
 export const SF_ENDPOINT = 'https://api.siliconflow.com/v1/chat/completions';
@@ -271,61 +86,36 @@ export const SF_TIERS = {
 /**
  * タスクの送り先を 1 か所で決める：{ provider, endpoint, apiKey, model }。
  * env は Pages の context.env / Worker の env / スクレイパーの process.env のどれでもよい。
- * モデルの env 上書き（QWEN_MODEL_* 等）はどちらの経路でも優先する。
+ * キーが無いときは apiKey が空文字：呼び出し側は**送信せずに**「未配置」を返すこと（百炼へは退かない）。
+ * モデルの env 上書き（QWEN_MODEL_* 等、名前は歴史的経緯）は優先する。
  */
 export function chatRoute(task, env) {
   const tier = TASK_TIER[task];
   if (!tier) throw new Error(`Unknown model task: ${task}`);
-  const override = env?.[ENV_KEY[task]];
-  if (env?.SILICONFLOW_API_KEY) {
-    return {
-      provider: 'siliconflow',
-      endpoint: SF_ENDPOINT,
-      apiKey: env.SILICONFLOW_API_KEY,
-      model: override || SF_TIERS[tier],
-    };
-  }
   return {
-    provider: 'dashscope',
-    endpoint: CHAT_ENDPOINT,
-    apiKey: env?.QWEN_API_KEY || '',
+    provider: 'siliconflow',
+    endpoint: SF_ENDPOINT,
+    apiKey: env?.SILICONFLOW_API_KEY || '',
     model: modelFor(task, env),
   };
 }
 
-// ── 受発注デモ専用プロバイダ（2026-10-06）────────────────────────────────────
-// 専用鍵 DEMO_API_KEY（予充值）があるときは、デモだけ SiliconFlow 国際站
-// （運営 SILICONFLOW LABS PTE. LTD.＝シンガポール法人）の Google Gemma 4 で回す。
-// 共有の DashScope（中国大陸の端点）から外すのは、日本の取引先データを扱うデモで
-// 「どこの何に送るか」を名指しで開示できるようにするため（作者決定）。
-//
-// ⚠️ 同事が設定するのは DEMO_API_KEY **だけ**で済むよう、端点とモデルの既定値を
-//    コードに持つ。以前は DEMO_CHAT_ENDPOINT / DEMO_MODEL も要り、鍵だけ入れると
-//    SiliconFlow の鍵で DashScope を叩いて 401 になる罠だった。
-// ⚠️ 鍵は siliconflow.com（国際站）で発行したもの。siliconflow.cn の鍵とは別物。
-// ✅ 2026-10-06 実鍵でスモークテスト済み：① モデル id 有効 ② enable_thinking:false を受ける
-//    （1 回 1.8s〜7s）③ テキスト経路はサンプル注文書の正解表と 5/5 完全一致
-//    （送信前の部首正規化＋列タブ区切りの修正後。docs/lead-gen/sample-order-golden.md）。
-// ❌ 画像入力は受け付けるが**誤読する**（社名・品番・数量）→ demo-order-extract の
-//    VISION_READY=false で閉じている。visionModel を変えたら正解表を通してから開けること。
-// ⚠️ SiliconFlow の規約はサーバーの所在地を明記していない。「中国を経由しない」とは
-//    書けない。書いてよいのは「シンガポール法人の SiliconFlow 経由で Google Gemma 4」まで。
-// 2026-10-23：モデルを Gemma 4 → Qwen/Qwen3.6-35B-A3B に変更。同じプロンプト・サンプル注文書で実測：
-//   Gemma 4    初回 25.1 秒・2 回目 5.1 秒（初回が端点の 30 秒タイムアウトに迫る。実際に 1 回切れた）
-//   Qwen3.6    初回 7.8 秒・2 回目 4.4 秒
-//   どちらも 5 行・得意先・E-5005 の納期・小計照合まで正解。サイト全体の fast と同じモデルにそろう。
-// 公開文言（js/main.js の pp_s3_sf、プライバシーポリシー）もモデル名を合わせて更新。
-// visionModel は画像を正しく読めた Qwen/Qwen3.8-27B に。ただし受発注の画像経路は正解表で未検証なので
-// VISION_READY=false のまま。
+// ── 受発注デモ ───────────────────────────────────────────────────────────────
+// 専用鍵 DEMO_API_KEY（予充值）があればそれを、無ければサイト共通の SILICONFLOW_API_KEY を使う。
+// どちらも同じ海外站・同じモデル。どちらも無ければ apiKey は空＝デモは「停止中」を返す（百炼へは退かない）。
+// ⚠️ 鍵は siliconflow.com（海外站）で発行したもの。siliconflow.cn（国内站）の鍵とは別物で通らない
+//    （2026-10-24 実際に取り違えて 401「Token is invalid」）。
+// ⚠️ SiliconFlow の規約はサーバーの所在地を明記していない。「中国を経由しない」とは書けない。
+// 2026-10-23：モデルを Gemma 4 → Qwen/Qwen3.6-35B-A3B に変更（Gemma は初回 25 秒で 30 秒タイムアウトに迫った）。
+// visionModel は画像を正しく読めた Qwen/Qwen3.8-27B。受発注の画像経路は正解表で未検証なので
+// demo-order-extract の VISION_READY=false のまま。
 export const DEMO_PROVIDER = {
-  endpoint: 'https://api.siliconflow.com/v1/chat/completions',
+  endpoint: SF_ENDPOINT,
   model: 'Qwen/Qwen3.6-35B-A3B',
   visionModel: 'Qwen/Qwen3.8-27B',
   // 公開ページに出す名称。固有名詞だけなので三語共通。
   label: 'Qwen 3.6 · SiliconFlow',
 };
-// 専用鍵が無い間の暫定経路（共有 QWEN 鍵・DashScope）の表示名。
-export const DEMO_FALLBACK_LABEL = 'Qwen · Alibaba Cloud';
 
 const DEMO_MODEL_FIELD = { demoExtract: 'model', demoVision: 'visionModel' };
 
@@ -334,31 +124,26 @@ const DEMO_MODEL_FIELD = { demoExtract: 'model', demoVision: 'visionModel' };
  * 経路と表示がずれないよう、送信側（端点）と表示側の両方がここだけを読む。
  */
 export function demoProvider(env) {
-  // 専用キー（DEMO_API_KEY）が無くても、サイト共通の硅基流动キーがあれば同じ海外站・同じモデルで送る。
-  const dedicated = !!(env?.DEMO_API_KEY || env?.SILICONFLOW_API_KEY);
+  const apiKey = env?.DEMO_API_KEY || env?.SILICONFLOW_API_KEY || '';
   return {
-    dedicated,
-    apiKey: env?.DEMO_API_KEY || env?.SILICONFLOW_API_KEY || env?.QWEN_API_KEY || '',
-    endpoint: env?.DEMO_CHAT_ENDPOINT || (dedicated ? DEMO_PROVIDER.endpoint : CHAT_ENDPOINT),
+    dedicated: !!apiKey,
+    apiKey,
+    endpoint: env?.DEMO_CHAT_ENDPOINT || DEMO_PROVIDER.endpoint,
     // env でモデルを上書きした場合は、その id をそのまま表示する（名称を偽らない）。
-    label: env?.DEMO_MODEL || (dedicated ? DEMO_PROVIDER.label : DEMO_FALLBACK_LABEL),
+    label: env?.DEMO_MODEL || DEMO_PROVIDER.label,
   };
 }
 
 /**
  * Resolve the model id for a task.
  * @param {string} task one of the keys in TASK_TIER
- * @param {object} [env] Cloudflare env, consulted for an override first
- * @returns {string} model id for the compatible-mode endpoint
+ * @param {object} [env] env, consulted for an override first
  */
 export function modelFor(task, env) {
   const tier = TASK_TIER[task];
   if (!tier) throw new Error(`Unknown model task: ${task}`);
   const override = env?.[ENV_KEY[task]];
   if (override) return override;
-  // デモは専用鍵があれば専用プロバイダのモデル（DashScope の id は通らない）。
-  if (DEMO_MODEL_FIELD[task] && (env?.DEMO_API_KEY || env?.SILICONFLOW_API_KEY)) {
-    return DEMO_PROVIDER[DEMO_MODEL_FIELD[task]];
-  }
-  return TIERS[tier];
+  if (DEMO_MODEL_FIELD[task]) return DEMO_PROVIDER[DEMO_MODEL_FIELD[task]];
+  return SF_TIERS[tier];
 }

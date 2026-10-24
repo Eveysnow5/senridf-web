@@ -34,6 +34,13 @@ export async function onRequest(context) {
   const reference = refTruncated ? refRaw.slice(0, MAX_CHARS) : refRaw;
 
   const route = chatRoute('proofread', context.env);
+  // 没有密钥就不发请求（不再退回百炼，见 models.js 开头）
+  if (!route.apiKey) {
+    return new Response(JSON.stringify({ error: 'AI API key not configured.' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
   try {
     const qwenRes = await fetchWithTimeout(route.endpoint, {
       method: 'POST',

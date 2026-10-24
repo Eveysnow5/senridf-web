@@ -112,8 +112,10 @@ async function main() {
   });
   const db = admin.firestore();
   const { chatRoute } = await loadModelConfig();
-  // 硅基流动キー（SILICONFLOW_API_KEY）があればそちら、無ければ DashScope（models.js の chatRoute）
   const route = chatRoute('aiIntel', process.env);
+  // 没有密钥就不发请求、直接报错（不再退回百炼，见 functions/api/_lib/models.js 开头）
+  if (!route.apiKey)
+    throw new Error('缺 SILICONFLOW_API_KEY（workflow 的 env 里没传，或 secret 被删了）');
   const usage = emptyUsage();
 
   let rebuilt = 0;

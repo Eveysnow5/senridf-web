@@ -11,15 +11,16 @@ name: Probe LLM Model
 # 招标摘要/AI 情报/后台同步**同时 403**，而 **Actions 连报四周 success**，
 # 最后是作者发现 AI 情报页停在 W31 才知道。中间三周各死一种，一次都没人知道。
 #
-# 所以每周探一次 TIERS 里的模型，并检查免费额度还剩几天。**两件事都要查**：
-# 桶空了模型照样存在，只探"能不能答"永远是绿的。
+# 2026-10-24 起改探硅基流动（SF_TIERS）：付费、没有免费桶到期日，原来的到期检查删了。
+# 现在防的是「硅基流动下架/改名了我们用的模型」——demo-smoke 只测 demo 那一个模型，
+# 爬虫和后台用的模型坏了没人会第一时间知道。
 #
 # 定时的开销：`--from-tiers` 去重后 2 个模型 × 200 max_tokens，每周一次。
 # ⚠️ 这是本仓库里唯一**允许**定时烧额度的 LLM workflow，因为它烧的量比它
 # 能挡住的一次静默停服小几个数量级。别照着它给别的 workflow 加 schedule ——
 # tests/workflow-injection.test.mjs 盯着另外两个。
 #
-# ⚠️ 绿灯**不等于线上没事**：这里用的是本仓库的 QWEN_API_KEY，而 Pages Functions
+# ⚠️ 绿灯**不等于线上没事**：这里用的是本仓库的 SILICONFLOW_API_KEY，而 Pages Functions
 # 读的是同事 Cloudflare 项目里的那一份，我们改不了也看不到。两者是不是同一个
 # 账号没有核实过。
 on:
@@ -29,7 +30,7 @@ on:
   workflow_dispatch:
     inputs:
       models:
-        description: '模型名，逗号分隔（留空＝探 TIERS 里的全部，并检查额度到期）'
+        description: '模型名，逗号分隔（留空＝探 SF_TIERS 里的全部）'
         required: false
         type: string
       thinking_off:
@@ -59,7 +60,7 @@ jobs:
         working-directory: scripts/ai-intel-scraper
         # 输入走 env，不插进脚本文本 —— 见 tests/workflow-injection.test.mjs
         env:
-          QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
           MODELS: ${{ inputs.models }}
           THINKING_OFF: ${{ inputs.thinking_off }}
         run: |
@@ -69,8 +70,8 @@ jobs:
             [ -z "$(echo "$m" | xargs)" ] && continue
             ARGS="$ARGS --model $(echo "$m" | xargs)"
           done
-          # 没给模型名（定时触发就是这种）→ 从 TIERS 现取，并查额度到期。
-          # ⚠️ 别在这里写死模型名：改了 TIERS 之后哨兵会一直绿着，
+          # 没给模型名（定时触发就是这种）→ 从 SF_TIERS 现取。
+          # ⚠️ 别在这里写死模型名：改了 SF_TIERS 之后哨兵会一直绿着，
           #    而绿的是一个已经没人用的模型。
           if [ -z "$ARGS" ]; then ARGS="--from-tiers"; fi
           if [ "$THINKING_OFF" = "false" ]; then ARGS="$ARGS --no-thinking-off"; fi
@@ -99,10 +100,9 @@ jobs:
             const body = [
               '@sherlockafa007 `' + context.workflow + '` 在 ' + new Date().toISOString().slice(0, 16) + 'Z 失败。',
               '',
-              '两种可能，处理方式不同：',
-              '- **模型不可用**（退役 / 403 / 参数被拒）→ 换 `functions/api/_lib/models.js` 的 TIERS',
-              '- **免费额度快到期** → 去百炼控制台「我的试用」找同家族、满额、到期更晚的模型，',
-              '  换掉 TIERS **并同时更新 `TIER_EXPIRY`**（两处不同步的话哨兵会哑掉）',
+              '常见原因：',
+              '- **模型不可用**（硅基流动下架 / 改名 / 参数被拒）→ 换 `functions/api/_lib/models.js` 的 SF_TIERS',
+              '- **401 / 402 / 403** → 密钥失效或余额 / 每月消费上限到了，去硅基流动控制台看',
               '',
               '⚠️ 这只说明**本仓库这份 key** 打不通了。Pages Functions 用的是同事 Cloudflare',
               '项目里的那份 key，换模型要她那边重新部署才生效。',

@@ -141,9 +141,8 @@ export async function onRequest(context) {
 
   // 鍵の解決（A+B 両対応、2026-09-14 / 送り先は 2026-10-06 に models.demoProvider へ集約）：
   //   B（本命）: DEMO_API_KEY（SiliconFlow 国際站の予充值。専用・隔離。残高がハード天井）。
-  //   A（暫定）: 無ければ既存の QWEN_API_KEY（DashScope）に fallback。
-  // 専用キーがあるときは 500/日、共有キーに fallback 中は 50/日に絞って本番ツールの
-  // 無料桶を守る（08-24 の枯渇事故の教訓）。SiliconFlow キーを入れれば自動で 500 に戻る。
+  //   無ければサイト共通の SILICONFLOW_API_KEY。どちらも無ければデモは停止（503 demo_disabled）。
+  //   2026-10-24 から百炼（QWEN_API_KEY）へは退かない（models.js 開頭）。onDedicatedKey は鍵がある＝常に true。
   // 変数名は aiRoute（下の provider＝ログイン種別 と取り違えないため）。
   const aiRoute = demoProvider(env);
   const onDedicatedKey = aiRoute.dedicated;

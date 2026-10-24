@@ -181,6 +181,8 @@ export default {
         if (!check.ok) return json(400, { error: check.error }, cors);
 
         const route = chatRoute('adminTranslate', env);
+        // 没有密钥就不发请求（不再退回百炼，见 models.js 开头）
+        if (!route.apiKey) return json(500, { error: '后台没有配置 SILICONFLOW_API_KEY' }, cors);
         const qwenRes = await fetch(route.endpoint, {
           method: 'POST',
           headers: {

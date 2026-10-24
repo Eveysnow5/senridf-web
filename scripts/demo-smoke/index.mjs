@@ -50,7 +50,7 @@ async function main() {
   const gText = await g.text();
   console.log('GET（送り先の AI）:', g.status, gText.slice(0, 120));
   // 送り先の表示名＝models.js の demoProvider().label。AI は呼ばず回数も消費しない。
-  // Pages に SILICONFLOW_API_KEY が入ると「… · SiliconFlow」に変わる（2026-10-23 の段階移行の確認用）。
+  // 2026-10-24 から百炼へは退かない：キーがあれば「… · SiliconFlow」、無ければ ai: null（デモ停止中）。
   let label = '';
   try {
     label = JSON.parse(gText).ai || '';
@@ -59,8 +59,8 @@ async function main() {
   }
   console.log(
     /SiliconFlow/.test(label)
-      ? '→ 本番サイトの AI は硅基流动（海外站）に切り替わっている'
-      : `→ 本番サイトの AI はまだ切り替わっていない（表示名：${label || '不明'}）＝Pages に SILICONFLOW_API_KEY が未設定か、設定後に再デプロイしていない`,
+      ? '→ 本番サイトの AI は硅基流动（海外站）'
+      : `→ 本番サイトの AI キーが無い（表示名：${label || 'なし'}）＝Pages の SILICONFLOW_API_KEY が消えたか、設定後に再デプロイしていない`,
   );
   if (process.env.ROUTE_ONLY) return; // 送り先の確認だけ（AI を呼ばない）
 

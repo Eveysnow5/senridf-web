@@ -44,7 +44,6 @@ jobs:
         # 内容永远不会被当成命令解析。
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
           WEEKS: ${{ inputs.weeks }}
           APPLY: ${{ inputs.apply }}

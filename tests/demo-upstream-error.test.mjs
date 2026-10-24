@@ -30,7 +30,7 @@ const ctx = () => ({
     headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '1.2.3.4' },
     body: JSON.stringify({ items: [{ name: 'sample-order.pdf', text: '注文書 …', pageCount: 1 }] }),
   }),
-  env: { QWEN_API_KEY: 'x' },
+  env: { SILICONFLOW_API_KEY: 'x' },
   data: { user: { uid: 'u1', provider: 'anonymous' }, idToken: 't' },
   waitUntil: () => {},
 });

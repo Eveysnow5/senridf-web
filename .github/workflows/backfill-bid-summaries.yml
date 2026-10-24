@@ -37,7 +37,6 @@ jobs:
         # 免得"只修出问题的那一处"（这仓库里已经有过三次这种教训）。
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
           LIMIT: ${{ inputs.limit }}
           APPLY: ${{ inputs.apply }}

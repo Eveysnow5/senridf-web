@@ -103,7 +103,7 @@ test('护栏自身有效：正则认得出注入写法', () => {
   // 这些是安全的，不该误报
   for (const s of [
     '  node x.js --weeks "$WEEKS"',
-    '          QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}',
+    '          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}',
     "    if: github.repository == 'sherlockafa007/senridoufuu-web'",
   ]) {
     assert.ok(!UNSAFE.test(s), `误报：${s}`);

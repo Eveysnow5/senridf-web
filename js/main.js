@@ -309,7 +309,7 @@ const T = {
     o2l_f_privacy_post: 'に同意したものとみなします。',
     pp_eyebrow: 'プライバシー',
     pp_title: 'プライバシーポリシー',
-    pp_updated: '制定日：2026年10月5日／改定日：2026年10月6日',
+    pp_updated: '制定日：2026年10月5日／改定日：2026年10月24日',
     pp_intro:
       '千里同風株式会社（以下「当社」）は、当社ウェブサイト（senridf.com）および各ツール・サービスにおけるお客様の個人情報を、以下の方針に基づき適切に取り扱います。',
     pp_s1_h: '1. 取得する情報',
@@ -321,8 +321,6 @@ const T = {
     pp_s3_h: '3. 外部サービス・第三者への提供',
     pp_s3_b:
       '法令に基づく場合を除き、お客様の個人情報を第三者に販売・提供することはありません。ただし、サービスの提供のために次の外部サービスを利用しており、処理に必要な範囲でデータが送信されます。',
-    pp_s3_qwen:
-      '生成AI（Alibaba Cloud「通義千問」／DashScope）— 下記の SiliconFlow への移行が完了するまでの間、一部のAI処理に利用することがあります。',
     pp_s3_sf:
       '生成AI（SiliconFlow、運営：SILICONFLOW LABS PTE. LTD.〔シンガポール〕、モデル：Qwen〔Alibaba Cloud 開発の公開モデル〕）— 翻訳・文書整形・受発注デモのAI整形などのAI処理に利用します。受発注デモで実際に使用しているAIは、デモ欄に表示します。画像・スキャンは、送信前に確認ダイアログでご同意いただいた場合に限り送信します。',
     pp_s3_google: 'Google / Firebase — ログイン認証とデータ保存（Firestore）に利用します。',
@@ -1685,7 +1683,7 @@ const T = {
     o2l_f_privacy_post: '。',
     pp_eyebrow: '隐私',
     pp_title: '隐私政策',
-    pp_updated: '制定日期：2026年10月5日／修订日期：2026年10月6日',
+    pp_updated: '制定日期：2026年10月5日／修订日期：2026年10月24日',
     pp_intro:
       '千里同風株式会社（以下简称“本公司”）依据以下方针，妥善处理您在本公司网站（senridf.com）及各工具与服务中的个人信息。',
     pp_s1_h: '1. 收集的信息',
@@ -1697,8 +1695,6 @@ const T = {
     pp_s3_h: '3. 外部服务与第三方提供',
     pp_s3_b:
       '除法律要求外，本公司不会向第三方出售或提供您的个人信息。但为提供服务，我们使用以下外部服务，并在处理所需范围内发送数据。',
-    pp_s3_qwen:
-      '生成式AI（阿里云“通义千问”／DashScope）— 在迁移到下述 SiliconFlow 完成之前，部分AI处理可能仍会使用。',
     pp_s3_sf:
       '生成式AI（SiliconFlow，运营方：SILICONFLOW LABS PTE. LTD.〔新加坡〕，模型：Qwen〔阿里云开发的公开模型〕）— 用于翻译、文档整理、受発注演示的AI整形等AI处理。受発注演示实际使用的AI会显示在演示区。图片/扫描件仅在发送前经确认弹窗同意后才会发送。',
     pp_s3_google: 'Google / Firebase — 用于登录认证与数据存储（Firestore）。',
@@ -3009,7 +3005,7 @@ const T = {
     o2l_f_privacy_post: '.',
     pp_eyebrow: 'Privacy',
     pp_title: 'Privacy Policy',
-    pp_updated: 'Effective date: October 5, 2026 / Revised: October 6, 2026',
+    pp_updated: 'Effective date: October 5, 2026 / Revised: October 24, 2026',
     pp_intro:
       'Senridoufuu Co., Ltd. ("we", "us") handles your personal information on our website (senridf.com) and across our tools and services in accordance with the policy below.',
     pp_s1_h: '1. Information we collect',
@@ -3021,8 +3017,6 @@ const T = {
     pp_s3_h: '3. External services and third parties',
     pp_s3_b:
       'We do not sell or disclose your personal information to third parties except as required by law. However, to provide our services we use the following external services, and data is sent to them to the extent needed for processing.',
-    pp_s3_qwen:
-      'Generative AI (Alibaba Cloud "Tongyi Qianwen" / DashScope) — may still be used for some AI processing until the migration to SiliconFlow (below) is complete.',
     pp_s3_sf:
       'Generative AI (SiliconFlow, operated by SILICONFLOW LABS PTE. LTD. [Singapore]; model: Qwen [an open model developed by Alibaba Cloud]) — used for AI processing such as translation, document formatting and AI structuring in the order-to-ledger demo. The AI actually in use is shown in the demo section. Images/scans are sent only after you agree via a confirmation dialog.',
     pp_s3_google: 'Google / Firebase — used for login authentication and data storage (Firestore).',

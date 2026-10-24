@@ -116,8 +116,10 @@ async function translate(bid) {
 【截标】截止日期（用中文表达，如"2026年3月12日（星期三）下午2时"；若信息中确无截止日期则写"信息未提供"）`;
 
   const { chatRoute } = await loadModelConfig();
-  // 硅基流动キー（SILICONFLOW_API_KEY）があればそちら、無ければ DashScope（models.js の chatRoute）
   const route = chatRoute('bidSummary', process.env);
+  // 没有密钥就不发请求、直接报错（不再退回百炼，见 functions/api/_lib/models.js 开头）
+  if (!route.apiKey)
+    throw new Error('缺 SILICONFLOW_API_KEY（workflow 的 env 里没传，或 secret 被删了）');
   const res = await axios.post(
     route.endpoint,
     {

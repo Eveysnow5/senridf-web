@@ -1,17 +1,15 @@
-// Model selection for DashScope endpoints.
+// 全站大模型配置（functions/api/_lib/models.js）：送り先・キー・モデル。2026-10-24 起只有硅基流动。
 // .mjs: functions/api/_lib/models.js is ESM.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import {
-  CHAT_ENDPOINT,
   SF_ENDPOINT,
   SF_TIERS,
   DEMO_PROVIDER,
   chatRoute,
   demoProvider,
   modelFor,
-  TIERS,
   TASK_TIER,
 } from '../functions/api/_lib/models.js';
 
@@ -75,8 +73,8 @@ test('每个任务都解析出非空模型 id', () => {
   }
 });
 
-test('三个 tier 都有值', () => {
-  for (const [tier, id] of Object.entries(TIERS)) {
+test('每个档位都有值', () => {
+  for (const [tier, id] of Object.entries(SF_TIERS)) {
     assert.ok(id && id.length > 0, `tier ${tier} 不应为空`);
   }
 });
@@ -90,7 +88,7 @@ test('任务→档位的意图映射保持不变', () => {
   assert.equal(TASK_TIER.translateStream, 'fast', '实时口译逐句调用，必须留在快档');
   // 每个任务都必须指向一个真实存在的档位
   for (const [task, tier] of Object.entries(TASK_TIER)) {
-    assert.ok(TIERS[tier], `任务 ${task} 指向了不存在的档位 ${tier}`);
+    assert.ok(SF_TIERS[tier], `任务 ${task} 指向了不存在的档位 ${tier}`);
   }
 });
 
@@ -98,12 +96,12 @@ test('env 覆盖优先于默认 tier', () => {
   const env = { QWEN_MODEL_TRANSLATE_STREAM: 'some-other-model' };
   assert.equal(modelFor('translateStream', env), 'some-other-model');
   // 未设置覆盖的任务不受影响
-  assert.equal(modelFor('translate', env), TIERS.strong);
+  assert.equal(modelFor('translate', env), SF_TIERS.strong);
 });
 
 test('env 为空对象 / undefined 时回落到默认', () => {
-  assert.equal(modelFor('summary', {}), TIERS.balanced);
-  assert.equal(modelFor('summary', undefined), TIERS.balanced);
+  assert.equal(modelFor('summary', {}), SF_TIERS.balanced);
+  assert.equal(modelFor('summary', undefined), SF_TIERS.balanced);
 });
 
 test('未知任务直接抛错，不静默返回 undefined', () => {
@@ -134,6 +132,40 @@ test('每个调用大模型的地方都经 chatRoute，没有直接读端点或 
   assert.deepEqual(bypass, [], `这些地方绕过了 chatRoute：${bypass.join(', ')}`);
 });
 
+// 2026-10-24：隐私政策只列硅基流动。代码里只要还留着百炼的地址或还在读百炼的密钥，
+// 密钥被误删/填错时用户内容就可能被发到政策里没写的地方。这里连探针和爬虫共用库一起扫。
+test('生产代码不再读百炼的密钥、也不含百炼的地址', () => {
+  const extra = [
+    '../scripts/ai-intel-scraper/probe-model.js',
+    '../scripts/_lib/model-config.js',
+    '../scripts/_lib/llm-retry.js',
+  ];
+  const files = [
+    ...sourcesUnderScan(),
+    ...extra.map((rel) => ({
+      label: rel,
+      src: readFileSync(new URL(rel, import.meta.url), 'utf8'),
+    })),
+  ];
+  assert.ok(files.length >= 20, `只扫到 ${files.length} 个文件，护栏可能失效`);
+  const hits = files
+    .filter(({ src }) => /dashscope\.aliyuncs\.com|env\??\.QWEN_API_KEY/.test(src))
+    .map(({ label }) => label);
+  assert.deepEqual(hits, [], `这些文件还在用百炼：${hits.join(', ')}`);
+});
+
+// 没有密钥时 chatRoute 给空 apiKey；调用方必须**先查再发**，否则会带着空密钥把内容发出去。
+test('每个经 chatRoute 的调用方，发请求前都检查了 apiKey', () => {
+  const callers = sourcesUnderScan().filter(
+    ({ label, src }) => src.includes('chatRoute(') && !label.endsWith('/_lib/models.js'),
+  );
+  assert.ok(callers.length >= 10, `只找到 ${callers.length} 个调用方，断言可能已失效`);
+  const missing = callers
+    .filter(({ src }) => !/if \(!(route\.)?apiKey\)/.test(src))
+    .map(({ label }) => label);
+  assert.deepEqual(missing, [], `这些调用方没先检查密钥：${missing.join(', ')}`);
+});
+
 // 供应商迁移（百炼 → 硅基流动）时，URL 必须只有一处需要改。
 test('供应商 URL 只出现在 models.js 里', () => {
   const offenders = sourcesUnderScan()
@@ -153,9 +185,9 @@ test('CJS → ESM 桥能真的加载到共享配置', async () => {
   const { loadModelConfig } = require('../scripts/_lib/model-config.js');
 
   const cfg = await loadModelConfig();
-  assert.equal(cfg.CHAT_ENDPOINT, CHAT_ENDPOINT, '桥拿到的端点应与直接 import 的一致');
-  assert.equal(cfg.modelFor('bidSummary'), TIERS.batch);
-  assert.equal(cfg.modelFor('aiIntel'), TIERS.batch);
+  assert.equal(cfg.SF_ENDPOINT, SF_ENDPOINT, '桥拿到的端点应与直接 import 的一致');
+  assert.equal(cfg.modelFor('bidSummary'), SF_TIERS.batch);
+  assert.equal(cfg.modelFor('aiIntel'), SF_TIERS.batch);
   // 爬虫传的是 process.env，覆盖必须走得通
   assert.equal(cfg.modelFor('aiIntel', { QWEN_MODEL_AI_INTEL: 'x' }), 'x');
   assert.equal(await loadModelConfig(), cfg, '应缓存同一个模块实例');
@@ -174,8 +206,8 @@ test('后台批量翻译留在最强档（产出会直接发布到线上）', ()
   assert.equal(TASK_TIER.adminTranslate, 'strong');
 });
 
-// ── 硅基流动への段階移行（2026-10-23）──
-// 期待値は手書き：キーのある場所だけ切り替わる・無い場所は従来どおり。
+// ── 硅基流动（2026-10-23 移行、10-24 百炼への後退を撤去）──
+// 期待値は手書き：キーがあれば海外站、無ければ空キー（送らない）。百炼の鍵があっても使わない。
 
 test('chatRoute：SILICONFLOW_API_KEY があれば海外站＋SF_TIERS、キーもそれを使う', () => {
   const r = chatRoute('translate', { SILICONFLOW_API_KEY: 'sf', QWEN_API_KEY: 'qw' });
@@ -191,12 +223,12 @@ test('chatRoute：SILICONFLOW_API_KEY があれば海外站＋SF_TIERS、キー�
   );
 });
 
-test('chatRoute：無ければ従来どおり DashScope＋QWEN_API_KEY＋TIERS', () => {
+test('chatRoute：硅基流动のキーが無ければ空キー。百炼の鍵があっても百炼へは行かない', () => {
   const r = chatRoute('summary', { QWEN_API_KEY: 'qw' });
-  assert.equal(r.provider, 'dashscope');
-  assert.equal(r.endpoint, CHAT_ENDPOINT);
-  assert.equal(r.apiKey, 'qw');
-  assert.equal(r.model, TIERS.balanced);
+  assert.equal(r.provider, 'siliconflow');
+  assert.equal(r.endpoint, SF_ENDPOINT);
+  assert.equal(r.apiKey, '');
+  assert.equal(r.model, SF_TIERS.balanced);
   assert.equal(
     chatRoute('summary', undefined).apiKey,
     '',
@@ -214,7 +246,9 @@ test('chatRoute：モデルの env 上書きはどちらの経路でも優先', 
 });
 
 test('SF_TIERS は全档位に値があり、送り先は SF_ENDPOINT（海外站）', () => {
-  for (const tier of Object.keys(TIERS)) assert.ok(SF_TIERS[tier], `SF_TIERS.${tier} が無い`);
+  for (const tier of ['strong', 'balanced', 'fast', 'batch', 'vision']) {
+    assert.ok(SF_TIERS[tier], `SF_TIERS.${tier} が無い`);
+  }
   assert.equal(SF_ENDPOINT, 'https://api.siliconflow.com/v1/chat/completions');
 });
 
@@ -227,8 +261,9 @@ test('受発注デモ：専用キーが無くても硅基流动キーがあれ�
   assert.equal(modelFor('demoExtract', { SILICONFLOW_API_KEY: 'sf' }), DEMO_PROVIDER.model);
   // 専用キーが優先
   assert.equal(demoProvider({ DEMO_API_KEY: 'd', SILICONFLOW_API_KEY: 'sf' }).apiKey, 'd');
-  // どちらも無ければ従来の共有キー（DashScope）
+  // どちらも無ければ停止（百炼の鍵があっても使わない）
   const q = demoProvider({ QWEN_API_KEY: 'qw' });
   assert.equal(q.dedicated, false);
-  assert.equal(q.endpoint, CHAT_ENDPOINT);
+  assert.equal(q.apiKey, '');
+  assert.equal(q.endpoint, SF_ENDPOINT);
 });

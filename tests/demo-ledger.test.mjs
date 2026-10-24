@@ -12,10 +12,9 @@ import {
 import {
   demoProvider,
   modelFor,
-  CHAT_ENDPOINT,
   DEMO_PROVIDER,
-  DEMO_FALLBACK_LABEL,
-  TIERS,
+  SF_ENDPOINT,
+  SF_TIERS,
 } from '../functions/api/_lib/models.js';
 
 // 受発注デモ（2026-10-06 改修）の三つの約束を固定する：
@@ -75,12 +74,19 @@ test('② 鍵なし → 無効（apiKey 空）', () => {
   assert.equal(r.dedicated, false);
 });
 
-test('② 共有鍵だけ → DashScope ＋ Qwen 表示 ＋ TIERS のモデル', () => {
-  const env = { QWEN_API_KEY: 'q' };
-  const r = demoProvider(env);
-  assert.equal(r.endpoint, CHAT_ENDPOINT);
-  assert.equal(r.label, DEMO_FALLBACK_LABEL);
-  assert.equal(modelFor('demoExtract', env), TIERS.fast);
+// 2026-10-24 から百炼へは退かない：旧 QWEN_API_KEY だけでは送らない（隐私政策に百炼は載っていない）
+test('② 百炼の鍵（QWEN_API_KEY）だけ → 無効。百炼の端点へは送らない', () => {
+  const r = demoProvider({ QWEN_API_KEY: 'q' });
+  assert.equal(r.apiKey, '');
+  assert.equal(r.dedicated, false);
+  assert.equal(r.endpoint, SF_ENDPOINT);
+});
+
+test('② サイト共通の SILICONFLOW_API_KEY だけでもデモは動く（同じ海外站・同じモデル）', () => {
+  const r = demoProvider({ SILICONFLOW_API_KEY: 's' });
+  assert.equal(r.apiKey, 's');
+  assert.equal(r.dedicated, true);
+  assert.equal(r.label, DEMO_PROVIDER.label);
 });
 
 test('② DEMO_API_KEY だけ入れれば SiliconFlow 国際站 ＋ DEMO_PROVIDER のモデル（端点/モデルの env 不要）', () => {
@@ -95,9 +101,9 @@ test('② DEMO_API_KEY だけ入れれば SiliconFlow 国際站 ＋ DEMO_PROVIDE
 });
 
 test('② 専用鍵があっても他のツールのモデルは変わらない', () => {
-  const env = { QWEN_API_KEY: 'q', DEMO_API_KEY: 'sf' };
-  assert.equal(modelFor('translate', env), TIERS.strong);
-  assert.equal(modelFor('summary', env), TIERS.balanced);
+  const env = { DEMO_API_KEY: 'sf' };
+  assert.equal(modelFor('translate', env), SF_TIERS.strong);
+  assert.equal(modelFor('summary', env), SF_TIERS.balanced);
 });
 
 test('③ env でモデルを上書きしたら、表示もその id（名称を偽らない）', () => {
