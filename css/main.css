@@ -924,6 +924,9 @@ main { padding-top: var(--nav-h); }
    后台编辑器（admin/blog/frame.html）也加载这份 main.css、编辑区用同一个 class，
    所以「编辑时看到的＝发布后的」。改这里两边一起变。默认字号 16px＝js/shared/blog-content.js 的「标准」。
    编辑器里加的字体・字号・颜色写在正文的 style 属性里，优先于这里。 */
+/* 文章页标题区上下居中（2026-10-24 作者要求）：.page-header 上内边距比下多 8px（PC 80/72、手机 56/48），
+   .section__title 自带 32px 下边距 → 标题下方比上方多 24〜32px。下边距改 8px，实测上下各 80（手机 56）。 */
+.page-header #article-title { margin-bottom: 8px; }
 .section.blog-post { padding-top: 48px; }
 .blog-post__cover {
   width: 100%;

@@ -146,6 +146,12 @@
     .compose-cover-preview {
       max-width: 200px; border-radius: 6px; margin-top: 8px; display: none;
     }
+    .compose-cover-remove {
+      display: block; margin-top: 8px; padding: 5px 12px; background: var(--paper); color: var(--text2);
+      border: 1px solid var(--border); border-radius: 7px; font-size: 12px; font-family: inherit; cursor: pointer;
+    }
+    .compose-cover-remove:hover { color: var(--red); border-color: var(--red); }
+    .compose-cover-remove[hidden] { display: none; }
     .lang-tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
   </style>
   <link rel="stylesheet" href="/css/admin-header.css">
@@ -222,6 +228,8 @@
       <label class="compose-label">封面图（可选）</label>
       <input type="file" id="compose-cover-file" accept="image/*" onchange="handleCoverFile(this.files[0])">
       <img id="compose-cover-preview" class="compose-cover-preview" alt="">
+      <button type="button" class="compose-cover-remove" id="compose-cover-remove" onclick="removeCover()" hidden>移除封面</button>
+      <div class="compose-hint">换图：直接再选一张。移除后点「完成」、再「上架」，文章页就没有封面了。</div>
     </div>
     <div class="compose-row">
       <label class="compose-label">标题（中文）</label>
@@ -320,13 +328,7 @@ function renderCompose() {
   dateEl.max = localToday();
   dateEl.value = composeState.date;
   document.getElementById('compose-title-zh').value = composeState.title.zh;
-  const preview = document.getElementById('compose-cover-preview');
-  if (composeState.cover) {
-    preview.src = composeState.cover.startsWith('data:') ? composeState.cover : '/' + composeState.cover;
-    preview.style.display = 'block';
-  } else {
-    preview.style.display = 'none';
-  }
+  renderCoverPreview();
   renderOtherLangFields();
   // 正文写进三个编辑区（旧的 Markdown 稿在这里自动转成带格式的内容）
   for (const l of ['zh', 'ja', 'en']) window.sdfBlogEd.setBody(l, composeState.body[l]);
@@ -423,8 +425,34 @@ function compressImageToWebp(file, maxBytes, onSuccess, onError) {
   reader.readAsDataURL(file);
 }
 
-/* ── 封面图：选完立即压缩预览，随发布一起提交（沿用既有行为） ── */
+/* ── 封面图：选完立即压缩预览，「完成」时传进仓库 ── */
+function renderCoverPreview() {
+  const preview = document.getElementById('compose-cover-preview');
+  const cover = composeState.cover;
+  document.getElementById('compose-cover-remove').hidden = !cover;
+  preview.onerror = null;
+  if (!cover) {
+    preview.removeAttribute('src');
+    preview.style.display = 'none';
+    return;
+  }
+  if (cover.startsWith('data:')) {
+    preview.src = cover;
+  } else {
+    // 刚传进仓库、网站还没构建完时 /assets/... 还打不开：改用 Worker 取的原图
+    preview.onerror = () => {
+      preview.onerror = null;
+      if (window.sdfBlogAsset) window.sdfBlogAsset(cover).then((u) => { preview.src = u; })
+        .catch((err) => console.warn('[blog] 封面预览取不到（只影响这里的小图，不影响文章）', err));
+    };
+    preview.src = '/' + cover;
+  }
+  preview.style.display = 'block';
+}
+
 function handleCoverFile(file) {
+  // 清掉文件框：再选同一张图也会触发；移除后能重新选
+  document.getElementById('compose-cover-file').value = '';
   if (!file) return;
   compressImageToWebp(
     file,
@@ -432,13 +460,21 @@ function handleCoverFile(file) {
     (dataUrl) => {
       composeState.cover = dataUrl;
       composeState.coverChanged = true;
-      const preview = document.getElementById('compose-cover-preview');
-      preview.src = dataUrl;
-      preview.style.display = 'block';
+      renderCoverPreview();
       scheduleDraftSave();
     },
     (message) => alert(message),
   );
+}
+
+// 2026-10-24 作者：封面传上去就删不掉。草稿里记成 null，上架时明确告诉 Worker「不要封面」。
+function removeCover() {
+  if (!composeState) return;
+  composeState.cover = null;
+  composeState.coverChanged = false;
+  document.getElementById('compose-cover-file').value = '';
+  renderCoverPreview();
+  scheduleDraftSave();
 }
 
 /* ── 正文插图：选完立即压缩并上传（方案A），成功后插进点「插图」时所在那个语言的编辑区光标处 ── */
@@ -473,11 +509,62 @@ import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import {
   mergeRows, rowActions, rowStatus, publishProblem, newDocId, docIdForSlug, previewDoc,
-} from '/js/shared/blog-posts-model.js?v=2b8492a417';
+  blogImagePaths, replaceBlogImages,
+} from '/js/shared/blog-posts-model.js?v=1bd78589de';
 import { tagObject } from '/js/shared/blog-tags.js?v=2d02e3ed50';
-import * as ed from '/admin/blog/editor.js?v=f761ce1889';
+import * as ed from '/admin/blog/editor.js?v=3b341295d1';
 
 initErrorReporting({ db });
+
+// ── 刚上传、网站还没构建完的博客图片（2026-10-24）──
+// 图片写进仓库后要等网站重新构建（几分钟）才能用 /assets/... 打开。这段时间编辑区・封面预览・上架预览
+// 改用 Worker 直接从仓库取的原图（data: URL，正文过滤规则允许）。正文里存的始终是 /assets/... 路径。
+const assetCache = new Map();
+function blogAssetDataUrl(path) {
+  if (!assetCache.has(path)) {
+    const p = (async () => {
+      const idToken = await auth.currentUser.getIdToken();
+      const res = await fetch(`${WORKER_URL}/blog/asset?path=${encodeURIComponent(path)}`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      if (!res.ok) throw new Error(`图片读取失败（${res.status}）`);
+      const blob = await res.blob();
+      return await new Promise((ok, ng) => {
+        const fr = new FileReader();
+        fr.onload = () => ok(fr.result);
+        fr.onerror = () => ng(fr.error);
+        fr.readAsDataURL(blob);
+      });
+    })();
+    p.catch(() => assetCache.delete(path)); // 失败的不缓存，下次再试
+    assetCache.set(path, p);
+  }
+  return assetCache.get(path);
+}
+window.sdfBlogAsset = blogAssetDataUrl;
+
+async function isLive(path) {
+  try {
+    const r = await fetch('/' + path, { method: 'HEAD', cache: 'no-store' });
+    return r.ok && (r.headers.get('content-type') || '').startsWith('image/');
+  } catch {
+    return false;
+  }
+}
+
+/** 预览页里还没上线的图片换成原图；已上线的不动（和上架后的页面一致）。 */
+async function withPendingImages(html) {
+  const map = {};
+  for (const path of blogImagePaths(html)) {
+    if (await isLive(path)) continue;
+    try {
+      map[path] = await blogAssetDataUrl(path);
+    } catch {
+      /* 取不到就照原样，预览里这张图空着 */
+    }
+  }
+  return replaceBlogImages(html, map);
+}
 
 // 所见即所得编辑器：中文一个、日英各一个（同一时间只显示其一），各自一条工具栏
 window.sdfBlogEd = ed;
@@ -488,6 +575,7 @@ ed.init(
     en: document.getElementById('ed-en'),
   },
   (lang) => onBodyChange(lang),
+  { resolveAsset: blogAssetDataUrl },
 );
 ed.buildToolbar(document.getElementById('toolbar-zh'), () => 'zh', { onImage: insertImage });
 ed.buildToolbar(document.getElementById('toolbar-other'), () => composeOtherLang, {
@@ -761,7 +849,8 @@ window.uploadInlineImage = async function (dataUrl, lang = 'zh') {
   }
   // 上传已经成功，插入光标这步理论上不会失败；即使真的抛错，也不该报成"上传失败"
   // 误导用户重传——上传和插入是两个独立的失败域，分开处理。
-  ed.insertImage(lang, path);
+  assetCache.set(path, Promise.resolve(dataUrl));
+  ed.insertImage(lang, path, dataUrl);
   statusEl.textContent = '✓ 图片已插入';
 };
 
@@ -785,6 +874,7 @@ window.finishPost = async function () {
     // 新选的封面先传进仓库（和正文插图同一个接口），草稿箱里只存路径
     if (composeState.coverChanged && composeState.cover && composeState.cover.startsWith('data:')) {
       const { path } = await api('POST', '/blog/image', { image: composeState.cover });
+      assetCache.set(path, Promise.resolve(composeState.cover));
       composeState.cover = path;
       composeState.coverChanged = false;
     }
@@ -827,13 +917,14 @@ window.publishRow = async function (key) {
   }
   const payload = { tag: d.tag || '', date: d.date, title: d.title, body: d.body };
   if (d.slug) payload.slug = d.slug;
-  if (d.cover) payload.coverPath = d.cover;
+  // 一律写明 coverPath：null＝不要封面（不写的话 Worker 会沿用线上那篇的旧封面，删不掉）
+  payload.coverPath = d.cover || null;
   // 先看预览（2026-10-24 作者要求）：和上架同一份页面，确定了才真的上架
   statusEl.className = 'status';
   statusEl.textContent = '生成预览中…';
   let pv;
   try {
-    pv = previewDoc((await api('POST', '/blog/preview', payload)).html);
+    pv = await withPendingImages(previewDoc((await api('POST', '/blog/preview', payload)).html));
   } catch (e) {
     statusEl.className = 'status err';
     statusEl.textContent = '✗ 预览生成失败，没有上架：' + e.message;

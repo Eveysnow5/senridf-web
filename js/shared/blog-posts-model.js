@@ -105,3 +105,26 @@ export function publishProblem(post, today) {
   if (post.date > today) return '发布日期在未来（上架会马上公开，不是定时发布）';
   return '';
 }
+
+// ── 刚上传、网站还没构建完的博客图片（2026-10-24）──
+// 图片经 Worker 写进仓库后，要等网站重新构建（几分钟）才能用 /assets/... 访问；这段时间里
+// 后台编辑区和上架预览改用 Worker 直接取的原图（data: URL）。正文里存的永远是 /assets/... 路径。
+const BLOG_IMG = /\/(assets\/images\/blog\/[A-Za-z0-9-]+\.webp)/g;
+
+/** img 的 src 是不是博客图片；是就返回仓库内路径（assets/images/blog/…），否则 null。 */
+export function blogImagePathOf(src) {
+  const m = /^(?:https?:\/\/[^/]+)?\/(assets\/images\/blog\/[A-Za-z0-9-]+\.webp)$/.exec(
+    String(src || ''),
+  );
+  return m ? m[1] : null;
+}
+
+/** HTML（含文章页里的 JSON）中出现的博客图片路径，去重。 */
+export function blogImagePaths(html) {
+  return [...new Set([...String(html).matchAll(BLOG_IMG)].map((m) => m[1]))];
+}
+
+/** 把 map 里有的博客图片路径（/assets/…）换成对应的地址；没有的原样留着。 */
+export function replaceBlogImages(html, map) {
+  return String(html).replace(BLOG_IMG, (m, path) => map[path] || m);
+}

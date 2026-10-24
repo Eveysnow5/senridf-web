@@ -34,6 +34,16 @@ export async function getFile(repo, path, token) {
   return { text: b64decodeUtf8(data.content), sha: data.sha };
 }
 
+// 读二进制文件（图片）原样字节。不存在返回 null。
+export async function getFileBytes(repo, path, token) {
+  const res = await fetch(`${GH}/repos/${repo}/contents/${path}`, {
+    headers: { ...ghHeaders(token), Accept: 'application/vnd.github.raw' },
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`GitHub 读取失败（${res.status}）`);
+  return res.arrayBuffer();
+}
+
 // 写文件：每次现取最新 sha 再提交；409/422 视为并发冲突，重取一次再试。
 // content 默认当文本处理（UTF-8→base64）；alreadyBase64=true 时按图片等二进制数据处理，
 // content 本身已经是算好的 base64 字符串，直接透传给 GitHub API。

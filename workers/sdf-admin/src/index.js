@@ -9,7 +9,7 @@ import { isAdmin } from '../../../js/shared/admins.js';
 import { allowedOrigin, validateContentPayload } from './validate.js';
 import { CONTENT_API_VERSION, saveContentChanges } from './content-save.js';
 import { createRateLimiter } from './rateLimit.js';
-import { getFile, putFile, commitFiles, listWorkflowRuns } from './github.js';
+import { getFile, getFileBytes, putFile, commitFiles, listWorkflowRuns } from './github.js';
 import { DEPLOY_WORKFLOW, deployState } from './deploy-status.js';
 import {
   validateTranslateFields,
@@ -26,6 +26,7 @@ import {
   removeFromSitemap,
   LISTING_PATH,
   SITEMAP_PATH,
+  COVER_PATH_RE,
 } from './blog.js';
 import {
   validateImageKey,
@@ -237,6 +238,22 @@ export default {
 
       // 上架前预览（2026-10-24）：和上架同一个 buildArticle、同一份列表页指纹，只返回 HTML 不提交。
       // 新文章还没有 slug：用 <日期>-0000 占位，只影响 head 里的规范网址，页面上看不到。
+      // 刚上传、网站还没重新构建完的博客图片：后台编辑区和上架预览从这里直接取仓库里的原图
+      // （2026-10-24 作者：插图后编辑区看不到、预览里没有封面）。只读 assets/images/blog/ 下的 webp。
+      if (url.pathname === '/blog/asset' && request.method === 'GET') {
+        const path = url.searchParams.get('path') || '';
+        if (!COVER_PATH_RE.test(path)) return json(400, { error: '图片路径格式错误' }, cors);
+        const bytes = await getFileBytes(REPO, path, env.GITHUB_TOKEN);
+        if (!bytes) return json(404, { error: '仓库里没有这张图' }, cors);
+        return new Response(bytes, {
+          headers: {
+            'Content-Type': 'image/webp',
+            'Cache-Control': 'private, max-age=300',
+            ...cors,
+          },
+        });
+      }
+
       if (url.pathname === '/blog/preview' && request.method === 'POST') {
         let body;
         try {

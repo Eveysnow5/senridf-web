@@ -86,9 +86,13 @@ export function buildArticle(body, { slug, posts, listing, coverUpload = null })
   const lacking = ARTICLE_ASSETS.filter((a) => !want[a]);
   // 读不到指纹就停：写出没有 ?v= 的页面只会被上线检查拦下，作者看到的是「发布成功但前台空白」
   if (lacking.length) throw new Error(`读不到资源指纹（${lacking.join('、')}），文章页没法生成`);
+  // 载荷里写明了 coverPath（哪怕是 null＝删掉封面）就按它；没写这个字段的旧载荷才沿用线上那篇的封面。
+  // 2026-10-24 之前一律「没有就沿用」，封面上传一次就删不掉。
   const cover = coverUpload
     ? `assets/images/blog/${slug}-cover.webp`
-    : body.coverPath || (existing && existing.cover) || null;
+    : 'coverPath' in body
+      ? body.coverPath || null
+      : (existing && existing.cover) || null;
   const entry = {
     slug,
     date: body.date,

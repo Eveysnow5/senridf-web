@@ -16,6 +16,7 @@ import {
   bodyToHtml,
   tagSequence,
 } from '/js/shared/blog-content.js?v=7eeefd1b98';
+import { blogImagePathOf } from '/js/shared/blog-posts-model.js?v=1bd78589de';
 
 const LANGS = ['zh', 'ja', 'en'];
 const PLACEHOLDER = { zh: '在这里写中文正文…', ja: '日本語の本文', en: 'English body' };
@@ -23,6 +24,9 @@ const frames = {};
 let onChange = () => {};
 let lastLang = 'zh';
 const ready = {};
+// 网站还没构建完的博客图片：编辑区里显示 Worker 取来的原图，原路径记在这个属性上，getBody 时还原。
+const LOCAL_ATTR = 'data-sdf-path';
+let resolveAsset = null;
 
 const doc = (lang) => frames[lang].contentDocument;
 const root = (lang) => doc(lang).getElementById('ed');
@@ -52,8 +56,26 @@ function onPaste(lang, e) {
   doc(lang).execCommand('insertHTML', false, html);
 }
 
+// 编辑区里的图片加载失败（多半是刚上传、网站还没构建完）：改用 Worker 取的原图显示
+function onImgError(e) {
+  const img = e.target;
+  if (!img || img.tagName !== 'IMG' || img.hasAttribute(LOCAL_ATTR) || !resolveAsset) return;
+  const path = blogImagePathOf(img.getAttribute('src'));
+  if (!path) return;
+  img.setAttribute(LOCAL_ATTR, path);
+  resolveAsset(path)
+    .then((url) => {
+      if (img.getAttribute(LOCAL_ATTR) === path) img.src = url;
+    })
+    .catch((err) => {
+      // 取不到原图：这张图在编辑区里显示为破图，正文里的路径不受影响（上线后就正常了）
+      console.warn('[blog] 编辑区图片取不到', path, err);
+    });
+}
+
 function wire(lang) {
   const d = doc(lang);
+  d.addEventListener('error', onImgError, true);
   d.execCommand('defaultParagraphSeparator', false, 'p');
   const r = root(lang);
   r.dataset.placeholder = PLACEHOLDER[lang];
@@ -72,8 +94,9 @@ function wire(lang) {
 }
 
 /** frame 元素登记；返回全部载入完成的 Promise。 */
-export function init(frameEls, changeCb) {
+export function init(frameEls, changeCb, opts = {}) {
   onChange = changeCb || onChange;
+  resolveAsset = opts.resolveAsset || null;
   for (const lang of LANGS) {
     frames[lang] = frameEls[lang];
     ready[lang] = new Promise((resolve) => {
@@ -107,7 +130,16 @@ export function getBody(lang) {
   if (!frames[lang] || !frames[lang].contentDocument) return '';
   const r = root(lang);
   if (!r) return '';
-  const html = window.DOMPurify.sanitize(r.innerHTML, PURIFY_CONFIG).trim();
+  let src = r.innerHTML;
+  if (r.querySelector(`img[${LOCAL_ATTR}]`)) {
+    const c = r.cloneNode(true);
+    for (const img of c.querySelectorAll(`img[${LOCAL_ATTR}]`)) {
+      img.setAttribute('src', '/' + img.getAttribute(LOCAL_ATTR));
+      img.removeAttribute(LOCAL_ATTR);
+    }
+    src = c.innerHTML;
+  }
+  const html = window.DOMPurify.sanitize(src, PURIFY_CONFIG).trim();
   const text = (r.textContent || '').trim();
   return text || /<img\b/i.test(html) ? html : '';
 }
@@ -184,9 +216,16 @@ export const commands = {
   },
 };
 
-/** 在某语言编辑区的光标处插入图片（已上传，path 是仓库内路径）。 */
-export function insertImage(lang, path) {
-  exec(lang, 'insertHTML', `<img src="/${path}" alt="">`);
+/** 在某语言编辑区的光标处插入图片（已上传，path 是仓库内路径）。
+ *  localSrc：刚上传时手上的 data: URL——网站还没构建完，先用它显示，正文里存的仍是 /path。 */
+export function insertImage(lang, path, localSrc) {
+  exec(
+    lang,
+    'insertHTML',
+    localSrc
+      ? `<img src="${localSrc}" ${LOCAL_ATTR}="${path}" alt="">`
+      : `<img src="/${path}" alt="">`,
+  );
 }
 
 export function lastFocused() {

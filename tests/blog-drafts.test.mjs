@@ -11,6 +11,9 @@ import {
   newDocId,
   docIdForSlug,
   previewDoc,
+  blogImagePathOf,
+  blogImagePaths,
+  replaceBlogImages,
 } from '../js/shared/blog-posts-model.js';
 import { buildArticle } from '../workers/sdf-admin/src/blog.js';
 
@@ -130,6 +133,51 @@ test('buildArticle：封面优先级 上传 > coverPath > 原有；标签去空�
     'assets/images/blog/2025-03-15-abcd-cover.webp',
   );
   assert.equal(at({}).tag, '思考');
+});
+
+// 2026-10-24 作者：封面传上去就删不掉——以前没给 coverPath 就沿用线上旧封面，后台删了也没用
+test('buildArticle：coverPath 写明 null＝删掉封面；文章页不出封面图', () => {
+  const posts = [{ slug: '2025-03-15-abcd', cover: 'assets/images/blog/old.webp' }];
+  const r = buildArticle(
+    { ...draft, coverPath: null },
+    { slug: '2025-03-15-abcd', posts, listing: LISTING },
+  );
+  assert.equal(r.entry.cover, null);
+  assert.doesNotMatch(r.html, /blog-post__cover/);
+  const page = readFileSync(new URL('../admin/blog/index.html', import.meta.url), 'utf8');
+  assert.match(page, /payload\.coverPath = d\.cover \|\| null;/, '后台上架时没写明 coverPath');
+  assert.match(page, /function removeCover\(\)/);
+});
+
+test('还没上线的博客图片：识别路径、只替换给了地址的那几张', () => {
+  assert.equal(
+    blogImagePathOf('/assets/images/blog/inline-1-a.webp'),
+    'assets/images/blog/inline-1-a.webp',
+  );
+  assert.equal(
+    blogImagePathOf('https://www.senridf.com/assets/images/blog/x-cover.webp'),
+    'assets/images/blog/x-cover.webp',
+  );
+  assert.equal(blogImagePathOf('/assets/images/site/a.webp'), null);
+  assert.equal(blogImagePathOf('data:image/webp;base64,AAAA'), null);
+  // 文章页里的图在 JSON 字符串中（引号被转义），封面在 img 标签里，两处都要认出来
+  const html =
+    '<img src="/assets/images/blog/c.webp" class="blog-post__cover">' +
+    '<script type="application/json">{"zh":{"body":"<img src=\\"/assets/images/blog/a.webp\\">' +
+    '<img src=\\"/assets/images/blog/b.webp\\">"}}</script>';
+  assert.deepEqual(blogImagePaths(html), [
+    'assets/images/blog/c.webp',
+    'assets/images/blog/a.webp',
+    'assets/images/blog/b.webp',
+  ]);
+  const out = replaceBlogImages(html, {
+    'assets/images/blog/a.webp': 'data:image/webp;base64,QQ==',
+  });
+  assert.ok(out.includes('src=\\"data:image/webp;base64,QQ==\\"'));
+  assert.ok(
+    out.includes('/assets/images/blog/b.webp') && out.includes('/assets/images/blog/c.webp'),
+  );
+  assert.ok(!out.includes('/assets/images/blog/a.webp'));
 });
 
 test('buildArticle：读不到资源指纹就报错（不生成会白屏的页面）', () => {
