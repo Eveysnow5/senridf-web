@@ -15,7 +15,11 @@ import {
   blogImagePaths,
   replaceBlogImages,
 } from '../js/shared/blog-posts-model.js';
-import { buildArticle } from '../workers/sdf-admin/src/blog.js';
+import {
+  buildArticle,
+  normalizeExcerpt,
+  validatePublishPayload,
+} from '../workers/sdf-admin/src/blog.js';
 
 const t3 = (s) => ({ zh: s, ja: s, en: s });
 const live = (slug, date) => ({ slug, date, tag: '', title: t3('线上' + slug), body: t3('x') });
@@ -207,4 +211,44 @@ test('预览＝上架页面只改两处：base 指向站点根、没有统计脚
 test('模板变了找不到要改的地方 → 报错，不给一个和线上不一样的预览', () => {
   assert.throws(() => previewDoc('<html><base href="./"></html>'), /模板变了/);
   assert.throws(() => previewDoc('<html><base href="../../"></html>'), /统计脚本/);
+});
+
+// 2026-10-24：首页摘要可在后台单独写；留空就由首页从正文自动取
+test('首页摘要：三语都空不写进 posts.json；填了去空白存下；只填一部分上架被拦', () => {
+  assert.equal(normalizeExcerpt(null), null);
+  assert.equal(normalizeExcerpt({ zh: ' ', ja: '', en: '' }), null);
+  assert.deepEqual(normalizeExcerpt({ zh: ' 中 ', ja: '日', en: 'en ' }), {
+    zh: '中',
+    ja: '日',
+    en: 'en',
+  });
+  const at = (extra) =>
+    buildArticle({ ...draft, ...extra }, { slug: '2025-03-15-abcd', posts: [], listing: LISTING })
+      .entry;
+  assert.equal('excerpt' in at({}), false);
+  assert.equal('excerpt' in at({ excerpt: { zh: '', ja: '', en: '' } }), false);
+  assert.deepEqual(at({ excerpt: { zh: '摘', ja: '要', en: 'ex' } }).excerpt, {
+    zh: '摘',
+    ja: '要',
+    en: 'ex',
+  });
+  assert.equal(validatePublishPayload({ ...draft, excerpt: 'x' }).ok, false);
+  assert.equal(validatePublishPayload({ ...draft, excerpt: { zh: 'a'.repeat(1501) } }).ok, false);
+  assert.equal(
+    validatePublishPayload({ ...draft, excerpt: { zh: '摘', ja: '要', en: 'ex' } }).ok,
+    true,
+  );
+  const full = { title: t3('t'), body: t3('<p>b</p>'), date: '2025-03-15' };
+  assert.equal(
+    publishProblem({ ...full, excerpt: { zh: '摘', ja: '', en: '' } }, '2026-10-24'),
+    '首页摘要缺 ja・en（编辑后可点「一键同步日英」，或把摘要全部清空改用自动摘要）',
+  );
+  assert.equal(publishProblem({ ...full, excerpt: { zh: '', ja: '', en: '' } }, '2026-10-24'), '');
+  assert.equal(
+    publishProblem({ ...full, excerpt: { zh: '摘', ja: '要', en: 'ex' } }, '2026-10-24'),
+    '',
+  );
+  const page = readFileSync(new URL('../admin/blog/index.html', import.meta.url), 'utf8');
+  assert.match(page, /if \(d\.excerpt\) payload\.excerpt = d\.excerpt;/, '上架时没带首页摘要');
+  assert.match(page, /key: 'excerpt'/, '一键同步日英没带首页摘要');
 });

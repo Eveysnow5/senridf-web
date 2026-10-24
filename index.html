@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400&family=Noto+Serif+JP:wght@300;400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <base href="./">
-  <link rel="stylesheet" href="css/main.css?v=b41b02db32">
+  <link rel="stylesheet" href="css/main.css?v=1d98385850">
   <!-- 结构化数据（Organization）：设立日＝履歴事項全部証明書（令和7年2月25日）；所在地＝作者 2026-10-06 确认。
        资本金按作者意见不公开。 -->
   <script type="application/ld+json">
@@ -144,9 +144,9 @@
       </div>
     </section>
 
-    <!-- ④ 博客：最近两篇（2026-10-24 起；原来是三个固定栏目。三篇时图大不起来、摘要放不下两三百字，改两篇）。
+    <!-- ④ 博客：只放最新一篇（2026-10-24 第三版：作者看样稿定的，大图＋300 字以上摘要；摘要可在后台单独写）。
          文字由页底脚本从 solutions/blog/posts.json 填；缩略图：文章有封面用封面，
-         没有就用后台「网站内容」里的三张图（data-image-key，仍可在后台换）。 -->
+         没有就用后台「网站内容」里的那张图（data-image-key="journal1_img"，仍可在后台换）。 -->
     <section class="section">
       <div data-animate>
         <span class="section__eyebrow" data-i18n="journal_eyebrow">ブログ</span>
@@ -158,15 +158,6 @@
       <div class="journal-list" data-animate>
         <a href="solutions/blog/" class="journal-item" hidden>
           <div class="journal-item__thumb" data-image-key="journal1_img"></div>
-          <div>
-            <div class="journal-item__tag"></div>
-            <h3 class="journal-item__name"></h3>
-            <p class="journal-item__desc"></p>
-          </div>
-          <span class="journal-item__arrow" aria-hidden="true">→</span>
-        </a>
-        <a href="solutions/blog/" class="journal-item" hidden>
-          <div class="journal-item__thumb" data-image-key="journal2_img"></div>
           <div>
             <div class="journal-item__tag"></div>
             <h3 class="journal-item__name"></h3>
@@ -246,7 +237,7 @@
   <script src="js/main.js?v=3cd377f02f"></script>
   <script type="module" src="js/tracking.js?v=5aa1920e9e"></script>
   <script type="module">
-    // 首页博客块：posts.json 已按日期新→旧，取前两篇（页面里有几个格子就放几篇）。换语言时重填。
+    // 首页博客块：posts.json 已按日期新→旧，只放最新一篇（页面里只有一个格子）。换语言时重填。
     import { plainExcerpt } from '/js/shared/blog-content.js?v=7eeefd1b98';
     import { tagLabel } from '/js/shared/blog-tags.js?v=2d02e3ed50';
     const items = [...document.querySelectorAll('.journal-item')];
@@ -264,13 +255,14 @@
         a.href = `solutions/blog/${p.slug}.html`;
         a.querySelector('.journal-item__tag').textContent = (tag ? tag + ' · ' : '') + p.date;
         a.querySelector('.journal-item__name').textContent = pick(p.title);
-        // 取 300 字交给 CSS 按屏高给的行数省略（css/main.css 的 --jt-lines）
-        // 中日文 300 字、英文 600 字符（约 100 词，字母窄，同样行数放得下更多）。
-        // 截断时补「…」（plainExcerpt 只截不补；CSS 的省略号只在行数用完时出现）
-        const max = L === 'en' ? 600 : 300;
-        const full = plainExcerpt(pick(p.body), max + 1);
+        // 摘要：后台单独写的「首页摘要」优先（原样显示）；没写就从正文取
+        // 中日文 330 字、英文 700 字符，截断时补「…」（plainExcerpt 只截不补）。
+        // 写得太长时由 CSS 的 --jt-lines 截住，保证一屏放得下。
+        const own = p.excerpt && String(p.excerpt[L] || '').trim();
+        const max = L === 'en' ? 700 : 330;
+        const full = own || plainExcerpt(pick(p.body), max + 1);
         a.querySelector('.journal-item__desc').textContent =
-          full.length > max ? full.slice(0, max) + '…' : full;
+          !own && full.length > max ? full.slice(0, max) + '…' : full;
         const thumb = a.querySelector('.journal-item__thumb');
         let img = thumb.querySelector('.journal-cover');
         if (p.cover) {

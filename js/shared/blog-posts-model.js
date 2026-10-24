@@ -88,6 +88,16 @@ export function publishProblem(post, today) {
     (l) => !(post.title && String(post.title[l] || '').trim()) || !(post.body && post.body[l]),
   );
   if (empty.length) return `${empty.join('・')} 的标题或正文是空的（编辑后可点「一键同步日英」）`;
+  // 首页摘要可以不填（首页从正文自动取）；填了就必须三语都有，否则别的语言首页显示的是另一种语言
+  const ex = post.excerpt;
+  if (ex && typeof ex === 'object') {
+    const has = (l) => typeof ex[l] === 'string' && ex[l].trim();
+    const filled = ['zh', 'ja', 'en'].filter(has);
+    if (filled.length && filled.length < 3) {
+      const miss = ['zh', 'ja', 'en'].filter((l) => !has(l));
+      return `首页摘要缺 ${miss.join('・')}（编辑后可点「一键同步日英」，或把摘要全部清空改用自动摘要）`;
+    }
+  }
   // 标签可以不填；填了就必须三语都有（2026-10-24：英文页出现过中文标签）
   const tag = post.tag;
   if (typeof tag === 'string' && tag.trim()) {

@@ -52,6 +52,18 @@ export function validatePublishPayload(body) {
   if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return { ok: false, error: '日期格式错误' };
   }
+  // 首页摘要（2026-10-24）：可留空；有就是 {zh, ja, en} 纯文字
+  const { excerpt } = body;
+  if (excerpt !== undefined && excerpt !== null) {
+    if (typeof excerpt !== 'object') return { ok: false, error: '首页摘要格式错误' };
+    for (const l of ['zh', 'ja', 'en']) {
+      const v = excerpt[l];
+      if (v !== undefined && v !== null && typeof v !== 'string')
+        return { ok: false, error: '首页摘要格式错误' };
+      if (typeof v === 'string' && v.length > 1500)
+        return { ok: false, error: '首页摘要太长（1500 字以内）' };
+    }
+  }
   for (const lang of ['ja', 'zh', 'en']) {
     if (!title || typeof title[lang] !== 'string' || !title[lang].trim()) {
       return { ok: false, error: `缺少${lang}标题` };
@@ -101,6 +113,9 @@ export function buildArticle(body, { slug, posts, listing, coverUpload = null })
     body: body.body,
     cover,
   };
+  // 首页摘要：三语都空就不写这个字段（首页从正文自动取）
+  const ex = normalizeExcerpt(body.excerpt);
+  if (ex) entry.excerpt = ex;
   return { entry, html: renderArticleHtml(entry, want) };
 }
 
@@ -117,6 +132,15 @@ export function normalizeTag(tag) {
 const tagIn = (tag, lang) => (tag && typeof tag === 'object' ? tag[lang] || '' : tag || '');
 
 // posts.json 是数组；按 slug 去重插入/更新，按 date 倒序排列。
+/** 首页摘要 → {zh, ja, en}（去首尾空白）；三语都空返回 null。 */
+export function normalizeExcerpt(excerpt) {
+  if (!excerpt || typeof excerpt !== 'object') return null;
+  const out = {};
+  for (const l of ['zh', 'ja', 'en'])
+    out[l] = typeof excerpt[l] === 'string' ? excerpt[l].trim() : '';
+  return out.zh || out.ja || out.en ? out : null;
+}
+
 export function upsertPost(posts, entry) {
   const filtered = posts.filter((p) => p.slug !== entry.slug);
   filtered.push(entry);

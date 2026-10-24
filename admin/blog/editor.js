@@ -16,7 +16,7 @@ import {
   bodyToHtml,
   tagSequence,
 } from '/js/shared/blog-content.js?v=7eeefd1b98';
-import { blogImagePathOf } from '/js/shared/blog-posts-model.js?v=1bd78589de';
+import { blogImagePathOf } from '/js/shared/blog-posts-model.js?v=0fefde1b7e';
 
 const LANGS = ['zh', 'ja', 'en'];
 const PLACEHOLDER = { zh: '在这里写中文正文…', ja: '日本語の本文', en: 'English body' };

@@ -1721,21 +1721,20 @@ main { padding-top: var(--nav-h); }
 }
 
 .journal-list { border-top: 1px solid var(--c-border); }
-/* 首页博客块＝最近两篇（2026-10-24 第二版，作者要「图大一点、两三百字」）。
-   一屏一页的限制下，三篇时常见笔记本屏只放得下 3 行摘要、图 160px；两篇才做得到。
-   图高按屏高算（--jt-h），摘要行数按屏高给（--jt-lines）；一行字数随屏宽：
-   1440 宽约 62 字、1790 宽约 90 字 → 3〜6 行＝约 200〜300 字。摘要取 300 字交给省略号收尾。 */
+/* 首页博客块＝只放最新一篇（2026-10-24 第三版，作者看样稿定的）：左大图、右边摘要 300 字以上。
+   图高按屏高算（--jt-h）：756 高的屏 270px、900 高起 330px（面积约为原 160×120 的 5〜7 倍）。
+   摘要：作者在后台单独写的「首页摘要」，没写就从正文取 330 字（英文 700 字符）。
+   --jt-lines 只是保险：摘要写得太长时截在这里，保证整块仍在一屏之内。 */
 :root {
-  --jt-h: clamp(120px, calc((100svh - 64px - 470px) / 2), 260px);
-  --jt-lines: 5;
+  --jt-h: clamp(240px, calc(100svh - 64px - 420px), 330px);
+  --jt-lines: 9;
 }
-@media (min-height: 1000px) { :root { --jt-lines: 6; } }
 .journal-item {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  column-gap: 36px;
+  column-gap: 48px;
   align-items: center;
-  padding: 22px 0;
+  padding: 28px 0;
   border-bottom: 1px solid var(--c-border);
   color: inherit;
 }
@@ -1749,25 +1748,26 @@ main { padding-top: var(--nav-h); }
 }
 .journal-item__name {
   font-family: var(--f-serif);
-  font-size: 1.25rem;
+  font-size: 1.375rem;
   font-weight: 300;
   letter-spacing: 0.08em;
   color: var(--c-text);
-  margin-bottom: 10px;
+  margin-bottom: 14px;
   transition: color 200ms var(--ease);
 }
 .journal-item__desc {
   font-family: var(--f-sans);
-  font-size: 0.875rem;
+  font-size: 15px;
   font-weight: 300;
-  line-height: 1.85;
+  line-height: 1.9;
+  text-align: justify;
   color: var(--c-text-2);
 }
 .journal-item__name,
 .journal-item__desc {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
+  -webkit-line-clamp: 2;
   overflow: hidden;
 }
 .journal-item__desc { -webkit-line-clamp: var(--jt-lines); }
@@ -1818,20 +1818,23 @@ main { padding-top: var(--nav-h); }
     height: clamp(110px, calc(100svh - var(--nav-h) - 280px), 260px);
   }
   .home-snap .showcase-card__desc { line-height: 1.6; }
-  /* 矮屏：图 120px 高、摘要 3 行（宽屏一行约 90 字＝约 270 字；1272 宽约 55 字＝约 165 字） */
-  .home-snap { --jt-lines: 3; }
-  .home-snap .journal-item { padding: 12px 0; }
-  .home-snap .journal-item__name { font-size: 1.125rem; margin-bottom: 4px; }
-  .home-snap .journal-item__tag { margin-bottom: 4px; }
-  .home-snap .journal-item__desc { line-height: 1.7; }
+  /* 矮屏：只收紧上下留白；图（最小 240px 高）和摘要行数不变 */
+  .home-snap .journal-item { padding: 20px 0; }
+}
+/* 很矮的屏（如 1272×606，实测超出 35px）：图最小 200px、摘要字号 14px 行距收一点，仍放全 330 字 */
+@media (min-width: 1025px) and (min-height: 500px) and (max-height: 650px) {
+  .home-snap { --jt-h: clamp(200px, calc(100svh - 64px - 420px), 330px); }
+  .home-snap .journal-item { padding: 14px 0; }
+  .home-snap .journal-item__name { margin-bottom: 8px; }
+  .home-snap .journal-item__desc { font-size: 14px; line-height: 1.75; }
 }
 
 @media (max-width: 768px) {
   .showcase-grid { grid-template-columns: 1fr; gap: 40px; }
   .home-more { text-align: left; }
-  /* 手机：图铺满宽度放上面，下面标题・4 行摘要 */
-  .journal-item { grid-template-columns: minmax(0, 1fr); row-gap: 14px; padding: 24px 0; }
-  .journal-item__thumb { height: auto; aspect-ratio: 16 / 9; }
-  .journal-item__desc { -webkit-line-clamp: 4; }
+  /* 手机：图铺满宽度放上面（4:3），下面标题・摘要 */
+  .journal-item { grid-template-columns: minmax(0, 1fr); row-gap: 16px; padding: 24px 0; }
+  .journal-item__thumb { height: auto; aspect-ratio: 4 / 3; }
+  .journal-item__desc { -webkit-line-clamp: 14; }
   .journal-item__arrow { display: none; }
 }

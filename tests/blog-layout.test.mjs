@@ -1,4 +1,4 @@
-// 2026-10-24 作者要求的四处：正文两端对齐、标题 PC 尽量一行、博客做成第一层导航、首页博客块＝最近三篇。
+// 2026-10-24 作者要求的四处：正文两端对齐、标题 PC 尽量一行、博客做成第一层导航、首页博客块（现为只放最新一篇，见下方测试）。
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
@@ -28,14 +28,18 @@ test('导航：博客是第一层入口，不在「解决方案」下拉里（PC
   assert.match(nav, /nav__mobile-parent nav__mobile-parent--link" data-i18n="nav_blog"/);
 });
 
-test('首页博客块：两个位置由 posts.json 填（摘要取 300 字），没有写死的栏目文案', () => {
+// 2026-10-24 第三版（作者看样稿定的）：只放最新一篇、大图、摘要 300 字以上，可在后台单独写
+test('首页博客块：一个位置；后台写的首页摘要优先，没写才从正文取 330 字', () => {
   const html = read('index.html');
-  assert.equal((html.match(/class="journal-item" hidden/g) || []).length, 2);
-  assert.match(html, /const max = L === 'en' \? 600 : 300;/);
-  assert.match(html, /full\.length > max \? full\.slice\(0, max\) \+ '…'/);
+  assert.equal((html.match(/class="journal-item" hidden/g) || []).length, 1);
+  assert.match(html, /const own = p\.excerpt && String\(p\.excerpt\[L\] \|\| ''\)\.trim\(\);/);
+  assert.match(html, /const max = L === 'en' \? 700 : 330;/);
+  assert.match(html, /!own && full\.length > max \? full\.slice\(0, max\) \+ '…'/);
   assert.doesNotMatch(html, /journal[123]_(tag|name|desc)/);
   assert.match(html, /fetch\('\/solutions\/blog\/posts\.json'\)/);
-  for (const n of [1, 2]) assert.match(html, new RegExp(`data-image-key="journal${n}_img"`));
+  assert.match(html, /data-image-key="journal1_img"/);
+  const css = read('css/main.css');
+  assert.match(css, /--jt-h: clamp\(240px, calc\(100svh - 64px - 420px\), 330px\);/);
 });
 
 test('正文三语两端对齐（文章页和后台编辑区共用这条样式）', () => {
