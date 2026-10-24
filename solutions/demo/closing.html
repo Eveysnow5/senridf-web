@@ -612,14 +612,6 @@
                 <p id="ce-yayoi-open-note" class="ce-yayoi hidden" data-i18n="ce_yayoi_open_note">「弥生会計期首残高」は、記帳を始めた月の期首残高を弥生会計に取り込める形にしたファイルです。弥生会計の［科目残高入力］を開き、［ファイル］→［インポート］で読み込みます。繰越利益剰余金は入れていません（弥生会計では直接入力できない科目です）。取り込んだあと［貸借調整］を押すと弥生会計が計算します。その額がこの道具の期首残高の繰越利益剰余金と同じなら、残高はすべて移っています。</p>
               </div>
               <div id="ce-fs-out" class="ce-hint" style="margin-top:6px"></div>
-              <div id="ce-ho" class="ce-cy hidden">
-                <h3 class="ce-h3" data-i18n="ce_ho_h">税理士に渡す</h3>
-                <p class="ce-hint" data-i18n="ce_ho_d">作業フォルダの中身（会社資料・銀行明細・証憑の原本・締めの結果）を 1 つの zip にまとめます。バックアップは入れません。zip には各ファイルの指紋と今回の締めの要約が入っていて、税理士の側で途中で変わっていないことを確かめられます。サーバーには送りません。メール・USB・お使いのクラウドで渡してください。</p>
-                <div class="ce-row">
-                  <button type="button" id="ce-ho-go" class="ce-btn2" data-i18n="ce_ho_go">引き継ぎ用の zip を作る</button>
-                </div>
-                <ul id="ce-ho-log" class="ce-zlog" aria-live="polite"></ul>
-              </div>
               <div id="ce-cy" class="ce-cy hidden">
                 <h3 class="ce-h3" data-i18n="ce_cy_h">年度の確定</h3>
                 <p class="ce-hint" data-i18n="ce_cy_d">申告を済ませた年度を確定します。確定した年度の数字は、そのあと変わりません。誤りが見つかったら、当期に更正の仕訳を入れて直します。確定すると作業フォルダの closed フォルダに確定ファイルができ、次からの締めは次の年度の初めから計算します。</p>
@@ -3097,7 +3089,6 @@
        data-ce-tr="checks.3.name" のように置き場所を記録し、画面の言語を切り替えたら差し替える
        （表を描き直すと書きかけの回答フォームが消えるので、文字だけ替える）。 */
     let shown = null;
-    let closedAt = '';
     function trSpan(parent, path, text, cls) {
       const el = document.createElement(cls ? 'div' : 'span');
       if (cls) el.className = cls;
@@ -3197,9 +3188,6 @@
 
     function render(r, isSample, switching) {
       shown = r;
-      if (!isSample && !switching) closedAt = new Date().toISOString();
-      $('ce-ho').classList.toggle('hidden', isSample || !dirHandle);
-      if (!switching) $('ce-ho-log').replaceChildren();
       if (!isSample && r.rules_preview) renderRules(r.rules_preview);
       // 回答 → 银行规则的候选。切语言重画时不动（勾选和记录留着）
       const ansRules = !isSample && r.answer_rules ? r.answer_rules.rules || [] : [];
@@ -3859,65 +3847,6 @@
       $('ce-rerun-note').classList.toggle('hidden', !(n && dirHandle && lastRun && lastRun.source === 'upload'));
     }
     $('ce-rerun').addEventListener('click', () => lastRun && run(lastRun.source, true));
-    // ── 交给税理士：工作文件夹 → 交接 zip（closing-handoff.mjs）。作者 2026-10-23：不经过服务器 ──
-    // 放进包里的：文件夹里的全部文件（证凭原件・结账结果也放），备份文件夹・隐藏文件・Excel 的锁文件不放
-    let handoff = null;
-    const loadHandoff = async () => (handoff ||= await import('./closing-handoff.mjs?v=1'));
-    async function readAll(h, prefix) {
-      const baks = Object.values(NAMES).map((n) => n.bak);
-      const out = [];
-      for await (const [name, child] of h.entries()) {
-        if (name.startsWith('.') || name.startsWith('~$')) continue;
-        const path = prefix ? `${prefix}/${name}` : name;
-        if (child.kind === 'directory') {
-          if (OUTS.includes(prefix) && baks.includes(name)) continue; // 结账结果/备份/
-          out.push(...(await readAll(child, path)));
-        } else out.push({ path, buf: await (await child.getFile()).arrayBuffer() });
-      }
-      return out;
-    }
-    function handoffMeta(r) {
-      const c = counts(r); // 和页面的分类一样：疑似错误・待处理・待确认（件数）＋告知（不算进件数）
-      return {
-        company: r.company,
-        month: r.month,
-        month_from: r.month_from,
-        ok: !!r.ok,
-        checks: {
-          n: r.checks.length,
-          fail: r.checks.filter((c) => c.status === 'FAIL').map((c) => c.id),
-          skip: r.checks.filter((c) => c.status === 'SKIP').length,
-        },
-        pending: { n: c.err + c.todo + c.ask, err: c.err, todo: c.todo, ask: c.ask, info: c.info },
-        closed_at: closedAt,
-        packed_by: evBy() || loginName || '',
-        lang: ui(),
-      };
-    }
-    $('ce-ho-go').addEventListener('click', async () => {
-      const log = 'ce-ho-log';
-      $(log).replaceChildren();
-      const r = shown;
-      if (!r || !dirHandle) return;
-      const btn = $('ce-ho-go');
-      btn.disabled = true;
-      const wait = zlog(log, '', 'ce_ho_reading');
-      try {
-        const ho = await loadHandoff();
-        const all = await readAll(dirHandle, '');
-        const { zip, manifest } = await ho.pack(all, handoffMeta(r));
-        const name = `${ho.folderName(r.company)}_${r.month}_${window.sdfT('ce_ho_file')}.zip`;
-        download(zip, name, 'application/zip');
-        wait.remove();
-        zlog(log, 'ok', 'ce_ho_ok', { name, n: manifest.files.length, mb: (zip.length / 1e6).toFixed(1) });
-      } catch (e) {
-        console.error(e);
-        wait.remove();
-        zlog(log, 'ng', 'ce_ho_err', { msg: String((e && e.message) || e) });
-      } finally {
-        btn.disabled = false;
-      }
-    });
     function download(bytes, name, type) {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([bytes], { type }));
@@ -3988,6 +3917,6 @@
     });
     updateRerun();
   </script>
-  <script src="../../js/main.js?v=82d0c04a73"></script>
+  <script src="../../js/main.js?v=364a487419"></script>
 </body>
 </html>
