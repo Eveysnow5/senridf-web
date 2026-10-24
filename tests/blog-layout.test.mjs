@@ -28,12 +28,14 @@ test('导航：博客是第一层入口，不在「解决方案」下拉里（PC
   assert.match(nav, /nav__mobile-parent nav__mobile-parent--link" data-i18n="nav_blog"/);
 });
 
-test('首页博客块：三个位置由 posts.json 填，没有写死的栏目文案', () => {
+test('首页博客块：两个位置由 posts.json 填（摘要取 300 字），没有写死的栏目文案', () => {
   const html = read('index.html');
-  assert.equal((html.match(/class="journal-item" hidden/g) || []).length, 3);
+  assert.equal((html.match(/class="journal-item" hidden/g) || []).length, 2);
+  assert.match(html, /const max = L === 'en' \? 600 : 300;/);
+  assert.match(html, /full\.length > max \? full\.slice\(0, max\) \+ '…'/);
   assert.doesNotMatch(html, /journal[123]_(tag|name|desc)/);
   assert.match(html, /fetch\('\/solutions\/blog\/posts\.json'\)/);
-  for (const n of [1, 2, 3]) assert.match(html, new RegExp(`data-image-key="journal${n}_img"`));
+  for (const n of [1, 2]) assert.match(html, new RegExp(`data-image-key="journal${n}_img"`));
 });
 
 test('正文三语两端对齐（文章页和后台编辑区共用这条样式）', () => {

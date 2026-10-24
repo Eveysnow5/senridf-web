@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400&family=Noto+Serif+JP:wght@300;400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <base href="./">
-  <link rel="stylesheet" href="css/main.css?v=593b509b41">
+  <link rel="stylesheet" href="css/main.css?v=dd5e01e056">
   <!-- 结构化数据（Organization）：设立日＝履歴事項全部証明書（令和7年2月25日）；所在地＝作者 2026-10-06 确认。
        资本金按作者意见不公开。 -->
   <script type="application/ld+json">
@@ -144,7 +144,7 @@
       </div>
     </section>
 
-    <!-- ④ 博客：最近三篇（2026-10-24 起；原来是三个固定栏目，分类是自定义的，没必要）。
+    <!-- ④ 博客：最近两篇（2026-10-24 起；原来是三个固定栏目。三篇时图大不起来、摘要放不下两三百字，改两篇）。
          文字由页底脚本从 solutions/blog/posts.json 填；缩略图：文章有封面用封面，
          没有就用后台「网站内容」里的三张图（data-image-key，仍可在后台换）。 -->
     <section class="section">
@@ -167,15 +167,6 @@
         </a>
         <a href="solutions/blog/" class="journal-item" hidden>
           <div class="journal-item__thumb" data-image-key="journal2_img"></div>
-          <div>
-            <div class="journal-item__tag"></div>
-            <h3 class="journal-item__name"></h3>
-            <p class="journal-item__desc"></p>
-          </div>
-          <span class="journal-item__arrow" aria-hidden="true">→</span>
-        </a>
-        <a href="solutions/blog/" class="journal-item" hidden>
-          <div class="journal-item__thumb" data-image-key="journal3_img"></div>
           <div>
             <div class="journal-item__tag"></div>
             <h3 class="journal-item__name"></h3>
@@ -255,7 +246,7 @@
   <script src="js/main.js?v=3cd377f02f"></script>
   <script type="module" src="js/tracking.js?v=8ed70b0d06"></script>
   <script type="module">
-    // 首页博客块：posts.json 已按日期新→旧，取前三篇。换语言时重填。
+    // 首页博客块：posts.json 已按日期新→旧，取前两篇（页面里有几个格子就放几篇）。换语言时重填。
     import { plainExcerpt } from '/js/shared/blog-content.js?v=7eeefd1b98';
     import { tagLabel } from '/js/shared/blog-tags.js';
     const items = [...document.querySelectorAll('.journal-item')];
@@ -273,8 +264,13 @@
         a.href = `solutions/blog/${p.slug}.html`;
         a.querySelector('.journal-item__tag').textContent = (tag ? tag + ' · ' : '') + p.date;
         a.querySelector('.journal-item__name').textContent = pick(p.title);
-        // PC 两行约 140 字（14px、栏宽约 1000px），取 160 字交给 CSS 省略号收尾
-        a.querySelector('.journal-item__desc').textContent = plainExcerpt(pick(p.body), 160);
+        // 取 300 字交给 CSS 按屏高给的行数省略（css/main.css 的 --jt-lines）
+        // 中日文 300 字、英文 600 字符（约 100 词，字母窄，同样行数放得下更多）。
+        // 截断时补「…」（plainExcerpt 只截不补；CSS 的省略号只在行数用完时出现）
+        const max = L === 'en' ? 600 : 300;
+        const full = plainExcerpt(pick(p.body), max + 1);
+        a.querySelector('.journal-item__desc').textContent =
+          full.length > max ? full.slice(0, max) + '…' : full;
         const thumb = a.querySelector('.journal-item__thumb');
         let img = thumb.querySelector('.journal-cover');
         if (p.cover) {
