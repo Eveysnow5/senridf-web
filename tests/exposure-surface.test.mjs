@@ -61,6 +61,7 @@ const PAGES = {
   'solutions/demo/ai-intel.html': 'internal',
 
   'solutions/demo/closing.html': 'gated-tool', // 月结引擎：Pyodide 在浏览器内运行，财务数据不上传
+  'solutions/demo/clients.html': 'gated-tool', // 税理士の顧問先一覧：引き継ぎ zip をブラウザ内で開き本機のフォルダへ。サーバーに送らない
   'solutions/demo/analysis.html': 'gated-tool',
   'solutions/demo/lifestory.html': 'gated-tool',
   'solutions/demo/proofreader.html': 'gated-tool',

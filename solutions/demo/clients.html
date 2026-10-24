@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>顧問先の一覧 — 千里同風</title>
+  <link rel="stylesheet" href="/css/tailwind.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+JP:wght@400;500&family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet" />
+  <!-- 税理士の側：お客さまから受け取った引き継ぎ zip（月次決算エンジンが作る）を本機のフォルダに取り込み、一覧にする。
+       サーバーには何も送らない（作者 2026-10-23）。zip の読み書きは closing-handoff.mjs -->
+  <style>
+    body { font-family: 'Inter', 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif; background:#f9fafb; }
+    html:lang(zh) body { font-family: 'Inter', 'Noto Sans SC', 'Microsoft YaHei', sans-serif; }
+    .hidden { display: none; }
+    #auth-gate { position:fixed;inset:0;background:#faf9f7;display:flex;align-items:center;justify-content:center;z-index:9999; }
+    .ag-center { text-align:center; }
+    .ag-spinner { width:28px;height:28px;border:2px solid #e5e7eb;border-top-color:#6366f1;border-radius:50%;animation:ag-s .8s linear infinite;margin:0 auto; }
+    .ag-text { color:#9ca3af;font-size:13px;margin-top:12px;font-family:sans-serif; }
+    @keyframes ag-s { to { transform: rotate(360deg); } }
+    .lang-btn { color:#6b7280;min-width:30px;min-height:30px;border-radius:6px;cursor:pointer; }
+    .lang-btn:hover { color:#374151;background:#f3f4f6; }
+    .lang-btn.active { color:#4f46e5;font-weight:600; }
+    .ce-card { background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px 22px;margin-bottom:16px;box-shadow:0 1px 2px rgba(16,24,40,.04); }
+    .ce-h3 { font-size:13.5px;font-weight:600;color:#1f2937;margin-bottom:8px; }
+    .ce-hint { font-size:12.5px;color:#4b5563;line-height:1.7; }
+    .ce-row { display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center; }
+    .ce-btn { background:#4f46e5;color:#fff;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:500;white-space:nowrap;cursor:pointer; }
+    .ce-btn:hover { background:#4338ca; }
+    .ce-btn:disabled { background:#c7d2fe;cursor:not-allowed; }
+    .ce-btn2 { display:inline-block;border:1px solid #d1d5db;color:#374151;border-radius:8px;padding:7px 14px;font-size:12.5px;background:#fff;white-space:nowrap;text-decoration:none;cursor:pointer; }
+    .ce-btn2:hover { border-color:#9ca3af;background:#f9fafb; }
+    .ce-btn2:disabled { color:#9ca3af;cursor:not-allowed; }
+    .ce-privacy { display:flex;gap:10px;align-items:flex-start;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:10px;padding:10px 14px;font-size:12.5px;line-height:1.7;margin-bottom:12px; }
+    .ce-zlog { list-style:none;margin:8px 0 0;padding:0;font-size:12.5px;line-height:1.7;color:#374151; }
+    .ce-zlog li { word-break:break-all; }
+    .ce-zlog li.ng { color:#b91c1c; }
+    .ce-zlog li.ok { color:#047857; }
+    .ce-drop { border:1.5px dashed #c7d2fe;border-radius:10px;padding:16px;margin-top:12px;background:#f8faff; }
+    .ce-drop.on { border-color:#6366f1;background:#eef2ff; }
+    .ce-drop.off { opacity:.5;pointer-events:none; }
+    .cl-wrap { overflow-x:auto; }
+    .cl-tbl { width:100%;border-collapse:collapse;font-size:12.5px;color:#1f2937; }
+    .cl-tbl th { text-align:left;font-weight:600;color:#4b5563;border-bottom:1px solid #e5e7eb;padding:6px 8px;white-space:nowrap; }
+    .cl-tbl td { border-bottom:1px solid #f3f4f6;padding:8px;vertical-align:top; }
+    .cl-tbl .sub { color:#6b7280;font-size:11.5px; }
+    .ce-st { display:inline-block;border-radius:9px;padding:1px 8px;font-size:11px;font-weight:600;white-space:nowrap; }
+    .ce-st.ok { background:#d1fae5;color:#047857; }
+    .ce-st.ng { background:#fee2e2;color:#b91c1c; }
+    .ce-st.warn { background:#fef3c7;color:#92400e; }
+    .ce-st.wait { background:#f3f4f6;color:#4b5563; }
+  </style>
+  <!-- head-meta:start（npm run meta 生成，勿手改） -->
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <!-- head-meta:end -->
+</head>
+<body data-page-title="cl_page_title">
+  <div id="auth-gate"><div class="ag-center"><div class="ag-spinner"></div><p class="ag-text" data-i18n="ag_verifying">認証中…</p></div></div>
+
+  <div id="app">
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div>
+          <h1 class="text-base font-semibold text-gray-900" data-i18n="cl_title">顧問先の一覧（試用版）</h1>
+          <p class="text-xs text-gray-500" data-i18n="cl_subtitle">お客さまから受け取った引き継ぎ zip → 本機のフォルダ → 一覧</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="flex items-center gap-1 text-xs mr-1">
+            <button type="button" class="lang-btn px-1 py-0.5" data-lang="ja">日</button>
+            <span class="text-gray-200">/</span>
+            <button type="button" class="lang-btn px-1 py-0.5" data-lang="zh">中</button>
+            <span class="text-gray-200">/</span>
+            <button type="button" class="lang-btn px-1 py-0.5" data-lang="en">EN</button>
+          </span>
+          <span id="user-email" class="text-xs text-gray-400 hidden sm:block"></span>
+          <button type="button" id="logout-btn" class="text-xs text-gray-500 hover:text-gray-800 ml-1" data-i18n="ce_logout">ログアウト</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-6">
+      <div class="ce-privacy"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span data-i18n="cl_privacy">zip はこのブラウザの中で開き、選んだフォルダに書き込みます。サーバーには何も送りません。</span></div>
+
+      <section class="ce-card">
+        <h3 class="ce-h3" data-i18n="cl_s1_h">1. 顧問先のフォルダを置く場所を選ぶ</h3>
+        <p class="ce-hint" data-i18n="cl_s1_d">お客さまごとのフォルダをまとめて置くフォルダを選んでください（例：ドキュメントの「顧問先」）。取り込んだ zip は「会社名／締めた月（受け取った日時）」のフォルダに展開します。前に受け取ったものは上書きしません。</p>
+        <div class="ce-row" style="margin-top:10px">
+          <button type="button" id="cl-open" class="ce-btn" data-i18n="cl_open">フォルダを選ぶ</button>
+          <span id="cl-root" class="ce-hint"></span>
+        </div>
+        <p id="cl-nofs" class="ce-hint hidden" style="color:#b91c1c" data-i18n="cl_nofs">このブラウザではフォルダに書き込めません。Chrome か Edge で開いてください。</p>
+      </section>
+
+      <section class="ce-card">
+        <h3 class="ce-h3" data-i18n="cl_s2_h">2. 引き継ぎ zip を取り込む</h3>
+        <p class="ce-hint" data-i18n="cl_s2_d">お客さまが月次決算エンジンの「税理士に渡す」で作った zip です。一つずつ、中のファイルの指紋を確かめてから展開します。途中で変わったもの・壊れたものは取り込みません。</p>
+        <div id="cl-drop" class="ce-drop off">
+          <div class="ce-row">
+            <label class="ce-btn2" for="cl-in" data-i18n="cl_pick">zip を選ぶ</label>
+            <input type="file" id="cl-in" multiple accept=".zip,application/zip" class="hidden" data-i18n-title="cl_pick" />
+            <span class="ce-hint" data-i18n="cl_drop">ここにドラッグしても取り込めます</span>
+          </div>
+          <ul id="cl-log" class="ce-zlog" aria-live="polite"></ul>
+        </div>
+      </section>
+
+      <section class="ce-card">
+        <div class="ce-row" style="justify-content:space-between">
+          <h3 class="ce-h3" style="margin:0" data-i18n="cl_s3_h">3. 顧問先の一覧</h3>
+          <button type="button" id="cl-refresh" class="ce-btn2" disabled data-i18n="cl_refresh">読み直す</button>
+        </div>
+        <p id="cl-sum" class="ce-hint" style="margin-top:6px" data-i18n="cl_sum_none">フォルダを選ぶと、取り込んだ顧問先がここに並びます。</p>
+        <div class="cl-wrap">
+          <table class="cl-tbl hidden" id="cl-tbl">
+            <thead>
+              <tr>
+                <th data-i18n="cl_th_co">顧問先</th>
+                <th data-i18n="cl_th_month">締めた月</th>
+                <th data-i18n="cl_th_got">受け取り</th>
+                <th data-i18n="cl_th_checks">検査</th>
+                <th data-i18n="cl_th_pending">要確認</th>
+                <th data-i18n="cl_th_since">受け取った後の変更</th>
+              </tr>
+            </thead>
+            <tbody id="cl-body"></tbody>
+          </table>
+        </div>
+        <p class="ce-hint" style="margin-top:10px" data-i18n="cl_open_hint">取り込んだ顧問先は、月次決算エンジンの「最近の会社」に出ます。「開く」を押すと、そのフォルダで中身を見たり締め直したりできます（同じブラウザで開いてください）。</p>
+        <div class="ce-row" style="margin-top:6px"><a class="ce-btn2" href="closing.html" target="_blank" rel="noopener" data-i18n="cl_to_closing">月次決算エンジンを開く</a></div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { auth, db } from '/js/shared/firebase-init.js';
+    import { initErrorReporting } from '/js/shared/report-error.js';
+    import { signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+    import { mountAuthGate } from '/js/shared/auth-gate.js';
+    import { compare, folderName, MANIFEST, unpack } from './closing-handoff.mjs?v=1';
+
+    initErrorReporting({ db });
+    document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+    mountAuthGate({
+      auth,
+      db,
+      onApproved: (u) => (document.getElementById('user-email').textContent = u.email),
+      onAdmin: (u) => (document.getElementById('user-email').textContent = u.email),
+    });
+
+    const $ = (id) => document.getElementById(id);
+    const T = (key, params) => window.sdfT(key, params);
+    let root = null;
+    let rows = []; // 最後に読んだ一覧（言語の切り替えで描き直す）
+
+    function log(cls, key, params) {
+      const li = document.createElement('li');
+      if (cls) li.className = cls;
+      window.sdfSetText(li, key, params);
+      $('cl-log').appendChild(li);
+      return li;
+    }
+    if (!window.showDirectoryPicker) {
+      $('cl-nofs').classList.remove('hidden');
+      $('cl-open').disabled = true;
+    }
+
+    $('cl-open').addEventListener('click', async () => {
+      try {
+        root = await window.showDirectoryPicker({ mode: 'readwrite', id: 'clients' });
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+        throw e;
+      }
+      window.sdfSetText($('cl-root'), 'cl_root', { name: root.name });
+      $('cl-drop').classList.remove('off');
+      $('cl-refresh').disabled = false;
+      await refresh();
+    });
+    $('cl-refresh').addEventListener('click', () => refresh());
+
+    // ── 取り込み ───────────────────────────────────────────────
+    const stampOf = (iso) => {
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return 'unknown';
+      const z = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}`;
+    };
+    async function dirAt(parts, create) {
+      let d = root;
+      for (const p of parts) d = await d.getDirectoryHandle(p, { create });
+      return d;
+    }
+    async function write(parts, bytes) {
+      const d = await dirAt(parts.slice(0, -1), true);
+      const w = await (await d.getFileHandle(parts[parts.length - 1], { create: true })).createWritable();
+      await w.write(bytes);
+      await w.close();
+    }
+    async function readText(dir, name) {
+      try {
+        return await (await (await dir.getFileHandle(name)).getFile()).text();
+      } catch {
+        return null;
+      }
+    }
+    const REASONS = ['not_zip', 'compressed', 'encrypted', 'bad_path', 'crc', 'truncated', 'no_manifest', 'bad_manifest', 'mismatch'];
+    async function importZip(file) {
+      const wait = log('', 'cl_imp_reading', { name: file.name });
+      try {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        let got;
+        try {
+          got = await unpack(bytes);
+        } catch (e) {
+          wait.remove();
+          const why = REASONS.includes(e.message) ? e.message : '';
+          const d = e.detail || {};
+          const list = [...(d.changed || []), ...(d.missing || []), ...(d.extra || [])].slice(0, 3).join('・');
+          if (why) log('ng', `cl_imp_err_${why}`, { name: file.name, list });
+          else log('ng', 'cl_imp_err', { name: file.name, msg: String(e.message || e) });
+          return false;
+        }
+        const m = got.manifest;
+        const co = folderName(m.company);
+        const sub = `${folderName(m.month)}_${stampOf(m.packed_at)}`;
+        // 同じ包はもう取り込んである（交接单が同じ）→ 書かない
+        let exists = null;
+        try {
+          exists = await readText(await dirAt([co, sub], false), MANIFEST);
+        } catch {
+          exists = null;
+        }
+        const mbytes = new TextEncoder().encode(JSON.stringify(m, null, 2));
+        if (exists !== null) {
+          wait.remove();
+          log('', 'cl_imp_same', { name: file.name, path: `${co}/${sub}` });
+          return false;
+        }
+        for (const f of got.files) await write([co, sub, ...f.path.split('/')], f.buf);
+        await write([co, sub, MANIFEST], mbytes);
+        await addRecent(await dirAt([co, sub], false), m);
+        wait.remove();
+        log('ok', 'cl_imp_ok', { name: file.name, path: `${root.name}/${co}/${sub}`, n: got.files.length });
+        return true;
+      } catch (e) {
+        console.error(e);
+        wait.remove();
+        log('ng', 'cl_imp_err', { name: file.name, msg: String((e && e.message) || e) });
+        return false;
+      }
+    }
+    async function intake(list) {
+      if (!root) return;
+      const zips = [...list].filter((f) => /\.zip$/i.test(f.name));
+      for (const f of [...list].filter((x) => !zips.includes(x))) log('ng', 'cl_imp_skip', { name: f.name });
+      let n = 0;
+      for (const f of zips) if (await importZip(f)) n++;
+      if (n) await refresh();
+    }
+    $('cl-in').addEventListener('change', async (e) => {
+      await intake(e.target.files);
+      e.target.value = '';
+    });
+    const drop = $('cl-drop');
+    drop.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      drop.classList.add('on');
+    });
+    drop.addEventListener('dragleave', () => drop.classList.remove('on'));
+    drop.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      drop.classList.remove('on');
+      await intake(e.dataTransfer.files);
+    });
+
+    // ── 月次決算エンジンの「最近の会社」（closing.html の clientsDb と同じ IndexedDB・同じ形）に登録する。
+    //    取り込みごとに新しいフォルダができるので、取り込みで入れた記録（from: 'handoff'）は会社ごとに最新の 1 件に置き換える
+    function recentDb() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open('ce-clients', 1);
+        req.onupgradeneeded = () => req.result.createObjectStore('clients', { keyPath: 'id' });
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function addRecent(handle, m) {
+      try {
+        const db = await recentDb();
+        const all = await new Promise((resolve, reject) => {
+          const q = db.transaction('clients', 'readonly').objectStore('clients').getAll();
+          q.onsuccess = () => resolve(q.result || []);
+          q.onerror = () => reject(q.error);
+        });
+        const old = all.find((c) => c.from === 'handoff' && c.company === m.company);
+        const rec = {
+          id: old ? old.id : `${Date.now()}`,
+          handle,
+          folder: handle.name,
+          at: Date.now(),
+          company: m.company,
+          lastMonth: m.month,
+          open: (m.pending && m.pending.n) || 0,
+          from: 'handoff',
+        };
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction('clients', 'readwrite');
+          tx.objectStore('clients').put(rec);
+          tx.oncomplete = resolve;
+          tx.onerror = () => reject(tx.error);
+        });
+      } catch (e) {
+        console.error(e); // 一覧への登録ができなくても、取り込み自体は済んでいる
+      }
+    }
+
+    // ── 一覧：会社のフォルダ → 受け取った包（交接单のあるフォルダ）→ いちばん新しいもの ──
+    async function readFiles(dir, prefix) {
+      const out = [];
+      for await (const [name, child] of dir.entries()) {
+        const path = prefix ? `${prefix}/${name}` : name;
+        if (child.kind === 'directory') out.push(...(await readFiles(child, path)));
+        else if (path !== MANIFEST) out.push({ path, buf: await (await child.getFile()).arrayBuffer() });
+      }
+      return out;
+    }
+    async function refresh() {
+      if (!root) return;
+      window.sdfSetText($('cl-sum'), 'cl_sum_reading');
+      const found = [];
+      for await (const [coName, coDir] of root.entries()) {
+        if (coDir.kind !== 'directory') continue;
+        const packs = [];
+        for await (const [subName, subDir] of coDir.entries()) {
+          if (subDir.kind !== 'directory') continue;
+          const t = await readText(subDir, MANIFEST);
+          if (t === null) continue;
+          try {
+            packs.push({ sub: subName, dir: subDir, m: JSON.parse(t) });
+          } catch {
+            /* 読めない交接单は数えない */
+          }
+        }
+        if (!packs.length) continue;
+        packs.sort((a, b) => String(b.m.packed_at).localeCompare(String(a.m.packed_at)));
+        const last = packs[0];
+        const diff = await compare(last.m, await readFiles(last.dir, ''));
+        found.push({ folder: coName, sub: last.sub, m: last.m, n: packs.length, diff });
+      }
+      found.sort((a, b) => a.folder.localeCompare(b.folder));
+      rows = found;
+      render();
+    }
+    function cell(tr, text, cls) {
+      const td = document.createElement('td');
+      if (text !== undefined && text !== null) td.textContent = text;
+      if (cls) td.className = cls;
+      tr.appendChild(td);
+      return td;
+    }
+    function tag(td, cls, key, params) {
+      const s = document.createElement('span');
+      s.className = `ce-st ${cls}`;
+      window.sdfSetText(s, key, params);
+      td.appendChild(s);
+    }
+    function line(td, key, params) {
+      const d = document.createElement('div');
+      d.className = 'sub';
+      window.sdfSetText(d, key, params);
+      td.appendChild(d);
+    }
+    const when = (iso) => {
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? '' : d.toLocaleString(window.sdfLang ? window.sdfLang() : 'ja', { dateStyle: 'short', timeStyle: 'short' });
+    };
+    function render() {
+      const body = $('cl-body');
+      body.replaceChildren();
+      $('cl-tbl').classList.toggle('hidden', !rows.length);
+      if (!root) return;
+      if (!rows.length) return void window.sdfSetText($('cl-sum'), 'cl_sum_empty', { name: root.name });
+      window.sdfSetText($('cl-sum'), 'cl_sum', { n: rows.length, name: root.name });
+      for (const r of rows) {
+        const m = r.m;
+        const tr = document.createElement('tr');
+        const co = cell(tr, m.company || r.folder);
+        line(co, 'cl_folder', { path: `${r.folder}/${r.sub}` });
+        const mo = cell(tr, m.month || '');
+        if (m.month_from && m.month_from !== m.month) line(mo, 'cl_from', { m: m.month_from });
+        const got = cell(tr, when(m.packed_at));
+        if (m.packed_by) line(got, 'cl_by', { by: m.packed_by });
+        if (r.n > 1) line(got, 'cl_packs', { n: r.n });
+        const ck = cell(tr);
+        const fail = (m.checks && m.checks.fail) || [];
+        if (fail.length) tag(ck, 'ng', 'cl_ck_fail', { n: fail.length, ids: fail.join('・') });
+        else tag(ck, 'ok', 'cl_ck_ok', { n: (m.checks && m.checks.n) || 0 });
+        const pd = cell(tr);
+        const p = m.pending || {};
+        if (!p.n) tag(pd, 'ok', 'cl_pd_none');
+        else {
+          tag(pd, 'warn', 'cl_pd_n', { n: p.n });
+          line(pd, 'cl_pd_split', { e: p.err || 0, t: p.todo || 0, a: p.ask || 0 });
+        }
+        if (p.info) line(pd, 'cl_pd_info', { n: p.info });
+        const sc = cell(tr);
+        const d = r.diff;
+        const k = d.changed.length + d.missing.length;
+        if (!k && !d.extra.length) tag(sc, 'wait', 'cl_since_none');
+        else {
+          if (d.changed.length) line(sc, 'cl_since_changed', { n: d.changed.length, list: d.changed.slice(0, 3).join('・') });
+          if (d.missing.length) line(sc, 'cl_since_missing', { n: d.missing.length, list: d.missing.slice(0, 3).join('・') });
+          if (d.extra.length) line(sc, 'cl_since_extra', { n: d.extra.length });
+        }
+        body.appendChild(tr);
+      }
+    }
+    new MutationObserver(() => render()).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+  </script>
+  <script src="../../js/main.js?v=f4677d58b7"></script>
+</body>
+</html>
