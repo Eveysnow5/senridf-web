@@ -95,6 +95,11 @@
     }
     .blog-list-date { color: var(--text3); width: 90px; flex-shrink: 0; }
     .blog-list-title { flex: 1; }
+    .blog-list-state { width: 150px; flex-shrink: 0; font-size: 12px; color: var(--text3); }
+    .blog-list-state.draft { color: #b45309; }
+    .blog-list-state.dirty { color: #2563eb; }
+    .btn-link:disabled { opacity: 0.35; cursor: default; }
+    .btn-link:disabled:hover { color: var(--text3); }
 
     #blog-compose { max-width: 900px; margin: 0 auto; padding: 24px; }
     .compose-row { margin-bottom: 16px; }
@@ -233,7 +238,7 @@
       <iframe id="ed-en" class="ed-frame" src="/admin/blog/frame.html" title="英文正文编辑区" hidden></iframe>
     </div>
     <div class="compose-row">
-      <button type="button" class="btn-save" onclick="publishPost()">发布</button>
+      <button type="button" class="btn-save" onclick="finishPost()" title="存进草稿箱；回到列表点「上架」后网站上才看得到">完成</button>
       <button type="button" class="btn-link" onclick="cancelCompose()">取消</button>
       <span id="compose-publish-status" class="status"></span>
       <span id="draft-status" class="status"></span>
@@ -251,26 +256,6 @@ function escapeHtmlAdmin(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-/* ── 文章列表渲染 ── */
-function renderBlogList() {
-  const listEl = document.getElementById('blog-list');
-  if (blogPosts.length === 0) {
-    listEl.innerHTML = '<div class="empty">还没有文章</div>';
-    return;
-  }
-  listEl.innerHTML = blogPosts
-    .map(
-      (p) => `
-    <div class="blog-list-row">
-      <span class="blog-list-date">${p.date}</span>
-      <span class="blog-list-title">${escapeHtmlAdmin(p.title.zh)}</span>
-      <button type="button" class="btn-link" onclick="editPost('${p.slug}')">编辑</button>
-      <button type="button" class="btn-link" onclick="unpublishPost('${p.slug}')">下架</button>
-    </div>`,
-    )
-    .join('');
-}
-
 /* ── 撰写面板 ── */
 // 本机日期（日本时间）。toISOString 是 UTC，早上 9 点前会变成昨天。
 function localToday() {
@@ -280,6 +265,7 @@ function localToday() {
 
 function startNewPost() {
   composeState = {
+    docId: null, // 草稿箱文档 id，第一次「完成」时生成
     slug: null,
     tag: '',
     date: localToday(),
@@ -287,23 +273,6 @@ function startNewPost() {
     coverChanged: false,
     title: { zh: '', ja: '', en: '' },
     body: { zh: '', ja: '', en: '' },
-  };
-  composeOtherLang = 'ja';
-  renderCompose();
-  document.getElementById('blog-compose').hidden = false;
-}
-
-function editPost(slug) {
-  const p = blogPosts.find((x) => x.slug === slug);
-  if (!p) return;
-  composeState = {
-    slug: p.slug,
-    tag: p.tag,
-    date: p.date,
-    cover: p.cover || null,
-    coverChanged: false,
-    title: { ...p.title },
-    body: { ...p.body },
   };
   composeOtherLang = 'ja';
   renderCompose();
@@ -462,8 +431,11 @@ import { isAdmin } from '/js/shared/admins.js';
 import { pollDeployStatus } from '/js/shared/deploy-poll.js';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import { doc, setDoc, getDoc, serverTimestamp }
+import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import {
+  mergeRows, rowActions, rowStatus, publishProblem, newDocId, docIdForSlug,
+} from '/js/shared/blog-posts-model.js';
 import * as ed from '/admin/blog/editor.js?v=b08ba0e80b';
 
 initErrorReporting({ db });
@@ -541,10 +513,66 @@ async function waitForDeploy(commitSha, statusEl) {
   statusEl.textContent = '已保存；几分钟内还没跑完上线，稍后刷新网站确认';
 }
 
+// 列表 = 线上（posts.json）＋ 草稿箱（Firestore blog_drafts/p_*）。规则见 js/shared/blog-posts-model.js
+let savedDocs = [];
+let blogRows = [];
+
 window.loadBlogPosts = async function () {
-  const { posts } = await api('GET', '/blog/posts');
+  const [{ posts }, snap] = await Promise.all([
+    api('GET', '/blog/posts'),
+    getDocs(query(collection(db, 'blog_drafts'), where('kind', '==', 'post'))),
+  ]);
   blogPosts = posts || [];
+  savedDocs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  blogRows = mergeRows(blogPosts, savedDocs);
   renderBlogList();
+};
+
+function renderBlogList() {
+  const listEl = document.getElementById('blog-list');
+  if (blogRows.length === 0) {
+    listEl.innerHTML = '<div class="empty">还没有文章</div>';
+    return;
+  }
+  listEl.innerHTML = blogRows
+    .map((r) => {
+      const st = rowStatus(r);
+      const act = rowActions(r);
+      const k = escapeHtmlAdmin(r.key);
+      return `
+    <div class="blog-list-row">
+      <span class="blog-list-date">${escapeHtmlAdmin(r.date)}</span>
+      <span class="blog-list-title">${escapeHtmlAdmin(r.title || '（无标题）')}</span>
+      <span class="blog-list-state ${st.cls}">${st.text}</span>
+      <button type="button" class="btn-link" onclick="editPost('${k}')">编辑</button>
+      <button type="button" class="btn-link" onclick="publishRow('${k}')" ${act.canPublish ? '' : 'disabled'}>上架</button>
+      <button type="button" class="btn-link" onclick="unpublishRow('${k}')" ${act.canUnpublish ? '' : 'disabled'}>下架</button>
+    </div>`;
+    })
+    .join('');
+}
+
+const contentOf = (row) =>
+  row.docId ? savedDocs.find((d) => d.id === row.docId) : blogPosts.find((p) => p.slug === row.slug);
+
+window.editPost = function (key) {
+  const row = blogRows.find((r) => r.key === key);
+  const src = row && contentOf(row);
+  if (!src) return;
+  composeState = {
+    // 只在线上的旧文章：第一次「完成」时按 slug 在草稿箱建档
+    docId: row.docId || docIdForSlug(row.slug),
+    slug: src.slug || null,
+    tag: src.tag || '',
+    date: src.date || localToday(),
+    cover: src.cover || null,
+    coverChanged: false,
+    title: { zh: '', ja: '', en: '', ...(src.title || {}) },
+    body: { zh: '', ja: '', en: '', ...(src.body || {}) },
+  };
+  composeOtherLang = 'ja';
+  renderCompose();
+  document.getElementById('blog-compose').hidden = false;
 };
 
 window.saveDraft = async function () {
@@ -554,6 +582,7 @@ window.saveDraft = async function () {
     const { cover, coverChanged, ...rest } = composeState;
     await setDoc(doc(db, 'blog_drafts', 'current'), {
       ...rest,
+      cover: cover && !cover.startsWith('data:') ? cover : null,
       published: false,
       updatedAt: serverTimestamp(),
     });
@@ -594,10 +623,11 @@ window.restoreDraft = async function () {
 
 function fillFromDraft(d) {
   composeState = {
+    docId: d.docId || null,
     slug: d.slug || null,
     tag: d.tag || '',
     date: d.date || localToday(),
-    cover: null,
+    cover: d.cover || null,
     coverChanged: false,
     title: { zh: '', ja: '', en: '', ...(d.title || {}) },
     body: { zh: '', ja: '', en: '', ...(d.body || {}) },
@@ -612,7 +642,7 @@ window.checkDraft = async function () {
     const snap = await getDoc(doc(db, 'blog_drafts', 'current'));
     if (!snap.exists() || snap.data().published !== false) return;
     const d = snap.data();
-    if (!confirm('检测到未发布的草稿，是否恢复？')) return;
+    if (!confirm('检测到上次没点「完成」的稿子，是否恢复？')) return;
     fillFromDraft(d);
   } catch (err) {
     // 不阻塞正常使用，但要留痕：读不到草稿和“本来就没草稿”在界面上无法区分。
@@ -691,60 +721,126 @@ window.uploadInlineImage = async function (dataUrl, lang = 'zh') {
   statusEl.textContent = '✓ 图片已插入';
 };
 
-window.publishPost = async function () {
+// 「完成」＝存进草稿箱（Firestore），网站上看不到；回到列表点「上架」才公开（2026-10-24 作者要求）。
+// 不要求三语齐全：草稿可以只写中文。三语检查在上架时做。
+window.finishPost = async function () {
   onComposeInput();
   readBodies();
+  clearTimeout(draftSaveTimer);
   const statusEl = document.getElementById('compose-publish-status');
-  statusEl.className = 'status';
-  statusEl.textContent = '发布中…';
-  const empty = ['zh', 'ja', 'en'].filter((l) => !composeState.title[l].trim() || !composeState.body[l]);
-  if (empty.length) {
-    statusEl.className = 'status err';
-    statusEl.textContent = `✗ ${empty.join('・')} 的标题或正文是空的（可先点「一键同步日英」）`;
-    return;
-  }
   const date = document.getElementById('compose-date').value;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > localToday()) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     statusEl.className = 'status err';
-    statusEl.textContent = '✗ 发布日期没填完整，或选了未来的日子';
+    statusEl.textContent = '✗ 发布日期没填完整';
     return;
   }
   composeState.date = date;
-  const payload = {
-    tag: composeState.tag,
-    date: composeState.date,
-    title: composeState.title,
-    body: composeState.body,
-  };
-  if (composeState.slug) payload.slug = composeState.slug;
-  if (composeState.coverChanged && composeState.cover) payload.cover = composeState.cover;
+  statusEl.className = 'status';
+  statusEl.textContent = '保存中…';
   try {
-    const { commitSha, slug } = await api('POST', '/blog/publish', payload);
-    // 记下 slug：之后「载入上次的稿子」再发布时更新的是同一篇，而不是多出一篇
+    // 新选的封面先传进仓库（和正文插图同一个接口），草稿箱里只存路径
+    if (composeState.coverChanged && composeState.cover && composeState.cover.startsWith('data:')) {
+      const { path } = await api('POST', '/blog/image', { image: composeState.cover });
+      composeState.cover = path;
+      composeState.coverChanged = false;
+    }
+    if (!composeState.docId) composeState.docId = newDocId();
+    const { docId, coverChanged, ...post } = composeState;
+    await setDoc(doc(db, 'blog_drafts', docId), {
+      kind: 'post',
+      ...post,
+      dirty: true,
+      updatedAt: serverTimestamp(),
+    });
     await setDoc(
       doc(db, 'blog_drafts', 'current'),
-      { published: true, slug, updatedAt: serverTimestamp() },
+      { published: true, docId, updatedAt: serverTimestamp() },
       { merge: true },
     );
     composeState = null;
     document.getElementById('blog-compose').hidden = true;
-    await loadBlogPosts();
-    // 编辑面板已收起，上线进度显示在列表上方（原来写在面板里，发布后就看不见了）
     statusEl.textContent = '';
-    waitForDeploy(commitSha, document.getElementById('blog-deploy-status'));
+    await loadBlogPosts();
+    const listStatus = document.getElementById('blog-deploy-status');
+    listStatus.className = 'status ok';
+    listStatus.textContent = '✓ 已存进草稿箱。点这一行的「上架」后，网站上才看得到';
   } catch (e) {
     statusEl.className = 'status err';
-    statusEl.textContent = '✗ 发布失败：' + e.message;
+    statusEl.textContent = '✗ 保存失败：' + e.message;
   }
 };
 
-window.unpublishPost = async function (slug) {
-  if (!confirm('确定下架这篇文章吗？')) return;
+window.publishRow = async function (key) {
+  const row = blogRows.find((r) => r.key === key);
+  if (!row || !row.docId || !rowActions(row).canPublish) return;
+  const d = savedDocs.find((x) => x.id === row.docId);
+  const statusEl = document.getElementById('blog-deploy-status');
+  const problem = publishProblem(d, localToday());
+  if (problem) {
+    statusEl.className = 'status err';
+    statusEl.textContent = `✗ 不能上架「${row.title || '（无标题）'}」：${problem}`;
+    return;
+  }
+  if (!confirm(`上架「${row.title}」？上架后网站上所有人都能看到。`)) return;
+  const payload = { tag: d.tag || '', date: d.date, title: d.title, body: d.body };
+  if (d.slug) payload.slug = d.slug;
+  if (d.cover) payload.coverPath = d.cover;
+  statusEl.className = 'status';
+  statusEl.textContent = '上架中…';
+  let published;
   try {
-    await api('POST', '/blog/unpublish', { slug });
-    await loadBlogPosts();
+    published = await api('POST', '/blog/publish', payload);
   } catch (e) {
-    alert('下架失败：' + e.message);
+    statusEl.className = 'status err';
+    statusEl.textContent = '✗ 上架失败：' + e.message;
+    return;
+  }
+  try {
+    // 记下 slug：之后再改再上架，更新的是同一篇（同一个网址），不会多出一篇
+    await setDoc(
+      doc(db, 'blog_drafts', row.docId),
+      { slug: published.slug, dirty: false, liveAt: serverTimestamp() },
+      { merge: true },
+    );
+  } catch (e) {
+    // 已经上线了，只是草稿箱的记录没跟上：列表会把它显示成两行。说清楚，别报成「上架失败」
+    statusEl.className = 'status err';
+    statusEl.textContent = `已上架，但草稿箱记录没更新（${e.message}）；列表可能重复显示，刷新后再看`;
+    return;
+  }
+  await loadBlogPosts();
+  waitForDeploy(published.commitSha, statusEl);
+};
+
+window.unpublishRow = async function (key) {
+  const row = blogRows.find((r) => r.key === key);
+  if (!row || !row.live) return;
+  if (!confirm(`下架「${row.title}」？网站上就看不到了；文章留在草稿箱，之后可以再上架。`)) return;
+  const statusEl = document.getElementById('blog-deploy-status');
+  statusEl.className = 'status';
+  statusEl.textContent = '下架中…';
+  try {
+    // 只在线上的旧文章：先把内容存进草稿箱，再下架——下架会从仓库删掉文章，不先存就找不回来
+    if (!row.docId) {
+      const p = blogPosts.find((x) => x.slug === row.slug);
+      await setDoc(doc(db, 'blog_drafts', docIdForSlug(p.slug)), {
+        kind: 'post',
+        slug: p.slug,
+        tag: p.tag || '',
+        date: p.date,
+        title: p.title,
+        body: p.body,
+        cover: p.cover || null,
+        dirty: false,
+        updatedAt: serverTimestamp(),
+      });
+    }
+    const { commitSha } = await api('POST', '/blog/unpublish', { slug: row.slug });
+    await loadBlogPosts();
+    waitForDeploy(commitSha, statusEl);
+  } catch (e) {
+    statusEl.className = 'status err';
+    statusEl.textContent = '✗ 下架失败：' + e.message;
   }
 };
 

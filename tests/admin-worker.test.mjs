@@ -193,6 +193,32 @@ test('validatePublishPayload 拒绝缺字段/格式错误', () => {
   ); // zh 标题为空
 });
 
+// 草稿箱：封面在「完成」时已上传，上架只给路径。路径来自 /blog/image 的真实格式
+// （images.js blogInlineImagePath）和发布时生成的封面名，不是拿正则自己生成的。
+test('validatePublishPayload 的 coverPath：只认仓库里博客图片的路径', () => {
+  const base = {
+    date: '2026-07-22',
+    title: { ja: 'a', zh: 'a', en: 'a' },
+    body: { ja: 'a', zh: 'a', en: 'a' },
+  };
+  for (const p of [
+    'assets/images/blog/inline-1761300000000-0a1b2c.webp',
+    'assets/images/blog/2026-10-21-4b60-cover.webp',
+  ]) {
+    assert.equal(validatePublishPayload({ ...base, coverPath: p }).ok, true, p);
+  }
+  for (const p of [
+    '../secrets.webp',
+    'assets/images/blog/../../functions/x.webp',
+    'assets/images/blog/a.png',
+    'https://evil.example/a.webp',
+    'assets/images/other/a.webp',
+    42,
+  ]) {
+    assert.equal(validatePublishPayload({ ...base, coverPath: p }).ok, false, String(p));
+  }
+});
+
 test('validatePublishPayload 接受不带封面图，拒绝超大封面图（1MB 上限）', () => {
   const base = {
     tag: 'AI',

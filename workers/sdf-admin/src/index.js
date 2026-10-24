@@ -272,7 +272,7 @@ export default {
 
             const coverPath = coverUpload
               ? `assets/images/blog/${slug}-cover.webp`
-              : (existing && existing.cover) || null;
+              : body.coverPath || (existing && existing.cover) || null;
             const entry = {
               slug,
               date: body.date,

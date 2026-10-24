@@ -19,6 +19,8 @@ export const ARTICLE_ASSETS = [
   'js/tracking.js',
   'js/shared/blog-content.js',
 ];
+// 已上传到仓库的博客图片（/blog/image 的 inline-…webp，或发布时生成的 …-cover.webp）
+export const COVER_PATH_RE = /^assets\/images\/blog\/[A-Za-z0-9-]+\.webp$/;
 export const LISTING_PATH = 'solutions/blog/index.html';
 export const SITEMAP_PATH = 'sitemap.xml';
 
@@ -54,6 +56,13 @@ export function validatePublishPayload(body) {
     const stripped = cover.replace(/^data:image\/\w+;base64,/, '');
     const approxBytes = Math.floor((stripped.length * 3) / 4);
     if (approxBytes > MAX_IMAGE_BYTES) return { ok: false, error: '封面图过大' };
+  }
+  // 草稿箱（2026-10-24）：封面在「完成」时已经经 /blog/image 传进仓库，上架时只给路径。
+  const { coverPath } = body;
+  if (coverPath !== undefined && coverPath !== null) {
+    if (typeof coverPath !== 'string' || !COVER_PATH_RE.test(coverPath)) {
+      return { ok: false, error: '封面图路径格式错误' };
+    }
   }
   return { ok: true };
 }
