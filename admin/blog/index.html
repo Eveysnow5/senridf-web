@@ -125,6 +125,7 @@
     /* 编辑区：iframe 里是和文章页同一份样式（admin/blog/frame.html），高度随内容伸展 */
     .ed-frame { display: block; width: 100%; height: 420px; border: 1px solid var(--border); border-radius: 7px; background: #F8F8F5; }
     .ed-frame[hidden] { display: none; }
+    .compose-date { width: auto; }
     .compose-hint { font-size: 12px; color: var(--text3); margin-top: 4px; }
     .status.warn { color: #b45309; }
     .compose-cover-preview {
@@ -190,6 +191,11 @@
       <!-- 2026-10-22 作者要求：不设下拉，手工输入或留白。三语页面都原样显示这几个字（不翻译）。 -->
       <input type="text" id="compose-tag" class="compose-input" maxlength="40"
         placeholder="例如：思考、产品、公司动态……留空则文章页只显示日期" oninput="onComposeInput()">
+    </div>
+    <div class="compose-row">
+      <label class="compose-label" for="compose-date">发布日期</label>
+      <input type="date" id="compose-date" class="compose-input compose-date" oninput="onComposeInput()">
+      <div class="compose-hint">默认今天。补发旧文章时改成当时的日期，文章页显示这个日期，列表也按它排序。不能选未来的日子（选了也会马上公开，不是定时发布）。</div>
     </div>
     <div class="compose-row">
       <label class="compose-label">封面图（可选）</label>
@@ -266,11 +272,17 @@ function renderBlogList() {
 }
 
 /* ── 撰写面板 ── */
+// 本机日期（日本时间）。toISOString 是 UTC，早上 9 点前会变成昨天。
+function localToday() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function startNewPost() {
   composeState = {
     slug: null,
     tag: '',
-    date: new Date().toISOString().slice(0, 10),
+    date: localToday(),
     cover: null,
     coverChanged: false,
     title: { zh: '', ja: '', en: '' },
@@ -302,6 +314,9 @@ function renderCompose() {
   // 标签：自由输入、可留空（2026-10-22 起不再有下拉）。旧文章存的分类 key（如 ai_hardware）原样显示在框里，
   // 前台仍按 js/shared/blog-tags.js 翻成三语；新写的文字三语页面原样显示。
   document.getElementById('compose-tag').value = composeState.tag || '';
+  const dateEl = document.getElementById('compose-date');
+  dateEl.max = localToday();
+  dateEl.value = composeState.date;
   document.getElementById('compose-title-zh').value = composeState.title.zh;
   const preview = document.getElementById('compose-cover-preview');
   if (composeState.cover) {
@@ -338,6 +353,9 @@ function switchComposeOtherLang(lang) {
 function onComposeInput() {
   if (!composeState) return;
   composeState.tag = document.getElementById('compose-tag').value.trim();
+  // 日期框没填完整时 value 是空串；那时保留原来的日期，发布前再检查
+  const dateVal = document.getElementById('compose-date').value;
+  if (dateVal) composeState.date = dateVal;
   composeState.title.zh = document.getElementById('compose-title-zh').value;
   composeState.title[composeOtherLang] = document.getElementById('compose-title-other').value;
   scheduleDraftSave();
@@ -578,7 +596,7 @@ function fillFromDraft(d) {
   composeState = {
     slug: d.slug || null,
     tag: d.tag || '',
-    date: d.date || new Date().toISOString().slice(0, 10),
+    date: d.date || localToday(),
     cover: null,
     coverChanged: false,
     title: { zh: '', ja: '', en: '', ...(d.title || {}) },
@@ -685,6 +703,13 @@ window.publishPost = async function () {
     statusEl.textContent = `✗ ${empty.join('・')} 的标题或正文是空的（可先点「一键同步日英」）`;
     return;
   }
+  const date = document.getElementById('compose-date').value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > localToday()) {
+    statusEl.className = 'status err';
+    statusEl.textContent = '✗ 发布日期没填完整，或选了未来的日子';
+    return;
+  }
+  composeState.date = date;
   const payload = {
     tag: composeState.tag,
     date: composeState.date,
