@@ -9,8 +9,8 @@
 // 页面里需要一个 id="auth-gate" 的遮罩元素；通过后该元素会被移除。
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
-import { ADMINS } from './admins.js';
-import { resolveGateState } from './auth-gate-state.js';
+import { ADMINS } from './admins.js?v=4e0c5c325f';
+import { resolveGateState } from './auth-gate-state.js?v=0425a9b724';
 
 // 页面语言：与 main.js / account.html 同一顺序（?lang= → localStorage → 日文）。
 // 2026-10-19：原来跳登录页时不带语言、提示只有中文——带着 ?lang=en 的链接点进工具页，

@@ -32,7 +32,11 @@ test('每个登录页都用共享的原因判断，不再把所有失败说成�
   for (const p of LOGIN_PAGES) {
     const s = read(p);
     assert.match(s, /signInWithEmailAndPassword\(auth/, `${p} 不再是登录页？更新这张表`);
-    assert.match(s, /from '\/js\/shared\/auth-errors\.js'/, `${p} 没用 auth-errors.js`);
+    assert.match(
+      s,
+      /from '\/js\/shared\/auth-errors\.js(?:\?v=[0-9a-f]{10})?'/,
+      `${p} 没用 auth-errors.js`,
+    );
     assert.doesNotMatch(
       s,
       /\} catch \{\s*\n[^\n]*(邮箱或密码|err_login')/,

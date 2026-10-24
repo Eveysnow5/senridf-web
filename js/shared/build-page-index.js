@@ -16,7 +16,7 @@
 // 但印刷页码是**认出来的**，不是给定的 —— 所以宁可没有也不能给错的：认不准就整份
 // 退回只给 PDF 页序（见 detectPrintedPages 的连号判据）。
 
-import { normalizeCjkSpacing } from './select-relevant-passages.js';
+import { normalizeCjkSpacing } from './select-relevant-passages.js?v=6524ac3b48';
 
 /** 页眉里的印刷页码有两种形态：靠左「84 华为投资控股有限公司…」、靠右「2024年年度报告\n 89」。 */
 function readPrintedNumber(pageText) {

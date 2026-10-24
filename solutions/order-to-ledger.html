@@ -587,14 +587,14 @@
   ></script>
 
   <script src="js/main.js?v=3cd377f02f"></script>
-  <script type="module" src="js/tracking.js?v=8ed70b0d06"></script>
+  <script type="module" src="js/tracking.js?v=5aa1920e9e"></script>
 
   <!-- デモ送信用トークン：会員（既定 app にログイン済み）ならその ID トークン、
        未ログインなら tracking.js（具名 app）が作った匿名セッションのトークン。
        ここでは signInAnonymously を呼ばない —— 匿名会話の生成は tracking.js に一本化
        （既定 app で匿名会話を作ると門控ページが「出错了」で固まる。tests/auth-gate-state 参照）。 -->
   <script type="module">
-    import { auth as memberAuth } from '/js/shared/firebase-init.js';
+    import { auth as memberAuth } from '/js/shared/firebase-init.js?v=56a6fa4390';
     window.sdfDemoIsMember = () =>
       !!memberAuth.currentUser && !memberAuth.currentUser.isAnonymous;
     window.sdfDemoToken = () => {

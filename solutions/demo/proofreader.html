@@ -164,13 +164,13 @@
   </div>
 
   <script type="module">
-    import { auth, db } from '/js/shared/firebase-init.js';
-    import { initErrorReporting } from '/js/shared/report-error.js';
+    import { auth, db } from '/js/shared/firebase-init.js?v=56a6fa4390';
+    import { initErrorReporting } from '/js/shared/report-error.js?v=e309b9f010';
     import { signOut }
       from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-    import { mountAuthGate } from '/js/shared/auth-gate.js';
-    import { locateSnippet, buildAnnotatedSegments } from '/js/shared/proofread-highlight.js';
-    import { readApiJson } from '/js/shared/api-json.js';
+    import { mountAuthGate } from '/js/shared/auth-gate.js?v=974a3a115f';
+    import { locateSnippet, buildAnnotatedSegments } from '/js/shared/proofread-highlight.js?v=d1cf19f99a';
+    import { readApiJson } from '/js/shared/api-json.js?v=2d82b6ba77';
 
     initErrorReporting({ db });
 

@@ -244,11 +244,11 @@
   <div id="footer-placeholder"></div>
 
   <script src="js/main.js?v=3cd377f02f"></script>
-  <script type="module" src="js/tracking.js?v=8ed70b0d06"></script>
+  <script type="module" src="js/tracking.js?v=5aa1920e9e"></script>
   <script type="module">
     // 首页博客块：posts.json 已按日期新→旧，取前两篇（页面里有几个格子就放几篇）。换语言时重填。
     import { plainExcerpt } from '/js/shared/blog-content.js?v=7eeefd1b98';
-    import { tagLabel } from '/js/shared/blog-tags.js';
+    import { tagLabel } from '/js/shared/blog-tags.js?v=2d02e3ed50';
     const items = [...document.querySelectorAll('.journal-item')];
     const empty = document.querySelector('.journal-empty');
     let posts = null;

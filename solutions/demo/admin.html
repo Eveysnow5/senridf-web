@@ -367,10 +367,10 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
 </div>
 
 <script type="module">
-import { auth, db } from '/js/shared/firebase-init.js';
-import { initErrorReporting } from '/js/shared/report-error.js';
-import { ADMINS } from '/js/shared/admins.js';
-import { loginErrorText } from '/js/shared/auth-errors.js';
+import { auth, db } from '/js/shared/firebase-init.js?v=56a6fa4390';
+import { initErrorReporting } from '/js/shared/report-error.js?v=e309b9f010';
+import { ADMINS } from '/js/shared/admins.js?v=4e0c5c325f';
+import { loginErrorText } from '/js/shared/auth-errors.js?v=5b0d8d515b';
 import {onAuthStateChanged,signInWithEmailAndPassword,signOut} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import {collection,getDocs,query,orderBy,limit,doc,getDoc,updateDoc,addDoc,deleteDoc,serverTimestamp} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 

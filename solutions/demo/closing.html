@@ -717,10 +717,10 @@
   </div>
 
   <script type="module">
-    import { auth, db } from '/js/shared/firebase-init.js';
-    import { initErrorReporting } from '/js/shared/report-error.js';
+    import { auth, db } from '/js/shared/firebase-init.js?v=56a6fa4390';
+    import { initErrorReporting } from '/js/shared/report-error.js?v=e309b9f010';
     import { signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-    import { mountAuthGate } from '/js/shared/auth-gate.js';
+    import { mountAuthGate } from '/js/shared/auth-gate.js?v=974a3a115f';
 
     initErrorReporting({ db });
 

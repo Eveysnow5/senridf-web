@@ -9,9 +9,9 @@ import {
   collection,
   serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
-import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js';
-import { createVisitDuration } from '/js/shared/visit-duration.js';
-import { pageName, visitSource } from '/js/shared/page-name.js';
+import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js?v=8dad8c98bd';
+import { createVisitDuration } from '/js/shared/visit-duration.js?v=fbae181c4f';
+import { pageName, visitSource } from '/js/shared/page-name.js?v=196be520ec';
 
 const app = initializeApp(
   {

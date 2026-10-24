@@ -23,7 +23,7 @@
 // 5. **时间戳用客户端时间。** 两台设备时钟不一致时，受影响的只有"当前筛选"
 //    这类瞬时标量；**回答本身走并集，跟时间戳无关**，所以偏差不会造成数据丢失。
 
-import { mergeState } from './lifestory-merge.js';
+import { mergeState } from './lifestory-merge.js?v=7080dff3bf';
 
 /** Firestore 单文档上限 1 MiB，留出余量。超了就不写，并且**说出来**。 */
 const MAX_BYTES = 800 * 1024;

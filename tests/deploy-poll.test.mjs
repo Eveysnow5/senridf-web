@@ -113,7 +113,7 @@ test('两个 admin 页都走 Worker 的共享轮询，不再直连镜像仓库',
     const s = readFileSync(path.join(ROOT, f), 'utf8');
     assert.match(
       s,
-      /import \{ pollDeployStatus \} from '\/js\/shared\/deploy-poll\.js'/,
+      /import \{ pollDeployStatus \} from '\/js\/shared\/deploy-poll\.js(?:\?v=[0-9a-f]{10})?'/,
       `${f} 没引用共享模块`,
     );
     assert.doesNotMatch(s, /api\.github\.com/, `${f} 还在直连 GitHub（仓库转私有后会断）`);

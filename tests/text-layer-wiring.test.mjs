@@ -24,7 +24,10 @@ test('护栏自身有效：读到了 analysis.html 且含多轮取页的关键�
 });
 
 test('text-layer 被 import 并挂上 window 桥（内联 script 只能这样拿到它）', () => {
-  assert.match(HTML, /import \{[^}]*assessTextLayer[^}]*\} from '\/js\/shared\/text-layer\.js'/);
+  assert.match(
+    HTML,
+    /import \{[^}]*assessTextLayer[^}]*\} from '\/js\/shared\/text-layer\.js(?:\?v=[0-9a-f]{10})?'/,
+  );
   assert.match(HTML, /window\.sdfAssessTextLayer = assessTextLayer/);
   assert.match(HTML, /window\.sdfDescribeTextLayer = describeTextLayer/);
 });

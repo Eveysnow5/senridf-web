@@ -624,11 +624,11 @@ window.addEventListener('resize', updateTableHeight);
 </script>
 
 <!-- 访问统计走 tracking.js：它用**具名 app**（'tracking'）做匿名登录，会话与默认 app 隔离。 -->
-<script type="module" src="/js/tracking.js?v=8ed70b0d06"></script>
+<script type="module" src="/js/tracking.js?v=5aa1920e9e"></script>
 <script type="module">
-import { auth, db } from '/js/shared/firebase-init.js';
-import { isAdmin } from '/js/shared/admins.js';
-import { initErrorReporting } from '/js/shared/report-error.js';
+import { auth, db } from '/js/shared/firebase-init.js?v=56a6fa4390';
+import { isAdmin } from '/js/shared/admins.js?v=4e0c5c325f';
+import { initErrorReporting } from '/js/shared/report-error.js?v=e309b9f010';
 import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 
 initErrorReporting({ db });

@@ -13,8 +13,8 @@
 //
 // 成本：零。文本在解析 PDF 时就抽好了，搜索在浏览器里跑，不产生任何 API 调用。
 
-import { normalizeCjkSpacing } from './select-relevant-passages.js';
-import { findCaveat } from './text-layer.js';
+import { normalizeCjkSpacing } from './select-relevant-passages.js?v=6524ac3b48';
+import { findCaveat } from './text-layer.js?v=7215191f30';
 
 /** 一个词最多报几页命中。报太多会把回执撑大，而模型也只会挑前几页。 */
 const MAX_HITS_PER_TERM = 8;

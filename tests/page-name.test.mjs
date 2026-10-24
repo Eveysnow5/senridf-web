@@ -75,7 +75,7 @@ test('来源：utm_source 优先于 referrer，统一小写', () => {
 
 test('tracking.js 用的是这个模块，没有留一份本地判断', () => {
   const s = readFileSync('js/tracking.js', 'utf8');
-  assert.match(s, /from '\/js\/shared\/page-name\.js'/);
+  assert.match(s, /from '\/js\/shared\/page-name\.js(?:\?v=[0-9a-f]{10})?'/);
   assert.doesNotMatch(s, /function getPageName/);
   assert.match(s, /refSource: visitSource\(/);
 });

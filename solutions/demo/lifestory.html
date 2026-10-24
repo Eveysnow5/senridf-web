@@ -1230,13 +1230,13 @@ if (state.answers.length > 0) {
 document.getElementById('q-ta').addEventListener('input', updateCount);
 </script>
 <script type="module">
-import { auth, db } from '/js/shared/firebase-init.js';
-import { initErrorReporting } from '/js/shared/report-error.js';
-import { mountAuthGate } from '/js/shared/auth-gate.js';
-import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js';
-import { readApiJson } from '/js/shared/api-json.js';
+import { auth, db } from '/js/shared/firebase-init.js?v=56a6fa4390';
+import { initErrorReporting } from '/js/shared/report-error.js?v=e309b9f010';
+import { mountAuthGate } from '/js/shared/auth-gate.js?v=974a3a115f';
+import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js?v=8dad8c98bd';
+import { readApiJson } from '/js/shared/api-json.js?v=2d82b6ba77';
 window.sdfReadApiJson = readApiJson;
-import { decideProbe } from '/js/shared/lifestory-flow.js';
+import { decideProbe } from '/js/shared/lifestory-flow.js?v=57cf11c3fb';
 initErrorReporting({ db });
 window.sdfGetToken=()=>auth.currentUser?.getIdToken();
 window.sdfDecideProbe = decideProbe;
@@ -1257,8 +1257,8 @@ async function _startLifestorySync(uid) {
   if (_lsSync || !uid) return;
   try {
     const fs = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js');
-    const { createLifestorySync } = await import('/js/shared/lifestory-sync.js');
-    const { isBlank, mergeState } = await import('/js/shared/lifestory-merge.js');
+    const { createLifestorySync } = await import('/js/shared/lifestory-sync.js?v=e003f14896');
+    const { isBlank, mergeState } = await import('/js/shared/lifestory-merge.js?v=7080dff3bf');
     _lsSync = createLifestorySync({
       db,
       uid,

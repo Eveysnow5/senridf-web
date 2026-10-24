@@ -25,7 +25,7 @@
 // 也就是说给到 2 页就够选中关键页。这很要紧：调用方（analysis.html）受 Workers
 // 10ms CPU 配额限制、只能送很少几页图片，能少送而不丢答案是这条路线成立的前提。
 
-import { extractTerms, normalizeCjkSpacing } from './select-relevant-passages.js';
+import { extractTerms, normalizeCjkSpacing } from './select-relevant-passages.js?v=6524ac3b48';
 
 /**
  * @param {string[]} pageTexts 每页的文本，下标 0 对应第 1 页

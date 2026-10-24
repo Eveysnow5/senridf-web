@@ -2219,13 +2219,13 @@ const readApiJson = (res) => window.sdfReadApiJson(res);
     }
   </script>
 <script type="module">
-import { auth, db } from '/js/shared/firebase-init.js';
-import { initErrorReporting } from '/js/shared/report-error.js';
-import { mountAuthGate } from '/js/shared/auth-gate.js';
-import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js';
+import { auth, db } from '/js/shared/firebase-init.js?v=56a6fa4390';
+import { initErrorReporting } from '/js/shared/report-error.js?v=e309b9f010';
+import { mountAuthGate } from '/js/shared/auth-gate.js?v=974a3a115f';
+import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js?v=8dad8c98bd';
 import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
-import { speak, ttsSupported } from '/js/shared/speak.js';
-import { readApiJson } from '/js/shared/api-json.js';
+import { speak, ttsSupported } from '/js/shared/speak.js?v=a804c7c82c';
+import { readApiJson } from '/js/shared/api-json.js?v=2d82b6ba77';
 window.sdfReadApiJson = readApiJson;
 
 initErrorReporting({ db });

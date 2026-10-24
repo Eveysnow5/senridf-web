@@ -1536,21 +1536,21 @@
     }
   </script>
 <script type="module">
-import { auth, db } from '/js/shared/firebase-init.js';
-import { initErrorReporting } from '/js/shared/report-error.js';
-import { mountAuthGate } from '/js/shared/auth-gate.js';
-import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js';
-import { sheetRowsToMarkdown } from '/js/shared/sheet-to-markdown.js';
-import { selectRelevantPages } from '/js/shared/select-relevant-pages.js';
-import { selectRelevantPassages } from '/js/shared/select-relevant-passages.js';
-import { textCharBudget } from '/js/shared/text-wire-budget.js';
-import { imagePathViable } from '/js/shared/image-path-viable.js';
-import { buildPageIndex } from '/js/shared/build-page-index.js';
-import { parsePageRequest } from '/js/shared/parse-page-request.js';
-import { parseFindRequest } from '/js/shared/parse-find-request.js';
-import { searchPages, renderFindResults } from '/js/shared/search-pages.js';
-import { assessTextLayer, describeTextLayer } from '/js/shared/text-layer.js';
-import { decideNextRound } from '/js/shared/multiround-flow.js';
+import { auth, db } from '/js/shared/firebase-init.js?v=56a6fa4390';
+import { initErrorReporting } from '/js/shared/report-error.js?v=e309b9f010';
+import { mountAuthGate } from '/js/shared/auth-gate.js?v=974a3a115f';
+import { trackVisit, updateVisitDuration } from '/js/shared/track-visit.js?v=8dad8c98bd';
+import { sheetRowsToMarkdown } from '/js/shared/sheet-to-markdown.js?v=61cd4f5343';
+import { selectRelevantPages } from '/js/shared/select-relevant-pages.js?v=e49fc5c798';
+import { selectRelevantPassages } from '/js/shared/select-relevant-passages.js?v=6524ac3b48';
+import { textCharBudget } from '/js/shared/text-wire-budget.js?v=b30e809360';
+import { imagePathViable } from '/js/shared/image-path-viable.js?v=6e4dd53819';
+import { buildPageIndex } from '/js/shared/build-page-index.js?v=decea83cab';
+import { parsePageRequest } from '/js/shared/parse-page-request.js?v=f9a20b3d9a';
+import { parseFindRequest } from '/js/shared/parse-find-request.js?v=38140f01bc';
+import { searchPages, renderFindResults } from '/js/shared/search-pages.js?v=165174394b';
+import { assessTextLayer, describeTextLayer } from '/js/shared/text-layer.js?v=7215191f30';
+import { decideNextRound } from '/js/shared/multiround-flow.js?v=198e72903a';
 initErrorReporting({ db });
 window.sdfSheetToMarkdown = sheetRowsToMarkdown;
 window.sdfSelectRelevantPages = selectRelevantPages;

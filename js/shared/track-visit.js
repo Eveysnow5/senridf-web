@@ -13,7 +13,7 @@ import {
   serverTimestamp,
   Timestamp,
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
-import { visitDocId } from './track-visit-id.js';
+import { visitDocId } from './track-visit-id.js?v=29726c60de';
 
 // 6个月，配合 Firestore TTL 策略（expireAt 字段）自动清理过期记录。
 const RETENTION_MS = 6 * 30 * 24 * 60 * 60 * 1000;

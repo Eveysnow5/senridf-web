@@ -15,7 +15,7 @@ import {
   increment,
   Timestamp,
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
-import { errorFingerprint, errorDocId, normalizeError } from './error-report-id.js';
+import { errorFingerprint, errorDocId, normalizeError } from './error-report-id.js?v=7b260a396c';
 
 // 6个月，配合 Firestore TTL 策略（expireAt 字段）自动清理。沿用 visits 的口径。
 const RETENTION_MS = 6 * 30 * 24 * 60 * 60 * 1000;
