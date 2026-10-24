@@ -38,6 +38,8 @@ export function mergeRows(livePosts, savedDocs) {
       live,
       // 线上那份之后在草稿箱里改过、还没重新上架
       dirty: live && Boolean(d.dirty),
+      // 首页展示的那篇（posts.json 里的 featured，只有线上的才算）
+      featured: live && Boolean(liveBySlug.get(d.slug).featured),
     });
   }
   for (const p of livePosts) {
@@ -50,6 +52,7 @@ export function mergeRows(livePosts, savedDocs) {
       title: (p.title && p.title.zh) || '',
       live: true,
       dirty: false,
+      featured: Boolean(p.featured),
     });
   }
   rows.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
@@ -63,8 +66,25 @@ export function rowActions(row) {
 
 export function rowStatus(row) {
   if (!row.live) return { text: '草稿', cls: 'draft' };
-  if (row.dirty) return { text: '已上架 · 有修改未上架', cls: 'dirty' };
-  return { text: '已上架', cls: 'live' };
+  const home = row.featured ? ' · 首页展示' : '';
+  if (row.dirty) return { text: '已上架 · 有修改未上架' + home, cls: 'dirty' };
+  return { text: '已上架' + home, cls: 'live' };
+}
+
+// ── 首页展示哪一篇（2026-10-24 作者：可以选，不一定是最新的）──
+// posts.json 里最多一篇带 featured: true；没有就放最新一篇。下架那篇时标记跟着消失，首页回到最新一篇。
+
+/** 列表上的「设为首页」按钮：线上且还不是首页的 → 'set'；已是首页的 → 'unset'（恢复显示最新）；草稿 → null。 */
+export function featureAction(row) {
+  if (!row.live) return null;
+  return row.featured ? 'unset' : 'set';
+}
+
+/** 首页的文章顺序：选中的那篇在最前，其余按 posts.json 原来的顺序（日期新→旧）。 */
+export function homepageOrder(posts) {
+  const list = Array.isArray(posts) ? posts : [];
+  const i = list.findIndex((p) => p && p.featured);
+  return i < 0 ? list.slice() : [list[i], ...list.slice(0, i), ...list.slice(i + 1)];
 }
 
 /**

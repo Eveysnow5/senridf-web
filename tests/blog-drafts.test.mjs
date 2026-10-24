@@ -14,11 +14,16 @@ import {
   blogImagePathOf,
   blogImagePaths,
   replaceBlogImages,
+  featureAction,
+  homepageOrder,
 } from '../js/shared/blog-posts-model.js';
 import {
   buildArticle,
   normalizeExcerpt,
   validatePublishPayload,
+  setFeatured,
+  upsertPost,
+  removePost,
 } from '../workers/sdf-admin/src/blog.js';
 
 const t3 = (s) => ({ zh: s, ja: s, en: s });
@@ -251,4 +256,94 @@ test('首页摘要：三语都空不写进 posts.json；填了去空白存下；
   const page = readFileSync(new URL('../admin/blog/index.html', import.meta.url), 'utf8');
   assert.match(page, /if \(d\.excerpt\) payload\.excerpt = d\.excerpt;/, '上架时没带首页摘要');
   assert.match(page, /key: 'excerpt'/, '一键同步日英没带首页摘要');
+});
+
+// ── 首页展示哪一篇（2026-10-24 作者：后台可选，不一定是最新的）──
+test('设为首页：只有线上的能选；选中的那篇标「首页展示」、按钮变成取消', () => {
+  const rows = mergeRows(
+    [
+      live('2026-10-21-4b60', '2026-10-21'),
+      { ...live('2025-03-15-aaaa', '2025-03-15'), featured: true },
+    ],
+    [
+      { id: 'p_new1', date: '2025-06-01', title: t3('新草稿') },
+      {
+        id: 'p_2025-03-15-aaaa',
+        slug: '2025-03-15-aaaa',
+        date: '2025-03-15',
+        title: t3('改过'),
+        dirty: true,
+      },
+    ],
+  );
+  assert.deepEqual(
+    rows.map((r) => [r.key, rowStatus(r).text, featureAction(r)]),
+    [
+      ['live:2026-10-21-4b60', '已上架', 'set'],
+      ['p_new1', '草稿', null],
+      ['p_2025-03-15-aaaa', '已上架 · 有修改未上架 · 首页展示', 'unset'],
+    ],
+  );
+  // 草稿箱里的档写着 featured 也不算：首页只认线上的 posts.json
+  const [d] = mergeRows([], [{ id: 'p_x', date: '2026-01-01', title: t3('a'), featured: true }]);
+  assert.equal(d.featured, false);
+  assert.equal(featureAction(d), null);
+});
+
+test('首页顺序：选中的那篇放最前，其余保持新→旧；没选就是原顺序', () => {
+  const ps = [{ slug: 'c' }, { slug: 'b', featured: true }, { slug: 'a' }];
+  assert.deepEqual(
+    homepageOrder(ps).map((p) => p.slug),
+    ['b', 'c', 'a'],
+  );
+  assert.deepEqual(
+    homepageOrder([{ slug: 'c' }, { slug: 'b' }]).map((p) => p.slug),
+    ['c', 'b'],
+  );
+  assert.deepEqual(homepageOrder(null), []);
+  assert.deepEqual(
+    ps.map((p) => p.slug),
+    ['c', 'b', 'a'],
+  ); // 不改原数组
+});
+
+test('setFeatured：只留一篇带标记；null 全部取消；不在线上的拒绝', () => {
+  const ps = [{ slug: 'c', featured: true }, { slug: 'b' }, { slug: 'a' }];
+  assert.deepEqual(setFeatured(ps, 'a'), [
+    { slug: 'c' },
+    { slug: 'b' },
+    { slug: 'a', featured: true },
+  ]);
+  assert.deepEqual(setFeatured(ps, null), [{ slug: 'c' }, { slug: 'b' }, { slug: 'a' }]);
+  assert.throws(() => setFeatured(ps, 'zzz'), /不在线上/);
+});
+
+test('改完重新上架，首页标记不丢；下架后标记随文章消失', () => {
+  const ps = [
+    { slug: 'b', date: '2026-02-01', featured: true },
+    { slug: 'a', date: '2026-01-01' },
+  ];
+  const up = upsertPost(ps, { slug: 'b', date: '2026-02-01', title: t3('改过') });
+  assert.equal(up.find((p) => p.slug === 'b').featured, true);
+  assert.equal(
+    upsertPost(ps, { slug: 'a', date: '2026-01-01' }).find((p) => p.slug === 'a').featured,
+    undefined,
+  );
+  assert.deepEqual(
+    homepageOrder(removePost(ps, 'b')).map((p) => p.slug),
+    ['a'],
+  );
+});
+
+test('后台列表有「设为首页」按钮、Worker 有对应的接口', () => {
+  const page = readFileSync(new URL('../admin/blog/index.html', import.meta.url), 'utf8');
+  assert.match(page, /onclick="featureRow\('\$\{k\}'\)"/);
+  assert.match(page, /api\('POST', '\/blog\/feature'/);
+  const worker = readFileSync(
+    new URL('../workers/sdf-admin/src/index.js', import.meta.url),
+    'utf8',
+  );
+  assert.match(worker, /url\.pathname === '\/blog\/feature' && request\.method === 'POST'/);
+  const home = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(home, /posts = homepageOrder\(list\);/);
 });

@@ -21,6 +21,7 @@ import {
   validatePublishPayload,
   upsertPost,
   removePost,
+  setFeatured,
   buildArticle,
   addToSitemap,
   removeFromSitemap,
@@ -358,6 +359,46 @@ export default {
           env.GITHUB_TOKEN,
         );
 
+        return json(200, { ok: true, commitSha }, cors);
+      }
+
+      // 选首页展示的文章（2026-10-24）：只改 posts.json 的 featured。slug: null＝取消，首页放最新一篇
+      if (url.pathname === '/blog/feature' && request.method === 'POST') {
+        let body;
+        try {
+          body = await request.json();
+        } catch {
+          return json(400, { error: '请求格式错误' }, cors);
+        }
+        const { slug } = body;
+        if (slug !== null && (typeof slug !== 'string' || !SLUG_RE.test(slug))) {
+          return json(400, { error: '缺少 slug 或格式错误' }, cors);
+        }
+        let notLive = false;
+        const { commitSha } = await commitFiles(
+          REPO,
+          async () => {
+            const { text } = await getFile(REPO, POSTS_PATH, env.GITHUB_TOKEN);
+            const posts = text ? JSON.parse(text) : [];
+            if (slug !== null && !posts.some((p) => p.slug === slug)) {
+              notLive = true;
+              throw new Error('not live');
+            }
+            return [
+              {
+                path: POSTS_PATH,
+                text: JSON.stringify(setFeatured(posts, slug), null, 2) + '\n',
+              },
+            ];
+          },
+          slug ? `blog: feature ${slug}` : 'blog: unfeature',
+          env.GITHUB_TOKEN,
+        ).catch((err) => {
+          if (notLive) return { notLive: true };
+          throw err;
+        });
+        if (notLive)
+          return json(409, { error: '这篇不在线上（可能刚被下架），不能设为首页' }, cors);
         return json(200, { ok: true, commitSha }, cors);
       }
 

@@ -95,7 +95,7 @@
     }
     .blog-list-date { color: var(--text3); width: 90px; flex-shrink: 0; }
     .blog-list-title { flex: 1; }
-    .blog-list-state { width: 150px; flex-shrink: 0; font-size: 12px; color: var(--text3); }
+    .blog-list-state { width: 210px; flex-shrink: 0; font-size: 12px; color: var(--text3); }
     .blog-list-state.draft { color: #b45309; }
     .blog-list-state.dirty { color: #2563eb; }
     .btn-link:disabled { opacity: 0.35; cursor: default; }
@@ -542,10 +542,10 @@ import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import {
   mergeRows, rowActions, rowStatus, publishProblem, newDocId, docIdForSlug, previewDoc,
-  blogImagePaths, replaceBlogImages,
-} from '/js/shared/blog-posts-model.js?v=0fefde1b7e';
+  blogImagePaths, replaceBlogImages, featureAction,
+} from '/js/shared/blog-posts-model.js?v=dc577c8610';
 import { tagObject } from '/js/shared/blog-tags.js?v=2d02e3ed50';
-import * as ed from '/admin/blog/editor.js?v=aff6cad66a';
+import * as ed from '/admin/blog/editor.js?v=c3e41517a6';
 
 initErrorReporting({ db });
 
@@ -699,6 +699,7 @@ function renderBlogList() {
       const st = rowStatus(r);
       const act = rowActions(r);
       const k = escapeHtmlAdmin(r.key);
+      const fa = featureAction(r);
       return `
     <div class="blog-list-row">
       <span class="blog-list-date">${escapeHtmlAdmin(r.date)}</span>
@@ -707,6 +708,8 @@ function renderBlogList() {
       <button type="button" class="btn-link" onclick="editPost('${k}')">编辑</button>
       <button type="button" class="btn-link" onclick="publishRow('${k}')" ${act.canPublish ? '' : 'disabled'}>上架</button>
       <button type="button" class="btn-link" onclick="unpublishRow('${k}')" ${act.canUnpublish ? '' : 'disabled'}>下架</button>
+      <button type="button" class="btn-link" onclick="featureRow('${k}')" ${fa ? '' : 'disabled'}
+        title="首页的博客块放这一篇；不选时放最新一篇">${fa === 'unset' ? '取消首页' : '设为首页'}</button>
     </div>`;
     })
     .join('');
@@ -1052,6 +1055,31 @@ window.unpublishRow = async function (key) {
   } catch (e) {
     statusEl.className = 'status err';
     statusEl.textContent = '✗ 下架失败：' + e.message;
+  }
+};
+
+// 首页展示哪一篇（2026-10-24）：只改 posts.json 的标记，不动文章本身
+window.featureRow = async function (key) {
+  const row = blogRows.find((r) => r.key === key);
+  const fa = row && featureAction(row);
+  if (!fa) return;
+  const msg =
+    fa === 'set'
+      ? `首页的博客块改为展示「${row.title}」？`
+      : `取消「${row.title}」的首页展示？首页会改回展示最新的一篇。`;
+  if (!confirm(msg)) return;
+  const statusEl = document.getElementById('blog-deploy-status');
+  statusEl.className = 'status';
+  statusEl.textContent = fa === 'set' ? '设为首页中…' : '取消首页中…';
+  try {
+    const { commitSha } = await api('POST', '/blog/feature', {
+      slug: fa === 'set' ? row.slug : null,
+    });
+    await loadBlogPosts();
+    waitForDeploy(commitSha, statusEl);
+  } catch (e) {
+    statusEl.className = 'status err';
+    statusEl.textContent = '✗ 首页设置失败：' + e.message;
   }
 };
 

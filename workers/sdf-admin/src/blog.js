@@ -142,14 +142,28 @@ export function normalizeExcerpt(excerpt) {
 }
 
 export function upsertPost(posts, entry) {
+  // 首页展示的标记跟着文章走：改完重新上架不能把它弄丢（载荷里不带这个字段）
+  const old = posts.find((p) => p.slug === entry.slug);
   const filtered = posts.filter((p) => p.slug !== entry.slug);
-  filtered.push(entry);
+  filtered.push(old && old.featured ? { ...entry, featured: true } : entry);
   filtered.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   return filtered;
 }
 
 export function removePost(posts, slug) {
   return posts.filter((p) => p.slug !== slug);
+}
+
+/** 选首页展示的文章：只有 slug 那篇带 featured: true；slug 为 null＝都不带（首页放最新一篇）。
+ *  线上没有这篇 → 抛错（不能把首页指向一篇看不到的文章）。 */
+export function setFeatured(posts, slug) {
+  if (slug !== null && !posts.some((p) => p.slug === slug)) {
+    throw new Error('这篇不在线上，不能设为首页');
+  }
+  return posts.map((p) => {
+    const { featured, ...rest } = p;
+    return p.slug === slug ? { ...rest, featured: true } : rest;
+  });
 }
 
 export function escapeHtml(str) {

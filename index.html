@@ -237,8 +237,10 @@
   <script src="js/main.js?v=3cd377f02f"></script>
   <script type="module" src="js/tracking.js?v=5aa1920e9e"></script>
   <script type="module">
-    // 首页博客块：posts.json 已按日期新→旧，只放最新一篇（页面里只有一个格子）。换语言时重填。
+    // 首页博客块：只有一个格子。后台「设为首页」选了哪篇就放哪篇，没选就放最新一篇
+    // （posts.json 已按日期新→旧）。换语言时重填。
     import { plainExcerpt } from '/js/shared/blog-content.js?v=7eeefd1b98';
+    import { homepageOrder } from '/js/shared/blog-posts-model.js?v=dc577c8610';
     import { tagLabel } from '/js/shared/blog-tags.js?v=2d02e3ed50';
     const items = [...document.querySelectorAll('.journal-item')];
     const empty = document.querySelector('.journal-empty');
@@ -282,7 +284,7 @@
     fetch('/solutions/blog/posts.json')
       .then((r) => (r.ok ? r.json() : []))
       .then((list) => {
-        posts = Array.isArray(list) ? list : [];
+        posts = homepageOrder(list);
         renderJournal(typeof currentLang === 'string' ? currentLang : 'ja');
       })
       .catch((err) => {
