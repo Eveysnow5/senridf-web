@@ -223,6 +223,7 @@
 <script type="module">
   import { auth, db } from '/js/shared/firebase-init.js';
   import { ADMINS } from '/js/shared/admins.js';
+  import { loginErrorKind } from '/js/shared/auth-errors.js';
   import { onAuthStateChanged, signInWithEmailAndPassword, signOut, sendPasswordResetEmail,
            createUserWithEmailAndPassword, updatePassword, reauthenticateWithCredential, EmailAuthProvider }
     from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
@@ -268,6 +269,11 @@
       st_load_fail: 'アカウント状態の読み込みに失敗しました。再読み込みしてください。',
       return_to_page: '元のページに戻る',
       err_login: 'メールアドレスまたはパスワードが正しくありません。',
+      err_login_locked:
+        'ログインの試行回数が多すぎるため、一時的にロックされています。15分ほど待つか、「パスワードをお忘れですか？」から再設定してください。',
+      err_login_disabled: 'このアカウントは無効になっています。管理者にお問い合わせください。',
+      err_login_network:
+        'ログインサービスに接続できません。ネットワーク、または広告ブロックなどの拡張機能をご確認ください。',
       err_need_email: '先にメールアドレスを入力してください。',
       reset_sent: 'パスワード再設定メールを送信しました。ご確認ください。',
       reset_fail: '送信に失敗しました。メールアドレスをご確認ください。',
@@ -318,6 +324,9 @@
       st_load_fail: '账号状态加载失败，请刷新重试。',
       return_to_page: '返回原页面',
       err_login: '邮箱或密码错误，请重试。',
+      err_login_locked: '尝试次数太多，账号被暂时锁住。请等 15 分钟左右再试，或点「忘记密码」重设密码。',
+      err_login_disabled: '这个账号已被停用，请联系管理员。',
+      err_login_network: '连不上登录服务，请检查网络，或关闭广告拦截等浏览器插件后再试。',
       err_need_email: '请先填写邮箱地址。',
       reset_sent: '重置密码邮件已发送，请查收。',
       reset_fail: '发送失败，请检查邮箱地址。',
@@ -368,6 +377,11 @@
       st_load_fail: 'Failed to load account status. Please refresh and try again.',
       return_to_page: 'Back to the previous page',
       err_login: 'Incorrect email or password. Please try again.',
+      err_login_locked:
+        'Too many sign-in attempts — this account is temporarily locked. Wait about 15 minutes, or reset your password via "Forgot password".',
+      err_login_disabled: 'This account has been disabled. Please contact the administrator.',
+      err_login_network:
+        'Cannot reach the sign-in service. Please check your network or disable ad-blocking extensions.',
       err_need_email: 'Please enter your email address first.',
       reset_sent: 'Password reset email sent. Please check your inbox.',
       reset_fail: 'Failed to send. Please check the email address.',
@@ -503,8 +517,13 @@
     clearMsg(errEl, 'form-error');
     try {
       await signInWithEmailAndPassword(auth, email, password);
-    } catch {
-      showMsg(errEl, 'err_login', 'form-error err');
+    } catch (e) {
+      // 原因分开说（2026-10-24）：锁住・停用・网络 和「密码不对」处理方法完全不同
+      const k = { locked: 'err_login_locked', disabled: 'err_login_disabled', network: 'err_login_network' }[
+        loginErrorKind(e)
+      ];
+      showMsg(errEl, k || 'err_login', 'form-error err');
+      console.error('[auth]', e);
     }
   });
 

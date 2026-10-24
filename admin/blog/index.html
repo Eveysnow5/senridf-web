@@ -140,6 +140,7 @@
     .ed-frame { display: block; width: 100%; height: 420px; border: 1px solid var(--border); border-radius: 7px; background: #F8F8F5; }
     .ed-frame[hidden] { display: none; }
     .compose-date { width: auto; }
+    .compose-tags { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
     .compose-hint { font-size: 12px; color: var(--text3); margin-top: 4px; }
     .status.warn { color: #b45309; }
     .compose-cover-preview {
@@ -201,10 +202,16 @@
 
   <div id="blog-compose" hidden>
     <div class="compose-row">
-      <label class="compose-label" for="compose-tag">标签（可留空）</label>
-      <!-- 2026-10-22 作者要求：不设下拉，手工输入或留白。三语页面都原样显示这几个字（不翻译）。 -->
-      <input type="text" id="compose-tag" class="compose-input" maxlength="40"
-        placeholder="例如：思考、产品、公司动态……留空则文章页只显示日期" oninput="onComposeInput()">
+      <label class="compose-label" for="compose-tag">标签（可留空；填了就要中・日・英三种都有，「一键同步日英」会一起翻）</label>
+      <!-- 2026-10-22 不设下拉、手工输入；2026-10-24 改成三语（英文页出现过中文标签） -->
+      <div class="compose-tags">
+        <input type="text" id="compose-tag" class="compose-input" maxlength="40"
+          placeholder="中文，例如：思考" oninput="onComposeInput()">
+        <input type="text" id="compose-tag-ja" class="compose-input" maxlength="40"
+          placeholder="日本語" title="标签（日本語）" oninput="onComposeInput()">
+        <input type="text" id="compose-tag-en" class="compose-input" maxlength="40"
+          placeholder="English" title="标签（English）" oninput="onComposeInput()">
+      </div>
     </div>
     <div class="compose-row">
       <label class="compose-label" for="compose-date">发布日期</label>
@@ -292,7 +299,7 @@ function startNewPost() {
   composeState = {
     docId: null, // 草稿箱文档 id，第一次「完成」时生成
     slug: null,
-    tag: '',
+    tag: { zh: '', ja: '', en: '' },
     date: localToday(),
     cover: null,
     coverChanged: false,
@@ -305,9 +312,10 @@ function startNewPost() {
 }
 
 function renderCompose() {
-  // 标签：自由输入、可留空（2026-10-22 起不再有下拉）。旧文章存的分类 key（如 ai_hardware）原样显示在框里，
-  // 前台仍按 js/shared/blog-tags.js 翻成三语；新写的文字三语页面原样显示。
-  document.getElementById('compose-tag').value = composeState.tag || '';
+  // 标签：三语三个框（composeState.tag 一律是 {zh, ja, en}，载入时由 tagObject 统一）
+  document.getElementById('compose-tag').value = composeState.tag.zh;
+  document.getElementById('compose-tag-ja').value = composeState.tag.ja;
+  document.getElementById('compose-tag-en').value = composeState.tag.en;
   const dateEl = document.getElementById('compose-date');
   dateEl.max = localToday();
   dateEl.value = composeState.date;
@@ -346,7 +354,11 @@ function switchComposeOtherLang(lang) {
 // 免得编辑区还没载入完时把正文读成空、覆盖掉稿子。
 function onComposeInput() {
   if (!composeState) return;
-  composeState.tag = document.getElementById('compose-tag').value.trim();
+  composeState.tag = {
+    zh: document.getElementById('compose-tag').value.trim(),
+    ja: document.getElementById('compose-tag-ja').value.trim(),
+    en: document.getElementById('compose-tag-en').value.trim(),
+  };
   // 日期框没填完整时 value 是空串；那时保留原来的日期，发布前再检查
   const dateVal = document.getElementById('compose-date').value;
   if (dateVal) composeState.date = dateVal;
@@ -454,6 +466,7 @@ import { auth, db } from '/js/shared/firebase-init.js';
 import { initErrorReporting } from '/js/shared/report-error.js';
 import { isAdmin } from '/js/shared/admins.js';
 import { pollDeployStatus } from '/js/shared/deploy-poll.js';
+import { loginErrorText } from '/js/shared/auth-errors.js';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp }
@@ -461,6 +474,7 @@ import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp
 import {
   mergeRows, rowActions, rowStatus, publishProblem, newDocId, docIdForSlug, previewDoc,
 } from '/js/shared/blog-posts-model.js';
+import { tagObject } from '/js/shared/blog-tags.js';
 import * as ed from '/admin/blog/editor.js?v=b08ba0e80b';
 
 initErrorReporting({ db });
@@ -588,7 +602,7 @@ window.editPost = function (key) {
     // 只在线上的旧文章：第一次「完成」时按 slug 在草稿箱建档
     docId: row.docId || docIdForSlug(row.slug),
     slug: src.slug || null,
-    tag: src.tag || '',
+    tag: tagObject(src.tag),
     date: src.date || localToday(),
     cover: src.cover || null,
     coverChanged: false,
@@ -650,7 +664,7 @@ function fillFromDraft(d) {
   composeState = {
     docId: d.docId || null,
     slug: d.slug || null,
-    tag: d.tag || '',
+    tag: tagObject(d.tag),
     date: d.date || localToday(),
     cover: d.cover || null,
     coverChanged: false,
@@ -694,10 +708,15 @@ window.syncBlogTranslate = async function () {
       fields: [
         { key: 'title', zh: composeState.title.zh },
         { key: 'body', zh: composeState.body.zh },
+        ...(composeState.tag.zh ? [{ key: 'tag', zh: composeState.tag.zh }] : []),
       ],
     });
     if (result.ja?.title) composeState.title.ja = result.ja.title;
     if (result.en?.title) composeState.title.en = result.en.title;
+    if (result.ja?.tag) composeState.tag.ja = result.ja.tag.trim();
+    if (result.en?.tag) composeState.tag.en = result.en.tag.trim();
+    document.getElementById('compose-tag-ja').value = composeState.tag.ja;
+    document.getElementById('compose-tag-en').value = composeState.tag.en;
     const got = { ja: result.ja?.body || '', en: result.en?.body || '' };
     for (const l of ['ja', 'en']) {
       if (!got[l]) continue;
@@ -935,8 +954,9 @@ window.fbLogin = async function() {
   errEl.textContent = ''; btn.disabled = true; btn.textContent = '登录中…';
   try {
     await signInWithEmailAndPassword(auth, email, password);
-  } catch {
-    errEl.textContent = '邮箱或密码错误，请重试。';
+  } catch (e) {
+    errEl.textContent = loginErrorText(e);
+    console.error('[auth]', e);
     btn.disabled = false; btn.textContent = '登录';
   }
 };

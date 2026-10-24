@@ -150,7 +150,8 @@
 <script type="module">
   import { auth } from '/js/shared/firebase-init.js';
   import { ADMINS } from '/js/shared/admins.js';
-  import { onAuthStateChanged, signInWithEmailAndPassword, signOut }
+  import { loginErrorText } from '/js/shared/auth-errors.js';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut }
     from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 
   const $ = id => document.getElementById(id);
@@ -190,7 +191,7 @@
     try {
       await signInWithEmailAndPassword(auth, $('ge').value.trim(), $('gp').value);
     } catch (e) {
-      $('gm').textContent = '邮箱或密码不正确';
+      $('gm').textContent = loginErrorText(e);
       console.error('[auth]', e);
     } finally {
       btn.disabled = false;

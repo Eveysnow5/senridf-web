@@ -137,6 +137,7 @@ body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
 import { auth, db } from '/js/shared/firebase-init.js';
 import { initErrorReporting } from '/js/shared/report-error.js';
 import { ADMINS } from '/js/shared/admins.js';
+import { loginErrorText } from '/js/shared/auth-errors.js';
 import {onAuthStateChanged,signInWithEmailAndPassword,signOut} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import {collection,getDocs,query,orderBy,limit,doc,getDoc} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
@@ -184,8 +185,9 @@ function gm(txt, ok) {
 document.getElementById('glogin').onclick = async () => {
   try {
     await signInWithEmailAndPassword(auth, document.getElementById('ge').value.trim(), document.getElementById('gp').value);
-  } catch {
-    gm('邮箱或密码错误，请重试。');
+  } catch (e) {
+    gm(loginErrorText(e));
+    console.error('[auth]', e);
   }
 };
 

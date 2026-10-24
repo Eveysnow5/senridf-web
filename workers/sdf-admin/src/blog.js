@@ -34,12 +34,21 @@ export function generateSlug(date, randomFn = Math.random) {
 export function validatePublishPayload(body) {
   if (!body || typeof body !== 'object') return { ok: false, error: '请求格式错误' };
   const { tag, date, title, body: postBody, cover } = body;
-  // 标签可留空（2026-10-22 作者要求：不设下拉、手工输入或留白）；给了就必须是字符串。
-  if (tag !== undefined && tag !== null && typeof tag !== 'string') {
-    return { ok: false, error: '标签格式错误' };
+  // 标签可留空。2026-10-24 起是三语对象 {zh, ja, en}（旧的单语字符串仍收，前端上架时会拦）。
+  if (tag !== undefined && tag !== null) {
+    const parts =
+      typeof tag === 'string'
+        ? [tag]
+        : typeof tag === 'object'
+          ? ['zh', 'ja', 'en'].map((l) => tag[l])
+          : null;
+    if (!parts || parts.some((v) => v !== undefined && v !== null && typeof v !== 'string')) {
+      return { ok: false, error: '标签格式错误' };
+    }
+    if (parts.some((v) => typeof v === 'string' && v.length > 40)) {
+      return { ok: false, error: '标签太长（40 字以内）' };
+    }
   }
-  if (typeof tag === 'string' && tag.length > 40)
-    return { ok: false, error: '标签太长（40 字以内）' };
   if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return { ok: false, error: '日期格式错误' };
   }
@@ -83,13 +92,25 @@ export function buildArticle(body, { slug, posts, listing, coverUpload = null })
   const entry = {
     slug,
     date: body.date,
-    tag: typeof body.tag === 'string' ? body.tag.trim() : '',
+    tag: normalizeTag(body.tag),
     title: body.title,
     body: body.body,
     cover,
   };
   return { entry, html: renderArticleHtml(entry, want) };
 }
+
+// 标签：三语对象各自去空格；三种都空＝不填（''）；旧的字符串去空格原样。
+export function normalizeTag(tag) {
+  if (tag && typeof tag === 'object') {
+    const o = {};
+    for (const l of ['zh', 'ja', 'en']) o[l] = typeof tag[l] === 'string' ? tag[l].trim() : '';
+    return o.zh || o.ja || o.en ? o : '';
+  }
+  return typeof tag === 'string' ? tag.trim() : '';
+}
+
+const tagIn = (tag, lang) => (tag && typeof tag === 'object' ? tag[lang] || '' : tag || '');
 
 // posts.json 是数组；按 slug 去重插入/更新，按 date 倒序排列。
 export function upsertPost(posts, entry) {
@@ -136,16 +157,17 @@ export function removeFromSitemap(xml, slug) {
 // （tests/cache-bust.test.mjs）必红、文章上不了线——2026-10-21 实际发生过。
 // head 里的规范网址・分享卡片由 head-meta-core 生成，与 npm run meta 同一个函数。
 export function renderArticleHtml({ slug, date, tag, title, body, cover }, want = {}) {
+  // 标签按语言放进各自那份数据，切语言时和标题一起换（2026-10-24 之前三语页面显示同一个标签）
   const articleData = {
-    ja: { title: title.ja, body: body.ja },
-    zh: { title: title.zh, body: body.zh },
-    en: { title: title.en, body: body.en },
+    ja: { title: title.ja, body: body.ja, tag: tagIn(tag, 'ja') },
+    zh: { title: title.zh, body: body.zh, tag: tagIn(tag, 'zh') },
+    en: { title: title.en, body: body.en, tag: tagIn(tag, 'en') },
   };
   // </script> 若原样出现在 JSON 里会提前截断 <script> 标签，转成 unicode 转义防止。
   const articleJson = JSON.stringify(articleData).replace(/</g, '\\u003c');
   const coverImg = cover ? `<img src="/${cover}" alt="" class="blog-post__cover">` : '';
-  const tagText = typeof tag === 'string' ? tag.trim() : '';
-  // 标签是作者原样写的文字（不翻译），标 translate="no"：公开页 i18n 检查据此放行。
+  // 首屏（无脚本时）先放日文标签；脚本按当前语言换。translate="no"：不让浏览器翻译插件乱改。
+  const tagText = tagIn(tag, 'ja');
   const eyebrow = `${tagText ? escapeHtml(tagText) + ' · ' : ''}${escapeHtml(date)}`;
   const desc = plainExcerpt(body.ja, 120);
 
@@ -172,7 +194,7 @@ export function renderArticleHtml({ slug, date, tag, title, body, cover }, want 
     <div class="page-header">
       <div class="page-header__container">
         <div data-animate>
-          <span class="section__eyebrow" translate="no">${eyebrow}</span>
+          <span class="section__eyebrow" translate="no" id="article-eyebrow" data-date="${escapeHtml(date)}">${eyebrow}</span>
           <h1 class="section__title" id="article-title"></h1>
         </div>
       </div>
@@ -196,6 +218,8 @@ export function renderArticleHtml({ slug, date, tag, title, body, cover }, want 
       const d = ARTICLE[lang] || ARTICLE.ja;
       titleEl.textContent = d.title;
       fitTitle(titleEl);
+      const eb = document.getElementById('article-eyebrow');
+      eb.textContent = (d.tag ? d.tag + ' · ' : '') + eb.dataset.date;
       document.getElementById('article-body').innerHTML = bodyToHtml(d.body, window);
       document.title = d.title + ' — ' + (lang === 'en' ? 'Senridoufuu Co., Ltd.' : '千里同風株式会社');
     }

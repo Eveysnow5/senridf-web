@@ -77,12 +77,18 @@ test('★ 生成的文章页：head 信息就是 npm run meta 会写的（规范
   assert.match(html, /<meta name="description" content="本文です。赤い字">/);
 });
 
-test('标签：可留空；留空时只显示日期；作者原样写的标签标 translate="no"', () => {
+test('标签：可留空；留空时只显示日期；眉题标 translate="no"（首屏日文，脚本按语言换）', () => {
   assert.equal(validatePublishPayload({ ...SAMPLE, tag: '' }).ok, true);
   assert.equal(validatePublishPayload({ ...SAMPLE, tag: undefined }).ok, true);
   assert.equal(validatePublishPayload({ ...SAMPLE, tag: 3 }).ok, false);
-  assert.match(renderArticleHtml(SAMPLE, want), /translate="no">思考 · 2026-10-22</);
-  assert.match(renderArticleHtml({ ...SAMPLE, tag: '' }, want), /translate="no">2026-10-22</);
+  assert.match(
+    renderArticleHtml(SAMPLE, want),
+    /translate="no" id="article-eyebrow" data-date="2026-10-22">思考 · 2026-10-22</,
+  );
+  assert.match(
+    renderArticleHtml({ ...SAMPLE, tag: '' }, want),
+    /data-date="2026-10-22">2026-10-22</,
+  );
 });
 
 test('正文 HTML 不会截断内嵌数据（</script> 被转义）', () => {

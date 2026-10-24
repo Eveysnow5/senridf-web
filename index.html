@@ -269,7 +269,7 @@
         const p = posts[i];
         a.hidden = !p;
         if (!p) return;
-        const tag = tagLabel(p.tag, window.sdfT);
+        const tag = tagLabel(p.tag, window.sdfT, L);
         a.href = `solutions/blog/${p.slug}.html`;
         a.querySelector('.journal-item__tag').textContent = (tag ? tag + ' · ' : '') + p.date;
         a.querySelector('.journal-item__name').textContent = pick(p.title);

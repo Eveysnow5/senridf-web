@@ -88,6 +88,19 @@ export function publishProblem(post, today) {
     (l) => !(post.title && String(post.title[l] || '').trim()) || !(post.body && post.body[l]),
   );
   if (empty.length) return `${empty.join('・')} 的标题或正文是空的（编辑后可点「一键同步日英」）`;
+  // 标签可以不填；填了就必须三语都有（2026-10-24：英文页出现过中文标签）
+  const tag = post.tag;
+  if (typeof tag === 'string' && tag.trim()) {
+    return '标签只有一种语言（旧格式）：请编辑这篇，补上日・英标签（或点「一键同步日英」）后再上架';
+  }
+  if (tag && typeof tag === 'object') {
+    const has = (l) => typeof tag[l] === 'string' && tag[l].trim();
+    const filled = ['zh', 'ja', 'en'].filter(has);
+    if (filled.length && filled.length < 3) {
+      const miss = ['zh', 'ja', 'en'].filter((l) => !has(l));
+      return `标签缺 ${miss.join('・')}（编辑后可点「一键同步日英」）`;
+    }
+  }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(post.date || '')) return '发布日期没填完整';
   if (post.date > today) return '发布日期在未来（上架会马上公开，不是定时发布）';
   return '';

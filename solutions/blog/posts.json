@@ -2,7 +2,11 @@
   {
     "slug": "2026-10-21-4b60",
     "date": "2026-10-21",
-    "tag": "思考",
+    "tag": {
+      "zh": "思考",
+      "ja": "思考",
+      "en": "Reflections"
+    },
     "title": {
       "ja": "創業者の言葉：AIの幕開けに立ち",
       "en": "Words from the Founder: Standing at the Dawn of AI",

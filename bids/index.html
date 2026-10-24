@@ -127,7 +127,8 @@
   <script type="module">
     import { auth, db } from '/js/shared/firebase-init.js';
     import { initErrorReporting } from '/js/shared/report-error.js';
-    import { signInWithEmailAndPassword, onAuthStateChanged, signOut }
+        import { loginErrorText } from '/js/shared/auth-errors.js';
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut }
       from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
     import { collection, query, orderBy, limit, getDocs }
       from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
@@ -145,8 +146,9 @@
       loginError.classList.add('hidden');
       try {
         await signInWithEmailAndPassword(auth, email, password);
-      } catch {
-        loginError.textContent = '邮箱或密码错误，请重试';
+      } catch (e) {
+        loginError.textContent = loginErrorText(e);
+        console.error('[auth]', e);
         loginError.classList.remove('hidden');
       }
     });

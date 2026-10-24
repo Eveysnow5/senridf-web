@@ -51,7 +51,7 @@ const BLOG = readFileSync(path.join(ROOT, 'solutions', 'blog', 'index.html'), 'u
 const ADMIN = readFileSync(path.join(ROOT, 'admin', 'blog', 'index.html'), 'utf8');
 
 test('博客列表按当前语言渲染分类，而不是直接吐原始值', () => {
-  assert.match(BLOG, /window\.sdfBlogTagLabel\(p\.tag, window\.sdfT\)/);
+  assert.match(BLOG, /window\.sdfBlogTagLabel\(p\.tag, window\.sdfT, validLang\)/);
   // 老写法：直接 escapeHtmlList(p.tag)，日英页因此显示中文分类
   assert.doesNotMatch(BLOG, /blog-item__tag">\$\{escapeHtmlList\(p\.tag\)\}/);
 });
