@@ -931,11 +931,17 @@ onAuthStateChanged(auth, user => {
       document.getElementById('editor').style.display = 'block';
       loadBlogPosts().catch(e => {
         document.getElementById('fb-login').style.display = 'flex';
-        document.getElementById('fb-err').textContent = '文章列表加载失败：' + e.message;
+        document.getElementById('editor').style.display = 'none';
+        document.getElementById('fb-err').textContent =
+          '已登录 ' + user.email + '，但文章列表加载失败：' + e.message + '（请把这句截图发给管理员）';
       });
       checkDraft();
     } else if (user) {
-      document.getElementById('fb-err').textContent = '该账号无管理员权限。';
+      // 浏览器里已登着一个非管理员账号（常见：在网站会员页用个人邮箱登过）。
+      // 说清是哪个账号；再点登录时 fbLogin 会先退出它（2026-10-24 Yuki 卡在这里）。
+      document.getElementById('fb-login').style.display = 'flex';
+      document.getElementById('fb-err').textContent =
+        '当前登录的是 ' + user.email + '，这个账号没有后台权限。请在上面输入后台账号重新登录。';
     } else {
       document.getElementById('fb-login').style.display = 'flex';
     }
@@ -953,10 +959,13 @@ window.fbLogin = async function() {
   const btn = document.getElementById('fb-login-btn');
   errEl.textContent = ''; btn.disabled = true; btn.textContent = '登录中…';
   try {
+    // 先退出已登着的账号：同一账号再登一次不会触发 onAuthStateChanged，页面会停在「登录中…」
+    if (auth.currentUser) await signOut(auth);
     await signInWithEmailAndPassword(auth, email, password);
   } catch (e) {
     errEl.textContent = loginErrorText(e);
     console.error('[auth]', e);
+  } finally {
     btn.disabled = false; btn.textContent = '登录';
   }
 };

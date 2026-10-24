@@ -41,6 +41,25 @@ test('每个登录页都用共享的原因判断，不再把所有失败说成�
   }
 });
 
+// 2026-10-24 Yuki：网站会员页登着个人账号 → 进后台又见登录框 → 再登「进不去」。
+// 原因：非管理员账号已登着时只写一句错误不说是谁；同账号再登不触发 onAuthStateChanged，按钮卡在「登录中…」。
+test('后台两页：说出当前登录的账号、登录前先退出旧账号、按钮一定复位', () => {
+  for (const p of ['admin/index.html', 'admin/blog/index.html']) {
+    const s = read(p);
+    assert.match(s, /'当前登录的是 ' \+ user\.email/, `${p} 没说当前是哪个账号`);
+    assert.match(
+      s,
+      /if \(auth\.currentUser\) await signOut\(auth\);\s*\n\s*await signInWithEmailAndPassword/,
+      `${p} 登录前没先退出`,
+    );
+    assert.match(
+      s,
+      /\} finally \{\s*\n\s*btn\.disabled = false; btn\.textContent = '登录';/,
+      `${p} 登录成功后按钮不复位`,
+    );
+  }
+});
+
 test('会员页三语都有分原因的提示', () => {
   const s = read('account.html');
   for (const k of ['err_login_locked', 'err_login_disabled', 'err_login_network']) {
