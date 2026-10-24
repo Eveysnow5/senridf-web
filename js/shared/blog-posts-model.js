@@ -67,6 +67,21 @@ export function rowStatus(row) {
   return { text: '已上架', cls: 'live' };
 }
 
+/**
+ * 上架前预览：Worker /blog/preview 返回的就是上架时要写进仓库的那份文章页（同一个 buildArticle）。
+ * 放进弹窗的 iframe 只改两处，其余一字不动：
+ *   ① <base href="../../"> → "/"：文章在 /solutions/blog/ 下，../../ 就是站点根；弹窗里没有这个目录层级
+ *   ② 去掉访问统计脚本：预览不能算一次访问
+ * 模板哪天改了、这两处找不到，就报错不显示——宁可没预览，也不给一个和线上不一样的预览。
+ */
+export function previewDoc(html) {
+  const BASE = '<base href="../../">';
+  if (!html.includes(BASE)) throw new Error('文章页模板变了（找不到 base），预览不出来');
+  const TRACKING = /\n?[ \t]*<script type="module" src="js\/tracking\.js[^"]*"><\/script>/;
+  if (!TRACKING.test(html)) throw new Error('文章页模板变了（找不到统计脚本），预览不出来');
+  return html.replace(BASE, '<base href="/">').replace(TRACKING, '');
+}
+
 /** 上架前的检查：三语标题正文齐全、日期完整且不在未来。返回错误文字，没问题返回空串。 */
 export function publishProblem(post, today) {
   const empty = ['zh', 'ja', 'en'].filter(

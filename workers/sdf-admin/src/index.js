@@ -11,7 +11,6 @@ import { CONTENT_API_VERSION, saveContentChanges } from './content-save.js';
 import { createRateLimiter } from './rateLimit.js';
 import { getFile, putFile, commitFiles, listWorkflowRuns } from './github.js';
 import { DEPLOY_WORKFLOW, deployState } from './deploy-status.js';
-import { readFingerprints } from '../../../scripts/qa/cache-bust-core.mjs';
 import {
   validateTranslateFields,
   buildTranslatePrompt,
@@ -22,10 +21,9 @@ import {
   validatePublishPayload,
   upsertPost,
   removePost,
-  renderArticleHtml,
+  buildArticle,
   addToSitemap,
   removeFromSitemap,
-  ARTICLE_ASSETS,
   LISTING_PATH,
   SITEMAP_PATH,
 } from './blog.js';
@@ -235,6 +233,32 @@ export default {
         return json(200, { posts: text ? JSON.parse(text) : [] }, cors);
       }
 
+      // 上架前预览（2026-10-24）：和上架同一个 buildArticle、同一份列表页指纹，只返回 HTML 不提交。
+      // 新文章还没有 slug：用 <日期>-0000 占位，只影响 head 里的规范网址，页面上看不到。
+      if (url.pathname === '/blog/preview' && request.method === 'POST') {
+        let body;
+        try {
+          body = await request.json();
+        } catch {
+          return json(400, { error: '请求格式错误' }, cors);
+        }
+        const check = validatePublishPayload(body);
+        if (!check.ok) return json(400, { error: check.error }, cors);
+        if (body.slug !== undefined && !SLUG_RE.test(body.slug)) {
+          return json(400, { error: 'slug 格式错误' }, cors);
+        }
+        const [{ text: postsText }, { text: listing }] = await Promise.all([
+          getFile(REPO, POSTS_PATH, env.GITHUB_TOKEN),
+          getFile(REPO, LISTING_PATH, env.GITHUB_TOKEN),
+        ]);
+        const { html } = buildArticle(body, {
+          slug: body.slug || `${body.date}-0000`,
+          posts: postsText ? JSON.parse(postsText) : [],
+          listing,
+        });
+        return json(200, { html }, cors);
+      }
+
       if (url.pathname === '/blog/publish' && request.method === 'POST') {
         let body;
         try {
@@ -249,7 +273,6 @@ export default {
           return json(400, { error: 'slug 格式错误' }, cors);
         }
         const slug = body.slug || generateSlug(body.date);
-        const tag = typeof body.tag === 'string' ? body.tag.trim() : '';
         const coverUpload = body.cover ? body.cover.replace(/^data:image\/\w+;base64,/, '') : null;
 
         // 封面・文章页・posts.json・sitemap **一次提交**（见 github.js commitFiles）。
@@ -263,29 +286,11 @@ export default {
               getFile(REPO, SITEMAP_PATH, env.GITHUB_TOKEN),
             ]);
             const posts = postsText ? JSON.parse(postsText) : [];
-            const existing = posts.find((p) => p.slug === slug);
-            const want = readFingerprints(listing || '', ARTICLE_ASSETS);
-            const lacking = ARTICLE_ASSETS.filter((a) => !want[a]);
-            // 读不到指纹就停：写出没有 ?v= 的页面只会被上线检查拦下，作者看到的是「发布成功但前台空白」
-            if (lacking.length) throw new Error(`读不到资源指纹（${lacking.join('、')}），未发布`);
+            const { entry, html } = buildArticle(body, { slug, posts, listing, coverUpload });
             if (!sitemap) throw new Error('读不到 sitemap.xml，未发布');
-
-            const coverPath = coverUpload
-              ? `assets/images/blog/${slug}-cover.webp`
-              : body.coverPath || (existing && existing.cover) || null;
-            const entry = {
-              slug,
-              date: body.date,
-              tag,
-              title: body.title,
-              body: body.body,
-              cover: coverPath,
-            };
+            const coverPath = entry.cover;
             const changes = [
-              {
-                path: `solutions/blog/${slug}.html`,
-                text: renderArticleHtml(entry, want),
-              },
+              { path: `solutions/blog/${slug}.html`, text: html },
               { path: POSTS_PATH, text: JSON.stringify(upsertPost(posts, entry), null, 2) + '\n' },
               { path: SITEMAP_PATH, text: addToSitemap(sitemap, slug, body.date) },
             ];

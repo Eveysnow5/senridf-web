@@ -101,6 +101,15 @@
     .btn-link:disabled { opacity: 0.35; cursor: default; }
     .btn-link:disabled:hover { color: var(--text3); }
 
+    /* ── 上架前预览弹窗：iframe 里是上架时要写进仓库的那份文章页 ── */
+    .pv-modal { position: fixed; inset: 0; z-index: 1000; display: flex; padding: 24px; background: rgba(0, 0, 0, 0.45); }
+    .pv-modal[hidden] { display: none; }
+    .pv-box { flex: 1; display: flex; flex-direction: column; background: #fff; border-radius: 10px; overflow: hidden; }
+    .pv-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 18px; border-bottom: 1px solid var(--border); }
+    .pv-hint { margin-left: 10px; font-size: 12px; color: var(--text3); }
+    .pv-actions { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+    #pv-frame { flex: 1; width: 100%; border: 0; background: #fff; }
+
     #blog-compose { max-width: 900px; margin: 0 auto; padding: 24px; }
     .compose-row { margin-bottom: 16px; }
     .compose-label { display: block; font-size: 12px; color: var(--text3); margin-bottom: 5px; }
@@ -243,6 +252,22 @@
       <span id="compose-publish-status" class="status"></span>
       <span id="draft-status" class="status"></span>
     </div>
+  </div>
+</div>
+
+<div id="pv-modal" class="pv-modal" hidden>
+  <div class="pv-box" role="dialog" aria-modal="true" aria-labelledby="pv-title">
+    <div class="pv-head">
+      <div>
+        <strong id="pv-title">上架前预览</strong>
+        <span class="pv-hint">和网站上的样子完全一致，这里不能修改。页面顶部可以切换日・中・英。</span>
+      </div>
+      <div class="pv-actions">
+        <button type="button" class="btn-link" id="pv-cancel">取消，回去修改</button>
+        <button type="button" class="btn-save" id="pv-ok">确定上架</button>
+      </div>
+    </div>
+    <iframe id="pv-frame" title="上架前预览" sandbox="allow-scripts allow-same-origin"></iframe>
   </div>
 </div>
 
@@ -434,7 +459,7 @@ import { onAuthStateChanged, signInWithEmailAndPassword, signOut }
 import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import {
-  mergeRows, rowActions, rowStatus, publishProblem, newDocId, docIdForSlug,
+  mergeRows, rowActions, rowStatus, publishProblem, newDocId, docIdForSlug, previewDoc,
 } from '/js/shared/blog-posts-model.js';
 import * as ed from '/admin/blog/editor.js?v=b08ba0e80b';
 
@@ -781,10 +806,25 @@ window.publishRow = async function (key) {
     statusEl.textContent = `✗ 不能上架「${row.title || '（无标题）'}」：${problem}`;
     return;
   }
-  if (!confirm(`上架「${row.title}」？上架后网站上所有人都能看到。`)) return;
   const payload = { tag: d.tag || '', date: d.date, title: d.title, body: d.body };
   if (d.slug) payload.slug = d.slug;
   if (d.cover) payload.coverPath = d.cover;
+  // 先看预览（2026-10-24 作者要求）：和上架同一份页面，确定了才真的上架
+  statusEl.className = 'status';
+  statusEl.textContent = '生成预览中…';
+  let pv;
+  try {
+    pv = previewDoc((await api('POST', '/blog/preview', payload)).html);
+  } catch (e) {
+    statusEl.className = 'status err';
+    statusEl.textContent = '✗ 预览生成失败，没有上架：' + e.message;
+    return;
+  }
+  statusEl.textContent = '';
+  if ((await showPreview(pv)) !== 'ok') {
+    window.editPost(key);
+    return;
+  }
   statusEl.className = 'status';
   statusEl.textContent = '上架中…';
   let published;
@@ -811,6 +851,25 @@ window.publishRow = async function (key) {
   await loadBlogPosts();
   waitForDeploy(published.commitSha, statusEl);
 };
+
+// 预览弹窗：返回 'ok'（确定上架）或 'cancel'（回去修改）
+function showPreview(html) {
+  const modal = document.getElementById('pv-modal');
+  const frame = document.getElementById('pv-frame');
+  frame.srcdoc = html;
+  modal.hidden = false;
+  return new Promise((resolve) => {
+    const done = (v) => {
+      modal.hidden = true;
+      frame.srcdoc = '';
+      document.getElementById('pv-ok').onclick = null;
+      document.getElementById('pv-cancel').onclick = null;
+      resolve(v);
+    };
+    document.getElementById('pv-ok').onclick = () => done('ok');
+    document.getElementById('pv-cancel').onclick = () => done('cancel');
+  });
+}
 
 window.unpublishRow = async function (key) {
   const row = blogRows.find((r) => r.key === key);

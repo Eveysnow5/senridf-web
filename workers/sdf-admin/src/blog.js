@@ -9,7 +9,7 @@ import {
   blogArticleFile,
   blogArticleRoute,
 } from '../../../scripts/qa/head-meta-core.mjs';
-import { applyFingerprints } from '../../../scripts/qa/cache-bust-core.mjs';
+import { applyFingerprints, readFingerprints } from '../../../scripts/qa/cache-bust-core.mjs';
 
 // 文章页引用的共用资源（都要带 ?v= 指纹）。Worker 从博客列表页读这几个的当前指纹，
 // 所以列表页必须引用到全部（tests/blog-article.test.mjs 校验）。
@@ -65,6 +65,30 @@ export function validatePublishPayload(body) {
     }
   }
   return { ok: true };
+}
+
+// 由发布载荷生成文章条目和文章页 HTML。上架（/blog/publish）和上架前预览（/blog/preview）
+// 都走这一个函数——预览「严格跟发布页一致」靠的就是这一点，别在任一边另写一份。
+// listing：博客列表页的当前内容（从中读资源指纹）；posts：当前 posts.json；
+// coverUpload：这次随载荷上传的封面（base64），有就用 <slug>-cover.webp。
+export function buildArticle(body, { slug, posts, listing, coverUpload = null }) {
+  const existing = posts.find((p) => p.slug === slug);
+  const want = readFingerprints(listing || '', ARTICLE_ASSETS);
+  const lacking = ARTICLE_ASSETS.filter((a) => !want[a]);
+  // 读不到指纹就停：写出没有 ?v= 的页面只会被上线检查拦下，作者看到的是「发布成功但前台空白」
+  if (lacking.length) throw new Error(`读不到资源指纹（${lacking.join('、')}），文章页没法生成`);
+  const cover = coverUpload
+    ? `assets/images/blog/${slug}-cover.webp`
+    : body.coverPath || (existing && existing.cover) || null;
+  const entry = {
+    slug,
+    date: body.date,
+    tag: typeof body.tag === 'string' ? body.tag.trim() : '',
+    title: body.title,
+    body: body.body,
+    cover,
+  };
+  return { entry, html: renderArticleHtml(entry, want) };
 }
 
 // posts.json 是数组；按 slug 去重插入/更新，按 date 倒序排列。

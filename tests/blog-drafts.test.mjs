@@ -10,7 +10,9 @@ import {
   publishProblem,
   newDocId,
   docIdForSlug,
+  previewDoc,
 } from '../js/shared/blog-posts-model.js';
+import { buildArticle } from '../workers/sdf-admin/src/blog.js';
 
 const t3 = (s) => ({ zh: s, ja: s, en: s });
 const live = (slug, date) => ({ slug, date, tag: '', title: t3('线上' + slug), body: t3('x') });
@@ -99,4 +101,62 @@ test('blog_drafts 仍然只有管理员能读写', () => {
   const m = rules.match(/match \/blog_drafts\/\{doc\} \{([\s\S]*?)\}/);
   assert.ok(m, '没找到 blog_drafts 的规则');
   assert.match(m[1].trim(), /^allow read, write: if isAdmin\(\);$/);
+});
+
+// ── 上架前预览：和上架同一个 buildArticle；弹窗只改 base 和统计脚本两处 ──
+// 用仓库里真实的博客列表页读指纹（和 Worker 上架时读的是同一个文件）。
+const LISTING = readFileSync(new URL('../solutions/blog/index.html', import.meta.url), 'utf8');
+const draft = {
+  date: '2025-03-15',
+  tag: ' 思考 ',
+  title: { zh: '中标题', ja: '日タイトル', en: 'EN title' },
+  body: { zh: '<p>中</p>', ja: '<p>日</p>', en: '<p>en</p>' },
+};
+
+test('buildArticle：封面优先级 上传 > coverPath > 原有；标签去空格', () => {
+  const posts = [{ slug: '2025-03-15-abcd', cover: 'assets/images/blog/old.webp' }];
+  const at = (extra, opt = {}) =>
+    buildArticle(
+      { ...draft, ...extra },
+      { slug: '2025-03-15-abcd', posts, listing: LISTING, ...opt },
+    ).entry;
+  assert.equal(at({}).cover, 'assets/images/blog/old.webp');
+  assert.equal(
+    at({ coverPath: 'assets/images/blog/inline-1-aa.webp' }).cover,
+    'assets/images/blog/inline-1-aa.webp',
+  );
+  assert.equal(
+    at({}, { coverUpload: 'AAAA' }).cover,
+    'assets/images/blog/2025-03-15-abcd-cover.webp',
+  );
+  assert.equal(at({}).tag, '思考');
+});
+
+test('buildArticle：读不到资源指纹就报错（不生成会白屏的页面）', () => {
+  assert.throws(
+    () => buildArticle(draft, { slug: '2025-03-15-abcd', posts: [], listing: '' }),
+    /资源指纹/,
+  );
+});
+
+test('预览＝上架页面只改两处：base 指向站点根、没有统计脚本', () => {
+  const { html } = buildArticle(draft, { slug: '2025-03-15-0000', posts: [], listing: LISTING });
+  const pv = previewDoc(html);
+  assert.ok(pv.includes('<base href="/">') && !pv.includes('../../'));
+  assert.ok(!/tracking\.js/.test(pv));
+  // 其余一字不差：把两处改回去就等于原文
+  const back = pv.replace('<base href="/">', '<base href="../../">');
+  const trackingLine = html.match(
+    /\n[ \t]*<script type="module" src="js\/tracking\.js[^"]*"><\/script>/,
+  )[0];
+  assert.equal(html.replace(trackingLine, ''), back);
+  // 内容真的在里面，资源都带指纹（和线上一样走缓存版本）
+  assert.ok(pv.includes('日タイトル') && pv.includes('EN title'));
+  assert.match(pv, /css\/main\.css\?v=[0-9a-f]{10}/);
+  assert.match(pv, /js\/main\.js\?v=[0-9a-f]{10}/);
+});
+
+test('模板变了找不到要改的地方 → 报错，不给一个和线上不一样的预览', () => {
+  assert.throws(() => previewDoc('<html><base href="./"></html>'), /模板变了/);
+  assert.throws(() => previewDoc('<html><base href="../../"></html>'), /统计脚本/);
 });
