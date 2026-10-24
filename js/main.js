@@ -64,15 +64,6 @@ const T = {
     journal_eyebrow: 'ブログ',
     journal_title: '探索を記録し、考えを分かち合う。',
     journal_lead: '技術とプロダクト、そして人とAIのあいだで起きている変化について。',
-    journal1_tag: 'Perspectives',
-    journal1_name: '視点と考察',
-    journal1_desc: 'AI・社会・未来の関係についての考察。',
-    journal2_tag: 'Building',
-    journal2_name: '開発ノート',
-    journal2_desc: '構想から実験、製品化までのありのままの記録。',
-    journal3_tag: 'Updates',
-    journal3_name: 'お知らせ',
-    journal3_desc: 'プロジェクトの進捗、協業のお知らせ、会社の日常。',
     journal_more: 'すべての記事を読む',
     about_teaser_eyebrow: '千里同風とは',
     about_teaser_title: '大阪から、AIと人をつなぐ新しい形を探して。',
@@ -1535,15 +1526,6 @@ const T = {
     journal_eyebrow: '博客',
     journal_title: '记录探索，分享思考。',
     journal_lead: '关于技术、产品，以及人与 AI 之间正在发生的变化。',
-    journal1_tag: 'Perspectives',
-    journal1_name: '观点与观察',
-    journal1_desc: '关于 AI、社会与未来关系的思考。',
-    journal2_tag: 'Building',
-    journal2_name: '研发手记',
-    journal2_desc: '从概念、实验到产品落地的真实记录。',
-    journal3_tag: 'Updates',
-    journal3_name: '公司动态',
-    journal3_desc: '项目进展、合作消息与公司的日常。',
     journal_more: '阅读全部文章',
     about_teaser_eyebrow: '关于我们',
     about_teaser_title: '从大阪出发，探索连接人与AI的新形式。',
@@ -2918,15 +2900,6 @@ const T = {
     journal_eyebrow: 'Journal',
     journal_title: 'Recording the journey, sharing our thinking.',
     journal_lead: 'On technology, products, and the changing relationship between people and AI.',
-    journal1_tag: 'Perspectives',
-    journal1_name: 'Perspectives',
-    journal1_desc: 'Thoughts on AI, society and the future.',
-    journal2_tag: 'Building',
-    journal2_name: 'Development notes',
-    journal2_desc: 'An honest record from concept and experiment to finished product.',
-    journal3_tag: 'Updates',
-    journal3_name: 'Company news',
-    journal3_desc: 'Project progress, partnership news and everyday life at the company.',
     journal_more: 'Read all posts',
     about_teaser_eyebrow: 'About',
     about_teaser_title: 'From Osaka, exploring new ways to connect people and AI.',
@@ -4374,8 +4347,11 @@ const NAV_HTML = `
           <div class="nav__dropdown">
             <a href="solutions/" class="nav__dropdown-link" data-i18n="nav_products"></a>
             <a href="solutions/demo.html" class="nav__dropdown-link" data-i18n="nav_demo"></a>
-            <a href="solutions/blog/" class="nav__dropdown-link" data-i18n="nav_blog"></a>
           </div>
+        </div>
+        <!-- 博客 2026-10-24 从「解决方案」下拉里拿出来，作为第一层入口 -->
+        <div class="nav__item">
+          <a href="solutions/blog/" class="nav__link" data-i18n="nav_blog"></a>
         </div>
       </div>
       <a href="/account.html" id="nav-member-link" class="nav__link" style="font-size:0.8125rem;opacity:.7;"></a>
@@ -4404,7 +4380,9 @@ const NAV_HTML = `
     <div class="nav__mobile-parent" data-i18n="nav_solutions"></div>
     <a href="solutions/" class="nav__mobile-child" data-i18n="nav_products"></a>
     <a href="solutions/demo.html" class="nav__mobile-child" data-i18n="nav_demo"></a>
-    <a href="solutions/blog/" class="nav__mobile-child" data-i18n="nav_blog"></a>
+  </div>
+  <div class="nav__mobile-section">
+    <a href="solutions/blog/" class="nav__mobile-parent nav__mobile-parent--link" data-i18n="nav_blog"></a>
   </div>
   <a href="/contact.html" class="nav__mobile-cta" data-i18n="nav_consult"></a>
   <div class="nav__mobile-lang" id="langMobile">

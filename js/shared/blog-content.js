@@ -141,3 +141,45 @@ export function tagSequence(html) {
     (m) => m[1] + m[2].toLowerCase(),
   );
 }
+
+// ── 文章标题自适应（2026-10-24 作者要求）──
+// 三语标题长短不一（英文通常最长）。PC 上尽量一行：从样式表给的字号往下缩，缩到 60% 还放不下
+// 就恢复原字号、允许换行（两行大字比一行小字好看）。手机上照常换行，超过两行才缩。
+// 纯判断：fits(size) 告诉我们该字号下是否满足条件；返回要用的字号，null＝保持原字号。
+export function chooseTitleSize(base, fits, { minRatio = 0.6, step = 1 } = {}) {
+  if (fits(base)) return null;
+  const min = Math.ceil(base * minRatio);
+  for (let s = base - step; s >= min; s -= step) if (fits(s)) return s;
+  return null;
+}
+
+// DOM 包装：el＝标题元素；win＝它所在的 window（预览弹窗里是 iframe 的 window）。
+// 换语言、窗口变宽窄、网页字体晚到时都要重算，调用方负责在这些时机再调一次。
+export function fitTitle(el, win = window) {
+  if (!el) return;
+  el.style.fontSize = '';
+  el.style.whiteSpace = '';
+  const base = parseFloat(win.getComputedStyle(el).fontSize);
+  if (!base) return;
+  const desktop = win.innerWidth > 768;
+  let size;
+  if (desktop) {
+    el.style.whiteSpace = 'nowrap';
+    size = chooseTitleSize(base, (s) => {
+      el.style.fontSize = s + 'px';
+      return el.scrollWidth <= el.clientWidth;
+    });
+    if (size === null) el.style.whiteSpace = '';
+  } else {
+    const lines = () => el.scrollHeight / parseFloat(win.getComputedStyle(el).lineHeight);
+    size = chooseTitleSize(
+      base,
+      (s) => {
+        el.style.fontSize = s + 'px';
+        return lines() <= 2.2;
+      },
+      { minRatio: 0.7 },
+    );
+  }
+  el.style.fontSize = size === null ? '' : size + 'px';
+}

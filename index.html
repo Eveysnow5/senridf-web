@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400&family=Noto+Serif+JP:wght@300;400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <base href="./">
-  <link rel="stylesheet" href="css/main.css?v=32595707f0">
+  <link rel="stylesheet" href="css/main.css?v=593b509b41">
   <!-- 结构化数据（Organization）：设立日＝履歴事項全部証明書（令和7年2月25日）；所在地＝作者 2026-10-06 确认。
        资本金按作者意见不公开。 -->
   <script type="application/ld+json">
@@ -144,8 +144,9 @@
       </div>
     </section>
 
-    <!-- ④ 博客（2026-10-18）：三个栏目，都链到博客页（目前还没有文章，博客页会显示「近日公開」）。
-         缩略图位可在后台换图。 -->
+    <!-- ④ 博客：最近三篇（2026-10-24 起；原来是三个固定栏目，分类是自定义的，没必要）。
+         文字由页底脚本从 solutions/blog/posts.json 填；缩略图：文章有封面用封面，
+         没有就用后台「网站内容」里的三张图（data-image-key，仍可在后台换）。 -->
     <section class="section">
       <div data-animate>
         <span class="section__eyebrow" data-i18n="journal_eyebrow">ブログ</span>
@@ -155,33 +156,34 @@
         </p>
       </div>
       <div class="journal-list" data-animate>
-        <a href="solutions/blog/" class="journal-item">
+        <a href="solutions/blog/" class="journal-item" hidden>
           <div class="journal-item__thumb" data-image-key="journal1_img"></div>
           <div>
-            <div class="journal-item__tag" data-i18n="journal1_tag">Perspectives</div>
-            <h3 class="journal-item__name" data-i18n="journal1_name">視点と考察</h3>
-            <p class="journal-item__desc" data-i18n="journal1_desc">AI・社会・未来の関係についての考察。</p>
+            <div class="journal-item__tag"></div>
+            <h3 class="journal-item__name"></h3>
+            <p class="journal-item__desc"></p>
           </div>
           <span class="journal-item__arrow" aria-hidden="true">→</span>
         </a>
-        <a href="solutions/blog/" class="journal-item">
+        <a href="solutions/blog/" class="journal-item" hidden>
           <div class="journal-item__thumb" data-image-key="journal2_img"></div>
           <div>
-            <div class="journal-item__tag" data-i18n="journal2_tag">Building</div>
-            <h3 class="journal-item__name" data-i18n="journal2_name">開発ノート</h3>
-            <p class="journal-item__desc" data-i18n="journal2_desc">構想から実験、製品化までのありのままの記録。</p>
+            <div class="journal-item__tag"></div>
+            <h3 class="journal-item__name"></h3>
+            <p class="journal-item__desc"></p>
           </div>
           <span class="journal-item__arrow" aria-hidden="true">→</span>
         </a>
-        <a href="solutions/blog/" class="journal-item">
+        <a href="solutions/blog/" class="journal-item" hidden>
           <div class="journal-item__thumb" data-image-key="journal3_img"></div>
           <div>
-            <div class="journal-item__tag" data-i18n="journal3_tag">Updates</div>
-            <h3 class="journal-item__name" data-i18n="journal3_name">お知らせ</h3>
-            <p class="journal-item__desc" data-i18n="journal3_desc">プロジェクトの進捗、協業のお知らせ、会社の日常。</p>
+            <div class="journal-item__tag"></div>
+            <h3 class="journal-item__name"></h3>
+            <p class="journal-item__desc"></p>
           </div>
           <span class="journal-item__arrow" aria-hidden="true">→</span>
         </a>
+        <p class="journal-empty" data-i18n="blog_empty" hidden>記事は近日公開予定です。</p>
       </div>
       <div class="home-more">
         <a href="solutions/blog/" class="cta-link">
@@ -250,7 +252,61 @@
   <!-- Footer (injected by JS) -->
   <div id="footer-placeholder"></div>
 
-  <script src="js/main.js?v=f4677d58b7"></script>
+  <script src="js/main.js?v=82d0c04a73"></script>
   <script type="module" src="js/tracking.js?v=8ed70b0d06"></script>
+  <script type="module">
+    // 首页博客块：posts.json 已按日期新→旧，取前三篇。换语言时重填。
+    import { plainExcerpt } from '/js/shared/blog-content.js?v=7eeefd1b98';
+    import { tagLabel } from '/js/shared/blog-tags.js';
+    const items = [...document.querySelectorAll('.journal-item')];
+    const empty = document.querySelector('.journal-empty');
+    let posts = null;
+    function renderJournal(lang) {
+      if (!posts) return;
+      const L = ['ja', 'zh', 'en'].includes(lang) ? lang : 'ja';
+      const pick = (o) => (o && (o[L] || o.ja)) || '';
+      items.forEach((a, i) => {
+        const p = posts[i];
+        a.hidden = !p;
+        if (!p) return;
+        const tag = tagLabel(p.tag, window.sdfT);
+        a.href = `solutions/blog/${p.slug}.html`;
+        a.querySelector('.journal-item__tag').textContent = (tag ? tag + ' · ' : '') + p.date;
+        a.querySelector('.journal-item__name').textContent = pick(p.title);
+        // PC 两行约 140 字（14px、栏宽约 1000px），取 160 字交给 CSS 省略号收尾
+        a.querySelector('.journal-item__desc').textContent = plainExcerpt(pick(p.body), 160);
+        const thumb = a.querySelector('.journal-item__thumb');
+        let img = thumb.querySelector('.journal-cover');
+        if (p.cover) {
+          if (!img) {
+            img = document.createElement('img');
+            img.className = 'journal-cover';
+            img.alt = '';
+            thumb.appendChild(img);
+          }
+          img.src = '/' + p.cover;
+        } else if (img) {
+          img.remove();
+        }
+      });
+      empty.hidden = posts.length > 0;
+    }
+    fetch('/solutions/blog/posts.json')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list) => {
+        posts = Array.isArray(list) ? list : [];
+        renderJournal(typeof currentLang === 'string' ? currentLang : 'ja');
+      })
+      .catch((err) => {
+        posts = [];
+        renderJournal('ja');
+        console.warn('[home] 博客列表加载失败：', err);
+      });
+    const _switchLang = window.switchLang;
+    window.switchLang = function (lang) {
+      _switchLang(lang);
+      renderJournal(lang);
+    };
+  </script>
 </body>
 </html>

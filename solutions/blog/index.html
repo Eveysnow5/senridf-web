@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400&family=Noto+Serif+JP:wght@300;400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <base href="../../">
-  <link rel="stylesheet" href="css/main.css?v=32595707f0">
+  <link rel="stylesheet" href="css/main.css?v=593b509b41">
 
 
 
@@ -63,7 +63,7 @@
 
   <div id="footer-placeholder"></div>
 
-  <script src="js/main.js?v=f4677d58b7"></script>
+  <script src="js/main.js?v=82d0c04a73"></script>
   <script type="module" src="js/tracking.js?v=8ed70b0d06"></script>
   <script type="module">
     // 本页主逻辑是普通 <script>，拿不到模块作用域，用 window 桥接（与工具页同一做法）
@@ -71,7 +71,7 @@
     // 正文 2026-10-22 起是 HTML（后台所见即所得编辑器），摘要要先去掉标签。
     // ⚠️ 本页也是后台发布文章时 Worker 读取资源指纹的地方（workers/sdf-admin/src/blog.js ARTICLE_ASSETS）：
     //    这条 import 带的 ?v= 就是新文章页要写的那个，别删。
-    import { plainExcerpt } from '/js/shared/blog-content.js?v=633b7c3ec8';
+    import { plainExcerpt } from '/js/shared/blog-content.js?v=7eeefd1b98';
     window.sdfBlogTagLabel = tagLabel;
     window.sdfBlogExcerpt = plainExcerpt;
   </script>

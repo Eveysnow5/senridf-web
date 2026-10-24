@@ -262,6 +262,9 @@ ul, ol { list-style: none; }
   transition: color 150ms;
 }
 .nav__mobile-child:hover { color: var(--c-accent); }
+/* 没有子项的第一层入口（博客）：本身就是链接 */
+.nav__mobile-parent--link { display: block; margin-bottom: 0; transition: color 150ms; }
+.nav__mobile-parent--link:hover { color: var(--c-accent); }
 .nav__mobile-lang {
   display: flex;
   gap: 20px;
@@ -937,6 +940,9 @@ main { padding-top: var(--nav-h); }
   line-height: 2;
   color: var(--c-text);
   overflow-wrap: anywhere;
+  /* 三语都两端对齐（2026-10-24 作者要求）；英文配断字，避免词间拉出大空隙 */
+  text-align: justify;
+  hyphens: auto;
 }
 .blog-post__body > * + * { margin-top: 1.2em; }
 .blog-post__body h2 {
@@ -1744,6 +1750,20 @@ main { padding-top: var(--nav-h); }
   line-height: 1.8;
   color: var(--c-text-2);
 }
+/* 首页博客块＝最近三篇（2026-10-24）：标题最多两行、摘要两行，超出省略。
+   PC 文字栏约 1000px：14px 中日文一行约 70 字、两行约 140 字，摘要取 160 字再交给省略号；
+   两行摘要 + 标题 + 日期 ≈ 缩略图高度（128px 宽 4:3＝96px），整行不比原来高。 */
+.journal-item__name,
+.journal-item__desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.journal-item__thumb .journal-cover { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; }
+.journal-empty { padding: 24px 0; color: var(--c-text-3); font-size: 0.875rem; }
+.journal-item[hidden],
+.journal-empty[hidden] { display: none; }
 .journal-item__arrow {
   color: var(--c-text-3);
   transition: transform 250ms var(--ease), color 200ms var(--ease);
@@ -1791,7 +1811,8 @@ main { padding-top: var(--nav-h); }
   .home-snap .journal-item__name { font-size: 1.0625rem; }
   .home-snap .journal-item__tag { margin-bottom: 4px; }
   .home-snap .journal-item__name { margin-bottom: 2px; }
-  .home-snap .journal-item__desc { line-height: 1.6; }
+  .home-snap .journal-item__desc { line-height: 1.6; -webkit-line-clamp: 1; }
+  .home-snap .journal-item__name { -webkit-line-clamp: 1; }
 }
 
 @media (max-width: 768px) {

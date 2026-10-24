@@ -189,14 +189,23 @@ export function renderArticleHtml({ slug, date, tag, title, body, cover }, want 
   <script type="module" src="js/tracking.js"></script>
   <script type="application/json" id="article-data">${articleJson}</script>
   <script type="module">
-    import { bodyToHtml } from '/js/shared/blog-content.js';
+    import { bodyToHtml, fitTitle } from '/js/shared/blog-content.js';
     const ARTICLE = JSON.parse(document.getElementById('article-data').textContent);
+    const titleEl = document.getElementById('article-title');
     function renderArticle(lang) {
       const d = ARTICLE[lang] || ARTICLE.ja;
-      document.getElementById('article-title').textContent = d.title;
+      titleEl.textContent = d.title;
+      fitTitle(titleEl);
       document.getElementById('article-body').innerHTML = bodyToHtml(d.body, window);
       document.title = d.title + ' — ' + (lang === 'en' ? 'Senridoufuu Co., Ltd.' : '千里同風株式会社');
     }
+    // 标题一行放不放得下取决于窗口宽度和网页字体（晚到会变宽），这两种时机都重算
+    let fitTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(fitTimer);
+      fitTimer = setTimeout(() => fitTitle(titleEl), 150);
+    });
+    if (document.fonts) document.fonts.ready.then(() => fitTitle(titleEl));
     const _switchLang = window.switchLang;
     window.switchLang = function (lang) {
       _switchLang(lang);
